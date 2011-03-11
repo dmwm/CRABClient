@@ -1,0 +1,177 @@
+#!/usr/bin/env python
+"""
+This contains the hooks to call the different command plug-ins.
+It is not intended to contain any of the CRAB-3 client logic,
+it simply:
+  - intercepts the CLI options and command
+  - loads and calls the specified command
+  - exit with the proper exit codes
+"""
+import traceback
+import sys
+import logging
+from optparse import OptionParser, OptionGroup
+from CRABClient import Handler
+from socket import error as SocketError
+from httplib import HTTPException
+
+
+def getOptionsLogger(client):
+    """
+    Get the command to run, the options to pass it and a logger instance
+    at appropriate level
+    """
+
+    parser = OptionParser( usage = 'Usage: %prog <command> [options]\n\nCRAB 3 RESTful client',
+                       description = "Available commands: %s"
+                                             % client.commands.keys(),
+                       version = "CRAB client v%s" % client.version() )
+
+    parser.add_option("-d", "--debug", dest = "debug", default = False,
+                 action  = "store_true", help = "Debug information showed")
+
+    parser.add_option("-v", "--verbose", dest = "verbose", default = True,
+                   action  = "store_true", help = "Be verbose in out put")
+
+    # I'm not sure this is a good idea...
+    parser.add_option("--detailed-server-interaction", dest = "show_server",
+                 default = False, action  = "store_true",
+                 help = "Show detailed server interaction, including JSON " + \
+                        "sent to/from server. WARNING: Extremely verbose!"
+                )
+
+    # by default look for crab_cfg.py file in current working directory
+    parser.add_option("-c", "--config", dest = "config",
+                      default = './crab_cfg.py',
+                      help = "Config file", metavar = "FILE")
+
+    # Auto-generate the options used by commands
+    for command in client.commands:
+        group = OptionGroup(parser, 'Help for the ' + command + ' command',
+                         client.commands[command]['function'].__doc__.strip())
+        for option in client.commands[command]['options']:
+            # option is a namedtuple('Options',
+            #                     'name, short_name, help, default, action')
+            # There must be a better way to build this tuple/dict...
+            optargs = []
+            optkwargs = {}
+            if option.name:
+                optargs.append('--%s' % option.name)
+            if option.short_name:
+                optargs.append('-%s' % option.short_name)
+            for k, v in option._asdict().items():
+                if k not in ['name', 'short_name'] and v:
+                    optkwargs[k] = v
+
+            group.add_option(*optargs, **optkwargs)
+
+        parser.add_option_group(group)
+
+    options, args = parser.parse_args()
+
+    # set up the logger
+    loglevel = logging.WARNING
+    if options.verbose:
+        loglevel = logging.INFO
+    if options.debug:
+        loglevel = logging.DEBUG
+
+    logger = logging.getLogger('CRAB3')
+    logger.setLevel(logging.DEBUG)
+
+    hdlr = logging.StreamHandler()
+    hdlr.setLevel( loglevel )
+    hdlr.setFormatter( logging.Formatter('%(levelname)s %(asctime)s: %(message)s') )
+    logger.addHandler(hdlr)
+
+
+    # args should be a single element list containing the command to run
+    #   e.g. submit, status etc
+    # if multiple args are present take the first and ignore the rest
+    command, commandoptions = None, {}
+    try:
+        command = args[0]
+        if command in client.commands:
+            # if the command isn't known the client handler will raise
+            for option in client.commands[command]['options']:
+                commandoptions[option.name] = getattr(options, option.name)
+    except IndexError:
+        logger.critical("You must specify a command to run")
+        logger.info("available commands are: %s" % (" ".join(client.commands.keys())))
+        sys.exit(1)
+    # If we've got this far the user has given a sane set of arguments to
+    # the script and we've managed to parse them into something useful:
+    #
+    # - options are the options specified by switches
+    # - command is the command the user wants to run (submit, status etc)
+    # - logger is the base logger instance to use
+    return options, command, commandoptions, logger
+
+
+if __name__ == "__main__":
+    # Create the crab object and start it
+    # Handled in a try/except to run in a controlled environment
+    #  - do not want to expose known exception to the outside
+    #  - exceptions thrown in the client should exit and set an approprate
+    #    exit code, this is a safety net
+
+    client = Handler()
+    opt, cmd, cmdoptions, client.logger = getOptionsLogger(client)
+
+    exitcode = 0
+
+    try:
+        client.loadConfig(opt.config)
+    except ImportError:
+        print "Configuration file '%s' not found" % opt.config
+        exitcode = 2
+    except OSError, oe:
+        print "Problem while processing the configuration and creating the workarea: %s " % str(oe)
+        exitcode = 2
+    except Exception, ex:
+        print "Unhandled Exception!"
+        print "Please file a bug report on https://svnweb.cern.ch/trac/CMSDMWM/newticket?component=CRABClient with the following information"
+        print "\tError: %s" % ex
+        print "\tClient Version: %s" % client.version()
+        client.logger.debug("\tFull traceback: \n%s" % str(traceback.format_exc()))
+
+        exitcode = -1
+
+    if exitcode == 0:
+        try:
+            exitcode = client(cmd, cmdoptions)
+        except KeyError, ke:
+            # The single quotes in KeyErrors are annoying...
+            if str(ke).strip("'") == command:
+                client.logger.error('%s is an unknown command, run crab -h for available commands' % command)
+                exitcode = 1
+            else:
+                # There will be other KeyErrors, catch them here...
+                client.logger.error("Error %s" % str(ke))
+                client.logger.debug("Data: %s " % str(data))
+                exitcode = 100
+        except SocketError, se:
+            msg = 'Could not establish a connection with the server at %s.\n' % client.configuration.General.server_url
+            msg += 'This may be a temporary problem, but if you see it repeatedly please notify AnaOps\n'
+            client.logger.error(msg)
+            client.logger.debug(str(se))
+            exitcode = 2
+        except NameError, ne:
+            client.logger.logger.error( str(ne) )
+            exitcode = 3
+        except HTTPException, he:
+            client.logger.error((" %s (%s): %s" % (he.reason, he.status, json.loads(he.result)['message'])))
+            client.logger.debug('Command %s failed with URI: %s' % (command, he.url))
+            client.logger.debug('     Input data: %s' % he.req_data)
+            client.logger.debug('     Request headers: %s' % he.req_headers)
+            exitcode = he.status
+        except Exception, ex:
+            print "Unhandled Exception!"
+            print "Please file a bug report on https://svnweb.cern.ch/trac/CMSDMWM/newticket?component=CRABClient with the following information"
+            print "\tError: %s" % ex
+            print "\tClient Version: %s" % client.version()
+            client.logger.debug("\tFull traceback: \n%s" % str(traceback.format_exc()))
+
+            exitcode = -1
+
+    sys.exit(exitcode)
