@@ -3,12 +3,12 @@ This is simply taking care of job submission
 """
 
 from CredentialInteractions import CredentialInteractions
-from clientcommands import CommandResult
+from Commands import CommandResult
 from client_utilities import getJobTypes
 import getpass
 import json
 import os
-import cPickle
+from client_utilities import createCache
 
 def submit(logger, configuration, server, options, requestname, requestarea):
     """
@@ -23,9 +23,9 @@ def submit(logger, configuration, server, options, requestname, requestarea):
 
     userdefault = {
                    "Username" : getpass.getuser(),
-                   "Group"    : "Analysis",
-                   "Team"     : "Analysis",
-                   "Email"    : "unknown",
+                   "Group"    : getattr(configuration.User, "group", "Analysis"),
+                   "Team"     : getattr(configuration.User, "team", "Analysis"),
+                   "Email"    : configuration.User.email,
                    "UserDN"   : "unknown"
                   }
 
@@ -35,25 +35,25 @@ def submit(logger, configuration, server, options, requestname, requestarea):
     proxy.createNewMyProxy( timeleftthreshold = 60 * 60 * 24 * 3)
 
     logger.debug("Registering the user on the server")
-    useruri = '/crab/user'
-    result, status, reason = server.post( useruri, json.dumps( userdefault, sort_keys = False) )
-    dictresult = json.loads(result)
-    logger.debug("Result: %s" % dictresult)
+    useruri = '/crabinterface/crab/user'
+    dictresult, status, reason = server.post( useruri, json.dumps( userdefault, sort_keys = False) )
+    logger.debug("Result: %s" % str(dictresult))
     if status != 200:
         msg = "Problem registering user:\ninput:%s\noutput:%s\nreason:%s" % (str(userdefault), str(dictresult), str(reason))
         return CommandResult(1, msg)
 
     defaultconfigreq["Group"] = userdefault["Group"]
     defaultconfigreq["Team"]  = userdefault["Team"]
-    defaultconfigreq["Requestor"] = userdefault['Username']
-    defaultconfigreq["Username"]  = userdefault['Username']
+    defaultconfigreq["Requestor"]   = userdefault['Username']
+    defaultconfigreq["Username"]    = userdefault['Username']
     defaultconfigreq["RequestName"] = requestname
+    defaultconfigreq["RequestorDN"] = userdefault["UserDN"]
 
     ## create job types
     jobtypes = getJobTypes()
     if configuration.JobType.pluginName not in jobtypes:
         raise NameError("JobType %s not found or not supported." % configuration.JobType.pluginName)
-    plugjobtype = jobtypes[configuration.JobType.pluginName](configuration, logger)
+    plugjobtype = jobtypes[upper(configuration.JobType.pluginName)](configuration, logger, requestarea)
     inputfiles, jobconfig = plugjobtype.run()
 
     defaultconfigreq.update(jobconfig)
@@ -61,12 +61,11 @@ def submit(logger, configuration, server, options, requestname, requestarea):
     ## TODO upload inputfiles
     logger.debug("Uploading inputfiles '%s' should be here" % str(inputfiles))
 
-    uri = '/crab/task/' + defaultconfigreq["RequestName"]
+    uri = '/crabinterface/crab/task/' + defaultconfigreq["RequestName"]
 
     logger.info("Sending the request to the server")
     logger.debug("Submitting %s " % str( json.dumps( defaultconfigreq, sort_keys = False, indent = 4 ) ) )
-    result, status, reason = server.post(uri, json.dumps( defaultconfigreq, sort_keys = False) )
-    dictresult = json.loads(result)
+    dictresult, status, reason = server.post(uri, json.dumps( defaultconfigreq, sort_keys = False) )
     logger.debug("Result: %s" % dictresult)
     if status != 200:
         msg = "Problem sending the request:\ninput:%s\noutput:%s\nreason:%s" % (str(userdefault), str(dictresult), str(reason))
@@ -78,14 +77,7 @@ def submit(logger, configuration, server, options, requestname, requestarea):
                % (str(userdefault), str(dictresult), str(reason))
         return CommandResult(1, msg)
 
-    touchfile  = open(os.path.join(requestarea, '.requestcache'), 'w')
-    neededhandlers = {
-                      "Server:" : server['conn'].host,
-                      "Port:" : server['conn'].port,
-                      "RequestName" : uniquerequestname
-                     }
-    cPickle.dump(neededhandlers, touchfile)
-    touchfile.close()
+    createCache( requestarea, server, uniquerequestname )
 
     logger.info("Submission completed")
     logger.debug("Request ID: %s " % uniquerequestname)

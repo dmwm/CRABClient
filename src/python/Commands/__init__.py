@@ -14,10 +14,10 @@ from collections import namedtuple
 
 CommandResult = namedtuple('CommandResult', 'exit_code, data')
 
-from clientcommands.server_info import server_info
-from clientcommands.status import status
-from clientcommands.submit import submit
-from clientcommands.job_types import job_types
+from Commands.server_info import server_info
+from Commands.status import status
+from Commands.submit import submit
+from Commands.job_types import job_types
 
 
 __all__ = ['CommandResult', 'submit', 'status', 'server_info', 'job_types']

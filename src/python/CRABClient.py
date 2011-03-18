@@ -9,10 +9,11 @@ from WMCore.Configuration import loadConfigurationFile, Configuration
 from ServerInteractions import HTTPRequests
 from client_utilities import createWorkArea
 
+import os
 import json
 
 # I'd like to flatten this to a module of functions...
-from clientcommands import *
+from Commands import *
 
 __version__ = "3.0.1"
 
@@ -70,7 +71,7 @@ class Handler(object):
             self.configuration = loadConfigurationFile(config)
         # TODO: Validate self.configuration here
 
-    def initialise(self, cmd):
+    def initialise(self, cmd, opt):
         """
         Contact the server, get its configuration e.g. MyProxy server, local SE.
         then set up a handler for dealing with credentials
@@ -86,13 +87,17 @@ class Handler(object):
                                                getattr(self.configuration.General, 'requestName', None)
                                              )
             self.logger.debug("Working on %s" % str(self.requestarea))
-
+        else:
+            if opt is not None:
+                if 'task' in opt.keys():
+                    self.requestarea = opt['task'][0]
+                    self.requestname = os.path.split(os.path.normpath(self.requestarea))[1]
 
     def __call__(self, command, commandoptions=None):
         """
         Initialise the client, run the command and return the exit code
         """
-        self.initialise(command)
+        self.initialise(command, commandoptions)
 
         self.logger.info("Request name: %s " % str(self.requestname) )
         self.logger.info("Working area: %s " % str(self.requestarea) )

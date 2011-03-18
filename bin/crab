@@ -12,9 +12,10 @@ import sys
 import logging
 from optparse import OptionParser, OptionGroup
 from CRABClient import Handler
-from socket import error as SocketError
 from httplib import HTTPException
-
+from socket import error as SocketError
+import json
+import os
 
 def getOptionsLogger(client):
     """
@@ -121,6 +122,9 @@ if __name__ == "__main__":
     exitcode = 0
 
     try:
+        #if cmd in ['submit']:
+        if not os.path.isabs(opt.config):
+            opt.config = os.path.abspath(opt.config)
         client.loadConfig(opt.config)
     except ImportError:
         print "Configuration file '%s' not found" % opt.config
@@ -142,13 +146,14 @@ if __name__ == "__main__":
             exitcode = client(cmd, cmdoptions)
         except KeyError, ke:
             # The single quotes in KeyErrors are annoying...
-            if str(ke).strip("'") == command:
-                client.logger.error('%s is an unknown command, run crab -h for available commands' % command)
+            if str(ke).strip("'") == cmd:
+                client.logger.error('%s is an unknown command, run crab -h for available commands' % cmd)
                 exitcode = 1
             else:
                 # There will be other KeyErrors, catch them here...
                 client.logger.error("Error %s" % str(ke))
-                client.logger.debug("Data: %s " % str(data))
+                client.logger.debug("\tFull traceback: \n%s" % str(traceback.format_exc()))
+                #client.logger.debug("Data: %s " % str(data))
                 exitcode = 100
         except SocketError, se:
             msg = 'Could not establish a connection with the server at %s.\n' % client.configuration.General.server_url
@@ -157,11 +162,11 @@ if __name__ == "__main__":
             client.logger.debug(str(se))
             exitcode = 2
         except NameError, ne:
-            client.logger.logger.error( str(ne) )
+            client.logger.error( str(ne) )
             exitcode = 3
         except HTTPException, he:
             client.logger.error((" %s (%s): %s" % (he.reason, he.status, json.loads(he.result)['message'])))
-            client.logger.debug('Command %s failed with URI: %s' % (command, he.url))
+            client.logger.debug('Command %s failed with URI: %s' % (cmd, he.url))
             client.logger.debug('     Input data: %s' % he.req_data)
             client.logger.debug('     Request headers: %s' % he.req_headers)
             exitcode = he.status

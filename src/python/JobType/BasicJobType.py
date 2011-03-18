@@ -7,19 +7,20 @@ Conventions:
 
 from WMCore.Configuration import Configuration
 
-class JobType(object):
+class BasicJobType(object):
     """
-    JobType
+    BasicJobType
 
     TODO: thinking on having a job type help here...
     """
 
-    def __init__(self, config, logger):
+    def __init__(self, config, logger, workingdir):
         ## Before everything checking if the config is ok
         result, msg = self.validateConfig( config )
         if result:
-            self.config = config
-            self.logger = logger
+            self.config  = config
+            self.logger  = logger
+            self.workdir = workingdir
         else:
             ## the config was not ok, returning a proper message
             raise Exception( msg )

@@ -8,7 +8,7 @@ from urlparse import urlunparse
 from httplib import HTTPConnection
 #from httplib import HTTPSConnection
 from httplib import HTTPException
-
+from WMCore.Services.Requests import JSONRequests
 
 class HTTPRequests(dict):
     """
@@ -110,8 +110,18 @@ class HTTPRequests(dict):
             setattr(e, 'headers', response.getheaders())
             raise e
 
-        result = json.loads(result)
-        return result, response.status, response.reason
+        #result = json.loads(result)
+        return self.decodeJson(result), response.status, response.reason
+
+    def decodeJson(self, result):
+        """
+        decodeJson 
+
+        decode the response result reveiced from the server
+        """
+        encoder = JSONRequests()
+        return encoder.decode(result)
+
 
     def buildUrl(self, uri):
         """

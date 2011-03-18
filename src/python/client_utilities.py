@@ -8,6 +8,7 @@ import os
 import datetime
 import pkgutil
 import sys
+import cPickle
 
 
 def getPlugins(plugins, skip):
@@ -74,7 +75,7 @@ def addPlugin(pluginpathname, pluginname = None):
     return modules
 
 
-def getJobTypes(jobtypepath = 'jobtypes'):
+def getJobTypes(jobtypepath = 'JobType'):
     """
     _getJobTypes_
 
@@ -82,7 +83,7 @@ def getJobTypes(jobtypepath = 'jobtypes'):
 
     TODO: this can also be a call to get a specific job type from the server
     """
-    return getPlugins(jobtypepath, ['JobType'])
+    return getPlugins(jobtypepath, ['BasicJobType'])
 
 
 def getRequestName(requestName = None):
@@ -152,3 +153,16 @@ def createWorkArea(logger, workingArea = '.', requestName = ''):
     return fullpath, requestName
 
 
+def createCache(requestarea, server, uniquerequestname):
+    touchfile = open(os.path.join(requestarea, '.requestcache'), 'w')
+    neededhandlers = {
+                      "Server:" : server['conn'].host,
+                      "Port:" : server['conn'].port,
+                      "RequestName" : uniquerequestname
+                     }
+    cPickle.dump(neededhandlers, touchfile)
+    touchfile.close()
+
+def loadCache(requestarea):
+    loadfile = open(os.path.join(requestarea, '.requestcache'), 'r')
+    return cPickle.load(loadfile) 

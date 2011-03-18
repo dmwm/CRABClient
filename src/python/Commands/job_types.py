@@ -1,4 +1,4 @@
-from clientcommands import CommandResult
+from Commands import CommandResult
 
 def job_types(logger, configuration, server, options, requestname, requestarea):
     """
