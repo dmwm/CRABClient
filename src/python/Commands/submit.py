@@ -9,6 +9,7 @@ import getpass
 import json
 import os
 from client_utilities import createCache
+from string import upper
 
 def submit(logger, configuration, server, options, requestname, requestarea):
     """
