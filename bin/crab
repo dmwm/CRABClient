@@ -7,15 +7,18 @@ it simply:
   - loads and calls the specified command
   - exit with the proper exit codes
 """
-import traceback
-import sys
-import logging
-from optparse import OptionParser, OptionGroup
-from CRABClient import Handler
-from httplib import HTTPException
-from socket import error as SocketError
 import json
+import logging
+import logging.handlers
 import os
+import sys
+
+from httplib import HTTPException
+from optparse import OptionParser, OptionGroup
+from socket import error as SocketError
+
+from CRABClient import Handler
+
 
 def getOptionsLogger(client):
     """
@@ -70,21 +73,44 @@ def getOptionsLogger(client):
 
     options, args = parser.parse_args()
 
-    # set up the logger
+    # Set up the logger and exception handling
+
+    # Log verbosely
+    logger = logging.getLogger('CRAB3')
+    logger.setLevel(logging.DEBUG)
+
+    # Set up console output to stdout at appropriate level
     loglevel = logging.WARNING
     if options.verbose:
         loglevel = logging.INFO
     if options.debug:
         loglevel = logging.DEBUG
 
-    logger = logging.getLogger('CRAB3')
-    logger.setLevel(logging.DEBUG)
+    console_format = '%(message)s'
+    console = logging.StreamHandler(sys.stdout)
+    console.setFormatter(logging.Formatter(console_format))
+    console.setLevel(loglevel)
+    logger.addHandler(console)
 
-    hdlr = logging.StreamHandler()
-    hdlr.setLevel( loglevel )
-    hdlr.setFormatter( logging.Formatter('%(levelname)s %(asctime)s: %(message)s') )
-    logger.addHandler(hdlr)
 
+    # Replace excepthook with logger
+    def log_exception(exc_type, exc_value, tback):
+        """
+        Send a short version of the exception to the console,
+        a long version to the log
+
+        Adapted from Doug Hellmann
+        """
+        # This goes to the console
+        logging.getLogger('CRAB3').error("%s: %s  See logfile for more info" % (exc_type.__name__, exc_value))
+        # This goes to the log file
+        tbLogger = logging.getLogger('CRAB3:traceback')
+        tbLogger.error("Unhandled Exception!")
+        tbLogger.error("\tPlease file a bug report at https://svnweb.cern.ch/trac/CMSDMWM/newticket?component=CRABClient with the following information:")
+        tbLogger.error("\tClient Version: %s" % client.version())
+        tbLogger.error(exc_value, exc_info=(exc_type, exc_value, tback))
+
+    sys.excepthook = log_exception
 
     # args should be a single element list containing the command to run
     #   e.g. submit, status etc
@@ -99,6 +125,7 @@ def getOptionsLogger(client):
     except IndexError:
         logger.critical("You must specify a command to run")
         logger.info("available commands are: %s" % (" ".join(client.commands.keys())))
+        logging.getLogger('CRAB3:traceback').exception('Caught exception:')
         sys.exit(1)
     # If we've got this far the user has given a sane set of arguments to
     # the script and we've managed to parse them into something useful:
@@ -132,51 +159,36 @@ if __name__ == "__main__":
     except OSError, oe:
         print "Problem while processing the configuration and creating the workarea: %s " % str(oe)
         exitcode = 2
-    except Exception, ex:
-        print "Unhandled Exception!"
-        print "Please file a bug report on https://svnweb.cern.ch/trac/CMSDMWM/newticket?component=CRABClient with the following information"
-        print "\tError: %s" % ex
-        print "\tClient Version: %s" % client.version()
-        client.logger.debug("\tFull traceback: \n%s" % str(traceback.format_exc()))
-
-        exitcode = -1
 
     if exitcode == 0:
         try:
             exitcode = client(cmd, cmdoptions)
         except KeyError, ke:
             # The single quotes in KeyErrors are annoying...
+            logging.getLogger('CRAB3:traceback').exception('Caught exception')
             if str(ke).strip("'") == cmd:
                 client.logger.error('%s is an unknown command, run crab -h for available commands' % cmd)
                 exitcode = 1
             else:
                 # There will be other KeyErrors, catch them here...
                 client.logger.error("Error %s" % str(ke))
-                client.logger.debug("\tFull traceback: \n%s" % str(traceback.format_exc()))
-                #client.logger.debug("Data: %s " % str(data))
                 exitcode = 100
         except SocketError, se:
             msg = 'Could not establish a connection with the server at %s.\n' % client.configuration.General.server_url
             msg += 'This may be a temporary problem, but if you see it repeatedly please notify AnaOps\n'
             client.logger.error(msg)
-            client.logger.debug(str(se))
+            logging.getLogger('CRAB3:traceback').exception('Caught exception')
             exitcode = 2
         except NameError, ne:
             client.logger.error( str(ne) )
+            logging.getLogger('CRAB3:traceback').exception('Caught exception')
             exitcode = 3
         except HTTPException, he:
             client.logger.error((" %s (%s): %s" % (he.reason, he.status, json.loads(he.result)['message'])))
             client.logger.debug('Command %s failed with URI: %s' % (cmd, he.url))
             client.logger.debug('     Input data: %s' % he.req_data)
             client.logger.debug('     Request headers: %s' % he.req_headers)
+            logging.getLogger('CRAB3:traceback').exception('Caught exception')
             exitcode = he.status
-        except Exception, ex:
-            print "Unhandled Exception!"
-            print "Please file a bug report on https://svnweb.cern.ch/trac/CMSDMWM/newticket?component=CRABClient with the following information"
-            print "\tError: %s" % ex
-            print "\tClient Version: %s" % client.version()
-            client.logger.debug("\tFull traceback: \n%s" % str(traceback.format_exc()))
-
-            exitcode = -1
 
     sys.exit(exitcode)

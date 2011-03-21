@@ -6,6 +6,8 @@ This contains some utility methods for the client
 
 import os
 import datetime
+import logging
+
 import pkgutil
 import sys
 import cPickle
@@ -103,11 +105,12 @@ def getRequestName(requestName = None):
 
 def addFileLogger(logger, workingpath, logname = 'crab.log'):
     """
-    _addineFileLogger
+    _addFileLogger_
     """
-    import logging
     logfullpath = os.path.join( workingpath, logname )
     logger.debug("Setting log file %s " % logfullpath)
+
+    # Log debug messages to crab.log file with more verbose format
 
     handler = logging.FileHandler( logfullpath )
     handler.setLevel(logging.DEBUG)
@@ -115,8 +118,13 @@ def addFileLogger(logger, workingpath, logname = 'crab.log'):
     ff = logging.Formatter("%(levelname)s %(asctime)s: \t %(message)s")
     handler.setFormatter( ff )
 
-    #logging.getLogger('CRAB').addHandler( handler )
     logger.addHandler( handler )
+
+    # Full tracebacks should only go to the file
+    traceback_log = logging.getLogger('CRAB3:traceback')
+    traceback_log.propagate = False
+    traceback_log.setLevel(logging.ERROR)
+    traceback_log.addHandler(handler)
 
 
 def createWorkArea(logger, workingArea = '.', requestName = ''):
