@@ -12,18 +12,18 @@ class CredentialInteractions(object):
     for all the client commands.
     '''
 
-    def __init__(self, serverdn, logger):
+    def __init__(self, serverdn, myproxy, logger):
         '''
         Constructor
         '''
         self.logger = logger
         self.defaultDelegation = {
-                                  'logger':    self.logger,
-                                  'vo':        'cms',
-                                  'myProxySvr':'myproxy.cern.ch',
+                                  'logger':          self.logger,
+                                  'vo':              'cms',
+                                  'myProxySvr':      myproxy,
                                   'proxyValidity'  : '24:00',
                                   'myproxyValidity': '7',
-                                  'serverDN' :  serverdn
+                                  'serverDN' :       serverdn
                                   }
 
 

@@ -46,7 +46,7 @@ class Handler(object):
 
         self.commands['status'] = {'function': status, 'options': [statusoptions]}
 
-        self.commands['serverstatus'] = {'function': server_info, 'options': []}
+        self.commands['serverinfo'] = {'function': server_info, 'options': []}
 
     def version(self):
         """
@@ -78,8 +78,13 @@ class Handler(object):
         """
         url = self.configuration.General.server_url
         self.server = HTTPRequests(url)
-        serverdn = self.runCommand('serverstatus')[1]['server_dn']
-        self.configuration.General.serverdn = serverdn
+        serverinfo = self.runCommand('serverinfo')[1]
+        self.configuration.General.serverdn   = serverinfo['AgentDN']
+        self.configuration.General.myproxy    = serverinfo['my_proxy']
+        self.configuration.General.sbservhost = serverinfo['SandBoxCacheEndpoint']
+        self.configuration.General.sbservport = serverinfo['port']
+        self.configuration.General.sbservtype = serverinfo['sandboxCacheType']
+        self.configuration.General.sbservpath = serverinfo['basepath']
         if cmd in ['submit']:
             self.requestarea, \
             self.requestname = createWorkArea( self.logger,

@@ -17,7 +17,7 @@ def submit(logger, configuration, server, options, requestname, requestarea):
     """
     logger.debug("Started submission")
     # If I'm submitting I need to deal with proxies
-    proxy = CredentialInteractions(configuration.General.serverdn, logger)
+    proxy = CredentialInteractions(configuration.General.serverdn, configuration.General.myproxy, logger)
     uniquerequestname = None
 
     defaultconfigreq = {"RequestType" : "Analysis"}
@@ -61,6 +61,10 @@ def submit(logger, configuration, server, options, requestname, requestarea):
 
     ## TODO upload inputfiles
     logger.debug("Uploading inputfiles '%s' should be here" % str(inputfiles))
+    #    self.configuration.General.sbservhost
+    #    self.configuration.General.sbservport
+    #    self.configuration.General.sbservtype
+    #    self.configuration.General.sbservpath
 
     uri = '/crabinterface/crab/task/' + defaultconfigreq["RequestName"]
 
