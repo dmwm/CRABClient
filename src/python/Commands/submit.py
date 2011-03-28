@@ -17,7 +17,12 @@ def submit(logger, configuration, server, options, requestname, requestarea):
     """
     logger.debug("Started submission")
     # If I'm submitting I need to deal with proxies
-    proxy = CredentialInteractions(configuration.General.serverdn, configuration.General.myproxy, logger)
+    proxy = CredentialInteractions(
+                                    configuration.General.serverdn,
+                                    configuration.General.myproxy,
+                                    getattr(configuration.User, "role", ""),
+                                    logger
+                                  )
     uniquerequestname = None
 
     defaultconfigreq = {"RequestType" : "Analysis"}
