@@ -21,10 +21,13 @@ config.JobType.inputFiles  = ['/tmp/input_file']
 
 ## Specific data options
 config.section_("Data")
-config.Data.inputDatasetList = ['/cms/data/set']
+config.Data.inputDataset = '/cms/data/set'
 config.Data.lumiSectionFile  = '/file/path/name'
 
 ## User options
 config.section_("User")
 config.User.role = '/cms/integration'
+config.User.team  = 'Analysis'
+config.User.group = 'Analysis'
+config.User.email = ''
 

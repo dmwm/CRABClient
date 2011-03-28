@@ -7,11 +7,14 @@ it simply:
   - loads and calls the specified command
   - exit with the proper exit codes
 """
+import sys
+if sys.version_info < (2, 6):
+    raise Exception('Error: using a version of python < 2.6. Exiting...')
+
 import json
 import logging
 import logging.handlers
 import os
-import sys
 
 from httplib import HTTPException
 from optparse import OptionParser, OptionGroup

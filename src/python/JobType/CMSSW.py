@@ -44,7 +44,7 @@ class CMSSW(BasicJobType):
             tb.addFiles(userFiles=self.config.JobType.inputFiles)
 
         configArguments['userSandbox'] = tarFilename
-        configArguments['InputDataset'] = self.config.Data.inputDatasetList
+        configArguments['InputDataset'] = self.config.Data.inputDataset
 
         # Create CMSSW config
         cmsswCfg = CMSSWConfig(config=self.config, logger=self.logger,
