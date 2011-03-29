@@ -38,6 +38,8 @@ class CMSSWTest(unittest.TestCase):
         # Extend simple config
         testWMConfig.JobType.inputFiles = []
         testWMConfig.JobType.psetName    = 'unittest_cfg.py'
+        self.reqConfig = {}
+        self.reqConfig['RequestorDN']    = "/DC=org/DC=doegrids/OU=People/CN=Eric Vaandering 768123"
 
         # Write a test python config file to run tests on
         with open(testWMConfig.JobType.psetName,'w') as f:
@@ -73,7 +75,7 @@ class CMSSWTest(unittest.TestCase):
         """
 
         cmssw = CMSSW(config=testWMConfig, logger=self.logger, workingdir=None)
-        cmssw.run()
+        cmssw.run(self.reqConfig)
 
     def testOutputFiles(self):
         """
@@ -82,17 +84,18 @@ class CMSSWTest(unittest.TestCase):
         """
         outputFiles = ['histograms.root', 'output.root', 'output2.root']
         cmssw = CMSSW(config=testWMConfig, logger=self.logger, workingdir=None)
-        _dummy, configArguments = cmssw.run()
+        _dummy, configArguments = cmssw.run(self.reqConfig)
         self.assertEqual(configArguments['outputFiles'], outputFiles)
-        self.assertTrue(configArguments['userSandbox'])
-        self.assertTrue(os.path.getsize(configArguments['userSandbox']) > 0)
+        # Disabled for first version with no OSB
+        #self.assertTrue(configArguments['userSandbox'])
+        #self.assertTrue(os.path.getsize(configArguments['userSandbox']) > 0)
 
     def testScramOut(self):
         """
         Make sure return arguments contain SCRAM info
         """
         cmssw = CMSSW(config=testWMConfig, logger=self.logger, workingdir=None)
-        _dummy, configArguments = cmssw.run()
+        _dummy, configArguments = cmssw.run(self.reqConfig)
         self.assertEqual(configArguments['ScramArch'],    os.environ['SCRAM_ARCH'])
         self.assertEqual(configArguments['CMSSWVersion'], os.environ['CMSSW_VERSION'])
 
@@ -101,7 +104,7 @@ class CMSSWTest(unittest.TestCase):
         Make sure return arguments contain other stuff eventually in WMSpec
         """
         cmssw = CMSSW(config=testWMConfig, logger=self.logger, workingdir=None)
-        _dummy, configArguments = cmssw.run()
+        _dummy, configArguments = cmssw.run(self.reqConfig)
         self.assertTrue(len(configArguments['InputDataset']) > 0)
         self.assertTrue(configArguments.has_key('ProcessingVersion'))
         self.assertTrue(configArguments.has_key('AnalysisConfigCacheDoc'))

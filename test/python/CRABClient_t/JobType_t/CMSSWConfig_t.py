@@ -21,9 +21,11 @@ testWMConfig = Configuration()
 testWMConfig.section_("JobType")
 testWMConfig.JobType.pluginName  = 'CMSSW'
 testWMConfig.section_("Data")
-testWMConfig.Data.inputDatasetList = ['/cms/data/set']
+testWMConfig.Data.inputDataset = '/cms/data/set'
 testWMConfig.section_("General")
 testWMConfig.General.server_url    = 'crabas.lnl.infn.it:8888'
+testWMConfig.section_("User")
+testWMConfig.User.group    = 'Analysis'
 
 #### Test CMSSW python config
 
@@ -75,6 +77,8 @@ class CMSSWConfigTest(unittest.TestCase):
         # Write a test python config file to run tests on
         with open('unittest_cfg.py','w') as cfgFile:
             cfgFile.write(testCMSSWConfig)
+        self.reqConfig = {}
+        self.reqConfig['RequestorDN']    = "/DC=org/DC=doegrids/OU=People/CN=Eric Vaandering 768123"
 
 
     def tearDown(self):
@@ -136,8 +140,10 @@ class CMSSWConfigTest(unittest.TestCase):
         """
         cmsConfig = CMSSWConfig(config=testWMConfig, userConfig='unittest_cfg.py', logger=self.logger)
         cmsConfig.writeFile('unit_test_full.py')
-        cmsConfig.upload()
-        # TODO Assert that it worked
+        result = cmsConfig.upload(self.reqConfig)
+
+        self.assertTrue(result[0]['DocID'])
+
 
 
 if __name__ == '__main__':
