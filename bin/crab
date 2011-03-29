@@ -23,6 +23,18 @@ from socket import error as SocketError
 from CRABClient import Handler
 
 
+class MyNullHandler(logging.Handler):
+    """
+    TODO: Python 2.7 supplies a null handler that will replace this.
+    """
+    def emit(self, record):
+        """
+        TODO: Python 2.7 supplies a null handler that will replace this.
+        """
+        pass
+
+
+
 def getOptionsLogger(client):
     """
     Get the command to run, the options to pass it and a logger instance
@@ -95,6 +107,9 @@ def getOptionsLogger(client):
     console.setLevel(loglevel)
     logger.addHandler(console)
 
+    tbLogger = logging.getLogger('CRAB3:traceback')
+    nh = MyNullHandler()
+    tbLogger.addHandler(nh)
 
     # Replace excepthook with logger
     def log_exception(exc_type, exc_value, tback):
