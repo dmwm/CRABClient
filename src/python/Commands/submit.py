@@ -60,7 +60,7 @@ def submit(logger, configuration, server, options, requestname, requestarea):
     if configuration.JobType.pluginName not in jobtypes:
         raise NameError("JobType %s not found or not supported." % configuration.JobType.pluginName)
     plugjobtype = jobtypes[upper(configuration.JobType.pluginName)](configuration, logger, requestarea)
-    inputfiles, jobconfig = plugjobtype.run()
+    inputfiles, jobconfig = plugjobtype.run(defaultconfigreq)
 
     defaultconfigreq.update(jobconfig)
 

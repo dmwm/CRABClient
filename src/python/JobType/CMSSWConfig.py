@@ -3,10 +3,12 @@ Module to handle CMSSW _cfg.py file
 """
 
 import imp
+import json
 import os
 
 from FWCore.ParameterSet.Modules import OutputModule
 from ServerInteractions import HTTPRequests
+from PSetTweaks.WMTweak import makeTweak
 
 class CMSSWConfig(object):
     """
@@ -30,19 +32,38 @@ class CMSSWConfig(object):
             self.fullConfig = imp.load_module(cfgBaseName, modPath[0],
                                               modPath[1],  modPath[2])
 
-    def upload(self):
+            self.tweakJson = makeTweak(self.fullConfig.process).jsonise()
+
+
+    def upload(self, requestConfig):
         """
         Upload the config file to the server
         """
+
         if not self.outputFile:
             raise RuntimeError('You must write out the config before uploading it')
 
         url = self.config.General.server_url
         server = HTTPRequests(url)
+        if not server:
+            raise RuntimeError('No server specified for config upload')
 
-        self.logger.debug('POSTing config file to server %s' % url)
-        result = server.post(uri = 'crabinterface/crab/config',  data = {})
-        self.logger.debug('Result of POST: %s')
+        with open(self.outputFile) as cfgFile:
+            configString = cfgFile.read()
+
+        group  = self.config.User.group
+        userDN = requestConfig['RequestorDN']
+
+        data = {'ConfFile'   : configString, 'PsetHash'    : '',
+                'Group'      : group,        'UserDN'    : userDN,
+                'Label'      : '',           'Description' : '',
+                'PsetTweaks' : self.tweakJson,
+               }
+        jsonString = json.dumps(data, sort_keys=False)
+
+        result = server.post(uri='/crabinterface/crab/config/', data=jsonString)
+        self.logger.debug('Result of POST: %s' % str(result))
+        return result
 
 
     def writeFile(self, filename= 'CMSSW.py'):

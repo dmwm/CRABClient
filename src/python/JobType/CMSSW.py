@@ -16,7 +16,7 @@ class CMSSW(BasicJobType):
     """
 
 
-    def run(self):
+    def run(self, requestConfig):
         """
         Override run() for JobType
         """
@@ -43,7 +43,7 @@ class CMSSW(BasicJobType):
         with UserTarball(name=tarFilename, logger=self.logger) as tb:
             tb.addFiles(userFiles=self.config.JobType.inputFiles)
 
-        # The first prototype will not have the user sanbox. 
+        # The first prototype will not have the user sandbox.
         #configArguments['userSandbox'] = tarFilename
         configArguments['InputDataset'] = self.config.Data.inputDataset
 
@@ -58,8 +58,8 @@ class CMSSW(BasicJobType):
 
         # Write out CMSSW config
         cmsswCfg.writeFile(cfgOutputName)
-        # result = cmsswCfg.upload()
-        configArguments['CMSSWConfig'] = 'DUMMY' # parse result when available
+        result = cmsswCfg.upload(requestConfig)
+        configArguments['AnalysisConfigCacheDoc'] = result[0]['DocID']
         return tarFilename, configArguments
 
 
