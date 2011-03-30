@@ -79,12 +79,12 @@ class Handler(object):
         url = self.configuration.General.server_url
         self.server = HTTPRequests(url)
         serverinfo = self.runCommand('serverinfo')[1]
-        self.configuration.General.serverdn   = serverinfo['AgentDN']
+        self.configuration.General.serverdn   = serverinfo['server_dn']
         self.configuration.General.myproxy    = serverinfo['my_proxy']
-        self.configuration.General.sbservhost = serverinfo['SandBoxCacheEndpoint']
-        self.configuration.General.sbservport = serverinfo['port']
-        self.configuration.General.sbservtype = serverinfo['sandboxCacheType']
-        self.configuration.General.sbservpath = serverinfo['basepath']
+        self.configuration.General.sbservhost = serverinfo['sandbox']['endpoint']
+        self.configuration.General.sbservport = serverinfo['sandbox']['port']
+        self.configuration.General.sbservtype = serverinfo['sandbox']['type']
+        self.configuration.General.sbservpath = serverinfo['sandbox']['basepath']
         if cmd in ['submit']:
             self.requestarea, \
             self.requestname = createWorkArea( self.logger,
