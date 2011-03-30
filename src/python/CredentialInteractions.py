@@ -50,15 +50,9 @@ class CredentialInteractions(object):
 
         if proxytimeleft < timeleftthreshold:
             # creating the proxy
-            try:
-                self.logger.debug("Creating a proxy long %s" % self.defaultDelegation['proxyValidity'] )
-                userproxy.create()
-                self.logger.debug("Proxy created.")
-            ## eventually it raises a generic exception
-            except Exception, ex:
-                msg = "Problem when creating a voms proxy: %s " % str(ex)
-                self.logger.error( msg )
-                raise Exception( msg )
+            self.logger.debug("Creating a proxy for %s hours" % self.defaultDelegation['proxyValidity'] )
+            userproxy.create()
+            self.logger.debug("Proxy created.")
 
         return userproxy.getSubject( )
 
@@ -71,24 +65,18 @@ class CredentialInteractions(object):
 
         myproxytimeleft = 0
         try:
-            self.logger.debug("Getting my-proxy life time left for %s" % self.defaultDelegation["myProxySvr"])
+            self.logger.debug("Getting myproxy life time left for %s" % self.defaultDelegation["myProxySvr"])
             # does it return an integer that indicates?
             myproxytimeleft = myproxy.getMyProxyTimeLeft( serverRenewer = True )
-            self.logger.debug("My-proxy is valid: %i" % myproxytimeleft)
+            self.logger.debug("Myproxy is valid: %i" % myproxytimeleft)
         except Exception, ex:
-            msg = "Problem checking my-proxy life time: %s " % str(ex)
+            msg = "Problem checking myproxy life time: %s " % str(ex)
             self.logger.error( msg )
 
         if myproxytimeleft < timeleftthreshold:
             # creating the proxy
-            try:
-                self.logger.debug("Delegating a my-proxy long %s" % self.defaultDelegation['myproxyValidity'] )
-                myproxy.delegate( serverRenewer = True )
-                self.logger.debug("My-proxy delegated.")
-            ## eventually it raises a generic exception
-            except Exception, ex:
-                msg = "Problem when creating a voms proxy: %s " % str(ex)
-                self.logger.error( msg )
-                raise Exception( msg )
+            self.logger.debug("Delegating a myproxy for %s days" % self.defaultDelegation['myproxyValidity'] )
+            myproxy.delegate( serverRenewer = True )
+            self.logger.debug("My-proxy delegated.")
 
 

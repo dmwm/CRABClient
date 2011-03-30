@@ -35,9 +35,9 @@ def submit(logger, configuration, server, options, requestname, requestarea):
                    "UserDN"   : "unknown"
                   }
 
-    logger.info("Checking cerdentials")
+    logger.info("Checking credentials")
     userdefault['UserDN'] = proxy.createNewVomsProxy( timeleftthreshold = 600 )
-    logger.info("Registering user cerdentials")
+    logger.info("Registering user credentials")
     proxy.createNewMyProxy( timeleftthreshold = 60 * 60 * 24 * 3)
 
     logger.debug("Registering the user on the server")
