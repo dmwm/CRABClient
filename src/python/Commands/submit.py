@@ -55,6 +55,10 @@ def submit(logger, configuration, server, options, requestname, requestarea):
     defaultconfigreq["RequestName"] = requestname
     defaultconfigreq["RequestorDN"] = userdefault["UserDN"]
 
+    #AsyncStageOut parameter
+    if getattr(configuration.User, "storageSite", None):
+        defaultconfigreq["asyncDest"] = configuration.User.storageSite
+
     ## create job types
     jobtypes = getJobTypes()
     if configuration.JobType.pluginName not in jobtypes:
