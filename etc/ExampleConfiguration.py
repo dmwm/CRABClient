@@ -30,4 +30,4 @@ config.User.role = '/cms/integration'
 config.User.team  = 'Analysis'
 config.User.group = 'Analysis'
 config.User.email = ''
-
+config.User.storageSite = 'T2_XX_XXX'
