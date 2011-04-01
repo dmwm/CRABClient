@@ -20,7 +20,8 @@ def submit(logger, configuration, server, options, requestname, requestarea):
     proxy = CredentialInteractions(
                                     configuration.General.serverdn,
                                     configuration.General.myproxy,
-                                    getattr(configuration.User, "role", ""),
+                                    getattr(configuration.User, "vorole", ""),
+                                    getattr(configuration.User, "vogroup", ""),
                                     logger
                                   )
     uniquerequestname = None
@@ -54,6 +55,41 @@ def submit(logger, configuration, server, options, requestname, requestarea):
     defaultconfigreq["Username"]    = userdefault['Username']
     defaultconfigreq["RequestName"] = requestname
     defaultconfigreq["RequestorDN"] = userdefault["UserDN"]
+
+    if getattr(configuration, 'Site', None) is not None:
+        if len( getattr(configuration.Site, "whitelist", []) ) > 0:
+            defaultconfigreq["SiteWhitelist"] = configuration.Site.whitelist
+
+        if len( getattr(configuration.Site, "blaklist", []) ) > 0:
+            defaultconfigreq["SiteBlacklist"] = configuration.Site.blackist
+
+    if len( getattr(configuration.Data, "runWhitelist", []) ) > 0:
+        defaultconfigreq["RunWhitelist"] = configuration.Data.runWhitelist
+
+    if len( getattr(configuration.Data, "runBlacklist", []) ) > 0:
+        defaultconfigreq["RunBlacklist"] = configuration.Data.runBlacklist
+
+    if len( getattr(configuration.Data, "blockWhitelist", []) ) > 0:
+        defaultconfigreq["BlockWhitelist"] = configuration.Data.blockWhitelist
+
+    if len( getattr(configuration.Data, "blockBlacklist", []) ) > 0:
+        defaultconfigreq["BlockBlacklist"] = configuration.Data.blockBlacklist
+
+    defaultconfigreq["DbsUrl"] = getattr(configuration.Data, "dbsUrl", \
+                                    "http://cmsdbsprod.cern.ch/cms_dbs_prod_global/servlet/DBSServlet")
+
+    if len( getattr(configuration.Data, "splitting", "") ) > 0:
+        defaultconfigreq["JobSlitAlgo"] = configuration.Data.splitting
+
+
+    filesJob = getattr( configuration.Data, "filesPerJob", None)
+    eventsJob = getattr( configuration.Data, "eventsPerJob", None)
+
+    #if both arguments are specified return an error
+    if (filesJob is not None) and (eventsJob is not None):
+        msg = "You cannot specify both filesPerJob and eventsPerJob parameters. Please choose one."
+        logger.error(msg)
+        return CommandResult(1, msg)
 
     #AsyncStageOut parameter
     if getattr(configuration.User, "storageSite", None):
