@@ -17,17 +17,31 @@ config.General.requestName   = 'MyAnalysis_1'
 config.section_("JobType")
 config.JobType.pluginName  = 'Cmssw'
 config.JobType.psetName    = 'pset.py'
-config.JobType.inputFiles  = ['/tmp/input_file']
+#config.JobType.inputFiles  = ['/tmp/input_file']
 
 ## Specific data options
 config.section_("Data")
 config.Data.inputDataset = '/cms/data/set'
-config.Data.lumiSectionFile  = '/file/path/name'
+#config.Data.splitting = 'RunBased'
+#config.Data.splitting = 'EventBased'
+#config.Data.blockWhitelist = [1000000]
+#config.Data.blockBlacklist = [1000000,200000]
+#config.Data.runWhitelist = [1,2]
+#config.Data.runBlacklist = [1,2]
+#config.Data.filesPerJob = 10
+#config.Data.eventsPerJob = 100
+#config.Data.dbsUrl = "http://cmsdbsprod.cern.ch/cms_dbs_prod_global/servlet/DBSServlet"
+
 
 ## User options
 config.section_("User")
-config.User.role = '/cms/integration'
+config.User.vorole  = ''
+config.User.vogroup = '/cms/integration'
 config.User.team  = 'Analysis'
 config.User.group = 'Analysis'
 config.User.email = ''
 config.User.storageSite = 'T2_XX_XXX'
+
+config.section_("Site")
+#config.Site.whitelist = "T2_XY_XXY"
+#config.Site.blacklist = "T2_XZ_XXZ"
