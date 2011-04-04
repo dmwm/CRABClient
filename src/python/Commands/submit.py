@@ -79,7 +79,7 @@ def submit(logger, configuration, server, options, requestname, requestarea):
                                     "http://cmsdbsprod.cern.ch/cms_dbs_prod_global/servlet/DBSServlet")
 
     if len( getattr(configuration.Data, "splitting", "") ) > 0:
-        defaultconfigreq["JobSlitAlgo"] = configuration.Data.splitting
+        defaultconfigreq["JobSplitAlgo"] = configuration.Data.splitting
 
 
     filesJob = getattr( configuration.Data, "filesPerJob", None)
@@ -90,6 +90,12 @@ def submit(logger, configuration, server, options, requestname, requestarea):
         msg = "You cannot specify both filesPerJob and eventsPerJob parameters. Please choose one."
         logger.error(msg)
         return CommandResult(1, msg)
+
+    if filesJob is not None:
+        defaultconfigreq["JobSplitArgs"] = {"files_per_job" : filesJob}
+
+    if eventsJob is not None:
+        defaultconfigreq["JobSplitArgs"] = {"events_per_job" : eventsJob}    
 
     #AsyncStageOut parameter
     if getattr(configuration.User, "storageSite", None):
