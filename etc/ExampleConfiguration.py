@@ -35,8 +35,8 @@ config.Data.inputDataset = '/cms/data/set'
 
 ## User options
 config.section_("User")
-config.User.vorole  = ''
-config.User.vogroup = '/cms/integration'
+#config.User.vorole  = ''
+#config.User.vogroup = '/cms/integration'
 config.User.team  = 'Analysis'
 config.User.group = 'Analysis'
 config.User.email = ''

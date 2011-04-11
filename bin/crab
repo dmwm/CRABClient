@@ -9,7 +9,8 @@ it simply:
 """
 import sys
 if sys.version_info < (2, 6):
-    raise Exception('Error: using a version of python < 2.6. Exiting...')
+    print '\nError: using a version of python < 2.6. Exiting...\n'
+    sys.exit()
 
 import json
 import logging
@@ -140,9 +141,15 @@ def getOptionsLogger(client):
             # if the command isn't known the client handler will raise
             for option in client.commands[command]['options']:
                 commandoptions[option.name] = getattr(options, option.name)
+        else:
+            logger.critical('Unknown command: %s' % command)
+            logger.info("available commands are: %s" % (", ".join(client.commands.keys())))
+            logger.info('please try crab -h')
+            sys.exit(1)
     except IndexError:
         logger.critical("You must specify a command to run")
         logger.info("available commands are: %s" % (" ".join(client.commands.keys())))
+        logger.info('please try crab -h')
         logging.getLogger('CRAB3:traceback').exception('Caught exception:')
         sys.exit(1)
     # If we've got this far the user has given a sane set of arguments to
