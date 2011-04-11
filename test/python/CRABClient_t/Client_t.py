@@ -75,4 +75,3 @@ testConfig.User.role = '/cms/integration'
 
 if __name__ == "__main__":
     unittest.main()
-

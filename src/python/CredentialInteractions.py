@@ -12,7 +12,7 @@ class CredentialInteractions(object):
     for all the client commands.
     '''
 
-    def __init__(self, serverdn, myproxy, role, logger):
+    def __init__(self, serverdn, myproxy, role, group, logger):
         '''
         Constructor
         '''
@@ -24,7 +24,7 @@ class CredentialInteractions(object):
                                   'proxyValidity'  : '24:00',
                                   'myproxyValidity': '7',
                                   'serverDN' :       serverdn,
-                                  #'group' :          group,
+                                  'group' :          group,
                                   'role':            role
                                   }
 
