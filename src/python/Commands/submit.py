@@ -5,7 +5,6 @@ This is simply taking care of job submission
 from CredentialInteractions import CredentialInteractions
 from Commands import CommandResult
 from client_utilities import getJobTypes
-import getpass
 import json
 import os
 from client_utilities import createCache
@@ -29,7 +28,6 @@ def submit(logger, configuration, server, options, requestname, requestarea):
     defaultconfigreq = {"RequestType" : "Analysis"}
 
     userdefault = {
-                   "Username" : getpass.getuser(),
                    "Group"    : getattr(configuration.User, "group", "Analysis"),
                    "Team"     : getattr(configuration.User, "team", "Analysis"),
                    "Email"    : configuration.User.email,
@@ -51,8 +49,8 @@ def submit(logger, configuration, server, options, requestname, requestarea):
 
     defaultconfigreq["Group"] = userdefault["Group"]
     defaultconfigreq["Team"]  = userdefault["Team"]
-    defaultconfigreq["Requestor"]   = userdefault['Username']
-    defaultconfigreq["Username"]    = userdefault['Username']
+    defaultconfigreq["Requestor"]   = dictresult['hn_name']
+    defaultconfigreq["Username"]    = dictresult['hn_name']
     defaultconfigreq["RequestName"] = requestname
     defaultconfigreq["RequestorDN"] = userdefault["UserDN"]
 
@@ -103,7 +101,7 @@ def submit(logger, configuration, server, options, requestname, requestarea):
 
     ## create job types
     jobtypes = getJobTypes()
-    if configuration.JobType.pluginName not in jobtypes:
+    if upper(configuration.JobType.pluginName) not in jobtypes:
         raise NameError("JobType %s not found or not supported." % configuration.JobType.pluginName)
     plugjobtype = jobtypes[upper(configuration.JobType.pluginName)](configuration, logger, requestarea)
     inputfiles, jobconfig = plugjobtype.run(defaultconfigreq)
