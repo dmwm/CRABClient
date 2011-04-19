@@ -41,7 +41,8 @@ class CMSSW(BasicJobType):
             _dummy, cfgOutputName = tempfile.mkstemp(suffix='_cfg.py')
 
         with UserTarball(name=tarFilename, logger=self.logger) as tb:
-            tb.addFiles(userFiles=self.config.JobType.inputFiles)
+            if getattr(self.config.JobType, 'inputFiles', None) is not None:
+                tb.addFiles(userFiles=self.config.JobType.inputFiles)
 
         # The first prototype will not have the user sandbox.
         #configArguments['userSandbox'] = tarFilename
@@ -70,8 +71,8 @@ class CMSSW(BasicJobType):
         """
 
         result = (True, '')
-        if getattr(config.JobType, 'inputFiles', None) is None:
-            result = (False, "Missing 'JobType.inputFiles' parameter")
+        if getattr(config.JobType, 'psetName', None) is None:
+            result = (False, "Missing 'JobType.psetName' parameter")
 
         return result
 
