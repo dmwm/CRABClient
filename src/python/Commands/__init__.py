@@ -18,6 +18,8 @@ from Commands.server_info import server_info
 from Commands.status import status
 from Commands.submit import submit
 from Commands.job_types import job_types
+from Commands.getoutput import getoutput
+from Commands.remote_copy import remote_copy
 
 
-__all__ = ['CommandResult', 'submit', 'status', 'server_info', 'job_types']
+__all__ = ['CommandResult', 'submit', 'status', 'server_info', 'job_types', 'getoutput', 'remote_copy']

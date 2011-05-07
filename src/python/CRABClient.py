@@ -41,12 +41,15 @@ class Handler(object):
 
         self.commands['submit'] = {'function': submit, 'options': []}
 
-        msg = 'Detailed query of tasks specified, can query a list'
-        statusoptions = Options('task', 't', msg, None, "append")
-
-        self.commands['status'] = {'function': status, 'options': [statusoptions]}
+        self.commands['status'] = {'function': status, 'options': []}
 
         self.commands['serverinfo'] = {'function': server_info, 'options': []}
+
+        msg = 'Retrieving the job output directly from the storage element, it takes a list or range as input'
+        rangoutputoptions = Options('range', 'r', msg, None, 'append')
+        msg = 'Where the output files retrieved will be stored in the local file system'
+        destoutputoptions = Options('outputpath', 'o', msg, None, 'append')
+        self.commands['getoutput'] = {'function': getoutput, 'options': [rangoutputoptions, destoutputoptions]}
 
     def version(self):
         """
@@ -71,7 +74,7 @@ class Handler(object):
             self.configuration = loadConfigurationFile(config)
         # TODO: Validate self.configuration here
 
-    def initialise(self, cmd, opt):
+    def initialise(self, cmd, opt, task):
         """
         Contact the server, get its configuration e.g. MyProxy server, local SE.
         then set up a handler for dealing with credentials
@@ -93,23 +96,27 @@ class Handler(object):
                                              )
             self.logger.debug("Working on %s" % str(self.requestarea))
         else:
-            if opt is not None:
-                if 'task' in opt.keys():
-                    self.requestarea = opt['task'][0]
+            if task is not None:
+                if os.path.isabs( task ):
+                    self.requestarea = task
                     self.requestname = os.path.split(os.path.normpath(self.requestarea))[1]
+                else:
+                    self.requestarea = os.path.abspath( task )
+                    self.requestname = task
 
-    def __call__(self, command, commandoptions=None):
+    def __call__(self, command, commandoptions = None, task = None):
         """
         Initialise the client, run the command and return the exit code
         """
-        self.initialise(command, commandoptions)
+        self.initialise(command, commandoptions, task)
 
         self.logger.info("Request name: %s " % str(self.requestname) )
         self.logger.info("Working area: %s " % str(self.requestarea) )
         exitcode, data = self.runCommand(command, commandoptions)
+        self.logger.info( str(data) )
         return exitcode
 
-    def runCommand(self, command, commandoptions=None):
+    def runCommand(self, command, commandoptions = None):
         """
         Execute the command specified and return the exitcode. Exceptions are handled
         by whatever calls the class - this is a library not a client.

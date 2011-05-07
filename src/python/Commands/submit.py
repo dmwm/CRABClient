@@ -58,8 +58,8 @@ def submit(logger, configuration, server, options, requestname, requestarea):
         if len( getattr(configuration.Site, "whitelist", []) ) > 0:
             defaultconfigreq["SiteWhitelist"] = configuration.Site.whitelist
 
-        if len( getattr(configuration.Site, "blaklist", []) ) > 0:
-            defaultconfigreq["SiteBlacklist"] = configuration.Site.blackist
+        if len( getattr(configuration.Site, "blacklist", []) ) > 0:
+            defaultconfigreq["SiteBlacklist"] = configuration.Site.blacklist
 
     if len( getattr(configuration.Data, "runWhitelist", []) ) > 0:
         defaultconfigreq["RunWhitelist"] = configuration.Data.runWhitelist
@@ -103,7 +103,7 @@ def submit(logger, configuration, server, options, requestname, requestarea):
     jobtypes = getJobTypes()
     if upper(configuration.JobType.pluginName) not in jobtypes:
         raise NameError("JobType %s not found or not supported." % configuration.JobType.pluginName)
-    plugjobtype = jobtypes[upper(configuration.JobType.pluginName)](configuration, logger, requestarea)
+    plugjobtype = jobtypes[upper(configuration.JobType.pluginName)](configuration, logger, os.path.join(requestarea, 'inputs'))
     inputfiles, jobconfig = plugjobtype.run(defaultconfigreq)
 
     defaultconfigreq.update(jobconfig)

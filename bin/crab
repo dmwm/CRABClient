@@ -53,12 +53,16 @@ def getOptionsLogger(client):
     parser.add_option("-v", "--verbose", dest = "verbose", default = True,
                    action  = "store_true", help = "Be verbose in out put")
 
-    # I'm not sure this is a good idea...
-    parser.add_option("--detailed-server-interaction", dest = "show_server",
-                 default = False, action  = "store_true",
-                 help = "Show detailed server interaction, including JSON " + \
-                        "sent to/from server. WARNING: Extremely verbose!"
-                )
+    parser.add_option( '-t', '--task', dest = "task", default = None,
+                       help = 'Detailed query of tasks specified, can query a list' )
+
+    # Simon: I'm not sure this is a good idea...
+    # MATTIA: commenting till not needed/implemented
+    #parser.add_option("--detailed-server-interaction", dest = "show_server",
+    #             default = False, action  = "store_true",
+    #             help = "Show detailed server interaction, including JSON " + \
+    #                    "sent to/from server. WARNING: Extremely verbose!"
+    #            )
 
     # by default look for crab_cfg.py file in current working directory
     parser.add_option("-c", "--config", dest = "config",
@@ -88,7 +92,6 @@ def getOptionsLogger(client):
         parser.add_option_group(group)
 
     options, args = parser.parse_args()
-
     # Set up the logger and exception handling
 
     # Log verbosely
@@ -174,6 +177,7 @@ if __name__ == "__main__":
     exitcode = 0
 
     try:
+        ## MATTIA: with this is required a configuration file for all the commands?
         #if cmd in ['submit']:
         if not os.path.isabs(opt.config):
             opt.config = os.path.abspath(opt.config)
@@ -187,7 +191,7 @@ if __name__ == "__main__":
 
     if exitcode == 0:
         try:
-            exitcode = client(cmd, cmdoptions)
+            exitcode = client(cmd, cmdoptions, opt.task)
         except KeyError, ke:
             # The single quotes in KeyErrors are annoying...
             logging.getLogger('CRAB3:traceback').exception('Caught exception')
