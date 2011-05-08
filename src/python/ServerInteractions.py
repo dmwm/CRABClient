@@ -47,25 +47,25 @@ class HTTPRequests(dict):
         """
         GET some data
         """
-        return self.makeRequest(uri, data, 'GET')
+        return self.makeRequest(uri = uri, data = data, verb = 'GET')
 
     def post(self, uri = None, data = {}):
         """
         POST some data
         """
-        return self.makeRequest(uri, data, 'POST')
+        return self.makeRequest(uri = uri, data = data, verb = 'POST')
 
     def put(self, uri = None, data = {}):
         """
         PUT some data
         """
-        return self.makeRequest(uri, data, 'PUT')
+        return self.makeRequest(uri = uri, data = data, verb = 'PUT')
 
     def delete(self, uri = None, data = {}):
         """
         DELETE some data
         """
-        return self.makeRequest(uri, data)
+        return self.makeRequest(uri = uri, data = data)
 
     def makeRequest(self, uri = None, data = {}, verb = 'GET',
                      encoder = True, decoder = True, contentType = None):
@@ -92,13 +92,14 @@ class HTTPRequests(dict):
         elif verb == 'GET' and data:
             #encode the data as a get string
             uri = "%s?%s" % (uri, urllib.urlencode(data, doseq = True))
+            data = {}
 
         self['conn'].connect()
-
         self['conn'].request(verb, uri, data, headers)
         response = self['conn'].getresponse()
         result = response.read()
         self['conn'].close()
+
         if response.status >= 400:
             e = HTTPException()
             setattr(e, 'req_data', data)
