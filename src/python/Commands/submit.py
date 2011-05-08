@@ -7,6 +7,7 @@ from Commands import CommandResult
 from client_utilities import getJobTypes
 import json
 import os
+import time
 from client_utilities import createCache
 from string import upper
 
@@ -31,7 +32,10 @@ def submit(logger, configuration, server, options, requestname, requestarea):
                    "Group"    : getattr(configuration.User, "group", "Analysis"),
                    "Team"     : getattr(configuration.User, "team", "Analysis"),
                    "Email"    : configuration.User.email,
-                   "UserDN"   : "unknown"
+                   "UserDN"   : "unknown", 
+                   "SaveLogs" : getattr(configuration.General, "saveLogs", False), 
+                   "PublishDataName" : getattr(configuration.Data, "publishDataName", str(time.time())), 
+                   "ProcessingVersion" : getattr(configuration.Data, "processingVersion", 'v1'), 
                   }
 
     logger.info("Checking credentials")
@@ -47,8 +51,10 @@ def submit(logger, configuration, server, options, requestname, requestarea):
         msg = "Problem registering user:\ninput:%s\noutput:%s\nreason:%s" % (str(userdefault), str(dictresult), str(reason))
         return CommandResult(1, msg)
 
-    defaultconfigreq["Group"] = userdefault["Group"]
-    defaultconfigreq["Team"]  = userdefault["Team"]
+    # Most of the keys are just copied straight over from userdefault 
+    copyKeys = ["Group", "Team", "Username", "PublishDataName", "ProcessingVersion", "SaveLogs", ] 
+    for key in copyKeys: 
+        defaultconfigreq[key] = userdefault[key] 
     defaultconfigreq["Requestor"]   = dictresult['hn_name']
     defaultconfigreq["Username"]    = dictresult['hn_name']
     defaultconfigreq["RequestName"] = requestname
