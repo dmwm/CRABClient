@@ -75,7 +75,7 @@ class CMSSWConfig(object):
         self.logger.debug("Writing CMSSW config to %s" % self.outputFile)
         outFile = open(filename, "wb")
         outFile.write("import FWCore.ParameterSet.Config as cms\n")
-        outFile.write(self.fullConfig.process.dumpPython())
+        outFile.write(self.fullConfig.process.dumpConfig())
         outFile.close()
 
         # Would like to store as a single pickle string rather than dumpPython

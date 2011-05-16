@@ -88,6 +88,25 @@ def getJobTypes(jobtypepath = 'JobType'):
     return getPlugins(jobtypepath, ['BasicJobType'])
 
 
+
+def getAvailCommands(subcmdpath = 'Commands'):
+    """
+    _getJobTypes_
+
+    wrap the dynamic plug-in import for the available job types
+
+    TODO: this can also be a call to get a specific job type from the server
+    """
+
+    subcmdplugins = getPlugins(subcmdpath, ['SubCommand'])
+    result = {}
+    for k in subcmdplugins.keys():
+        if subcmdplugins[k].visible:
+            result[k] = subcmdplugins[k]
+
+    return result
+
+
 def getRequestName(requestName = None):
     """
     _getRequestName_
@@ -107,6 +126,7 @@ def addFileLogger(logger, workingpath, logname = 'crab.log'):
     """
     _addFileLogger_
     """
+    import os
     logfullpath = os.path.join( workingpath, logname )
     logger.debug("Setting log file %s " % logfullpath)
 
@@ -164,13 +184,29 @@ def createWorkArea(logger, workingArea = '.', requestName = ''):
 def createCache(requestarea, server, uniquerequestname):
     touchfile = open(os.path.join(requestarea, '.requestcache'), 'w')
     neededhandlers = {
-                      "Server:" : server['conn'].host,
-                      "Port:" : server['conn'].port,
+                      "Server" : server['conn'].host,
+                      "Port" : server['conn'].port,
                       "RequestName" : uniquerequestname
                      }
     cPickle.dump(neededhandlers, touchfile)
     touchfile.close()
 
-def loadCache(requestarea):
+
+def getWorkArea( task ):
+    requestarea = ''
+    requestname = ''
+    if os.path.isabs( task ):
+        requestarea = task
+        requestname = os.path.split(os.path.normpath(requestarea))[1]
+    else:
+        requestarea = os.path.abspath( task )
+        requestname = task
+    return requestarea, requestname
+
+
+def loadCache( task, logger ):
+    requestarea, requestname = getWorkArea( task )
     loadfile = open(os.path.join(requestarea, '.requestcache'), 'r')
+    addFileLogger( logger, workingpath = requestarea )
     return cPickle.load(loadfile) 
+

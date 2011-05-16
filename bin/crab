@@ -23,6 +23,8 @@ from socket import error as SocketError
 
 from CRABClient import Handler
 
+from client_utilities import getAvailCommands
+
 
 class MyNullHandler(logging.Handler):
     """
@@ -35,133 +37,112 @@ class MyNullHandler(logging.Handler):
         pass
 
 
+class CRABClient(object):
+    def __init__( self ):
+        """
+        Get the command to run, the options to pass it and a logger instance
+        at appropriate level
+        """
 
-def getOptionsLogger(client):
-    """
-    Get the command to run, the options to pass it and a logger instance
-    at appropriate level
-    """
+        self.version = '0.1'
 
-    parser = OptionParser( usage = 'Usage: %prog <command> [options]\n\nCRAB 3 RESTful client',
-                       description = "Available commands: %s"
-                                             % client.commands.keys(),
-                       version = "CRAB client v%s" % client.version() )
+        self.sub_commands = getAvailCommands()
 
-    parser.add_option("-d", "--debug", dest = "debug", default = False,
-                 action  = "store_true", help = "Debug information showed")
+        usage  = "usage: %prog [options] COMMAND [command-options] [args]"
+        epilog = "Valid commands are: %s" % ", ".join(sorted(self.sub_commands.keys()))
+        self.parser = OptionParser( usage   = usage,
+                                    epilog  = epilog,
+                                    version = "CRAB client v%s" % self.version
+                                  )
 
-    parser.add_option("-v", "--verbose", dest = "verbose", default = True,
-                   action  = "store_true", help = "Be verbose in out put")
+        # This is the important bit
+        self.parser.disable_interspersed_args()
+        self.parser.add_option( "-q", "--quiet",
+                                action = "store_true",
+                                dest = "quiet",
+                                default = False,
+                                help = "don't print any messages to stdout" )
 
-    parser.add_option( '-t', '--task', dest = "task", default = None,
-                       help = 'Detailed query of tasks specified, can query a list' )
+        self.parser.add_option( "-d", "--debug",
+                                action = "store_true",
+                                dest = "debug",
+                                default = False,
+                                help = "print extra messages to stdout" )
 
-    # Simon: I'm not sure this is a good idea...
-    # MATTIA: commenting till not needed/implemented
-    #parser.add_option("--detailed-server-interaction", dest = "show_server",
-    #             default = False, action  = "store_true",
-    #             help = "Show detailed server interaction, including JSON " + \
-    #                    "sent to/from server. WARNING: Extremely verbose!"
-    #            )
+        self.parser.add_option( "--cmd-help",
+                                action = "store_true",
+                                dest = "cmd_help",
+                                default = False,
+                                help = "print help for COMMAND",
+                                metavar = "COMMAND" )
 
-    # by default look for crab_cfg.py file in current working directory
-    parser.add_option("-c", "--config", dest = "config",
-                      default = './crab_cfg.py',
-                      help = "Config file", metavar = "FILE")
 
-    # Auto-generate the options used by commands
-    for command in client.commands:
-        group = OptionGroup(parser, 'Help for the ' + command + ' command',
-                         client.commands[command]['function'].__doc__.strip())
-        for option in client.commands[command]['options']:
-            # option is a namedtuple('Options',
-            #                     'name, short_name, help, default, action')
-            # There must be a better way to build this tuple/dict...
-            optargs = []
-            optkwargs = {}
-            if option.name:
-                optargs.append('--%s' % option.name)
-            if option.short_name:
-                optargs.append('-%s' % option.short_name)
-            for k, v in option._asdict().items():
-                if k not in ['name', 'short_name'] and v:
-                    optkwargs[k] = v
+    def __call__(self):
+        (options, args) = self.parser.parse_args()
 
-            group.add_option(*optargs, **optkwargs)
+        # Set up the logger and exception handling
 
-        parser.add_option_group(group)
+        # Log verbosely
+        logger = logging.getLogger('CRAB3')
+        logger.setLevel(logging.DEBUG)
 
-    options, args = parser.parse_args()
-    # Set up the logger and exception handling
-
-    # Log verbosely
-    logger = logging.getLogger('CRAB3')
-    logger.setLevel(logging.DEBUG)
-
-    # Set up console output to stdout at appropriate level
-    loglevel = logging.WARNING
-    if options.verbose:
+        # Set up console output to stdout at appropriate level
         loglevel = logging.INFO
-    if options.debug:
-        loglevel = logging.DEBUG
+        if options.quiet:
+            loglevel = logging.WARNING
+        if options.debug:
+            loglevel = logging.DEBUG
 
-    console_format = '%(message)s'
-    console = logging.StreamHandler(sys.stdout)
-    console.setFormatter(logging.Formatter(console_format))
-    console.setLevel(loglevel)
-    logger.addHandler(console)
+        console_format = '%(message)s'
+        console = logging.StreamHandler(sys.stdout)
+        console.setFormatter(logging.Formatter(console_format))
+        console.setLevel(loglevel)
+        logger.addHandler(console)
 
-    tbLogger = logging.getLogger('CRAB3:traceback')
-    nh = MyNullHandler()
-    tbLogger.addHandler(nh)
-
-    # Replace excepthook with logger
-    def log_exception(exc_type, exc_value, tback):
-        """
-        Send a short version of the exception to the console,
-        a long version to the log
-
-        Adapted from Doug Hellmann
-        """
-        # This goes to the console
-        logging.getLogger('CRAB3').error("%s: %s  See logfile for more info" % (exc_type.__name__, exc_value))
-        # This goes to the log file
         tbLogger = logging.getLogger('CRAB3:traceback')
-        tbLogger.error("Unhandled Exception!")
-        tbLogger.error("\tPlease file a bug report at https://svnweb.cern.ch/trac/CMSDMWM/newticket?component=CRABClient with the following information:")
-        tbLogger.error("\tClient Version: %s" % client.version())
-        tbLogger.error(exc_value, exc_info=(exc_type, exc_value, tback))
+        nh = MyNullHandler()
+        tbLogger.addHandler(nh)
 
-    sys.excepthook = log_exception
+        self.logger = logger
 
-    # args should be a single element list containing the command to run
-    #   e.g. submit, status etc
-    # if multiple args are present take the first and ignore the rest
-    command, commandoptions = None, {}
-    try:
-        command = args[0]
-        if command in client.commands:
-            # if the command isn't known the client handler will raise
-            for option in client.commands[command]['options']:
-                commandoptions[option.name] = getattr(options, option.name)
+
+        # Replace excepthook with logger
+        def log_exception(exc_type, exc_value, tback):
+            """
+            Send a short version of the exception to the console,
+            a long version to the log
+    
+            Adapted from Doug Hellmann
+            """
+            # This goes to the console
+            logging.getLogger('CRAB3').error("%s: %s  See logfile for more info" % (exc_type.__name__, exc_value))
+            # This goes to the log file
+            tbLogger = logging.getLogger('CRAB3:traceback')
+            tbLogger.error("Unhandled Exception!")
+            tbLogger.error("\tPlease file a bug report at https://svnweb.cern.ch/trac/CMSDMWM/newticket?component=CRABClient with the following information:")
+            tbLogger.error("\tClient Version: %s" % self.version)
+            tbLogger.error(exc_value, exc_info=(exc_type, exc_value, tback))
+
+        sys.excepthook = log_exception
+
+        # check that the command is valid
+        if len(args) == 0 or args[0] not in self.sub_commands.keys():
+            print "You have not specified a valid command."
+            # Described the valid commands in epilog, reuse here
+            print self.parser.epilog
+            sys.exit(-1)
+
+        sub_cmd = args[0]
+        cmd = self.sub_commands[sub_cmd](self.logger)
+
+        if options.cmd_help:
+            # call the printHelp function for the command
+            cmd.printHelp()
         else:
-            logger.critical('Unknown command: %s' % command)
-            logger.info("available commands are: %s" % (", ".join(client.commands.keys())))
-            logger.info('please try crab -h')
-            sys.exit(1)
-    except IndexError:
-        logger.critical("You must specify a command to run")
-        logger.info("available commands are: %s" % (" ".join(client.commands.keys())))
-        logger.info('please try crab -h')
-        logging.getLogger('CRAB3:traceback').exception('Caught exception:')
-        sys.exit(1)
-    # If we've got this far the user has given a sane set of arguments to
-    # the script and we've managed to parse them into something useful:
-    #
-    # - options are the options specified by switches
-    # - command is the command the user wants to run (submit, status etc)
-    # - logger is the base logger instance to use
-    return options, command, commandoptions, logger
+            # run the command
+            (exitcode, message) = cmd(args[1:])
+            if exitcode != 0:
+                self.logger.error( message ) 
 
 
 if __name__ == "__main__":
@@ -170,54 +151,36 @@ if __name__ == "__main__":
     #  - do not want to expose known exception to the outside
     #  - exceptions thrown in the client should exit and set an approprate
     #    exit code, this is a safety net
+    from httplib import HTTPException
+    from socket import error as SocketError
 
-    client = Handler()
-    opt, cmd, cmdoptions, client.logger = getOptionsLogger(client)
-
-    exitcode = 0
-
+    exitcode = 1
+    client = CRABClient()
     try:
-        ## MATTIA: with this is required a configuration file for all the commands?
-        #if cmd in ['submit']:
-        if not os.path.isabs(opt.config):
-            opt.config = os.path.abspath(opt.config)
-        client.loadConfig(opt.config)
-    except ImportError:
-        print "Configuration file '%s' not found" % opt.config
+        client()
+        exitcode = 0
+    except KeyError, ke:
+        # The single quotes in KeyErrors are annoying...
+        logging.getLogger('CRAB3:traceback').exception('Caught exception')
+        # There will be other KeyErrors, catch them here...
+        client.logger.error("Error %s" % str(ke))
+        exitcode = 100
+    except SocketError, se:
+        msg = 'Could not establish a connection with the server at %s.\n' % client.configuration.General.server_url
+        msg += 'This may be a temporary problem, but if you see it repeatedly please notify AnaOps\n'
+        client.logger.error(msg)
+        logging.getLogger('CRAB3:traceback').exception('Caught exception')
         exitcode = 2
-    except OSError, oe:
-        print "Problem while processing the configuration and creating the workarea: %s " % str(oe)
-        exitcode = 2
+    except NameError, ne:
+        client.logger.error( str(ne) )
+        logging.getLogger('CRAB3:traceback').exception('Caught exception')
+        exitcode = 3
+    except HTTPException, he:
+        client.logger.error((" %s (%s): %s" % (he.reason, he.status, json.loads(he.result)['message'])))
+        client.logger.debug('Command failed with URI: %s' % he.url)
+        client.logger.debug('     Input data: %s' % he.req_data)
+        client.logger.debug('     Request headers: %s' % he.req_headers)
+        logging.getLogger('CRAB3:traceback').exception('Caught exception')
+        exitcode = he.status
 
-    if exitcode == 0:
-        try:
-            exitcode = client(cmd, cmdoptions, opt.task)
-        except KeyError, ke:
-            # The single quotes in KeyErrors are annoying...
-            logging.getLogger('CRAB3:traceback').exception('Caught exception')
-            if str(ke).strip("'") == cmd:
-                client.logger.error('%s is an unknown command, run crab -h for available commands' % cmd)
-                exitcode = 1
-            else:
-                # There will be other KeyErrors, catch them here...
-                client.logger.error("Error %s" % str(ke))
-                exitcode = 100
-        except SocketError, se:
-            msg = 'Could not establish a connection with the server at %s.\n' % client.configuration.General.server_url
-            msg += 'This may be a temporary problem, but if you see it repeatedly please notify AnaOps\n'
-            client.logger.error(msg)
-            logging.getLogger('CRAB3:traceback').exception('Caught exception')
-            exitcode = 2
-        except NameError, ne:
-            client.logger.error( str(ne) )
-            logging.getLogger('CRAB3:traceback').exception('Caught exception')
-            exitcode = 3
-        except HTTPException, he:
-            client.logger.error((" %s (%s): %s" % (he.reason, he.status, json.loads(he.result)['message'])))
-            client.logger.debug('Command %s failed with URI: %s' % (cmd, he.url))
-            client.logger.debug('     Input data: %s' % he.req_data)
-            client.logger.debug('     Request headers: %s' % he.req_headers)
-            logging.getLogger('CRAB3:traceback').exception('Caught exception')
-            exitcode = he.status
-
-    sys.exit(exitcode)
+    sys.exit( exitcode )
