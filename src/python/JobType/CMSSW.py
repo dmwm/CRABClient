@@ -22,6 +22,7 @@ class CMSSW(BasicJobType):
         """
         configArguments = {'outputFiles'            : [],
                            'InputDataset'           : [],
+                           'ProcessingVersion'      : '',
                            'AnalysisConfigCacheDoc' : '', }
 
         # Get SCRAM environment
@@ -45,7 +46,6 @@ class CMSSW(BasicJobType):
 
         # The first prototype will not have the user sandbox.
         #configArguments['userSandbox'] = tarFilename
-        configArguments['userFiles'] = [os.path.basename(f) for f in self.config.JobType.inputFiles] 
         configArguments['InputDataset'] = self.config.Data.inputDataset
 
         # Create CMSSW config
@@ -71,8 +71,8 @@ class CMSSW(BasicJobType):
         """
 
         result = (True, '')
-        if getattr(config.JobType, 'psetName', None) is None:
-            result = (False, "Missing 'JobType.psetName' parameter")
+        #if getattr(config.JobType, 'inputFiles', None) is None:
+        #    result = (False, "Missing 'JobType.inputFiles' parameter")
 
         return result
 

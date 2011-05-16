@@ -1,21 +1,45 @@
 from Commands import CommandResult
+from Commands.SubCommand import SubCommand
+from ServerInteractions import HTTPRequests
 
-def server_info(logger, configuration, server, options, requestname, requestarea):
+
+class server_info(SubCommand):
     """
     Get relevant information about the server
     """
-    uri = '/crabinterface/crab/info'
-    logger.debug('Looking up server information')
-    dictresult, status, reason = server.get(uri)
 
-    logger.debug("Result: %s" % dictresult)
-    ## expecting something like
-    # {u'AgentDN': '/C=IT/O=INFN/OU=Host/L=LNL/CN=crabas.lnl.infn.it', u'sandboxCacheType': 'gridFtp',
-    #  u'basepath': '/data/CSstoragePath/', u'my_proxy': 'myproxy.cern.ch',
-    #  u'SandBoxCacheEndpoint': 'crabas.lnl.infn.it', u'port': '2811'}
+    visible = False
 
-    if status != 200:
-        msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(userdefault), str(dictresult), str(reason))
-        return CommandResult(1, msg)
+    ## name should become automatically generated
+    name  = "server_info"
 
-    return CommandResult(0, dictresult) #{'myproxy': 'myproxy.cern.ch', 'server_dn': configuration.General.serverdn})
+
+    def setOptions(self):
+        """
+        __setOptions__
+
+        This allows to set specific command options
+        """
+        self.parser.add_option( "-s", "--server",
+                                 dest = "server",
+                                 default = None,
+                                 help = "Endpoint server url to use" )
+
+
+    def __call__(self, options):
+
+        (options, args) = self.parser.parse_args(options)
+
+        server = HTTPRequests(options.server)
+
+        uri = '/crabinterface/crab/info'
+        self.logger.debug('Looking up server information')
+        dictresult, status, reason = server.get(uri)
+
+        self.logger.debug("Result: %s" % dictresult)
+
+        if status != 200:
+            msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(userdefault), str(dictresult), str(reason))
+            return CommandResult(1, msg)
+
+        return CommandResult(0, dictresult)
