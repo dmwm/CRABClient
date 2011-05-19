@@ -21,8 +21,6 @@ from httplib import HTTPException
 from optparse import OptionParser, OptionGroup
 from socket import error as SocketError
 
-from CRABClient import Handler
-
 from client_utilities import getAvailCommands
 
 
@@ -151,8 +149,6 @@ if __name__ == "__main__":
     #  - do not want to expose known exception to the outside
     #  - exceptions thrown in the client should exit and set an approprate
     #    exit code, this is a safety net
-    from httplib import HTTPException
-    from socket import error as SocketError
 
     exitcode = 1
     client = CRABClient()
@@ -166,7 +162,7 @@ if __name__ == "__main__":
         client.logger.error("Error %s" % str(ke))
         exitcode = 100
     except SocketError, se:
-        msg = 'Could not establish a connection with the server at %s.\n' % client.configuration.General.server_url
+        msg = 'Could not establish a connection with the server.'
         msg += 'This may be a temporary problem, but if you see it repeatedly please notify AnaOps\n'
         client.logger.error(msg)
         logging.getLogger('CRAB3:traceback').exception('Caught exception')

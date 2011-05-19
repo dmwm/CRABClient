@@ -12,11 +12,6 @@ class SubCommand(object):
         Initialize common client parameters
         """
         self.logger = logger
-        #self.configuration = configuration
-        #self.server = server
-        #self.options = options
-        #self.requestname = requestname
-        #self.requestarea = requestarea
 
         self.parser = OptionParser(usage = self.usage, add_help_option = False)
         self.setOptions()
