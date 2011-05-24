@@ -11,7 +11,6 @@ config = Configuration()
 config.section_("General")
 config.General.server_url    = 'wmcrabserver.cern.ch:8080'
 config.General.requestName   = 'MyAnalysis_1'
-config.General.saveLogs      = False 
 
 ## Specific option of the job type
 ## these options are directly readable from the job type plugin
@@ -24,7 +23,7 @@ config.JobType.psetName    = 'pset.py'
 config.section_("Data")
 config.Data.inputDataset = '/cms/data/set'
 config.Data.publishDataName = 'MyReskimForTwo'
-config.Data.processingVersion = 'v1
+config.Data.processingVersion = 'v1'
 #config.Data.splitting = 'RunBased'
 #config.Data.splitting = 'EventBased'
 #config.Data.blockWhitelist = [1000000]
