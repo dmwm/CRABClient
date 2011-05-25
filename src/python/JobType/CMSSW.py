@@ -74,7 +74,7 @@ class CMSSW(BasicJobType):
 
         if getattr(config.JobType, 'psetName', None) is None:
             result = (False, "Missing 'JobType.psetName' parameter.")
-        if not os.path.exists(config.JobType.psetName) or not os.path.isfle(config.JobType.psetName):
+        if not os.path.exists(config.JobType.psetName) or not os.path.isfile(config.JobType.psetName):
             result = (False, "Pset file %s missing." % config.JobType.psetName)
 
         return result
