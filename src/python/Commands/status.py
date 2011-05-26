@@ -23,14 +23,12 @@ class status(SubCommand):
         if options.task is None:
             return CommandResult(1, 'Error: Task option is required')
 
-        uri = '/crabinterface/crab/task/'
-
         cachedinfo = loadCache(options.task, self.logger)
 
         server = HTTPRequests(cachedinfo['Server'] + ':' + str(cachedinfo['Port']))
 
         self.logger.debug('Looking up detailed status of task %s' % cachedinfo['RequestName'])
-        dictresult, status, reason = server.get(uri + cachedinfo['RequestName'])
+        dictresult, status, reason = server.get(self.uri + cachedinfo['RequestName'])
 
         self.logger.debug("Result: %s" % dictresult)
 

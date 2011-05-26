@@ -47,7 +47,7 @@ class getoutput(SubCommand):
 
         self.logger.debug('Retrieving output for jobs %s in task %s' % ( options.range, cachedinfo['RequestName'] ) )
         inputdict = {'jobRange' : options.range, 'requestID': cachedinfo['RequestName'] }
-        dictresult, status, reason = server.get(uri, inputdict)
+        dictresult, status, reason = server.get(self.uri, inputdict)
 
         self.logger.debug("Result: %s" % dictresult)
 
@@ -56,7 +56,10 @@ class getoutput(SubCommand):
             return CommandResult(1, msg)
 
         copyoutput = remote_copy( self.logger )
-        return copyoutput(['-d', dest, '-i', dictresult])
+        arglist = ['-d', dest, '-i', dictresult]
+        if options.skipProxy:
+            arglist.append('-p')
+        return copyoutput(arglist)
 
  
     def setOptions(self):
@@ -80,4 +83,10 @@ class getoutput(SubCommand):
                                 default = None,
                                 help = 'Where the output files retrieved will be stored in the local file system',
                                 metavar = 'DIRECTORY' )
+
+        self.parser.add_option( "-p", "--skip-proxy",
+                                action = "store_true",
+                                dest = "skipProxy",
+                                default = None,
+                                help = "Skip Grid proxy creation and myproxy delegation")
 

@@ -4,7 +4,7 @@ This is simply taking care of job submission
 
 from CredentialInteractions import CredentialInteractions
 from Commands import CommandResult
-from client_utilities import getJobTypes, createCache, createWorkArea
+from client_utilities import getJobTypes, createCache, createWorkArea, initProxy
 import json, os, time
 from string import upper
 from Commands.SubCommand import SubCommand
@@ -57,19 +57,18 @@ class submit(SubCommand):
         (code, serverinfo) = infosubcmd(['-s', self.configuration.General.server_url])
 
         print serverinfo
-        # If I'm submitting I need to deal with proxies
-        proxy = CredentialInteractions(
-                                        serverinfo['server_dn'],
-                                        serverinfo['my_proxy'],
-                                        getattr(self.configuration.User, "vorole", ""),
-                                        getattr(self.configuration.User, "vogroup", ""),
-                                        self.logger
-                                      )
-
-        self.logger.info("Checking credentials")
-        userdn = proxy.createNewVomsProxy( timeleftthreshold = 600 )
-        self.logger.info("Registering user credentials")
-        proxy.createNewMyProxy( timeleftthreshold = 60 * 60 * 24 * 3)
+        if not options.skipProxy:
+            userdn, proxy = initProxy(
+                              serverinfo['server_dn'],
+                              serverinfo['my_proxy'],
+                              getattr(self.configuration.User, "vorole", ""),
+                              getattr(self.configuration.User, "vogroup", ""),
+                              True,
+                              self.logger
+                            )
+        else:
+            userdn = options.skipProxy
+            logging.debug('Skipping proxy creation and delegation. Usind %s as userDN' % userdn)
 
         uniquerequestname = None
 
@@ -105,7 +104,7 @@ class submit(SubCommand):
 
             if len( getattr(self.configuration.Site, "blacklist", []) ) > 0 and self.configuration.Site.blacklist is list :
                 configreq["SiteBlacklist"] = self.configuration.Site.blacklist
-   
+
         if len( getattr(self.configuration.Data, "runWhitelist", []) ) > 0 and self.configuration.Data.runWhitelist is list :
             configreq["RunWhitelist"] = self.configuration.Data.runWhitelist
 
@@ -119,7 +118,7 @@ class submit(SubCommand):
             configreq["BlockBlacklist"] = self.configuration.Data.blockBlacklist
 
         configreq["DbsUrl"] = getattr(self.configuration.Data, "dbsUrl", "http://cmsdbsprod.cern.ch/cms_dbs_prod_global/servlet/DBSServlet")
-  
+
         if getattr(self.configuration.Data, "splitting", None) is not None:
             configreq["JobSplitAlgo"] = self.configuration.Data.splitting
 
@@ -137,7 +136,7 @@ class submit(SubCommand):
             configreq["JobSplitArgs"] = {"files_per_job" : filesJob}
 
         if eventsJob is not None:
-            configreq["JobSplitArgs"] = {"events_per_job" : eventsJob}    
+            configreq["JobSplitArgs"] = {"events_per_job" : eventsJob}
 
         #AsyncStageOut parameter
         if getattr(self.configuration.User, "storageSite", None):
@@ -163,11 +162,9 @@ class submit(SubCommand):
 
         server = HTTPRequests(self.configuration.General.server_url)
 
-        uri = '/crabinterface/crab/task/' + configreq["RequestName"]
-
         self.logger.info("Sending the request to the server")
         self.logger.debug("Submitting %s " % str( json.dumps( configreq, sort_keys = False, indent = 4 ) ) )
-        dictresult, status, reason = server.post(uri, json.dumps( configreq, sort_keys = False) )
+        dictresult, status, reason = server.post(self.uri + configreq["RequestName"], json.dumps( configreq, sort_keys = False) )
         self.logger.debug("Result: %s" % dictresult)
         if status != 200:
            msg = "Problem sending the request:\ninput:%s\noutput:%s\nreason:%s" % (str(configreq), str(dictresult), str(reason))
@@ -200,4 +197,10 @@ class submit(SubCommand):
                                  default = './crabConfig.py',
                                  help = "CRAB configuration file",
                                  metavar = "FILE" )
+
+        self.parser.add_option( "-p", "--skip-proxy",
+                                 dest = "skipProxy",
+                                 default = False,
+                                 help = "Skip Grid proxy creation and myproxy delegation",
+                                 metavar = "USERDN" )
 

@@ -1,6 +1,7 @@
 from Commands import CommandResult
 from Commands.SubCommand import SubCommand 
 from CredentialInteractions import CredentialInteractions
+from client_utilities import initProxy
 import os
 import operator
 import logging
@@ -47,20 +48,24 @@ class remote_copy(SubCommand):
                                 dest = "extension",
                                 default = 'root' )
 
+        self.parser.add_option( "-p", "--skip-proxy",
+                                action = "store_true",
+                                dest = "skipProxy",
+                                default = None,
+                                help = "Skip Grid proxy creation and myproxy delegation")
+
 
     def __call__(self, args):
+        globalExitcode = -1
 
         (options, args) = self.parser.parse_args( args )
 
         dicttocopy = options.inputdict
-        # If I'm copying I need to deal with proxies
-        # serverdn, myproxy, role, group, logger
-        proxy = CredentialInteractions( None, None, options.role, options.group, self.logger )
 
-        self.logger.info("Checking credentials")
-        proxy.createNewVomsProxy( timeleftthreshold = 600 )
-        #self.logger.info("Registering user credentials")
-        #proxy.createNewMyProxy( timeleftthreshold = 60 * 60 * 24 * 3)
+        if not options.skipProxy:
+            initProxy( None, None, options.role, options.group, False, self.logger)
+        else:
+            logging.debug('Skipping proxy creation and delegation')
 
         command = 'lcg-cp --connect-timeout 20 --sendreceive-timeout 240 --bdii-timeout 20 --srm-timeout 2400 --verbose'
 
@@ -121,13 +126,16 @@ class remote_copy(SubCommand):
                 self.logger.info("Job %s: output in %s" %(jobid, finalresults[jobid]['dest']))
             else:
                 self.logger.info("Job %s: transfer problem %s" %(jobid, str(finalresults[jobid]['error'])))
+                globalExitcode = 1
 
         if len(finalresults.keys()) is 0:
             self.logger.info("Nothing to retrieve.")
         else:
             self.logger.info("Retrieval completed")
 
-        return CommandResult(0, None)
+        if globalExitcode == -1:
+            globalExitcode = 0
+        return CommandResult(globalExitcode, None)
 
 
 def simpleOutputCheck(outlines):
