@@ -1,4 +1,5 @@
 from optparse import OptionParser
+import client_default
 
 
 class SubCommand(object):
@@ -15,6 +16,10 @@ class SubCommand(object):
 
         self.parser = OptionParser(usage = self.usage, add_help_option = False)
         self.setOptions()
+
+        #not all the commands need an uri (e.g.: remote_copy)
+        if client_default.defaulturi.has_key(self.name):
+            self.uri = client_default.defaulturi[self.name]
 
  
     def __call__(self, options):

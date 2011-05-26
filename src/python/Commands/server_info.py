@@ -32,9 +32,8 @@ class server_info(SubCommand):
 
         server = HTTPRequests(options.server)
 
-        uri = '/crabinterface/crab/info'
         self.logger.debug('Looking up server information')
-        dictresult, status, reason = server.get(uri)
+        dictresult, status, reason = server.get(self.uri)
 
         self.logger.debug("Result: %s" % dictresult)
 

@@ -12,6 +12,8 @@ import pkgutil
 import sys
 import cPickle
 
+from CredentialInteractions import CredentialInteractions
+
 
 def getPlugins(plugins, skip):
     """
@@ -210,3 +212,21 @@ def loadCache( task, logger ):
     addFileLogger( logger, workingpath = requestarea )
     return cPickle.load(loadfile) 
 
+
+def initProxy(serverDN, myProxy, voRole, voGroup, delegate, logger):
+    proxy = CredentialInteractions(
+                                    serverDN,
+                                    myProxy,
+                                    voRole,
+                                    voGroup,
+                                    logger
+                                  )
+
+    logger.info("Checking credentials")
+    userdn = proxy.createNewVomsProxy( timeleftthreshold = 600 )
+
+    if delegate:
+        logger.info("Registering user credentials")
+        proxy.createNewMyProxy( timeleftthreshold = 60 * 60 * 24 * 3)
+
+    return userdn, proxy

@@ -40,8 +40,7 @@ class reg_user(SubCommand):
         print userdefault
 
         self.logger.debug("Registering the user on the server")
-        useruri = '/crabinterface/crab/user'
-        dictresult, status, reason = server.post( useruri, json.dumps( userdefault, sort_keys = False) )
+        dictresult, status, reason = server.post( self.uri, json.dumps( userdefault, sort_keys = False) )
         self.logger.debug("Result: %s" % str(dictresult))
         if status != 200:
             msg = "Problem registering user:\ninput:%s\noutput:%s\nreason:%s" % (str(userdefault), str(dictresult), str(reason))
