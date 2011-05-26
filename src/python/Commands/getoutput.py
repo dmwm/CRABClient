@@ -21,8 +21,6 @@ class getoutput(SubCommand):
         if options.range is None:
             return CommandResult(1, 'Error: Range option is required')
 
-        uri = '/crabinterface/crab/data'
-
         ## check input options and set destination directory
 
         requestarea, requestname = getWorkArea( options.task )
@@ -36,7 +34,7 @@ class getoutput(SubCommand):
                 dest = options.outputpath
 
         self.logger.debug("Setting the destination directory to %s " % dest )
-        if not os.path.exists( dest ): 
+        if not os.path.exists( dest ):
             self.logger.debug("Creating directory %s " % dest)
             os.makedirs( dest )
         elif not os.path.isdir( dest ):
@@ -61,7 +59,7 @@ class getoutput(SubCommand):
             arglist.append('-p')
         return copyoutput(arglist)
 
- 
+
     def setOptions(self):
         """
         __setOptions__
