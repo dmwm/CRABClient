@@ -47,6 +47,7 @@ class CMSSW(BasicJobType):
         # The first prototype will not have the user sandbox.
         #configArguments['userSandbox'] = tarFilename
         configArguments['InputDataset'] = self.config.Data.inputDataset
+        configArguments['ProcessingVersion'] = self.config.Data.processingVersion
 
         # Create CMSSW config
         cmsswCfg = CMSSWConfig(config=self.config, logger=self.logger,
