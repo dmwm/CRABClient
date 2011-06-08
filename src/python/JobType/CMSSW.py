@@ -45,7 +45,7 @@ class CMSSW(BasicJobType):
                 tb.addFiles(userFiles=self.config.JobType.inputFiles)
             uploadResults = tb.upload()
 
-        configArguments['userSandbox'] = tarFilename
+        configArguments['userSandbox'] = uploadResults['url']
         configArguments['userFiles'] = [os.path.basename(f) for f in self.config.JobType.inputFiles]
         configArguments['InputDataset'] = self.config.Data.inputDataset
         configArguments['ProcessingVersion'] = self.config.Data.processingVersion
@@ -68,16 +68,22 @@ class CMSSW(BasicJobType):
 
     def validateConfig(self, config):
         """
-        Validate the config file making sure required values are there
-        and optional values don't conflict
+        Validate the CMSSW portion of the config file making sure
+        required values are there and optional values don't conflict
         """
 
-        result = (True, '')
+        valid = True
+        reason = ''
 
-        if getattr(config.JobType, 'psetName', None) is None:
-            result = (False, "Missing 'JobType.psetName' parameter.")
-        if not os.path.exists(config.JobType.psetName) or not os.path.isfile(config.JobType.psetName):
-            result = (False, "Pset file %s missing." % config.JobType.psetName)
+        if not getattr(config.Data, 'processingVersion', None):
+            valid = False
+            reason += 'Missing or null processing version. '
+        if not getattr(config.Data, 'inputDataset', None):
+            valid = False
+            reason += 'Missing or null input dataset name. '
+        if not getattr(config.JobType, 'psetName', None):
+            valid = False
+            reason += 'Missing or null CMSSW config file name. '
 
-        return result
+        return (valid, reason)
 
