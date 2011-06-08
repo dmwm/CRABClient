@@ -4,9 +4,12 @@
     UserTarball class, a subclass of TarFile
 """
 
-import os
+import commands
 import glob
+import json
+import os
 import tarfile
+import tempfile
 
 from ScramEnvironment import ScramEnvironment
 
@@ -21,7 +24,8 @@ class UserTarball(object):
             Also adds user specified files in the right place.
     """
 
-    def __init__(self, name=None, mode='w:gz', logger=None):
+    def __init__(self, name=None, mode='w:gz', config=None, logger=None):
+        self.config = config
         self.logger = logger
         self.scram = ScramEnvironment(logger=self.logger)
         self.logger.debug("Making tarball in %s" % name)
@@ -56,6 +60,24 @@ class UserTarball(object):
             for filename in glob.glob(globName):
                 self.logger.debug(" adding file %s to tarball" % filename)
                 self.tarfile.add(filename, os.path.basename(filename), recursive=True)
+
+
+    def upload(self):
+        """
+        Upload the tarball to the CRABServer
+        """
+
+        csHost = self.config.General.server_url
+
+        with tempfile.NamedTemporaryFile() as curlOutput:
+            url = csHost + '/crabinterface/crab/uploadUserSandbox/'
+            curlCommand = 'curl -H "Accept: application/json" -F"userfile=@%s" %s -o %s' % (self.tarfile.name, url, curlOutput.name)
+            (status, output) = commands.getstatusoutput(curlCommand)
+            if status:
+                raise RuntimeError('Problem uploading user sandbox: %s' % output)
+            returnDict = json.loads(curlOutput.read())
+
+        return returnDict
 
 
     def __getattr__(self, *args):
