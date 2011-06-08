@@ -170,7 +170,6 @@ class UserTarballTest(unittest.TestCase):
         """
 
         tb = UserTarball(name='default.tgz', logger=self.logger, config=testWMConfig)
-        tb.close()
         result = tb.upload()
         self.assertTrue(result['size'] > 0)
         self.assertTrue(len(result['hashkey']) > 0)

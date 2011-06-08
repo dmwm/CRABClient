@@ -67,6 +67,7 @@ class UserTarball(object):
         Upload the tarball to the CRABServer
         """
 
+        self.tarfile.close()
         csHost = self.config.General.server_url
 
         with tempfile.NamedTemporaryFile() as curlOutput:
