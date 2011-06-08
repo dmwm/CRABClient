@@ -40,12 +40,13 @@ class CMSSW(BasicJobType):
             _dummy, tarFilename   = tempfile.mkstemp(suffix='.tgz')
             _dummy, cfgOutputName = tempfile.mkstemp(suffix='_cfg.py')
 
-        with UserTarball(name=tarFilename, logger=self.logger) as tb:
+        with UserTarball(name=tarFilename, logger=self.logger, config=self.config) as tb:
             if getattr(self.config.JobType, 'inputFiles', None) is not None:
                 tb.addFiles(userFiles=self.config.JobType.inputFiles)
+            uploadResults = tb.upload()
 
-        # The first prototype will not have the user sandbox.
-        #configArguments['userSandbox'] = tarFilename
+        configArguments['userSandbox'] = tarFilename
+        configArguments['userFiles'] = [os.path.basename(f) for f in self.config.JobType.inputFiles]
         configArguments['InputDataset'] = self.config.Data.inputDataset
         configArguments['ProcessingVersion'] = self.config.Data.processingVersion
 
