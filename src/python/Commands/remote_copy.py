@@ -1,5 +1,5 @@
 from Commands import CommandResult
-from Commands.SubCommand import SubCommand 
+from Commands.SubCommand import SubCommand
 from CredentialInteractions import CredentialInteractions
 from client_utilities import initProxy
 import os
@@ -10,6 +10,7 @@ import threading
 import multiprocessing
 import time
 
+from WMCore.FwkJobReport.FileInfo import readAdler32, readCksum
 
 class remote_copy(SubCommand):
 
@@ -82,9 +83,10 @@ class remote_copy(SubCommand):
         self.logger.info("Starting retrieving remote files for requested jobs %s " % str([s.encode('utf-8') for s in dicttocopy.keys()]))
         ## this can be parallelized starting more processes
         for jobid, lfn in sortedbyjob:
-            self.logger.debug("Processing job %s" % str(jobid))
-            cmd = command + ' ' + lfn + ' file://' + os.path.join(options.destination, str(jobid) + '.' + options.extension)
-            input.put((jobid, cmd, ''))
+            self.logger.debug("Processing job %s" % jobid)
+            localFilename = os.path.join(options.destination, jobid + '.' + options.extension)
+            cmd = command + ' ' + lfn['pfn'] + ' file://' + localFilename
+            input.put((int(jobid), cmd, ''))
 
             res = None
             stdout   = ''
@@ -100,23 +102,32 @@ class remote_copy(SubCommand):
                 stdout   = ''
                 stderr   = msg
                 exitcode = -1
-  
-            self.logger.debug("Processed job %s" % str(jobid))
-            self.logger.debug("Verify command result %s" % str(jobid))
+
+            self.logger.debug("Processed job %s" % jobid)
+            self.logger.debug("Verify command result %s" % jobid)
 
             checkout = simpleOutputCheck(stdout)
             checkerr = simpleOutputCheck(stderr)
+            if hasattr(lfn, 'checksums'):
+                checksumOK = checksumChecker(localFilename, lfn['checksums'])
+            else:
+                checksumOK = True # No checksums provided
+
             if exitcode is not 0 or (len(checkout) + len(checkerr)) > 0:
                 finalresults[jobid] = {'exit': False, 'lfn': lfn, 'error': checkout + checkerr, 'dest': None}
-                self.logger.debug("Failed retriving job %s" % str(jobid))
+                self.logger.debug("Failed retrieving job %s" % jobid)
+            elif not checksumOK:
+                finalresults[jobid] = {'exit': False, 'lfn': lfn, 'error': 1, 'dest': None}
+                self.logger.debug("Checksum failed for job %s" % jobid)
             else:
-                finalresults[jobid] = {'exit': True, 'lfn': lfn, 'dest': os.path.join(options.destination, str(jobid) + '.root'), 'error': None} 
-                self.logger.debug("Retrived job %s" % str(jobid))
+                finalresults[jobid] = {'exit': True, 'lfn': lfn, 'dest': os.path.join(options.destination, str(jobid) + '.root'), 'error': None}
+                self.logger.debug("Retrived job, checksum passed %s" % jobid)
+
 
         try:
             input.put( ('-1', 'STOP', 'control') )
         except Exception, ex:
-            pass 
+            pass
         finally:
             p.terminate()
 
@@ -157,9 +168,9 @@ def simpleOutputCheck(outlines):
             problems.append(line)
         elif line.find("user has no permission") != -1 or\
              line.find("permission denied") != -1:
-            problems.append(line)                      
+            problems.append(line)
         elif line.find("file exists") != -1:
-            problems.append(line)                      
+            problems.append(line)
         elif line.find("no such file or directory") != -1 or \
              line.find("error") != -1 or line.find("Failed") != -1 or \
              line.find("cacheexception") != -1 or \
@@ -173,7 +184,7 @@ def simpleOutputCheck(outlines):
              line.find("invalid option") != -1:
             problems.append(line)
         elif line.find("timeout") != -1:
-            problems.append(line) 
+            problems.append(line)
     return problems
 
 
@@ -220,9 +231,26 @@ def processWorker(input, results):
                        'workid': workid,
                        'stdout': stdout,
                        'stderr': stderr,
-                       'exit':   pipe.returncode 
+                       'exit':   pipe.returncode
                      })
 
     return 0
 
+def checksumChecker(localFilename, checksums):
+    """
+    Check given checksums vs. what's on disk
+    """
+    try:
+        adler32 = readAdler32(localFilename)
+        if adler32 == checksums['adler32']:
+            return True
+        else:
+            return False
+    except:
+        cksum = readCksum(localFilename)
+        if cksum == checksums['cksum']:
+            return True
+        else:
+            return False
 
+    return False
