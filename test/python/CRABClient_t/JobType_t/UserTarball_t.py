@@ -13,6 +13,18 @@ import tarfile
 import unittest
 
 from JobType.UserTarball import UserTarball
+from WMCore.Configuration import Configuration
+
+testWMConfig = Configuration()
+
+testWMConfig.section_("JobType")
+testWMConfig.JobType.pluginName  = 'CMSSW'
+testWMConfig.section_("Data")
+testWMConfig.Data.inputDataset = '/cms/data/set'
+testWMConfig.section_("General")
+testWMConfig.General.server_url    = 'cms-xen39.fnal.gov:7723'
+testWMConfig.section_("User")
+testWMConfig.User.group    = 'Analysis'
 
 class UserTarballTest(unittest.TestCase):
     """
@@ -151,6 +163,17 @@ class UserTarballTest(unittest.TestCase):
         except AttributeError:
             pass
 
+
+    def testUpload(self):
+        """
+        Test uploading to a crab server
+        """
+
+        tb = UserTarball(name='default.tgz', logger=self.logger, config=testWMConfig)
+        tb.close()
+        result = tb.upload()
+        self.assertTrue(result['size'] > 0)
+        self.assertTrue(len(result['hashkey']) > 0)
 
 
 if __name__ == '__main__':
