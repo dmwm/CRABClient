@@ -6,6 +6,7 @@ _CMSSW_t_
 Unittests for CMSSW JobType
 """
 
+import copy
 import logging
 import os
 import unittest
@@ -108,6 +109,47 @@ class CMSSWTest(unittest.TestCase):
         self.assertTrue(len(configArguments['InputDataset']) > 0)
         self.assertTrue(configArguments.has_key('ProcessingVersion'))
         self.assertTrue(configArguments.has_key('AnalysisConfigCacheDoc'))
+
+
+    def testValidateConfig(self):
+        """
+        Validate config, done as part of the constuctor
+        """
+        origConfig = copy.deepcopy(testWMConfig)
+
+        # Make sure the original config works
+        cmssw = CMSSW(config=origConfig, logger=self.logger, workingdir=None)
+        valid, reason = cmssw.validateConfig(config=testWMConfig)
+        self.assertTrue(valid)
+        self.assertEqual(reason, '')
+
+        # Test a couple of ways of screwing up the processing version
+        testConfig = copy.deepcopy(testWMConfig)
+        testConfig.Data.processingVersion = ''
+        self.assertRaises(Exception, CMSSW, config=testConfig, logger=self.logger, workingdir=None)
+        del testConfig.Data.processingVersion
+        self.assertRaises(Exception, CMSSW, config=testConfig, logger=self.logger, workingdir=None)
+
+        # Test a bad input dataset
+        testConfig = copy.deepcopy(testWMConfig)
+        testConfig.Data.inputDataset = ''
+        self.assertRaises(Exception, CMSSW, config=testConfig, logger=self.logger, workingdir=None)
+
+        # Test a bad psetName
+        testConfig = copy.deepcopy(testWMConfig)
+        del testConfig.JobType.psetName
+        self.assertRaises(Exception, CMSSW, config=testConfig, logger=self.logger, workingdir=None)
+
+        # Test several errors, make sure the reason message catches them all.
+        cmssw = CMSSW(config=origConfig, logger=self.logger, workingdir=None)
+        testConfig = copy.deepcopy(testWMConfig)
+        testConfig.Data.processingVersion = ''
+        testConfig.Data.inputDataset = ''
+        del testConfig.JobType.psetName
+        valid, reason = cmssw.validateConfig(config=testConfig)
+        self.assertFalse(valid)
+        self.assertEqual(reason.count('.'), 3)
+
 
 
 if __name__ == '__main__':
