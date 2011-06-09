@@ -68,7 +68,7 @@ class remote_copy(SubCommand):
         else:
             logging.debug('Skipping proxy creation and delegation')
 
-        command = 'lcg-cp --connect-timeout 20 --sendreceive-timeout 240 --bdii-timeout 20 --srm-timeout 2400 --verbose'
+        lcgCmd = 'lcg-cp --checksum-type adler32 --checksum --connect-timeout 20 --sendreceive-timeout 240 --srm-timeout 2400 --verbose -b -D srmv2' 
 
         sortedbyjob = sorted(dicttocopy.iteritems(), key = operator.itemgetter(1))
         finalresults = {}
@@ -85,7 +85,7 @@ class remote_copy(SubCommand):
         for jobid, lfn in sortedbyjob:
             self.logger.debug("Processing job %s" % jobid)
             localFilename = os.path.join(options.destination, jobid + '.' + options.extension)
-            cmd = command + ' ' + lfn['pfn'] + ' file://' + localFilename
+            cmd = '%s %s file://%s' % (lcgCmd, lfn['pfn'], localFilename) 
             input.put((int(jobid), cmd, ''))
 
             res = None
