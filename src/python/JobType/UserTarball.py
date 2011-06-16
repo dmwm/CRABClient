@@ -10,6 +10,7 @@ import json
 import os
 import tarfile
 import tempfile
+import client_default
 
 from ScramEnvironment import ScramEnvironment
 
@@ -71,12 +72,15 @@ class UserTarball(object):
         csHost = self.config.General.server_url
 
         with tempfile.NamedTemporaryFile() as curlOutput:
-            url = csHost + '/crabinterface/crab/uploadUserSandbox/'
+            url = csHost + client_default.defaulturi['upload']
             curlCommand = 'curl -H "Accept: application/json" -F"userfile=@%s" %s -o %s' % (self.tarfile.name, url, curlOutput.name)
             (status, output) = commands.getstatusoutput(curlCommand)
             if status:
                 raise RuntimeError('Problem uploading user sandbox: %s' % output)
             returnDict = json.loads(curlOutput.read())
+            if 'exception' in returnDict:
+                if returnDict['exception'] is not 200:
+                    raise RuntimeError('Problem uploading user sandbox: %s ' % str(returnDict['message']))
 
         return returnDict
 
