@@ -22,7 +22,9 @@ class submit(SubCommand):
     ## name should become automatically generated
     name  = "submit"
     usage = "usage: %prog " + name + " [options] [args]"
-
+    defaultgroup = "Analysis"
+    defaultteam  = "Analysis"
+    defaulttype  = "Analysis"
 
     def loadConfig(self, config):
         """
@@ -33,18 +35,22 @@ class submit(SubCommand):
             self.configuration = config
         else:
             self.configuration = loadConfigurationFile(config)
+        return self.validateConfig()
 
 
     def __call__(self, args):
 
         (options, args) = self.parser.parse_args( args )
+        valid = False
+        configmsg = 'Default'
         try:
-            self.loadConfig( os.path.abspath(options.config) )
+            valid, configmsg =self.loadConfig( os.path.abspath(options.config) )
         except ImportError:
             return CommandResult(1, "Configuration file '%s' not found" % options.config)
-
-        if getattr(self.configuration, 'General', None) is None:
-            return CommandResult(1, "Error: General section is missing in the configuration file.")
+        else:
+            ## file is there, check if it is ok
+            if not valid:
+                return CommandResult(1, configmsg)
 
         requestarea, requestname = createWorkArea( self.logger,
                                                    getattr(self.configuration.General, 'workArea', None),
@@ -55,8 +61,10 @@ class submit(SubCommand):
 
         infosubcmd = server_info(self.logger)
         (code, serverinfo) = infosubcmd(['-s', self.configuration.General.server_url])
+        if code is not 0:
+            logging.debug("Error retrieving server information. Stopping submission.")
+            return CommandResult(code, serverinfo)
 
-        print serverinfo
         if not options.skipProxy:
             userdn, proxy = initProxy(
                               serverinfo['server_dn'],
@@ -75,46 +83,45 @@ class submit(SubCommand):
         regusercmd = reg_user(self.logger)
         (code, userinfo) = regusercmd( [
                                         '-s', self.configuration.General.server_url,
-                                        '-g', getattr(self.configuration.User, "group", "Analysis"),
-                                        '-t', getattr(self.configuration.User, "team", "Analysis"),
-                                        '-m', self.configuration.User.email,
+                                        '-g', getattr(self.configuration.User, "group", self.defaultgroup),
+                                        '-t', getattr(self.configuration.User, "team", self.defaultteam),
+                                        '-m', getattr(self.configuration.General, "email", ""),
                                         '-c', userdn
                                        ])
-
+        if code is not 0:
+            logging.debug("Error registering user on the server. Stopping submission.")
+            return CommandResult(code, serverinfo)
 
         self.logger.debug("Working on %s" % str(requestarea))
 
         copyKeys = ["Group", "Team", "Username", "PublishDataName", "ProcessingVersion", "SaveLogs", ]
         configreq = {
-                     "RequestType" : "Analysis",
-                     "Group"       : getattr(self.configuration.User, "group", "Analysis"),
-                     "Team"        : getattr(self.configuration.User, "team", "Analysis"),
+                     "RequestType" : self.defaulttype,
+                     "Group"       : getattr(self.configuration.User, "group", self.defaultgroup),
+                     "Team"        : getattr(self.configuration.User, "team", self.defaultteam),
                      "Requestor"   : userinfo['hn_name'],
                      "Username"    : userinfo['hn_name'],
                      "RequestName" : requestname,
                      "RequestorDN" : userdn,
                      "SaveLogs"    : getattr(self.configuration.General, "saveLogs", False),
                      "PublishDataName"   : getattr(self.configuration.Data, "publishDataName", str(time.time())),
-                     "ProcessingVersion" : getattr(self.configuration.Data, "processingVersion", 'v1')
+                     "ProcessingVersion" : getattr(self.configuration.Data, "processingVersion", 'v1'),
+                     "asyncDest":    self.configuration.Site.storageSite
                     }
 
-        if getattr(self.configuration, 'Site', None) is not None:
-            if len( getattr(self.configuration.Site, "whitelist", []) ) > 0 and self.configuration.Site.whitelist is list :
-                configreq["SiteWhitelist"] = self.configuration.Site.whitelist
+        if getattr(self.configuration.Site, "whitelist", None):
+            configreq["SiteWhitelist"] = self.configuration.Site.whitelist
+        if getattr(self.configuration.Site, "blacklist", None):
+            configreq["SiteBlacklist"] = self.configuration.Site.blacklist
 
-            if len( getattr(self.configuration.Site, "blacklist", []) ) > 0 and self.configuration.Site.blacklist is list :
-                configreq["SiteBlacklist"] = self.configuration.Site.blacklist
-
-        if len( getattr(self.configuration.Data, "runWhitelist", []) ) > 0 and self.configuration.Data.runWhitelist is list :
+        if getattr(self.configuration.Data, "runWhitelist", None):
             configreq["RunWhitelist"] = self.configuration.Data.runWhitelist
-
-        if len( getattr(self.configuration.Data, "runBlacklist", []) ) > 0 and self.configuration.Data.runBlacklist is list :
+        if getattr(self.configuration.Data, "runBlacklist", None):
             configreq["RunBlacklist"] = self.configuration.Data.runBlacklist
 
-        if len( getattr(self.configuration.Data, "blockWhitelist", []) ) > 0 and self.configuration.Data.blockWhitelist is list :
+        if getattr(self.configuration.Data, "blockWhitelist", None):
             configreq["BlockWhitelist"] = self.configuration.Data.blockWhitelist
-
-        if len( getattr(self.configuration.Data, "blockBlacklist", []) ) > 0 and self.configuration.Data.blockBlacklist is list :
+        if getattr(self.configuration.Data, "blockBlacklist", None):
             configreq["BlockBlacklist"] = self.configuration.Data.blockBlacklist
 
         configreq["DbsUrl"] = getattr(self.configuration.Data, "dbsUrl", "http://cmsdbsprod.cern.ch/cms_dbs_prod_global/servlet/DBSServlet")
@@ -122,32 +129,13 @@ class submit(SubCommand):
         if getattr(self.configuration.Data, "splitting", None) is not None:
             configreq["JobSplitAlgo"] = self.configuration.Data.splitting
 
-
         filesJob = getattr( self.configuration.Data, "filesPerJob", None)
         eventsJob = getattr( self.configuration.Data, "eventsPerJob", None)
-
-        #if both arguments are specified return an error
-        if (filesJob is not None) and (eventsJob is not None):
-            msg = "You cannot specify both filesPerJob and eventsPerJob parameters. Please choose one."
-            self.logger.error(msg)
-            return CommandResult(1, msg)
-
         if filesJob is not None:
             configreq["JobSplitArgs"] = {"files_per_job" : filesJob}
-
         if eventsJob is not None:
             configreq["JobSplitArgs"] = {"events_per_job" : eventsJob}
-
-        #AsyncStageOut parameter
-        if getattr(self.configuration.User, "storageSite", None):
-            configreq["asyncDest"] = self.configuration.User.storageSite
-
-        ## create job types
-        jobtypes = getJobTypes()
-        if getattr(self.configuration, 'JobType', None) is None:
-           return CommandResult(1, "Error: JobType section is missing in the configuration file.")
-        if upper(self.configuration.JobType.pluginName) not in jobtypes:
-           raise CommandResult(1, "JobType %s not found or not supported." % self.configuration.JobType.pluginName)
+        jobtypes    = getJobTypes()
         plugjobtype = jobtypes[upper(self.configuration.JobType.pluginName)](self.configuration, self.logger, os.path.join(requestarea, 'inputs'))
         inputfiles, jobconfig = plugjobtype.run(configreq)
 
@@ -185,6 +173,7 @@ class submit(SubCommand):
 
         return CommandResult(0, None)
 
+
     def setOptions(self):
         """
         __setOptions__
@@ -204,3 +193,42 @@ class submit(SubCommand):
                                  help = "Skip Grid proxy creation and myproxy delegation",
                                  metavar = "USERDN" )
 
+
+    def validateConfig(self):
+        """
+        __validateConfig__
+
+        Checking if needed input parameters are there
+        """
+
+        if getattr(self.configuration, 'General', None) is None:
+            return False, "Crab configuration problem: general section is missing. "
+        elif getattr(self.configuration.General, "server_url", None) is None:
+            msg = "Crab configuration problem: General.server_url parameter is missing. \n" + \
+                  "  (this parameter is just temporary and in future implementations wont be required)"
+            return False, msg
+
+        if getattr(self.configuration, 'User', None) is None:
+            return False, "Crab configuration problem: User section is missing ."
+
+        if getattr(self.configuration, 'Data', None) is None:
+            return False, "Crab configuration problem: Data section is missing. "
+        elif getattr( self.configuration.Data, "filesPerJob", None) and getattr( self.configuration.Data, "eventsPerJob", None):
+            #if both arguments are specified return an error
+            msg = "Crab configuration problem: you cannot specify both filesPerJob and eventsPerJob parameters. Please choose just one. "
+            return False, msg
+
+        if getattr(self.configuration, 'Site', None) is None:
+            return False, "Crab configuration problem: Site section is missing. "
+        elif getattr(self.configuration.Site, "storageSite", None) is None:
+            return False, "Crab configuration problem: Site.storageSite parameter is missing. "
+
+        if getattr(self.configuration, 'JobType', None) is None:
+            return False, "Crab configuration problem: JobType section is missing. "
+        elif getattr(self.configuration.JobType, 'pluginName', None) is None:
+            return False, "Crab configuration problem: JobType.pluginName parameter is missing. "
+        elif upper(self.configuration.JobType.pluginName) not in getJobTypes():
+           msg = "JobType %s not found or not supported." % self.configuration.JobType.pluginName
+           raise False, msg
+
+        return True, "Valid configuration"
