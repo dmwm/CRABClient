@@ -98,9 +98,8 @@ class remote_copy(SubCommand):
                 stderr   = res['stderr']
                 exitcode = res['exit']
             except Queue.Empty:
-                msg = "Timeout retrieving result after %i" % singletimeout
+                stderr   = "Timeout retrieving result after %i" % singletimeout
                 stdout   = ''
-                stderr   = msg
                 exitcode = -1
 
             self.logger.debug("Processed job %s" % jobid)
@@ -108,6 +107,8 @@ class remote_copy(SubCommand):
 
             checkout = simpleOutputCheck(stdout)
             checkerr = simpleOutputCheck(stderr)
+
+            checksumOK = False
             if hasattr(lfn, 'checksums'):
                 checksumOK = checksumChecker(localFilename, lfn['checksums'])
             else:
@@ -123,13 +124,14 @@ class remote_copy(SubCommand):
                 finalresults[jobid] = {'exit': True, 'lfn': lfn, 'dest': os.path.join(options.destination, str(jobid) + '.root'), 'error': None}
                 self.logger.debug("Retrived job, checksum passed %s" % jobid)
 
-
         try:
             input.put( ('-1', 'STOP', 'control') )
         except Exception, ex:
             pass
         finally:
+            # giving the time to the sub-process to exit
             p.terminate()
+            time.sleep(1)
 
         self.logger.debug(str(finalresults))
         for jobid in finalresults:
@@ -146,7 +148,7 @@ class remote_copy(SubCommand):
 
         if globalExitcode == -1:
             globalExitcode = 0
-        return CommandResult(globalExitcode, None)
+        return CommandResult(globalExitcode, '')
 
 
 def simpleOutputCheck(outlines):

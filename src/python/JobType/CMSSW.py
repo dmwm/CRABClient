@@ -75,15 +75,19 @@ class CMSSW(BasicJobType):
         valid = True
         reason = ''
 
-        if not getattr(config.Data, 'processingVersion', None):
+        if not getattr(config, 'Data', None):
             valid = False
-            reason += 'Missing or null processing version. '
-        if not getattr(config.Data, 'inputDataset', None):
-            valid = False
-            reason += 'Missing or null input dataset name. '
+            reason += 'Crab configuration problem: missing Data section. '
+        else:
+            if not getattr(config.Data, 'processingVersion', None):
+                valid = False
+                reason += 'Crab configuration problem: missing or null processing version. '
+            if not getattr(config.Data, 'inputDataset', None):
+                valid = False
+                reason += 'Crab configuration problem: missing or null input dataset name. '
         if not getattr(config.JobType, 'psetName', None):
             valid = False
-            reason += 'Missing or null CMSSW config file name. '
+            reason += 'Crab configuration problem: missing or null CMSSW config file name. '
 
         return (valid, reason)
 

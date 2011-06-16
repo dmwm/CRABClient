@@ -53,5 +53,4 @@ class status(SubCommand):
                                  default = None,
                                  help = "Same as -c/-continue" )
 
-        pass
 

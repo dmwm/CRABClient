@@ -16,12 +16,12 @@ class getoutput(SubCommand):
 
         (options, args) = self.parser.parse_args( args )
 
+        ## check input options and set destination directory
+
         if options.task is None:
             return CommandResult(1, 'Error: Task option is required')
         if options.range is None:
             return CommandResult(1, 'Error: Range option is required')
-
-        ## check input options and set destination directory
 
         requestarea, requestname = getWorkArea( options.task )
         cachedinfo = loadCache(requestarea, self.logger)
