@@ -12,7 +12,7 @@ from Commands.server_info import server_info
 from Commands.reg_user import reg_user
 from WMCore.Configuration import loadConfigurationFile, Configuration
 from ServerInteractions import HTTPRequests
-
+from types import *
 
 class submit(SubCommand):
     """
@@ -24,7 +24,7 @@ class submit(SubCommand):
     usage = "usage: %prog " + name + " [options] [args]"
     defaultgroup = "Analysis"
     defaultteam  = "Analysis"
-    defaulttype  = "Analysis"
+
 
     def loadConfig(self, config):
         """
@@ -94,40 +94,43 @@ class submit(SubCommand):
 
         self.logger.debug("Working on %s" % str(requestarea))
 
-        copyKeys = ["Group", "Team", "Username", "PublishDataName", "ProcessingVersion", "SaveLogs", ]
-        configreq = {
-                     "RequestType" : self.defaulttype,
-                     "Group"       : getattr(self.configuration.User, "group", self.defaultgroup),
-                     "Team"        : getattr(self.configuration.User, "team", self.defaultteam),
-                     "Requestor"   : userinfo['hn_name'],
-                     "Username"    : userinfo['hn_name'],
-                     "RequestName" : requestname,
-                     "RequestorDN" : userdn,
-                     "SaveLogs"    : getattr(self.configuration.General, "saveLogs", False),
-                     "PublishDataName"   : getattr(self.configuration.Data, "publishDataName", str(time.time())),
-                     "ProcessingVersion" : getattr(self.configuration.Data, "processingVersion", 'v1'),
-                     "asyncDest":    self.configuration.Site.storageSite
-                    }
+        configreq = {}
 
-        if getattr(self.configuration.Site, "whitelist", None):
-            configreq["SiteWhitelist"] = self.configuration.Site.whitelist
-        if getattr(self.configuration.Site, "blacklist", None):
-            configreq["SiteBlacklist"] = self.configuration.Site.blacklist
-
-        if getattr(self.configuration.Data, "runWhitelist", None):
-            configreq["RunWhitelist"] = self.configuration.Data.runWhitelist
-        if getattr(self.configuration.Data, "runBlacklist", None):
-            configreq["RunBlacklist"] = self.configuration.Data.runBlacklist
-
-        if getattr(self.configuration.Data, "blockWhitelist", None):
-            configreq["BlockWhitelist"] = self.configuration.Data.blockWhitelist
-        if getattr(self.configuration.Data, "blockBlacklist", None):
-            configreq["BlockBlacklist"] = self.configuration.Data.blockBlacklist
-
-        configreq["DbsUrl"] = getattr(self.configuration.Data, "dbsUrl", "http://cmsdbsprod.cern.ch/cms_dbs_prod_global/servlet/DBSServlet")
-
-        if getattr(self.configuration.Data, "splitting", None) is not None:
-            configreq["JobSplitAlgo"] = self.configuration.Data.splitting
+        for param in self.requestmapper:
+            if self.requestmapper[param]['config']:
+                attrs = self.requestmapper[param]['config'].split('.')
+                temp = self.configuration
+                for attr in attrs:
+                    temp = getattr(temp, attr, None)
+                    if temp is None:
+                        break
+                if temp:
+                    if self.requestmapper[param]['type'] == type(temp):
+                        configreq[param] = temp
+                    else:
+                        return CommandResult(1, "Unvalid type " + str(type(temp)) + " for parameter " + self.requestmapper[param]['config'] + ". It is needed a " + str(self.requestmapper[param]['type']) + ".")
+                elif self.requestmapper[param]['default'] is not None:
+                    configreq[param] = self.requestmapper[param]['default']
+                elif self.requestmapper[param]['required']:
+                    return CommandResult(1, "Missing parameter " + self.requestmapper[param]['config'] + " from the configuration.")
+                else:
+                    ## parameter not strictly required
+                    pass
+            elif param == "Requestor":
+                if self.requestmapper[param]['type'] == type(userinfo['hn_name']):
+                    configreq["Requestor"] = userinfo['hn_name']
+            elif param == "Username":
+                if self.requestmapper[param]['type'] == type(userinfo['hn_name']):
+                    configreq["Username"] = userinfo['hn_name']
+            elif param == "RequestName":
+                if self.requestmapper[param]['type'] == type(requestname):
+                    configreq["RequestName"] = requestname
+            elif param == "RequestorDN":
+                if self.requestmapper[param]['type'] == type(userdn):
+                    configreq["RequestorDN"] = userdn
+            elif self.requestmapper[param]['required']:
+                if self.requestmapper[param]['default'] is not None:
+                    configreq[param] = self.requestmapper[param]['default']
 
         filesJob = getattr( self.configuration.Data, "filesPerJob", None)
         eventsJob = getattr( self.configuration.Data, "eventsPerJob", None)
@@ -135,23 +138,18 @@ class submit(SubCommand):
             configreq["JobSplitArgs"] = {"files_per_job" : filesJob}
         if eventsJob is not None:
             configreq["JobSplitArgs"] = {"events_per_job" : eventsJob}
+
         jobtypes    = getJobTypes()
         plugjobtype = jobtypes[upper(self.configuration.JobType.pluginName)](self.configuration, self.logger, os.path.join(requestarea, 'inputs'))
         inputfiles, jobconfig = plugjobtype.run(configreq)
 
         configreq.update(jobconfig)
 
-        ## TODO upload inputfiles
-        #self.logger.debug("Uploading inputfiles '%s' should be here" % str(inputfiles))
-        #    self.configuration.General.sbservhost
-        #    self.configuration.General.sbservport
-        #    self.configuration.General.sbservtype
-        #    self.configuration.General.sbservpath
-
         server = HTTPRequests(self.configuration.General.server_url)
 
         self.logger.info("Sending the request to the server")
         self.logger.debug("Submitting %s " % str( json.dumps( configreq, sort_keys = False, indent = 4 ) ) )
+
         dictresult, status, reason = server.post(self.uri + configreq["RequestName"], json.dumps( configreq, sort_keys = False) )
         self.logger.debug("Result: %s" % dictresult)
         if status != 200:
