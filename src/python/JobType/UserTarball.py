@@ -11,6 +11,7 @@ import os
 import tarfile
 import tempfile
 import client_default
+import hashlib
 
 from ScramEnvironment import ScramEnvironment
 
@@ -69,11 +70,20 @@ class UserTarball(object):
         """
 
         self.tarfile.close()
+
+        sha256sum = hashlib.sha256()
+        with open(self.tarfile.name,'rb') as f:
+            while True:
+                chunkdata = f.read(8192)
+                if not chunkdata:
+                    break
+                sha256sum.update(chunkdata)
+
         csHost = self.config.General.server_url
 
         with tempfile.NamedTemporaryFile() as curlOutput:
             url = csHost + client_default.defaulturi['upload']
-            curlCommand = 'curl -H "Accept: application/json" -F"userfile=@%s" %s -o %s' % (self.tarfile.name, url, curlOutput.name)
+            curlCommand = 'curl -H "Accept: application/json" -F"userfile=@%s" -F"checksum=%s" %s -o %s' % (self.tarfile.name, sha256sum.hexdigest(), url, curlOutput.name)
             (status, output) = commands.getstatusoutput(curlCommand)
             if status:
                 raise RuntimeError('Problem uploading user sandbox: %s' % output)
