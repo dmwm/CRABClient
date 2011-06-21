@@ -18,10 +18,8 @@ class SubCommand(object):
         self.setOptions()
 
         #not all the commands need an uri (e.g.: remote_copy)
-        if self.name in client_default.defaulturi:
-            self.uri = client_default.defaulturi[self.name]['uri']
-            if 'map' in client_default.defaulturi[self.name]:
-                self.requestmapper = client_default.defaulturi[self.name]['map']
+        if client_default.defaulturi.has_key(self.name):
+            self.uri = client_default.defaulturi[self.name]
 
  
     def __call__(self, options):
