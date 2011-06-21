@@ -68,7 +68,7 @@ class remote_copy(SubCommand):
         else:
             logging.debug('Skipping proxy creation and delegation')
 
-        lcgCmd = 'lcg-cp --checksum-type adler32 --checksum --connect-timeout 20 --sendreceive-timeout 240 --srm-timeout 2400 --verbose -b -D srmv2' 
+        lcgCmd = 'lcg-cp --checksum-type adler32 --checksum --connect-timeout 20 --sendreceive-timeout 240 --srm-timeout 2400 --verbose -b -D srmv2'
 
         sortedbyjob = sorted(dicttocopy.iteritems(), key = operator.itemgetter(1))
         finalresults = {}
@@ -85,7 +85,7 @@ class remote_copy(SubCommand):
         for jobid, lfn in sortedbyjob:
             self.logger.debug("Processing job %s" % jobid)
             localFilename = os.path.join(options.destination, jobid + '.' + options.extension)
-            cmd = '%s %s file://%s' % (lcgCmd, lfn['pfn'], localFilename) 
+            cmd = '%s %s file://%s' % (lcgCmd, lfn['pfn'], localFilename)
             input.put((int(jobid), cmd, ''))
 
             res = None
@@ -109,7 +109,7 @@ class remote_copy(SubCommand):
             checkerr = simpleOutputCheck(stderr)
 
             checksumOK = False
-            if hasattr(lfn, 'checksums'):
+            if lfn.has_key('checksums'):
                 checksumOK = checksumChecker(localFilename, lfn['checksums'])
             else:
                 checksumOK = True # No checksums provided
