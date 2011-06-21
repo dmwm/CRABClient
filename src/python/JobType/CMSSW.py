@@ -21,7 +21,8 @@ class CMSSW(BasicJobType):
         Override run() for JobType
         """
         configArguments = {'outputFiles'            : [],
-                           'InputDataset'           : [],
+                           'userFiles'              : [],
+                           'InputDataset'           : '',
                            'ProcessingVersion'      : '',
                            'AnalysisConfigCacheDoc' : '', }
 
@@ -42,11 +43,12 @@ class CMSSW(BasicJobType):
 
         with UserTarball(name=tarFilename, logger=self.logger, config=self.config) as tb:
             if getattr(self.config.JobType, 'inputFiles', None) is not None:
-                tb.addFiles(userFiles=self.config.JobType.inputFiles)
+                inputFiles = self.config.JobType.inputFiles
+                tb.addFiles(userFiles=inputFiles)
+                configArguments['userFiles'] = [os.path.basename(f) for f in inputFiles]
             uploadResults = tb.upload()
 
         configArguments['userSandbox'] = uploadResults['url']
-        configArguments['userFiles'] = [os.path.basename(f) for f in self.config.JobType.inputFiles]
         configArguments['InputDataset'] = self.config.Data.inputDataset
         configArguments['ProcessingVersion'] = self.config.Data.processingVersion
 
