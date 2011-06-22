@@ -40,7 +40,7 @@ class status(SubCommand):
 
         for state in dictresult['states']:
             count = dictresult['states'][state]['count']
-            jobList = readableRange(dictresult['states'][state]['jobs'])
+            jobList = self.readableRange(dictresult['states'][state]['jobs'])
             self.logger.info("State: %s Count: %s  Jobs: %s" % (state, count, jobList))
 
         return CommandResult(0, None)
@@ -57,7 +57,7 @@ class status(SubCommand):
                                  default = None,
                                  help = "Same as -c/-continue" )
 
-    def readableRange(jobArray):
+    def readableRange(self, jobArray):
         """
         Take array of job numbers and concatenate 1,2,3 to 1-3
         return string
