@@ -68,7 +68,7 @@ class remote_copy(SubCommand):
         else:
             logging.debug('Skipping proxy creation and delegation')
 
-        lcgCmd = 'lcg-cp --checksum-type adler32 --checksum --connect-timeout 20 --sendreceive-timeout 240 --srm-timeout 2400 --verbose -b -D srmv2'
+        lcgCmd = 'lcg-cp --connect-timeout 20 --sendreceive-timeout 240 --srm-timeout 2400 --verbose -b -D srmv2'
 
         sortedbyjob = sorted(dicttocopy.iteritems(), key = operator.itemgetter(1))
         finalresults = {}
@@ -121,7 +121,7 @@ class remote_copy(SubCommand):
                 finalresults[jobid] = {'exit': False, 'lfn': lfn, 'error': 1, 'dest': None}
                 self.logger.debug("Checksum failed for job %s" % jobid)
             else:
-                finalresults[jobid] = {'exit': True, 'lfn': lfn, 'dest': os.path.join(options.destination, str(jobid) + '.root'), 'error': None}
+                finalresults[jobid] = {'exit': True, 'lfn': lfn, 'dest': os.path.join(options.destination, str(jobid) + '.' + options.extension), 'error': None}
                 self.logger.debug("Retrived job, checksum passed %s" % jobid)
 
         try:
@@ -130,6 +130,7 @@ class remote_copy(SubCommand):
             pass
         finally:
             # giving the time to the sub-process to exit
+            # this avoids eventual undesired error messages to the user
             p.terminate()
             time.sleep(1)
 
