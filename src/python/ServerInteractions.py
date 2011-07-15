@@ -2,7 +2,6 @@
 Handles client interactions with remote REST interface
 """
 
-import json
 import urllib
 from urlparse import urlunparse
 from httplib import HTTPConnection

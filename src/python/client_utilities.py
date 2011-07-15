@@ -14,6 +14,7 @@ import cPickle
 
 from CredentialInteractions import CredentialInteractions
 
+from optparse import OptionValueError
 
 def getPlugins(plugins, skip):
     """
@@ -128,7 +129,6 @@ def addFileLogger(logger, workingpath, logname = 'crab.log'):
     """
     _addFileLogger_
     """
-    import os
     logfullpath = os.path.join( workingpath, logname )
     logger.debug("Setting log file %s " % logfullpath)
 
@@ -210,7 +210,7 @@ def loadCache( task, logger ):
     requestarea, requestname = getWorkArea( task )
     loadfile = open(os.path.join(requestarea, '.requestcache'), 'r')
     addFileLogger( logger, workingpath = requestarea )
-    return cPickle.load(loadfile) 
+    return cPickle.load(loadfile)
 
 
 def initProxy(serverDN, myProxy, voRole, voGroup, delegate, logger):
@@ -230,3 +230,33 @@ def initProxy(serverDN, myProxy, voRole, voGroup, delegate, logger):
         proxy.createNewMyProxy( timeleftthreshold = 60 * 60 * 24 * 3)
 
     return userdn, proxy
+
+def validServerURL(option, opt_str, value, parser):
+    """
+    This raises an optparse error if the url is not valid
+    """
+    if value is not None:
+        if not validURL(value):
+            raise OptionValueError("%s option value '%s' not valid." % (opt_str, value))
+        setattr(parser.values, option.dest, value)
+    else:
+        setattr(parser.values, option.dest, option.default)
+
+def validURL(serverurl, attrtohave = ['scheme', 'netloc', 'hostname', 'port'], attrtonothave = ['path', 'params', 'query', 'fragment', 'username', 'password']):
+    """
+    returning false if the format is different from http://host:port
+    """
+    tempurl = serverurl
+    if not serverurl.startswith('http://'):
+        tempurl = 'http://' + serverurl
+    from urlparse import urlparse
+    parsedurl = urlparse(tempurl)
+    for elem in attrtohave:
+        elemval = getattr(parsedurl, elem, None)
+        if str( elemval ) == '' or elemval is None:
+            return False
+    for elem in attrtonothave:
+        elemval = getattr(parsedurl, elem, None)
+        if not str( elemval ) == '' and elemval is not None:
+            return False
+    return True

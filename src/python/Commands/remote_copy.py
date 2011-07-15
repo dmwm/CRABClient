@@ -7,7 +7,7 @@ import operator
 import logging
 import subprocess
 import threading
-import multiprocessing
+import multiprocessing, Queue
 import time
 
 from WMCore.FwkJobReport.FileInfo import readAdler32, readCksum
@@ -56,15 +56,13 @@ class remote_copy(SubCommand):
                                 help = "Skip Grid proxy creation and myproxy delegation")
 
 
-    def __call__(self, args):
+    def __call__(self):
         globalExitcode = -1
 
-        (options, args) = self.parser.parse_args( args )
+        dicttocopy = self.options.inputdict
 
-        dicttocopy = options.inputdict
-
-        if not options.skipProxy:
-            initProxy( None, None, options.role, options.group, False, self.logger)
+        if not self.options.skipProxy:
+            initProxy( None, None, self.options.role, self.options.group, False, self.logger)
         else:
             logging.debug('Skipping proxy creation and delegation')
 
@@ -84,8 +82,9 @@ class remote_copy(SubCommand):
         ## this can be parallelized starting more processes
         for jobid, lfn in sortedbyjob:
             self.logger.debug("Processing job %s" % jobid)
-            localFilename = os.path.join(options.destination, jobid + '.' + options.extension)
+            localFilename = os.path.join(self.options.destination, jobid + '.' + self.options.extension)
             cmd = '%s %s file://%s' % (lcgCmd, lfn['pfn'], localFilename)
+            self.logger.debug("Executing '%s' " % cmd)
             input.put((int(jobid), cmd, ''))
 
             res = None
@@ -109,7 +108,8 @@ class remote_copy(SubCommand):
             checkerr = simpleOutputCheck(stderr)
 
             checksumOK = False
-            if lfn.has_key('checksums'):
+            if hasattr(lfn, 'checksums'):
+                self.logger.debug("Checksum '%s'" %str(lfn['checksums']))
                 checksumOK = checksumChecker(localFilename, lfn['checksums'])
             else:
                 checksumOK = True # No checksums provided
@@ -118,10 +118,11 @@ class remote_copy(SubCommand):
                 finalresults[jobid] = {'exit': False, 'lfn': lfn, 'error': checkout + checkerr, 'dest': None}
                 self.logger.debug("Failed retrieving job %s" % jobid)
             elif not checksumOK:
-                finalresults[jobid] = {'exit': False, 'lfn': lfn, 'error': 1, 'dest': None}
-                self.logger.debug("Checksum failed for job %s" % jobid)
+                msg = "Checksum failed for job " + str(jobid)
+                finalresults[jobid] = {'exit': False, 'lfn': lfn, 'error': msg, 'dest': None}
+                self.logger.debug( msg )
             else:
-                finalresults[jobid] = {'exit': True, 'lfn': lfn, 'dest': os.path.join(options.destination, str(jobid) + '.' + options.extension), 'error': None}
+                finalresults[jobid] = {'exit': True, 'lfn': lfn, 'dest': os.path.join(self.options.destination, str(jobid) + '.' + self.options.extension), 'error': None}
                 self.logger.debug("Retrived job, checksum passed %s" % jobid)
 
         try:
@@ -130,15 +131,14 @@ class remote_copy(SubCommand):
             pass
         finally:
             # giving the time to the sub-process to exit
-            # this avoids eventual undesired error messages to the user
             p.terminate()
             time.sleep(1)
 
-        self.logger.debug(str(finalresults))
         for jobid in finalresults:
             if finalresults[jobid]['exit']:
                 self.logger.info("Job %s: output in %s" %(jobid, finalresults[jobid]['dest']))
             else:
+                self.logger.debug(str(finalresults[jobid]))
                 self.logger.info("Job %s: transfer problem %s" %(jobid, str(finalresults[jobid]['error'])))
                 globalExitcode = 1
 
