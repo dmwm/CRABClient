@@ -33,10 +33,11 @@ class status(SubCommand):
         self.logger.info("Task Status:        %s"    % str(dictresult['requestDetails'][unicode('RequestStatus')]))
         self.logger.info("Completed at level: %s%% " % str(dictresult['requestDetails']['percent_success']))
 
-        for state in dictresult['states']:
-            count = dictresult['states'][state]['count']
-            jobList = self.readableRange(dictresult['states'][state]['jobs'])
-            self.logger.info("State: %s\tCount: %s\tJobs: %s" % (state, count, jobList))
+        if 'states' in dictresult:
+            for state in dictresult['states']:
+                count = dictresult['states'][state]['count']
+                jobList = self.readableRange(dictresult['states'][state]['jobs'])
+                self.logger.info("State: %s\tCount: %s\tJobs: %s" % (state, count, jobList))
 
         return CommandResult(0, None)
 

@@ -82,7 +82,7 @@ class UserTarball(object):
         csHost = self.config.General.server_url
 
         with tempfile.NamedTemporaryFile() as curlOutput:
-            url = csHost + client_default.defaulturi['upload']
+            url = csHost + client_default.defaulturi['upload']['uri']
             curlCommand = 'curl -H "Accept: application/json" -F"userfile=@%s" -F"checksum=%s" %s -o %s' % (self.tarfile.name, sha256sum.hexdigest(), url, curlOutput.name)
             (status, output) = commands.getstatusoutput(curlCommand)
             if status:
