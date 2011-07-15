@@ -32,5 +32,6 @@ defaulturi = {
     'server_info' : {'uri': '/crabinterface/crab/info/'},
     'status' : {'uri': '/crabinterface/crab/task/'},
     'upload' : {'uri': '/crabinterface/crab/uploadUserSandbox'},
+    'report' : {'uri': '/crabinterface/crab/goodLumis/'},
     'get_client_mapping': {'uri': '/crabinterface/crab/requestmapping'}
 }
