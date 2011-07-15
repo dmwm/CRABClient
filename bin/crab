@@ -67,13 +67,6 @@ class CRABClient(object):
                                 default = False,
                                 help = "print extra messages to stdout" )
 
-        self.parser.add_option( "--cmd-help",
-                                action = "store_true",
-                                dest = "cmd_help",
-                                default = False,
-                                help = "print help for COMMAND",
-                                metavar = "COMMAND" )
-
 
     def __call__(self):
         (options, args) = self.parser.parse_args()
@@ -131,16 +124,11 @@ class CRABClient(object):
             sys.exit(-1)
 
         sub_cmd = args[0]
-        cmd = self.sub_commands[sub_cmd](self.logger)
+        cmd = self.sub_commands[sub_cmd](self.logger, args[1:])
 
-        if options.cmd_help:
-            # call the printHelp function for the command
-            cmd.printHelp()
-        else:
-            # run the command
-            (exitcode, message) = cmd(args[1:])
-            if exitcode != 0:
-                self.logger.error( message ) 
+        (exitcode, message) = cmd()
+        if exitcode != 0:
+            self.logger.error( message )
 
 
 if __name__ == "__main__":
@@ -162,7 +150,7 @@ if __name__ == "__main__":
         client.logger.error("Error %s" % str(ke))
         exitcode = 100
     except SocketError, se:
-        msg = 'Could not establish a connection with the server.'
+        msg = 'Could not establish a connection with the server. '
         msg += 'This may be a temporary problem, but if you see it repeatedly please notify AnaOps\n'
         client.logger.error(msg)
         logging.getLogger('CRAB3:traceback').exception('Caught exception')

@@ -26,7 +26,7 @@ class FakeRESTServer(RESTBaseUnitTest):
         self.config.Webtools.environment = 'development'
         self.config.Webtools.error_log_level = logging.ERROR
         self.config.Webtools.access_log_level = logging.ERROR
-        self.config.Webtools.port = 8588
+        self.config.Webtools.port = 8518
 
         #DB Parameters used by RESTServerSetup
         self.config.UnitTests.views.active.rest.database.connectUrl = databaseURL

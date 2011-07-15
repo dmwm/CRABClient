@@ -1,6 +1,7 @@
 from Commands import CommandResult
 from Commands.SubCommand import SubCommand
 from ServerInteractions import HTTPRequests
+from client_utilities import validServerURL
 
 
 class server_info(SubCommand):
@@ -23,14 +24,17 @@ class server_info(SubCommand):
         self.parser.add_option( "-s", "--server",
                                  dest = "server",
                                  default = None,
+                                 action = "callback",
+                                 type   = 'str',
+                                 nargs  = 1,
+                                 callback = validServerURL,
+                                 metavar = "http://HOSTNAME:PORT",
                                  help = "Endpoint server url to use" )
 
 
-    def __call__(self, options):
+    def __call__(self):
 
-        (options, args) = self.parser.parse_args(options)
-
-        server = HTTPRequests(options.server)
+        server = HTTPRequests(self.options.server)
 
         self.logger.debug('Looking up server information')
         dictresult, status, reason = server.get(self.uri)
@@ -38,7 +42,7 @@ class server_info(SubCommand):
         self.logger.debug("Result: %s" % dictresult)
 
         if status != 200:
-            msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(userdefault), str(dictresult), str(reason))
+            msg = "Problem retrieving status:\n:output:%s\nreason:%s" % (str(dictresult), str(reason))
             return CommandResult(1, msg)
 
         return CommandResult(0, dictresult)

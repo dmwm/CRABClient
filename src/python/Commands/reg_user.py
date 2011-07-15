@@ -4,9 +4,9 @@ This is simply taking care of registering the user
 
 from Commands import CommandResult
 import json
-import os
 from Commands.SubCommand import SubCommand
 from ServerInteractions import HTTPRequests
+from client_utilities import validServerURL
 
 
 class reg_user(SubCommand):
@@ -21,23 +21,18 @@ class reg_user(SubCommand):
     usage = "usage: %prog " + name + " [options] [args]"
 
 
-    def __call__(self, args):
-
-        (options, args) = self.parser.parse_args( args )
+    def __call__(self):
 
         self.logger.debug("Registering user")
 
-        server = HTTPRequests(options.server)
-
-        defaultconfigreq = {"RequestType" : "Analysis"}
+        server = HTTPRequests(self.options.server)
 
         userdefault = {
-                       "Group"    : options.group,
-                       "Team"     : options.team,
-                       "Email"    : options.email,
-                       "UserDN"   : options.dn
+                       "Group"    : self.options.group,
+                       "Team"     : self.options.team,
+                       "Email"    : self.options.email,
+                       "UserDN"   : self.options.dn
                       }
-        print userdefault
 
         self.logger.debug("Registering the user on the server")
         dictresult, status, reason = server.post( self.uri, json.dumps( userdefault, sort_keys = False) )
@@ -79,5 +74,10 @@ class reg_user(SubCommand):
         self.parser.add_option( "-s", "--server",
                                  dest = "server",
                                  default = None,
+                                 action = "callback",
+                                 type   = 'str',
+                                 nargs  = 1,
+                                 callback = validServerURL,
+                                 metavar = "http://HOSTNAME:PORT",
                                  help = "Endpoint server url to use" )
 

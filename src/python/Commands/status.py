@@ -1,7 +1,6 @@
 from Commands import CommandResult
 from Commands.SubCommand import SubCommand
 from ServerInteractions import HTTPRequests
-from client_utilities import loadCache
 
 
 class status(SubCommand):
@@ -15,24 +14,20 @@ class status(SubCommand):
     usage = "usage: %prog " + name + " [options] [args]"
 
 
-    def __call__(self, args):
+    def __call__(self):
 
-        (options, args) = self.parser.parse_args( args )
-
-        if options.task is None:
+        if self.options.task is None:
             return CommandResult(1, 'Error: Task option is required')
 
-        cachedinfo = loadCache(options.task, self.logger)
+        server = HTTPRequests(self.cachedinfo['Server'] + ':' + str(self.cachedinfo['Port']))
 
-        server = HTTPRequests(cachedinfo['Server'] + ':' + str(cachedinfo['Port']))
-
-        self.logger.debug('Looking up detailed status of task %s' % cachedinfo['RequestName'])
-        dictresult, status, reason = server.get(self.uri + cachedinfo['RequestName'])
+        self.logger.debug('Looking up detailed status of task %s' % self.cachedinfo['RequestName'])
+        dictresult, status, reason = server.get(self.uri + self.cachedinfo['RequestName'])
 
         self.logger.debug("Result: %s" % dictresult)
 
         if status != 200:
-            msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(cachedinfo['RequestName']), str(dictresult), str(reason))
+            msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(self.cachedinfo['RequestName']), str(dictresult), str(reason))
             return CommandResult(1, msg)
 
         self.logger.info("Task Status:        %s"    % str(dictresult['requestDetails'][unicode('RequestStatus')]))
@@ -41,7 +36,7 @@ class status(SubCommand):
         for state in dictresult['states']:
             count = dictresult['states'][state]['count']
             jobList = self.readableRange(dictresult['states'][state]['jobs'])
-            self.logger.info("State: %s Count: %s  Jobs: %s" % (state, count, jobList))
+            self.logger.info("State: %s\tCount: %s\tJobs: %s" % (state, count, jobList))
 
         return CommandResult(0, None)
 

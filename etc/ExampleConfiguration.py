@@ -9,7 +9,6 @@ config = Configuration()
 
 ## General options for the client
 config.section_("General")
-config.General.server_url    = 'wmcrabserver.cern.ch:8080'
 config.General.requestName   = 'MyAnalysis_1'
 
 ## Specific option of the job type

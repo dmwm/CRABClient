@@ -19,12 +19,13 @@ class CommandTest(FakeRESTServer):
         self.setLog()
 
         client_default.defaulturi = {
-            'submit' : '/unittests/rest/task/',
-            'getlog' : '/unittests/rest/log/',
-            'getoutput' : '/unittests/rest/data/',
-            'reg_user' : '/unittests/rest/user/',
-            'server_info' : '/unittests/rest/info/',
-            'status' : '/unittests/rest/task/'
+            'submit' :    {'uri': '/unittests/rest/task/'},
+            'getlog' :    {'uri': '/unittests/rest/log/'},
+            'getoutput' : {'uri': '/unittests/rest/data/'},
+            'reg_user' :  {'uri': '/unittests/rest/user/'},
+            'server_info' : {'uri': '/unittests/rest/info/'},
+            'status' :    {'uri': '/unittests/rest/task/'},
+            'get_client_mapping': {'uri': '/unittests/rest/requestmapping/'}
         }
 
 
@@ -34,30 +35,32 @@ class CommandTest(FakeRESTServer):
 
 
     def testServerInto(self):
-        si = server_info(self.logger)
+        si = server_info(self.logger, ["-s","localhost:8518"])
 
         #1) check that the right API is called
-        res = si(["-s","localhost:8588"])
+        res = si()
         expRes = CommandResult(0, CRABRESTModelMock.SI_RESULT)
         self.assertEquals(expRes, res)
 
         #2) wrong -s option: the user give us an address that does not exists
-        self.assertRaises(SocketError, si, ["-s","localhos:8588"])
+        #self.assertRaises(SocketError, si)
+        #, ["-s","localhost:8518"])
 
 
     def testGetStatus(self):
-        s = status(self.logger)
+        s = status(self.logger, [])
 
         #1) missing required -t option
         expRes = CommandResult(1, 'Error: Task option is required')
-        res = s([])
+        res = s()
         self.assertEquals(expRes, res)
 
         #2) correct execution
         analysisDir = os.path.join(os.path.dirname(__file__), 'crab_AnalysisName')
-        res = s(["-t", analysisDir])
+        s = status(self.logger, ["-t", analysisDir])
+        res = s()
         expRes = CommandResult(0, None)
-        self.assertEquals(expRes, res)
+        self.assertEquals( expRes, s)
 
         #3) wrong -t option
         analysisDir = os.path.join(os.path.dirname(__file__), 'crab_XXX')
@@ -72,13 +75,14 @@ class CommandTest(FakeRESTServer):
         #f.close()
 
         #1) missing required -t option (the other required option, -r, is ignored)
-        go = getoutput(self.logger)
-        res = go([])
+        go = getoutput(self.logger, [])
+        res = go()
         expRes = CommandResult(1, 'Error: Task option is required')
 
         #2) -t option is present but -r is missing
         analysisDir = os.path.join(os.path.dirname(__file__), 'crab_AnalysisName')
-        res = go(["-t", analysisDir])
+        go = getoutput(self.logger, ["-t", analysisDir])
+        res = go()
         expRes = CommandResult(1, 'Error: Range option is required')
 
         #3) request passed with the -t option does not exist
@@ -87,7 +91,8 @@ class CommandTest(FakeRESTServer):
 
         #4) check correct behaviour without specifying output directory
         #N.B.: -p options is required for tests to skip proxy creation and delegation
-        res = go(["-t", analysisDir, "-r", "20", "-p"])
+        go = getoutput(self.logger, ["-t", analysisDir, "-r", "20", "-p"])
+        res = go()
         expRes = CommandResult(0, None)
         #check if the result directory has been created
         destDir = os.path.join(analysisDir, 'results')
@@ -97,14 +102,16 @@ class CommandTest(FakeRESTServer):
         self.assertFalse(os.path.isdir(destDir))
 
         #5) correct behavior and output directory specified which exists
-        res = go(["-t", analysisDir, "-r", "20", "-o", "/tmp", "-p"])
+        go = getoutput(self.logger, ["-t", analysisDir, "-r", "20", "-o", "/tmp", "-p"])
+        res = go()
         expRes = CommandResult(0, None)
         #check if the result directory has been created
         self.assertTrue(os.path.isdir('/tmp'))
         #TODO check tath the file has been copied
 
         #6) correct behavior and output directory specified which does not exists
-        res = go(["-t", analysisDir, "-r", "20", "-o", "/tmp/asdf/qwerty", "-p"])
+        go = getoutput(self.logger, ["-t", analysisDir, "-r", "20", "-o", "/tmp/asdf/qwerty", "-p"])
+        res = go()
         expRes = CommandResult(0, None)
         #check if the result directory has been created
         self.assertTrue(os.path.isdir('/tmp/asdf/qwerty'))
