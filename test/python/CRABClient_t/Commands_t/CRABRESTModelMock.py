@@ -13,6 +13,9 @@ SI_RESULT['sandbox']['endpoint'] = ''
 SI_RESULT['sandbox']['port'] = ''
 SI_RESULT['sandbox']['basepath'] = ''
 
+goodLumisResult = {'1':[ [1,15],  [30,50] ],
+                   '3':[ [10,15], [30,50] ],}
+
 
 class CRABRESTModelMock(RESTModel):
     def __init__(self, config={}):
@@ -34,6 +37,10 @@ class CRABRESTModelMock(RESTModel):
         #/data
         self._addMethod('GET', 'data', self.getDataLocation,
                        args=['requestID','jobRange'], validation=[self.isalnum])
+
+        #/goodLumis
+        self._addMethod('GET', 'goodLumis', self.getGoodLumis,
+                       args=['requestID'], validation=[self.isalnum])
 
         # Server
         self._addMethod('GET', 'info', self.getServerInfo,
@@ -83,6 +90,14 @@ class CRABRESTModelMock(RESTModel):
 
     def getDataLocation(self, requestID, jobRange):
         return { '20' : 'src_outputt.root' }
+
+
+    def getGoodLumis(self, requestID):
+        """
+        Mockup to return the list of good lumis processed as generated
+        by CouchDB
+        """
+        return goodLumisResult
 
 
     def getClientMapping(self):
