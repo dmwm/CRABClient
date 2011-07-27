@@ -1,5 +1,6 @@
 from WMCore.WebTools.RESTModel import RESTModel
 import WMCore
+import client_default
 
 import threading
 import cherrypy
@@ -13,6 +14,7 @@ SI_RESULT['sandbox']['endpoint'] = ''
 SI_RESULT['sandbox']['port'] = ''
 SI_RESULT['sandbox']['basepath'] = ''
 
+FILE_NAME = 'src_output.root'
 goodLumisResult = {'1':[ [1,15],  [30,50] ],
                    '3':[ [10,15], [30,50] ],}
 
@@ -22,14 +24,24 @@ class CRABRESTModelMock(RESTModel):
         RESTModel.__init__(self, config)
 
         self.defaulturi = {
-            'submit' : {'uri': '/unittests/rest/task/'},
+            'submit' : {'uri': '/unittests/rest/task/',
+                        'map': client_default.defaulturi['submit']['map']},
             'getlog' : {'uri': '/unittests/rest/log/'},
             'getoutput' : {'uri': '/unittests/rest/data/'},
             'reg_user' : {'uri': '/unittests/rest/user/'},
             'server_info' : {'uri': '/unittests/rest/info/'},
             'status' : {'uri': '/unittests/rest/task/'},
+            'report' :    {'uri': '/unittests/rest/goodLumis/'},
             'get_client_mapping': {'uri': '/unittests/rest/requestmapping/'}
         }
+
+        self._addMethod('POST', 'user', self.addNewUser,
+                        args=[],
+                        validation=[self.isalnum])
+
+        self._addMethod('POST', 'task', self.postRequest,
+                        args=['requestName'],
+                        validation=[self.isalnum])
 
         self._addMethod('GET', 'task', self.getTaskStatus,
                         args=['requestID'],
@@ -85,11 +97,14 @@ class CRABRESTModelMock(RESTModel):
 
 
     def getTaskStatus(self, requestID):
-        return {u'percent_success': 100.0, 'RequestStatus': 'running'}
+        return {u'states': {u'success': {u'count': 5, u'jobs': [41, 42, 43, 44, 45]}}, \
+                           u'requestDetails': {u'percent_success': 0, 'RequestStatus': 'running'}}
 
 
     def getDataLocation(self, requestID, jobRange):
-        return { '20' : 'src_outputt.root' }
+        f = open(FILE_NAME, 'w')
+        f.close()
+        return { '20' : {'pfn' : FILE_NAME } }
 
 
     def getGoodLumis(self, requestID):
@@ -107,4 +122,12 @@ class CRABRESTModelMock(RESTModel):
         """
 
         return self.defaulturi
+
+
+    def addNewUser(self):
+        return { "hn_name" : "mmascher" }
+
+
+    def postRequest(self, requestName):
+          return {'ID': 'mmascher_crab_MyAnalysis26_110707_164957'}
 
