@@ -12,6 +12,8 @@ import pkgutil
 import sys
 import cPickle
 
+from string import upper
+
 from CredentialInteractions import CredentialInteractions
 
 from optparse import OptionValueError
@@ -88,8 +90,11 @@ def getJobTypes(jobtypepath = 'JobType'):
 
     TODO: this can also be a call to get a specific job type from the server
     """
-    return getPlugins(jobtypepath, ['BasicJobType'])
-
+    allplugins = getPlugins(jobtypepath, ['BasicJobType'])
+    result = {}
+    for k in allplugins:
+        result[upper(k)] = allplugins[k]
+    return result
 
 
 def getAvailCommands(subcmdpath = 'Commands'):

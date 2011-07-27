@@ -142,6 +142,7 @@ class submit(SubCommand):
         if eventsJob is not None:
             configreq["JobSplitArgs"] = {"events_per_job" : eventsJob}
 
+        jobconfig = {}
         pluginParams = [ self.configuration, self.logger, os.path.join(requestarea, 'inputs') ]
         if getattr(self.configuration.JobType, 'pluginName', None) is not None:
             jobtypes    = getJobTypes(*pluginParams)
