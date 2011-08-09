@@ -1,3 +1,5 @@
+from __future__ import division # I want floating points
+
 from Commands import CommandResult
 from Commands.SubCommand import SubCommand
 from ServerInteractions import HTTPRequests
@@ -34,10 +36,17 @@ class status(SubCommand):
         self.logger.info("Completed at level: %s%% " % str(dictresult['requestDetails']['percent_success']))
 
         if 'states' in dictresult:
+            totalJobs = 0
+            for state in dictresult['states']:
+                totalJobs += dictresult['states'][state]['count']
             for state in dictresult['states']:
                 count = dictresult['states'][state]['count']
-                jobList = self.readableRange(dictresult['states'][state]['jobs'])
-                self.logger.info("State: %s\tCount: %s\tJobs: %s" % (state, count, jobList))
+                if self.options.brief:
+                    percent = count/totalJobs*100
+                    self.logger.info("State: %-13s Count: %6s (%5.1f%%)" % (state, count, percent))
+                else:
+                    jobList = self.readableRange(dictresult['states'][state]['jobs'])
+                    self.logger.info("State: %-13s Count: %6s  Jobs: %s" % (state, count, jobList))
 
         return CommandResult(0, None)
 
@@ -52,6 +61,13 @@ class status(SubCommand):
                                  dest = "task",
                                  default = None,
                                  help = "Same as -c/-continue" )
+
+        self.parser.add_option( "-b", "--brief",
+                                 dest = "brief",
+                                 action = "store_true",
+                                 default = False,
+                                 help = "Provide just a summary of the status" )
+
 
     def readableRange(self, jobArray):
         """
