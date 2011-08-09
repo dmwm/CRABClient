@@ -2,12 +2,14 @@ import CRABRESTModelMock
 from FakeRESTServer import FakeRESTServer
 from Commands.server_info import server_info
 from Commands.getoutput import getoutput
+from Commands.report import report
 from Commands.status import status
 from Commands import CommandResult
 import client_default
 
 import unittest
 import logging
+import json
 import os
 import shutil
 from socket import error as SocketError
@@ -25,7 +27,8 @@ class CommandTest(FakeRESTServer):
             'reg_user' :  {'uri': '/unittests/rest/user/'},
             'server_info' : {'uri': '/unittests/rest/info/'},
             'status' :    {'uri': '/unittests/rest/task/'},
-            'get_client_mapping': {'uri': '/unittests/rest/requestmapping/'}
+            'report' :    {'uri': '/unittests/rest/goodLumis/'},
+            'get_client_mapping': {'uri': '/unittests/rest/requestmapping/'},
         }
 
 
@@ -34,7 +37,7 @@ class CommandTest(FakeRESTServer):
         self.logger.setLevel(logging.DEBUG)
 
 
-    def testServerInto(self):
+    def testServerInfo(self):
         si = server_info(self.logger, ["-s","localhost:8518"])
 
         #1) check that the right API is called
@@ -65,6 +68,31 @@ class CommandTest(FakeRESTServer):
         #3) wrong -t option
         analysisDir = os.path.join(os.path.dirname(__file__), 'crab_XXX')
         self.assertRaises( IOError, s, ["-t", analysisDir])
+
+
+    def testReport(self):
+        """
+        Test the functionality of the report command
+        """
+
+        rep = report(self.logger)
+
+        # Missing required -t option
+        expRes = CommandResult(1, 'Error: Task option is required')
+        res = rep([])
+        self.assertEquals(expRes, res)
+
+        # Executes
+        analysisDir = os.path.join(os.path.dirname(__file__), 'crab_AnalysisName')
+        res = rep(["-t", analysisDir])
+        expRes = CommandResult(0, None)
+        self.assertEquals(expRes, res)
+
+        # Wrote correct file
+        with open('lumiReport.json', 'r') as reportFile:
+            result = json.load(reportFile)
+            self.assertEquals(result, CRABRESTModelMock.goodLumisResult)
+
 
     def testGetOutput(self):
         """
