@@ -14,23 +14,20 @@ class report(SubCommand):
     name  = __name__.split('.').pop()
     usage = "usage: %prog " + name + " [options] [args]"
 
-    def __call__(self, args):
-        (options, args) = self.parser.parse_args(args)
+    def __call__(self):
 
-        if options.task is None:
+        if self.options.task is None:
             return CommandResult(1, 'Error: Task option is required')
 
-        cachedinfo = loadCache(options.task, self.logger)
+        server = HTTPRequests(self.cachedinfo['Server'] + ':' + str(self.cachedinfo['Port']))
 
-        server = HTTPRequests(cachedinfo['Server'] + ':' + str(cachedinfo['Port']))
-
-        self.logger.debug('Looking up good lumis for task %s' % cachedinfo['RequestName'])
-        dictresult, status, reason = server.get(self.uri + cachedinfo['RequestName'])
+        self.logger.debug('Looking up good lumis for task %s' % self.cachedinfo['RequestName'])
+        dictresult, status, reason = server.get(self.uri + self.cachedinfo['RequestName'])
 
         self.logger.debug("Result: %s" % dictresult)
 
         if status != 200:
-            msg = "Problem retrieving good lumis:\ninput:%s\noutput:%s\nreason:%s" % (str(cachedinfo['RequestName']), str(dictresult), str(reason))
+            msg = "Problem retrieving good lumis:\ninput:%s\noutput:%s\nreason:%s" % (str(self.cachedinfo['RequestName']), str(dictresult), str(reason))
             return CommandResult(1, msg)
 
         nLumis = 0
@@ -39,10 +36,10 @@ class report(SubCommand):
                 nLumis += (1 + lumiPairs[1] - lumiPairs[0])
         self.logger.info("Sucessfully analyzed %s lumi(s) from %s run(s)" % (nLumis, len(dictresult)))
 
-        with open(options.file, 'w') as jsonFile:
+        with open(self.options.file, 'w') as jsonFile:
             json.dump(dictresult, jsonFile)
             jsonFile.write("\n")
-            self.logger.info("Summary of processed lumi sections written to %s" % options.file)
+            self.logger.info("Summary of processed lumi sections written to %s" % self.options.file)
 
         return CommandResult(0, None)
 

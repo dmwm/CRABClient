@@ -3,7 +3,7 @@ This is simply taking care of job submission
 """
 
 from Commands import CommandResult
-from client_utilities import getJobTypes, createCache, createWorkArea, initProxy, validServerURL
+from client_utilities import getJobTypes, createCache, createWorkArea, initProxy, validServerURL, addPlugin
 import json, os
 from string import upper
 from Commands.SubCommand import SubCommand
@@ -34,7 +34,7 @@ class submit(SubCommand):
         if type(config) == Configuration:
             self.configuration = config
         else:
-            self.configuration = loadConfigurationFile(config)
+            self.configuration = loadConfigurationFile( os.path.abspath(config))
         return self.validateConfig()
 
 
@@ -43,7 +43,7 @@ class submit(SubCommand):
         valid = False
         configmsg = 'Default'
         try:
-            valid, configmsg = self.loadConfig( os.path.abspath(self.options.config) )
+            valid, configmsg = self.loadConfig( self.options.config )
         except ImportError:
             return CommandResult(1, "Configuration file '%s' not found" % self.options.config)
         else:
@@ -142,9 +142,17 @@ class submit(SubCommand):
         if eventsJob is not None:
             configreq["JobSplitArgs"] = {"events_per_job" : eventsJob}
 
-        jobtypes    = getJobTypes()
-        plugjobtype = jobtypes[upper(self.configuration.JobType.pluginName)](self.configuration, self.logger, os.path.join(requestarea, 'inputs'))
-        inputfiles, jobconfig = plugjobtype.run(configreq)
+        pluginParams = [ self.configuration, self.logger, os.path.join(requestarea, 'inputs') ]
+        if getattr(self.configuration.JobType, 'pluginName', None) is not None:
+            jobtypes    = getJobTypes(*pluginParams)
+            plugjobtype = jobtypes[upper(self.configuration.JobType.pluginName)](*pluginParams)
+            inputfiles, jobconfig = plugjobtype.run(configreq)
+        else:
+            fullname = self.configuration.JobType.externalPluginFile
+            basename = os.path.basename(fullname).split('.')[0]
+            plugin = addPlugin(fullname)[basename]
+            pluginInst = plugin(*pluginParams)
+            inputfiles, jobconfig = pluginInst.run(configreq)
 
         configreq.update(jobconfig)
 
@@ -232,10 +240,19 @@ class submit(SubCommand):
 
         if getattr(self.configuration, 'JobType', None) is None:
             return False, "Crab configuration problem: JobType section is missing. "
-        elif getattr(self.configuration.JobType, 'pluginName', None) is None:
-            return False, "Crab configuration problem: JobType.pluginName parameter is missing. "
-        elif upper(self.configuration.JobType.pluginName) not in getJobTypes():
-            msg = "JobType %s not found or not supported." % self.configuration.JobType.pluginName
-            return False, msg
+        else:
+            if getattr(self.configuration.JobType, 'pluginName', None) is None and\
+               getattr(self.configuration.JobType, 'externalPluginFile', None) is None:
+                return False, "Crab configuration problem: one of JobType.pluginName or JobType.externalPlugin parameters is required. "
+            if getattr(self.configuration.JobType, 'pluginName', None) is not None and\
+               getattr(self.configuration.JobType, 'externalPluginFile', None) is not None:
+                return False, "Crab configuration problem: only one between JobType.pluginName or JobType.externalPlugin parameters is required. "
+
+            externalPlugin = getattr(self.configuration.JobType, 'externalPluginFile', None)
+            if externalPlugin is not None:
+                addPlugin(externalPlugin)
+            elif upper(self.configuration.JobType.pluginName) not in getJobTypes():
+                msg = "JobType %s not found or not supported." % self.configuration.JobType.pluginName
+                return False, msg
 
         return True, "Valid configuration"
