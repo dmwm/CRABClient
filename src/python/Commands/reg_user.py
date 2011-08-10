@@ -16,8 +16,8 @@ class reg_user(SubCommand):
 
     visible = False
 
-    ## name should become automatically generated
-    name  = "reg_user"
+    name  = __name__.split('.').pop()
+    names = [name]
     usage = "usage: %prog " + name + " [options] [args]"
 
 

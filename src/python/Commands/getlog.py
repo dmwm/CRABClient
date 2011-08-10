@@ -8,7 +8,8 @@ import os
 class getlog(SubCommand):
 
     ## name should become automatically generated
-    name  = "getlog"
+    name  = "get-log"
+    names = [name, 'log']
     usage = "usage: %prog " + name + " [options] [args]"
 
     def __call__(self):

@@ -11,8 +11,8 @@ class status(SubCommand):
     identified by -t/--task option
     """
 
-    ## name should become automatically generated
-    name  = "status"
+    name  = __name__.split('.').pop()
+    names = [name, 'stat']
     usage = "usage: %prog " + name + " [options] [args]"
 
 

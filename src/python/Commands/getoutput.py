@@ -7,7 +7,8 @@ import os
 class getoutput(SubCommand):
 
     ## name should become automatically generated
-    name  = "getoutput"
+    name  = "get-output"
+    names = [name, 'output']
     usage = "usage: %prog " + name + " [options] [args]"
 
     def __call__(self):

@@ -10,9 +10,8 @@ class server_info(SubCommand):
     """
 
     visible = False
-
-    ## name should become automatically generated
-    name  = "server_info"
+    name  = __name__.split('.').pop()
+    names = [name]
 
 
     def setOptions(self):

@@ -7,7 +7,8 @@ class job_types(SubCommand):
     """
 
     ## name should become automatically generated
-    name  = "job_type"
+    name  = __name__.split('.').pop()
+    names = [name]
     visible = False
 
 
