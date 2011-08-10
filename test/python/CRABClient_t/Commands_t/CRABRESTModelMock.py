@@ -64,6 +64,10 @@ class CRABRESTModelMock(RESTModel):
                         args=[],
                         validation=[self.isalnum])
 
+        self._addMethod('GET', 'jobErrors', self.getJobErrors,
+                        args=['requestID'],
+                        validation=[self.isalnum])
+
         cherrypy.engine.subscribe('start_thread', self.initThread)
 
 
@@ -132,3 +136,33 @@ class CRABRESTModelMock(RESTModel):
     def postRequest(self, requestName):
           return {'ID': 'mmascher_crab_MyAnalysis26_110707_164957'}
 
+
+    def getJobErrors(self, requestID):
+        # { jobid : { retry : { step : [ details: '', type: '', exitCode: '']}}}
+        failed = {'1':
+                   {'0': {
+                     'step1': [ { "details": "Error in StageOut: 99109\n'x.z.root' does not match regular expression /store/temp/([a-zA-Z0-9\\-_]+).root",
+                                  "type":"Misc. StageOut error: 99109\n",
+                                  "exitCode":99109 }
+                              ],
+                     'step2': [ { "details": "Cannot find file in jobReport path: /x/y/z/job_134/Report.1.pkl",
+                                  "type":"99999",
+                                  "exitCode":84 }
+                              ]
+                     }
+                   },
+                  '2':
+                   {'0': {
+                     'step1': [ { "details": "Error in StageOut: 99109\n'x.z.root' does not match regular expression /store/temp/([a-zA-Z0-9\\-_]+).root",
+                                  "type":"Misc. StageOut error: 99109\n",
+                                  "exitCode":99109 }
+                              ]
+                     },
+                    '1': {
+                     'step1': [ { "details": "Error in StageOut: 99109\n'x.z.root' does not match regular expression /store/temp/([a-zA-Z0-9\\-_]+).root",                                                           "type":"Misc. StageOut error: 99109\n",
+                                  "exitCode":99109 }
+                              ]
+                     }
+                   }
+                 }
+        return failed

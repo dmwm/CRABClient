@@ -98,23 +98,23 @@ class postmortem(SubCommand):
         ## for each job
         for jobid in alljobs:
             jobmsg = "Job %d" % jobid
-            ## and just for the last retry of the job -- here the for could be removed
-            for retry in max(dictresult[str(jobid)].keys()):
-                jobmsg += " failed at trial %d" % retry
-                ## and for each step
-                for step in dictresult[str(jobid)][str(retry)]:
-                    jobmsg += " in %s step" % step
-                    stepfailures = ''
-                    ## and for each failure of it
-                    for singlefailure in dictresult[str(jobid)][str(retry)][step]:
-                        stepfailures += '"' + singlefailure['type'].strip() + '" - '
-                        ## now we create a dict with the hash of the error messsage as main key
-                        errtypehash = hashlib.md5( singlefailure['type'].strip() ).hexdigest()
-                        if errtypehash in failures:
-                            failures[errtypehash]['jobs'].append( (jobid, retry) )
-                        else:
-                            failures[errtypehash] = {'error': singlefailure['type'].strip(), 'jobs': [(jobid, retry)]}
-                    jobmsg += " due to %s" % stepfailures[:-1]
+            ## and just for the last retry of the job
+            retry = max( map(int, dictresult[str(jobid)].keys()) )
+            jobmsg += " failed at trial %d" % retry
+            ## and for each step
+            for step in dictresult[str(jobid)][str(retry)]:
+                jobmsg += " in %s step" % step
+                stepfailures = ''
+                ## and for each failure of it
+                for singlefailure in dictresult[str(jobid)][str(retry)][step]:
+                    stepfailures += '"' + singlefailure['type'].strip() + '" - '
+                    ## now we create a dict with the hash of the error messsage as main key
+                    errtypehash = hashlib.md5( singlefailure['type'].strip() ).hexdigest()
+                    if errtypehash in failures:
+                        failures[errtypehash]['jobs'].append( (jobid, retry) )
+                    else:
+                        failures[errtypehash] = {'error': singlefailure['type'].strip(), 'jobs': [(jobid, retry)]}
+                jobmsg += " due to %s" % stepfailures[:-1]
             self.logger.debug(jobmsg)
         #{ 'hash': {'error': 'erromsg', 'jobs': [(1, 1),(2,1),(3,2)]}
         return failures
