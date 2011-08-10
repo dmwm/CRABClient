@@ -23,13 +23,14 @@ class report(SubCommand):
         server = HTTPRequests(self.cachedinfo['Server'] + ':' + str(self.cachedinfo['Port']))
 
         self.logger.debug('Looking up good lumis for task %s' % self.cachedinfo['RequestName'])
-        dictresult, status, reason = server.get(self.uri + self.cachedinfo['RequestName'])
+        result, status, reason = server.get(self.uri + self.cachedinfo['RequestName'])
 
-        self.logger.debug("Result: %s" % dictresult)
+        self.logger.debug("Result: %s" % result)
 
         if status != 200:
-            msg = "Problem retrieving good lumis:\ninput:%s\noutput:%s\nreason:%s" % (str(self.cachedinfo['RequestName']), str(dictresult), str(reason))
+            msg = "Problem retrieving good lumis:\ninput:%s\noutput:%s\nreason:%s" % (str(self.cachedinfo['RequestName']), str(result), str(reason))
             return CommandResult(1, msg)
+        dictresult = json.loads(result)
 
         nLumis = 0
         for run in dictresult:
