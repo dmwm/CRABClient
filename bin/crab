@@ -117,14 +117,21 @@ class CRABClient(object):
         sys.excepthook = log_exception
 
         # check that the command is valid
-        if len(args) == 0 or args[0] not in self.sub_commands.keys():
-            print "You have not specified a valid command."
+        if len(args) == 0:
+            print "You have not specified a command."
             # Described the valid commands in epilog, reuse here
             print self.parser.epilog
             sys.exit(-1)
 
-        sub_cmd = args[0]
-        cmd = self.sub_commands[sub_cmd](self.logger, args[1:])
+        sub_cmd = None
+        try:
+            sub_cmd = next( v for k,v in self.sub_commands.items() if args[0] in v['names'] )
+        except StopIteration:
+            print "'" + str(args[0]) + "' is not a valid command."
+            # Described the valid commands in epilog, reuse here
+            print self.parser.epilog
+            sys.exit(-1)
+        cmd = sub_cmd['module'](self.logger, args[1:])
 
         (exitcode, message) = cmd()
         if exitcode != 0:

@@ -110,7 +110,7 @@ def getAvailCommands(subcmdpath = 'Commands'):
     result = {}
     for k in subcmdplugins.keys():
         if subcmdplugins[k].visible:
-            result[k] = subcmdplugins[k]
+            result[subcmdplugins[k].name] = {'names': subcmdplugins[k].names, 'module': subcmdplugins[k]}
 
     return result
 

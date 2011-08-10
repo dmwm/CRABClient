@@ -26,13 +26,14 @@ class CRABRESTModelMock(RESTModel):
         self.defaulturi = {
             'submit' : {'uri': '/unittests/rest/task/',
                         'map': client_default.defaulturi['submit']['map']},
-            'getlog' : {'uri': '/unittests/rest/log/'},
-            'getoutput' : {'uri': '/unittests/rest/data/'},
+            'get-log' : {'uri': '/unittests/rest/log/'},
+            'get-output' : {'uri': '/unittests/rest/data/'},
             'reg_user' : {'uri': '/unittests/rest/user/'},
             'server_info' : {'uri': '/unittests/rest/info/'},
             'status' : {'uri': '/unittests/rest/task/'},
             'report' :    {'uri': '/unittests/rest/goodLumis/'},
-            'get_client_mapping': {'uri': '/unittests/rest/requestmapping/'}
+            'get_client_mapping': {'uri': '/unittests/rest/requestmapping/'},
+            'get-errors': {'uri': '/unittests/rest/jobErrors/'}
         }
 
         self._addMethod('POST', 'user', self.addNewUser,

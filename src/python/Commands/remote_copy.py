@@ -17,8 +17,7 @@ class remote_copy(SubCommand):
     ## currently doesn't need to be showed to the outside
     visible = False
 
-    ## name should become automatically generated
-    name  = "remote_copy"
+    name  = __name__.split('.').pop()
     usage = "usage: %prog " + name + " [options] [args]"
 
 

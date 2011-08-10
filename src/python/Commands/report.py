@@ -12,6 +12,7 @@ class report(SubCommand):
     """
 
     name  = __name__.split('.').pop()
+    names = [name]
     usage = "usage: %prog " + name + " [options] [args]"
 
     def __call__(self):

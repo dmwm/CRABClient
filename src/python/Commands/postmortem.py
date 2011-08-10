@@ -11,7 +11,8 @@ class postmortem(SubCommand):
     Task identified by -t/--task option
     """
 
-    name  = __name__.split('.').pop()
+    name  = "get-errors"
+    names = [name, 'errors']
     usage = "usage: %prog " + name + " [options] [args]"
 
 

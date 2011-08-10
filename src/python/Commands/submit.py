@@ -19,8 +19,7 @@ class submit(SubCommand):
     Perform the submission to the CRABServer
     """
 
-    ## name should become automatically generated
-    name  = "submit"
+    name  = __name__.split('.').pop()
     usage = "usage: %prog " + name + " [options] [args]"
     defaultgroup = "Analysis"
     defaultteam  = "Analysis"

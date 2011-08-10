@@ -26,13 +26,13 @@ defaulturi = {
                             #"JobSplitArgs"      : {"default": None,             "config": 'Data.eventPerJob',       "type": IntType,    "required": False},
                           }
                 },
-    'getlog' :  {'uri': '/crabinterface/crab/log/'},
-    'getoutput'   : {'uri': '/crabinterface/crab/data/'},
+    'get-log'     : {'uri': '/crabinterface/crab/log/'},
+    'get-output'  : {'uri': '/crabinterface/crab/data/'},
     'reg_user'    : {'uri': '/crabinterface/crab/user/'},
     'server_info' : {'uri': '/crabinterface/crab/info/'},
-    'status' : {'uri': '/crabinterface/crab/task/'},
-    'upload' : {'uri': '/crabinterface/crab/uploadUserSandbox'},
-    'report' : {'uri': '/crabinterface/crab/goodLumis/'},
+    'status'      : {'uri': '/crabinterface/crab/task/'},
+    'upload'      : {'uri': '/crabinterface/crab/uploadUserSandbox'},
+    'report'      : {'uri': '/crabinterface/crab/goodLumis/'},
     'get_client_mapping': {'uri': '/crabinterface/crab/requestmapping'},
-    'postmortem' : {'uri': '/crabinterface/crab/jobErrors/'}
+    'get-errors'  : {'uri': '/crabinterface/crab/jobErrors/'}
 }
