@@ -42,10 +42,9 @@ class CMSSW(BasicJobType):
             _dummy, cfgOutputName = tempfile.mkstemp(suffix='_cfg.py')
 
         with UserTarball(name=tarFilename, logger=self.logger, config=self.config) as tb:
-            if getattr(self.config.JobType, 'inputFiles', None) is not None:
-                inputFiles = self.config.JobType.inputFiles
-                tb.addFiles(userFiles=inputFiles)
-                configArguments['userFiles'] = [os.path.basename(f) for f in inputFiles]
+            inputFiles = getattr(self.config.JobType, 'inputFiles', [])
+            tb.addFiles(userFiles=inputFiles)
+            configArguments['userFiles'] = [os.path.basename(f) for f in inputFiles]
             uploadResults = tb.upload()
 
         configArguments['userSandbox'] = uploadResults['url']
