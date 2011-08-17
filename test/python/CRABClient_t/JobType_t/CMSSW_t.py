@@ -3,7 +3,8 @@
 """
 _CMSSW_t_
 
-Unittests for CMSSW JobType
+Unittests for CMSSW JobType. These tests need to be pointed at a CRAB Server
+with functioning UserFileCache (sandbox) to function (see testWMConfig.General.server_url) below.
 """
 
 import copy
@@ -39,6 +40,8 @@ class CMSSWTest(unittest.TestCase):
         # Extend simple config
         testWMConfig.JobType.inputFiles = []
         testWMConfig.JobType.psetName    = 'unittest_cfg.py'
+        testWMConfig.Data.processingVersion = 'v1'
+        testWMConfig.General.server_url    = 'cms-xen39.fnal.gov:7723' # Set your server URL here if needed
         self.reqConfig = {}
         self.reqConfig['RequestorDN']    = "/DC=org/DC=doegrids/OU=People/CN=Eric Vaandering 768123"
 
@@ -59,6 +62,7 @@ class CMSSWTest(unittest.TestCase):
 
         return
 
+
     def testScram(self):
         """
         Test Scram environment
@@ -70,6 +74,7 @@ class CMSSWTest(unittest.TestCase):
         self.assertNotEqual(scram.getScramArch(), None, msg)
         self.assertNotEqual(scram.getCmsswBase(), None, msg)
 
+
     def testInit(self):
         """
         Test constructor
@@ -77,6 +82,7 @@ class CMSSWTest(unittest.TestCase):
 
         cmssw = CMSSW(config=testWMConfig, logger=self.logger, workingdir=None)
         cmssw.run(self.reqConfig)
+
 
     def testOutputFiles(self):
         """
@@ -87,9 +93,28 @@ class CMSSWTest(unittest.TestCase):
         cmssw = CMSSW(config=testWMConfig, logger=self.logger, workingdir=None)
         _dummy, configArguments = cmssw.run(self.reqConfig)
         self.assertEqual(configArguments['outputFiles'], outputFiles)
-        # Disabled for first version with no OSB
-        #self.assertTrue(configArguments['userSandbox'])
-        #self.assertTrue(os.path.getsize(configArguments['userSandbox']) > 0)
+
+
+    def testSandbox(self):
+        """
+        Make sure userSandbox is set and it creates a sandbox
+        """
+        cmssw = CMSSW(config=testWMConfig, logger=self.logger, workingdir=None)
+        tarFileName, configArguments = cmssw.run(self.reqConfig)
+        self.assertTrue(configArguments['userSandbox'])
+        self.assertTrue(os.path.getsize(tarFileName) > 0)
+
+
+    def testNoInputFiles(self):
+        """
+        Make sure userSandbox is set and it creates a sandbox even if inputFiles are not set
+        """
+        del testWMConfig.JobType.inputFiles
+        cmssw = CMSSW(config=testWMConfig, logger=self.logger, workingdir=None)
+        tarFileName, configArguments = cmssw.run(self.reqConfig)
+        self.assertTrue(configArguments['userSandbox'])
+        self.assertTrue(os.path.getsize(tarFileName) > 0)
+
 
     def testScramOut(self):
         """
@@ -99,6 +124,7 @@ class CMSSWTest(unittest.TestCase):
         _dummy, configArguments = cmssw.run(self.reqConfig)
         self.assertEqual(configArguments['ScramArch'],    os.environ['SCRAM_ARCH'])
         self.assertEqual(configArguments['CMSSWVersion'], os.environ['CMSSW_VERSION'])
+
 
     def testSpecKeys(self):
         """
