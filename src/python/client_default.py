@@ -1,5 +1,7 @@
 import time
 
+now = time.time()
+
 defaulturi = {
     'submit' :  { 'uri': '/crabinterface/crab/task/',
                   'map':  {
@@ -12,7 +14,7 @@ defaulturi = {
                             "RequestorDN"       : {"default": None,             "config": None,                     "type": 'StringType',  "required": True },
                             "SaveLogs"          : {"default": False,            "config": 'General.saveLogs',       "type": 'BooleanType', "required": True },
                             "asyncDest"         : {"default": None,             "config": 'Site.storageSite',       "type": 'StringType',  "required": True },
-                            "PublishDataName"   : {"default": str(time.time()), "config": 'Data.publishDataName',   "type": 'StringType',  "required": True },
+                            "PublishDataName"   : {"default": str(int(now)),    "config": 'Data.publishDataName',   "type": 'StringType',  "required": True },
                             "ProcessingVersion" : {"default": "v1",             "config": 'Data.processingVersion', "type": 'StringType',  "required": True },
                             "DbsUrl"            : {"default": "http://cmsdbsprod.cern.ch/cms_dbs_prod_global/servlet/DBSServlet", "config": 'Data.dbsUrl', "type": 'StringType',  "required": True },
                             "SiteWhitelist"     : {"default": None,             "config": 'Site.whitelist',         "type": 'ListType',    "required": False},
