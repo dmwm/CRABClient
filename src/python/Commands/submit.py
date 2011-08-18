@@ -22,6 +22,7 @@ class submit(SubCommand):
 
     name  = __name__.split('.').pop()
     usage = "usage: %prog " + name + " [options] [args]"
+    names = [name, 'sub']
     defaultgroup = "Analysis"
     defaultteam  = "Analysis"
 
