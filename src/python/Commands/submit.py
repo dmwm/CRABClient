@@ -10,6 +10,7 @@ from Commands.SubCommand import SubCommand
 from Commands.server_info import server_info
 from Commands.reg_user import reg_user
 from WMCore.Configuration import loadConfigurationFile, Configuration
+from WMCore.Credential.Proxy import CredentialException
 from ServerInteractions import HTTPRequests
 import types
 
@@ -64,14 +65,19 @@ class submit(SubCommand):
             return CommandResult(code, serverinfo)
 
         if not self.options.skipProxy:
-            userdn, proxy = initProxy(
-                              serverinfo['server_dn'],
-                              serverinfo['my_proxy'],
-                              getattr(self.configuration.User, "vorole", ""),
-                              getattr(self.configuration.User, "vogroup", ""),
-                              True,
-                              self.logger
-                            )
+            try:
+                userdn, proxy = initProxy(
+                                  serverinfo['server_dn'],
+                                  serverinfo['my_proxy'],
+                                  getattr(self.configuration.User, "vorole", ""),
+                                  getattr(self.configuration.User, "vogroup", ""),
+                                  True,
+                                  self.logger
+                                )
+            except CredentialException, ce:
+                msg = "Problem checking voms proxy life time: \n %s " % str(ce)
+                self.logger.debug( msg )
+                return CommandResult(1, {})
         else:
             userdn = self.options.skipProxy
             self.logger.debug('Skipping proxy creation and delegation. Usind %s as userDN' % userdn)
