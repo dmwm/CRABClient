@@ -61,7 +61,12 @@ class remote_copy(SubCommand):
         dicttocopy = self.options.inputdict
 
         if not self.options.skipProxy:
-            initProxy( None, None, self.options.role, self.options.group, False, self.logger)
+            try:
+                initProxy( None, None, self.options.role, self.options.group, False, self.logger)
+            except CredentialException, ce:
+                msg = "Problem checking voms proxy life time: \n %s " % str(ce)
+                self.logger.debug( msg )
+                return CommandResult(1, {})
         else:
             logging.debug('Skipping proxy creation and delegation')
 

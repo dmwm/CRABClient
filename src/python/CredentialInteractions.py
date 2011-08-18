@@ -39,14 +39,10 @@ class CredentialInteractions(object):
         userproxy = Proxy( self.defaultDelegation )
 
         proxytimeleft = 0
-        try:
-            self.logger.debug("Getting proxy life time left")
-            # does it return an integer that indicates?
-            proxytimeleft = userproxy.getTimeLeft()
-            self.logger.debug("Proxy is valid: %i" % proxytimeleft)
-        except Exception, ex:
-            msg = "Problem checking voms proxy life time: %s " % str(ex)
-            self.logger.error( msg )
+        self.logger.debug("Getting proxy life time left")
+        # does it return an integer that indicates?
+        proxytimeleft = userproxy.getTimeLeft()
+        self.logger.debug("Proxy is valid: %i" % proxytimeleft)
 
         if proxytimeleft < timeleftthreshold:
             # creating the proxy
@@ -60,18 +56,13 @@ class CredentialInteractions(object):
         """
         Handles the MyProxy creation
         """
-
         myproxy = Proxy ( self.defaultDelegation )
 
         myproxytimeleft = 0
-        try:
-            self.logger.debug("Getting myproxy life time left for %s" % self.defaultDelegation["myProxySvr"])
-            # does it return an integer that indicates?
-            myproxytimeleft = myproxy.getMyProxyTimeLeft( serverRenewer = True )
-            self.logger.debug("Myproxy is valid: %i" % myproxytimeleft)
-        except Exception, ex:
-            msg = "Problem checking myproxy life time: %s " % str(ex)
-            self.logger.error( msg )
+        self.logger.debug("Getting myproxy life time left for %s" % self.defaultDelegation["myProxySvr"])
+        # does it return an integer that indicates?
+        myproxytimeleft = myproxy.getMyProxyTimeLeft( serverRenewer = True )
+        self.logger.debug("Myproxy is valid: %i" % myproxytimeleft)
 
         if myproxytimeleft < timeleftthreshold:
             # creating the proxy
