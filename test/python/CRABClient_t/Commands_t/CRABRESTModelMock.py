@@ -15,8 +15,7 @@ SI_RESULT['sandbox']['port'] = ''
 SI_RESULT['sandbox']['basepath'] = ''
 
 FILE_NAME = 'src_output.root'
-goodLumisResult = "{'1':[ [1,15],  [30,50] ], \
-                    '3':[ [10,15], [30,50] ]}"
+goodLumisResult = '{"1":[ [1,15],  [30,50] ], "3":[ [10,15], [30,50] ]}'
 
 
 class CRABRESTModelMock(RESTModel):

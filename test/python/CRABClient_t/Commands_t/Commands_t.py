@@ -116,7 +116,8 @@ class CommandTest(FakeRESTServer):
         # Wrote correct file
         with open('lumiReport.json', 'r') as reportFile:
             result = json.load(reportFile)
-            self.assertEquals(result, CRABRESTModelMock.goodLumisResult)
+            mockResult = json.loads(CRABRESTModelMock.goodLumisResult)
+            self.assertEquals(result, mockResult)
 
         os.remove('lumiReport.json')
 
