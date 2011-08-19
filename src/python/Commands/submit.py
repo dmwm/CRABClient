@@ -40,7 +40,6 @@ class submit(SubCommand):
 
 
     def __call__(self):
-
         valid = False
         configmsg = 'Default'
         try:
@@ -59,7 +58,19 @@ class submit(SubCommand):
 
         self.logger.debug("Started submission")
 
-        infosubcmd = server_info(self.logger, cmdargs = ['-s', self.options.server])
+        #determine the serverurl
+        if self.options.server:
+            serverurl = self.options.server
+        elif getattr( self.configuration.General, 'server_url', None ) is not None:
+            serverurl = self.configuration.General.server_url
+        else:
+            serverurl = 'http://crabserver.cern.ch:8888'
+
+        self.createCache( serverurl )
+        #usertarball and cmsswconfig use this parameter and we should set it up in a correct way
+        self.configuration.General.server_url = serverurl
+
+        infosubcmd = server_info(self.logger, cmdargs = ['-s', serverurl])
         (code, serverinfo) = infosubcmd()
         if code is not 0:
             self.logger.debug("Error retrieving server information. Stopping submission.")
@@ -87,7 +98,7 @@ class submit(SubCommand):
 
         regusercmd = reg_user(self.logger,
                               cmdargs = [
-                                         '-s', self.options.server,
+                                         '-s', serverurl,
                                          '-g', getattr(self.configuration.User, "group", self.defaultgroup),
                                          '-t', getattr(self.configuration.User, "team", self.defaultteam),
                                          '-m', getattr(self.configuration.General, "email", ""),
@@ -151,7 +162,7 @@ class submit(SubCommand):
         jobconfig = {}
         pluginParams = [ self.configuration, self.logger, os.path.join(requestarea, 'inputs') ]
         if getattr(self.configuration.JobType, 'pluginName', None) is not None:
-            jobtypes    = getJobTypes(*pluginParams)
+            jobtypes    = getJobTypes()
             plugjobtype = jobtypes[upper(self.configuration.JobType.pluginName)](*pluginParams)
             inputfiles, jobconfig = plugjobtype.run(configreq)
         else:
@@ -163,7 +174,7 @@ class submit(SubCommand):
 
         configreq.update(jobconfig)
 
-        server = HTTPRequests(self.options.server)
+        server = HTTPRequests(serverurl)
 
         self.logger.info("Sending the request to the server")
         self.logger.debug("Submitting %s " % str( json.dumps( configreq, sort_keys = False, indent = 4 ) ) )
@@ -216,7 +227,6 @@ class submit(SubCommand):
                                  nargs  = 1,
                                  callback = validServerURL,
                                  metavar = "http://HOSTNAME:PORT",
-                                 default = 'http://crabserver.cern.ch:8888',
                                  help = "Endpoint server url to use" )
 
 
