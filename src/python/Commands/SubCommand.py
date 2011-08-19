@@ -7,7 +7,7 @@ class SubCommand(object):
 
     ## setting visible = False doesn't allow the sub-command to be called from CLI
     visible = True
-    usage = "usage: %prog [command-options] [args]" 
+    usage = "usage: %prog [command-options] [args]"
 
     _cache = {}
     def create_cached(cls, cmd, crabserverurl):
@@ -37,10 +37,17 @@ class SubCommand(object):
 
         (self.options, self.args) = self.parser.parse_args( cmdargs )
 
+        ##The submit command handles this stuff later because it needs to load the config
+        ##and to figure out which server to contact
+        if self.name != 'submit':
+            self.createCache()
+
+
+    def createCache(self, serverurl = None):
         cmdmap = None
-        serverurl = None
+
         ## if the server name is an CLI option
-        if hasattr(self.options, 'server'):
+        if hasattr(self.options, 'server') and self.options.server is not None:
             serverurl = self.options.server
         ## but the server name can be cached in some cases
         elif hasattr(self.options, 'task') and self.options.task:
