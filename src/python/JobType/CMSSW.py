@@ -7,6 +7,7 @@ import tempfile
 
 from BasicJobType import BasicJobType
 from CMSSWConfig import CMSSWConfig
+from LumiMask import LumiMask
 from UserTarball import UserTarball
 from ScramEnvironment import ScramEnvironment
 
@@ -24,10 +25,11 @@ class CMSSW(BasicJobType):
                            'userFiles'              : [],
                            'InputDataset'           : '',
                            'ProcessingVersion'      : '',
-                           'AnalysisConfigCacheDoc' : '', }
+                           'AnalysisConfigCacheDoc' : '',
+                           'ACDCDoc'                : '',
+                          }
 
         # Get SCRAM environment
-
         scram = ScramEnvironment(logger=self.logger)
 
         configArguments.update({'ScramArch'    : scram.scramArch,
@@ -64,6 +66,17 @@ class CMSSW(BasicJobType):
         cmsswCfg.writeFile(cfgOutputName)
         result = cmsswCfg.upload(requestConfig)
         configArguments['AnalysisConfigCacheDoc'] = result[0]['DocID']
+
+        # Upload lumi mask if it exists
+        lumiMaskName = getattr(self.config.Data, 'lumiMask', None)
+
+        if lumiMaskName:
+            self.logger.debug("Uploading lumi mask %s" % lumiMaskName)
+            lumiMask = LumiMask(config=self.config, logger=self.logger)
+            result = lumiMask.upload(requestConfig)
+            self.logger.debug("ACDC Fileset created with DocID %s" % result[0]['DocID'])
+            configArguments['ACDCDoc'] = result[0]['DocID']
+
         return tarFilename, configArguments
 
 
