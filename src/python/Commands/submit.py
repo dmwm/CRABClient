@@ -61,14 +61,14 @@ class submit(SubCommand):
         #determine the serverurl
         if self.options.server:
             serverurl = self.options.server
-        elif getattr( self.configuration.General, 'server_url', None ) is not None:
-            serverurl = self.configuration.General.server_url
+        elif getattr( self.configuration.General, 'serverUrl', None ) is not None:
+            serverurl = self.configuration.General.serverUrl
         else:
             serverurl = 'http://crabserver.cern.ch:8888'
 
         self.createCache( serverurl )
         #usertarball and cmsswconfig use this parameter and we should set it up in a correct way
-        self.configuration.General.server_url = serverurl
+        self.configuration.General.serverUrl = serverurl
 
         infosubcmd = server_info(self.logger, cmdargs = ['-s', serverurl])
         (code, serverinfo) = infosubcmd()
@@ -81,8 +81,8 @@ class submit(SubCommand):
                 userdn, proxy = initProxy(
                                   serverinfo['server_dn'],
                                   serverinfo['my_proxy'],
-                                  getattr(self.configuration.User, "vorole", ""),
-                                  getattr(self.configuration.User, "vogroup", ""),
+                                  getattr(self.configuration.User, "voRole", ""),
+                                  getattr(self.configuration.User, "voGroup", ""),
                                   True,
                                   self.logger
                                 )

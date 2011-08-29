@@ -23,7 +23,7 @@ testWMConfig.JobType.pluginName  = 'CMSSW'
 testWMConfig.section_("Data")
 testWMConfig.Data.inputDataset = '/cms/data/set'
 testWMConfig.section_("General")
-testWMConfig.General.server_url    = 'crabas.lnl.infn.it:8888'
+testWMConfig.General.serverUrl    = 'crabas.lnl.infn.it:8888'
 testWMConfig.section_("User")
 testWMConfig.User.group    = 'Analysis'
 

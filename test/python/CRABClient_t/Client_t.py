@@ -53,7 +53,7 @@ testConfig = Configuration()
 
 ## General options for the client
 testConfig.section_("General")
-testConfig.General.server_url    = 'fake.server:8080'
+testConfig.General.serverUrl    = 'fake.server:8080'
 testConfig.General.requestName   = 'MyAnalysis'
 
 ## Specific option of the job type

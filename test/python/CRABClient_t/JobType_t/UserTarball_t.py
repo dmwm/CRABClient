@@ -22,7 +22,7 @@ testWMConfig.JobType.pluginName  = 'CMSSW'
 testWMConfig.section_("Data")
 testWMConfig.Data.inputDataset = '/cms/data/set'
 testWMConfig.section_("General")
-testWMConfig.General.server_url    = 'cms-xen39.fnal.gov:7723'
+testWMConfig.General.serverUrl    = 'cms-xen39.fnal.gov:7723'
 testWMConfig.section_("User")
 testWMConfig.User.group    = 'Analysis'
 
