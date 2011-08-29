@@ -9,7 +9,7 @@ config = Configuration()
 
 ## General options for the client
 config.section_("General")
-config.General.server_url    = 'localhost:8518'
+config.General.serverUrl     = 'localhost:8518'
 config.General.requestName   = 'MyAnalysis'
 
 ## Specific option of the job type

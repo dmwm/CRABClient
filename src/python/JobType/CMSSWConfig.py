@@ -43,7 +43,7 @@ class CMSSWConfig(object):
         if not self.outputFile:
             raise RuntimeError('You must write out the config before uploading it')
 
-        url = self.config.General.server_url
+        url = self.config.General.serverUrl
         server = HTTPRequests(url)
         if not server:
             raise RuntimeError('No server specified for config upload')

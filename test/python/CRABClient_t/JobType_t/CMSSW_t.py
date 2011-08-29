@@ -4,7 +4,7 @@
 _CMSSW_t_
 
 Unittests for CMSSW JobType. These tests need to be pointed at a CRAB Server
-with functioning UserFileCache (sandbox) to function (see testWMConfig.General.server_url) below.
+with functioning UserFileCache (sandbox) to function (see testWMConfig.General.serverUrl) below.
 """
 
 import copy
@@ -41,7 +41,7 @@ class CMSSWTest(unittest.TestCase):
         testWMConfig.JobType.inputFiles = []
         testWMConfig.JobType.psetName    = 'unittest_cfg.py'
         testWMConfig.Data.processingVersion = 'v1'
-        testWMConfig.General.server_url    = 'cms-xen39.fnal.gov:7723' # Set your server URL here if needed
+        testWMConfig.General.serverUrl    = 'cms-xen39.fnal.gov:7723' # Set your server URL here if needed
         self.reqConfig = {}
         self.reqConfig['RequestorDN']    = "/DC=org/DC=doegrids/OU=People/CN=Eric Vaandering 768123"
 

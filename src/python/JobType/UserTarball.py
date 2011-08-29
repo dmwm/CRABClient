@@ -79,7 +79,7 @@ class UserTarball(object):
                     break
                 sha256sum.update(chunkdata)
 
-        csHost = self.config.General.server_url
+        csHost = self.config.General.serverUrl
 
         with tempfile.NamedTemporaryFile() as curlOutput:
             url = csHost + client_default.defaulturi['upload']['uri']

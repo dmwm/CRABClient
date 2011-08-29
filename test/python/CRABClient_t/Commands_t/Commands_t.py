@@ -202,7 +202,7 @@ class CommandTest(FakeRESTServer):
             self.assertEqual(res[0], 1)
             emptyConf.section_(sec)
 
-        emptyConf.General.server_url = "localhost:8518"
+        emptyConf.General.serverUrl = "localhost:8518"
         emptyConf.JobType.externalPluginFile = os.path.join( os.path.dirname(__file__), "TestPlugin.py")
         emptyConf.Site.storageSite = 'T2_XXX'
         expRes = CommandResult(0, None)

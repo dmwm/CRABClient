@@ -24,7 +24,7 @@ class LumiMask(object):
         Upload the lumi mask file to the server
         """
 
-        url = self.config.General.server_url
+        url = self.config.General.serverUrl
         server = HTTPRequests(url)
         if not server:
             raise RuntimeError('No server specified for lumiMask upload')
