@@ -75,7 +75,7 @@ class CMSSW(BasicJobType):
             lumiMask = LumiMask(config=self.config, logger=self.logger)
             result = lumiMask.upload(requestConfig)
             self.logger.debug("ACDC Fileset created with DocID %s" % result[0]['DocID'])
-            configArguments['ACDCDoc'] = result[0]['DocID']
+            configArguments['ACDCDoc'] = result[0]['Name']
 
         return tarFilename, configArguments
 
