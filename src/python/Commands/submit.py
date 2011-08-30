@@ -159,6 +159,9 @@ class submit(SubCommand):
         if eventsJob is not None:
             configreq["JobSplitArgs"] = {"events_per_job" : eventsJob}
 
+        configreq["VoRole"] = getattr( self.configuration.User, "vorole", '' )
+        configreq["VoGroup"] = getattr( self.configuration.User, "vogroup", '' )
+
         jobconfig = {}
         pluginParams = [ self.configuration, self.logger, os.path.join(requestarea, 'inputs') ]
         if getattr(self.configuration.JobType, 'pluginName', None) is not None:
