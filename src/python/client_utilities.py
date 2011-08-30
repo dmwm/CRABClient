@@ -15,8 +15,10 @@ import cPickle
 from string import upper
 
 from CredentialInteractions import CredentialInteractions
+from client_exceptions import TaskNotFoundException
 
 from optparse import OptionValueError
+
 
 def getPlugins(plugins, skip):
     """
@@ -213,7 +215,14 @@ def getWorkArea( task ):
 
 def loadCache( task, logger ):
     requestarea, requestname = getWorkArea( task )
-    loadfile = open(os.path.join(requestarea, '.requestcache'), 'r')
+    cachename = os.path.join(requestarea, '.requestcache')
+    if os.path.isfile(cachename):
+        loadfile = open(cachename, 'r')
+    else:
+        taskName = task.split('/')[-1]
+        msg = 'Working directory for task %s not found ' % taskName
+        raise TaskNotFoundException(msg)
+
     addFileLogger( logger, workingpath = requestarea )
     return cPickle.load(loadfile)
 
