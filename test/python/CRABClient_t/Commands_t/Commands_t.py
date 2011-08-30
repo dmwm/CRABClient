@@ -10,6 +10,7 @@ from Commands.postmortem import postmortem
 from Commands import CommandResult
 import client_default
 from client_utilities import createCache, createWorkArea
+from client_exceptions import TaskNotFoundException
 
 import unittest
 import logging
@@ -92,7 +93,7 @@ class CommandTest(FakeRESTServer):
 
         #3) wrong -t option
         analysisDir = os.path.join(os.path.dirname(__file__), 'crab_XXX')
-        self.assertRaises( IOError, status, self.logger, ["-t", analysisDir])
+        self.assertRaises( TaskNotFoundException, status, self.logger, ["-t", analysisDir])
 
 
     def testReport(self):
@@ -229,7 +230,7 @@ class CommandTest(FakeRESTServer):
 
         #3) wrong -t option
         analysisDir = os.path.join(os.path.dirname(__file__), 'crab_XXX')
-        self.assertRaises( IOError, postmortem, self.logger, ["-t", analysisDir])
+        self.assertRaises( TaskNotFoundException, postmortem, self.logger, ["-t", analysisDir])
 
 
     def _prepareWorkArea(self):

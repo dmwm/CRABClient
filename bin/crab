@@ -22,6 +22,7 @@ from optparse import OptionParser, OptionGroup
 from socket import error as SocketError
 
 from client_utilities import getAvailCommands
+from client_exceptions import ClientException
 
 
 class MyNullHandler(logging.Handler):
@@ -102,7 +103,7 @@ class CRABClient(object):
             """
             Send a short version of the exception to the console,
             a long version to the log
-    
+
             Adapted from Doug Hellmann
             """
             # This goes to the console
@@ -173,5 +174,9 @@ if __name__ == "__main__":
         client.logger.debug('     Request headers: %s' % he.req_headers)
         logging.getLogger('CRAB3:traceback').exception('Caught exception')
         exitcode = he.status
+    except ClientException, ce:
+        client.logger.error(ce)
+        logging.getLogger('CRAB3:traceback').exception('Caught exception')
+        exitcode = ce.exitcode
 
     sys.exit( exitcode )
