@@ -5,6 +5,9 @@ from ServerInteractions import HTTPRequests
 import os
 
 class getoutput(SubCommand):
+    """ Retrieve the output files of the jobs specified by -r/--range option part of
+    the task identified by -t/--task option
+    """
 
     ## name should become automatically generated
     name  = "get-output"

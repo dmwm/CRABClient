@@ -32,7 +32,7 @@ class SubCommand(object):
 
         self.logger.debug("Executing command: '%s'" % str(self.name))
 
-        self.parser = OptionParser(usage = self.usage, add_help_option = True)
+        self.parser = OptionParser(description = self.__doc__, usage = self.usage, add_help_option = True)
         self.setOptions()
 
         (self.options, self.args) = self.parser.parse_args( cmdargs )

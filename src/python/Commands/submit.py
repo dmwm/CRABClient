@@ -16,8 +16,7 @@ import types
 
 
 class submit(SubCommand):
-    """
-    Perform the submission to the CRABServer
+    """ Perform the submission to the CRABServer
     """
 
     name  = __name__.split('.').pop()
