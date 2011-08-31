@@ -186,7 +186,13 @@ if __name__ == "__main__":
         logging.getLogger('CRAB3:traceback').exception('Caught exception')
         exitcode = 3
     except HTTPException, he:
-        client.logger.error((" %s (%s): %s" % (he.reason, he.status, json.loads(he.result)['message'])))
+        errmsg = "ERROR: %s (%s): " % (he.reason, he.status)
+        ## answer can be a json or not
+        try:
+            errmsg += " '%s'" % json.loads(he.result)['message']
+        except ValueError:
+            pass
+        client.logger.error(errmsg)
         client.logger.debug('Command failed with URI: %s' % he.url)
         client.logger.debug('     Input data: %s' % he.req_data)
         client.logger.debug('     Request headers: %s' % he.req_headers)
