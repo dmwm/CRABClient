@@ -7,8 +7,7 @@ from client_utilities import loadCache
 
 
 class report(SubCommand):
-    """
-    Get the list of good lumis for your task identified by -t/--task option
+    """ Get the list of good lumis for your task identified by -t/--task option
     """
 
     name  = __name__.split('.').pop()

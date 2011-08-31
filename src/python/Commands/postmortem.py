@@ -6,9 +6,8 @@ import os
 import hashlib
 
 class postmortem(SubCommand):
-    """
-    Retrieve post mortem infromation of all the jobs in the task, or detailed information of just one job
-    Task identified by -t/--task option
+    """ Retrieve post mortem infromation of all the jobs in the task, or detailed
+    information of just one job. The is identified by -t/--task option
     """
 
     name  = "get-errors"

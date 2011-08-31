@@ -36,6 +36,17 @@ class MyNullHandler(logging.Handler):
         pass
 
 
+class MyParser(OptionParser):
+    """
+    Allows to make OptionParser behave how we prefer
+    """
+    def format_epilog(self, formatter):
+        """
+        do not strip the new lines from the epilog
+        """
+        return self.epilog
+
+
 class CRABClient(object):
     def __init__( self ):
         """
@@ -43,16 +54,24 @@ class CRABClient(object):
         at appropriate level
         """
 
-        self.version = '0.1'
+        self.version = '3.0.1'
 
         self.sub_commands = getAvailCommands()
 
         usage  = "usage: %prog [options] COMMAND [command-options] [args]"
-        epilog = "Valid commands are: %s" % ", ".join(sorted(self.sub_commands.keys()))
-        self.parser = OptionParser( usage   = usage,
-                                    epilog  = epilog,
-                                    version = "CRAB client v%s" % self.version
-                                  )
+        epilog = '\nValid commands are: \n'
+        for k in sorted(self.sub_commands.keys()):
+            epilog += '  %s' % k
+            epilog += epilog.join( [' (%s)' % name for name in self.sub_commands[k]['names'] if not name == k ] )
+            epilog += '\n'
+
+        epilog += '\nFor more information on how to run CRAB-3 please follow this link: \n'
+        epilog += ' https://twiki.cern.ch/twiki/bin/view/CMS/RunningCRAB3\n'
+
+        self.parser = MyParser( usage   = usage,
+                                epilog  = epilog,
+                                version = "CRAB client v%s" % self.version
+                              )
 
         # This is the important bit
         self.parser.disable_interspersed_args()
@@ -129,8 +148,7 @@ class CRABClient(object):
             sub_cmd = next( v for k,v in self.sub_commands.items() if args[0] in v['names'] )
         except StopIteration:
             print "'" + str(args[0]) + "' is not a valid command."
-            # Described the valid commands in epilog, reuse here
-            print self.parser.epilog
+            print self.parser.print_help()
             sys.exit(-1)
         cmd = sub_cmd['module'](self.logger, args[1:])
 

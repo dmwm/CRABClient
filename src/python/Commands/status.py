@@ -6,8 +6,7 @@ from ServerInteractions import HTTPRequests
 
 
 class status(SubCommand):
-    """
-    Query the status of your tasks, or detailed information of one or more tasks
+    """ Query the status of your tasks, or detailed information of one or more tasks
     identified by -t/--task option
     """
 
