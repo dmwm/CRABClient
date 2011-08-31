@@ -1,6 +1,7 @@
 from Commands import CommandResult
 from Commands.SubCommand import SubCommand
 from CredentialInteractions import CredentialInteractions
+from WMCore.Credential.Proxy import CredentialException
 from client_utilities import initProxy
 import os
 import operator
@@ -64,9 +65,8 @@ class remote_copy(SubCommand):
             try:
                 initProxy( None, None, self.options.role, self.options.group, False, self.logger)
             except CredentialException, ce:
-                msg = "Problem checking voms proxy life time: \n %s " % str(ce)
-                self.logger.debug( msg )
-                return CommandResult(1, {})
+                msg = "Problem during proxy creation: \n %s " % str(ce._message)
+                return CommandResult(1, msg)
         else:
             logging.debug('Skipping proxy creation and delegation')
 

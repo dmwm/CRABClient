@@ -87,9 +87,8 @@ class submit(SubCommand):
                                   self.logger
                                 )
             except CredentialException, ce:
-                msg = "Problem checking voms proxy life time: \n %s " % str(ce)
-                self.logger.debug( msg )
-                return CommandResult(1, {})
+                msg = "Problem during proxy creation: \n %s " % ce._message
+                return CommandResult(1, msg)
         else:
             userdn = self.options.skipProxy
             self.logger.debug('Skipping proxy creation and delegation. Usind %s as userDN' % userdn)
