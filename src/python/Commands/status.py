@@ -6,7 +6,8 @@ from ServerInteractions import HTTPRequests
 
 
 class status(SubCommand):
-    """ Query the status of your tasks, or detailed information of one or more tasks
+    """
+    Query the status of your tasks, or detailed information of one or more tasks
     identified by -t/--task option
     """
 
@@ -32,6 +33,7 @@ class status(SubCommand):
             return CommandResult(1, msg)
 
         self.logger.info("Task Status:        %s"    % str(dictresult['requestDetails'][unicode('RequestStatus')]))
+        self._printRequestDetails(dictresult)
         self.logger.info("Completed at level: %s%% " % str(dictresult['requestDetails']['percent_success']))
 
         if 'states' in dictresult:
@@ -49,6 +51,18 @@ class status(SubCommand):
 
         return CommandResult(0, None)
 
+    def _printRequestDetails(self, dictresult):
+        """
+        Print the RequestMessages list when the task is failed
+        """
+        if dictresult.has_key('requestDetails') and \
+                  dictresult['requestDetails'][u'RequestStatus'] == 'failed' and \
+                  dictresult['requestDetails'].has_key(u'RequestMessages'):
+            for messageL in dictresult['requestDetails'][u'RequestMessages']:
+                #messages are lists
+                for message in messageL:
+                    self.logger.info("Server Messages:")
+                    self.logger.info("\t%s" % message)
 
     def setOptions(self):
         """

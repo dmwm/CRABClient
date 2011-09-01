@@ -76,7 +76,7 @@ class CommandTest(FakeRESTServer):
         #, ["-s","localhost:8518"])
 
 
-    def testGetStatus(self):
+    def testStatus(self):
         s = status(self.logger, [])
 
         #1) missing required -t option
@@ -91,9 +91,14 @@ class CommandTest(FakeRESTServer):
         expRes = CommandResult(0, None)
         self.assertEquals( expRes, res)
 
-        #3) wrong -t option
+        #3) Print request details
+        s = status(self.logger, ["-t", analysisDir])
+        s._printRequestDetails({u'requestDetails': {u'RequestMessages': [[u'No blocks pass white/blacklist']], 'RequestStatus': 'failed'}})
+
+        #4) wrong -t option
         analysisDir = os.path.join(os.path.dirname(__file__), 'crab_XXX')
         self.assertRaises( TaskNotFoundException, status, self.logger, ["-t", analysisDir])
+
 
 
     def testReport(self):
