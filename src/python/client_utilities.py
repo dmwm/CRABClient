@@ -15,7 +15,7 @@ import cPickle
 from string import upper
 
 from CredentialInteractions import CredentialInteractions
-from client_exceptions import TaskNotFoundException
+from client_exceptions import TaskNotFoundException, CachefileNotFoundException
 
 from optparse import OptionValueError
 
@@ -216,16 +216,21 @@ def getWorkArea( task ):
 def loadCache( task, logger ):
     requestarea, requestname = getWorkArea( task )
     cachename = os.path.join(requestarea, '.requestcache')
-    if os.path.isfile(cachename):
-        loadfile = open(cachename, 'r')
-    else:
-        taskName = task.split('/')[-1]
+    taskName = task.split('/')[-1] #Contains only the taskname without the path
+
+    #Check if the task directory exists
+    if not os.path.isdir( requestarea ):
         msg = 'Working directory for task %s not found ' % taskName
-        raise TaskNotFoundException(msg)
+        raise TaskNotFoundException( msg )
+    #If the .requestcache file exists open it!
+    if os.path.isfile(cachename):
+        loadfile = open( cachename, 'r' )
+    else:
+        msg = 'Cannot find .requestcache file inside the working directory for task %s' % taskName
+        raise CachefileNotFoundException( msg )
 
     addFileLogger( logger, workingpath = requestarea )
     return cPickle.load(loadfile)
-
 
 def initProxy(serverDN, myProxy, voRole, voGroup, delegate, logger):
     proxy = CredentialInteractions(

@@ -95,7 +95,11 @@ class CommandTest(FakeRESTServer):
         s = status(self.logger, ["-t", analysisDir])
         s._printRequestDetails({u'requestDetails': {u'RequestMessages': [[u'No blocks pass white/blacklist']], 'RequestStatus': 'failed'}})
 
-        #4) wrong -t option
+        #4) .requestcache file does note exists
+        os.remove(os.path.join(analysisDir, ".requestcache"))
+        self.assertRaises( CachefileNotFoundException, status, self.logger, ["-t", analysisDir])
+
+        #5) wrong -t option
         analysisDir = os.path.join(os.path.dirname(__file__), 'crab_XXX')
         self.assertRaises( TaskNotFoundException, status, self.logger, ["-t", analysisDir])
 
