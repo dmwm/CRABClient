@@ -23,9 +23,8 @@ defaulturi = {
                             "RunBlacklist"      : {"default": None,             "config": 'Data.runBlacklist',      "type": 'ListType',    "required": False},
                             "BlockWhitelist"    : {"default": None,             "config": 'Data.blockWhitelist',    "type": 'ListType',    "required": False},
                             "BlockBlacklist"    : {"default": None,             "config": 'Data.blockBlacklist',    "type": 'ListType',    "required": False},
-                            "JobSplitAlgo"      : {"default": None,             "config": 'Data.splitting',         "type": 'StringType',  "required": False}
-                            #"JobSplitArgs"      : {"default": None,             "config": 'Data.filesPerJob',       "type": IntType,    "required": False},
-                            #"JobSplitArgs"      : {"default": None,             "config": 'Data.eventPerJob',       "type": IntType,    "required": False},
+                            "JobSplitAlgo"      : {"default": None,             "config": 'Data.splitting',         "type": 'StringType',  "required": False},
+                            "JobSplitArgs"      : {"default": None,             "config": 'Data.splitArgs',         "type": 'DictType',    "required": False},
                           }
                 },
     'get-log'     : {'uri': '/crabinterface/crab/log/'},
