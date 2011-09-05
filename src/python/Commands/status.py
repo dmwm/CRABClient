@@ -34,7 +34,6 @@ class status(SubCommand):
 
         self.logger.info("Task Status:        %s"    % str(dictresult['requestDetails'][unicode('RequestStatus')]))
         self._printRequestDetails(dictresult)
-        self.logger.info("Completed at level: %s%% " % str(dictresult['requestDetails']['percent_success']))
 
         if 'states' in dictresult:
             totalJobs = 0
