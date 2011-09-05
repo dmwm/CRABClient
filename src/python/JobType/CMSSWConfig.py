@@ -9,6 +9,7 @@ import os
 from FWCore.ParameterSet.Modules import OutputModule
 from ServerInteractions import HTTPRequests
 from PSetTweaks.WMTweak import makeTweak
+from client_exceptions import PSetNotFoundException
 
 class CMSSWConfig(object):
     """
@@ -25,8 +26,12 @@ class CMSSWConfig(object):
         if userConfig:
             cfgBaseName = os.path.basename(userConfig).replace(".py", "")
             cfgDirName = os.path.dirname(userConfig)
-            self.logger.debug("Importing CMSSW config %s" % userConfig)
 
+            if not os.path.isfile( userConfig ):
+                msg = "Cannot find file %s" % userConfig
+                raise PSetNotFoundException( msg )
+
+            self.logger.debug("Importing CMSSW config %s" % userConfig)
             modPath = imp.find_module(cfgBaseName, [cfgDirName])
 
             self.fullConfig = imp.load_module(cfgBaseName, modPath[0],
