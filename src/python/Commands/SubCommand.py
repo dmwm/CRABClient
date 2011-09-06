@@ -1,4 +1,4 @@
-from optparse import OptionParser
+from optparse import OptionParser, SUPPRESS_HELP
 from ServerInteractions import HTTPRequests
 from client_utilities import loadCache, getWorkArea
 
@@ -10,12 +10,10 @@ class SubCommand(object):
     usage = "usage: %prog [command-options] [args]"
 
     _cache = {}
-    def create_cached(cls, cmd, crabserverurl):
+    def create_cached(cls, cmd, crabserverurl, mappingpath):
         if cls._cache == {}:
-            import client_default
-            cls._cache = client_default.defaulturi
             server = HTTPRequests( crabserverurl )
-            dictresult, status, reason = server.get(cls._cache['get_client_mapping']['uri'])
+            dictresult, status, reason = server.get( mappingpath )
             if status == 200 and not dictresult == {}:
                 cls._cache = dictresult
         if cmd in cls._cache:
@@ -33,7 +31,7 @@ class SubCommand(object):
         self.logger.debug("Executing command: '%s'" % str(self.name))
 
         self.parser = OptionParser(description = self.__doc__, usage = self.usage, add_help_option = True)
-        self.setOptions()
+        self.setSuperOptions()
 
         (self.options, self.args) = self.parser.parse_args( cmdargs )
 
@@ -58,7 +56,8 @@ class SubCommand(object):
         ## if we have got a server url we create the cache
         if serverurl:
             self.logger.debug('Contacting ' + serverurl)
-            cmdmap = SubCommand.create_cached(self.name, serverurl)
+            print self.name, serverurl, self.options.mappingpath
+            cmdmap = SubCommand.create_cached(self.name, serverurl, self.options.mappingpath)
 
         ## not all the commands need an uri (e.g.: remote_copy)
         if cmdmap:
@@ -73,6 +72,14 @@ class SubCommand(object):
 
 
     def setOptions(self):
-        pass
+        raise NotImplementedError
 
-
+    def setSuperOptions(self):
+        self.parser.add_option( "--mapping-path",
+                                dest = "mappingpath",
+                                default = '/crabinterface/crab/requestmapping',
+                                help = SUPPRESS_HELP)
+        try:
+            self.setOptions()
+        except NotImplementedError:
+            pass

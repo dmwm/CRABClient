@@ -10,7 +10,6 @@ import json
 import os
 import tarfile
 import tempfile
-import client_default
 import hashlib
 
 from ScramEnvironment import ScramEnvironment
@@ -32,6 +31,7 @@ class UserTarball(object):
         self.scram = ScramEnvironment(logger=self.logger)
         self.logger.debug("Making tarball in %s" % name)
         self.tarfile = tarfile.open(name=name, mode=mode, dereference=True)
+        self.uploadurl = '/crabinterface/crab/uploadUserSandbox'
 
     def addFiles(self, userFiles=None):
         """
@@ -82,7 +82,7 @@ class UserTarball(object):
         csHost = self.config.General.serverUrl
 
         with tempfile.NamedTemporaryFile() as curlOutput:
-            url = csHost + client_default.defaulturi['upload']['uri']
+            url = csHost + self.uploadurl
             curlCommand = 'curl -H "Accept: application/json" -F"userfile=@%s" -F"checksum=%s" %s -o %s' % (self.tarfile.name, sha256sum.hexdigest(), url, curlOutput.name)
             (status, output) = commands.getstatusoutput(curlCommand)
             if status:
