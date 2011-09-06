@@ -1,9 +1,10 @@
 from WMCore.WebTools.RESTModel import RESTModel
 import WMCore
-import client_default
 
 import threading
 import cherrypy
+import imp
+import os
 
 SI_RESULT = {}
 SI_RESULT['server_dn']  = ''
@@ -22,18 +23,9 @@ class CRABRESTModelMock(RESTModel):
     def __init__(self, config={}):
         RESTModel.__init__(self, config)
 
-        self.defaulturi = {
-            'submit' : {'uri': '/unittests/rest/task/',
-                        'map': client_default.defaulturi['submit']['map']},
-            'get-log' : {'uri': '/unittests/rest/log/'},
-            'get-output' : {'uri': '/unittests/rest/data/'},
-            'reg_user' : {'uri': '/unittests/rest/user/'},
-            'server_info' : {'uri': '/unittests/rest/info/'},
-            'status' : {'uri': '/unittests/rest/task/'},
-            'report' :    {'uri': '/unittests/rest/goodLumis/'},
-            'get_client_mapping': {'uri': '/unittests/rest/requestmapping/'},
-            'get-errors': {'uri': '/unittests/rest/jobErrors/'}
-        }
+        self.mapme = imp.load_source('', os.path.join( os.path.dirname(__file__), "../../../data/mapper.py"))
+
+        self.defaulturi = self.mapme.defaulturi
 
         self._addMethod('POST', 'user', self.addNewUser,
                         args=[],

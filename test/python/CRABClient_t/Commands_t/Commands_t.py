@@ -8,9 +8,8 @@ from Commands.status import status
 from Commands.submit import submit
 from Commands.postmortem import postmortem
 from Commands import CommandResult
-import client_default
 from client_utilities import createCache, createWorkArea
-from client_exceptions import TaskNotFoundException
+from client_exceptions import TaskNotFoundException, CachefileNotFoundException
 
 import unittest
 import logging
@@ -24,30 +23,20 @@ from socket import error as SocketError
 class CommandTest(FakeRESTServer):
 
     TEST_REQ_NAME = 'TestAnalysis'
+    maplistopt = ["--mapping-path","/unittests/rest/requestmapping/"]
 
     def __init__(self, config):
         FakeRESTServer.__init__(self, config)
         self.setLog()
 
-        map = client_default.defaulturi['submit']['map']
-        client_default.defaulturi = {
-            'submit' :    {'uri': '/unittests/rest/task/',
-                           'map': map},
-            'get-log' :    {'uri': '/unittests/rest/log/'},
-            'get-output' : {'uri': '/unittests/rest/data/'},
-            'reg_user' :  {'uri': '/unittests/rest/user/'},
-            'server_info' : {'uri': '/unittests/rest/info/'},
-            'status' :    {'uri': '/unittests/rest/task/'},
-            'report' :    {'uri': '/unittests/rest/goodLumis/'},
-            'get_client_mapping': {'uri': '/unittests/rest/requestmapping/'},
-            'get-errors': {'uri': '/unittests/rest/jobErrors/'}
-        }
 
     def setUp(self):
         #Dynamic import of the configuration which in principle is not in the PYTHONPATH
         self.TestConfig = imp.load_source('TestConfig', os.path.join( os.path.dirname(__file__), "../../../data/TestConfig.py"))
         FakeRESTServer.setUp(self)
         self._prepareWorkArea()
+        #time.sleep(1000)
+
 
     def tearDown(self):
         FakeRESTServer.tearDown(self)
@@ -63,8 +52,10 @@ class CommandTest(FakeRESTServer):
         self.logger.setLevel(logging.DEBUG)
 
 
+    def
+
     def testServerInfo(self):
-        si = server_info(self.logger, ["-s","localhost:8518"])
+        si = server_info(self.logger, self.maplistopt + ["-s","localhost:8518"])
 
         #1) check that the right API is called
         res = si()
@@ -77,7 +68,7 @@ class CommandTest(FakeRESTServer):
 
 
     def testStatus(self):
-        s = status(self.logger, [])
+        s = status(self.logger, self.maplistopt)
 
         #1) missing required -t option
         expRes = CommandResult(1, 'Error: Task option is required')
@@ -86,22 +77,22 @@ class CommandTest(FakeRESTServer):
 
         #2) correct execution
         analysisDir = self.reqarea
-        s = status(self.logger, ["-t", analysisDir])
+        s = status(self.logger, self.maplistopt + ["-t", analysisDir])
         res = s()
         expRes = CommandResult(0, None)
         self.assertEquals( expRes, res)
 
         #3) Print request details
-        s = status(self.logger, ["-t", analysisDir])
+        s = status(self.logger, self.maplistopt + ["-t", analysisDir])
         s._printRequestDetails({u'requestDetails': {u'RequestMessages': [[u'No blocks pass white/blacklist']], 'RequestStatus': 'failed'}})
 
         #4) .requestcache file does note exists
         os.remove(os.path.join(analysisDir, ".requestcache"))
-        self.assertRaises( CachefileNotFoundException, status, self.logger, ["-t", analysisDir])
+        self.assertRaises( CachefileNotFoundException, status, self.logger, self.maplistopt + ["-t", analysisDir])
 
         #5) wrong -t option
         analysisDir = os.path.join(os.path.dirname(__file__), 'crab_XXX')
-        self.assertRaises( TaskNotFoundException, status, self.logger, ["-t", analysisDir])
+        self.assertRaises( TaskNotFoundException, status, self.logger, self.maplistopt + ["-t", analysisDir])
 
 
 
@@ -111,14 +102,14 @@ class CommandTest(FakeRESTServer):
         """
 
         # Missing required -t option
-        rep = report(self.logger, [])
+        rep = report(self.logger, self.maplistopt)
         expRes = CommandResult(1, 'Error: Task option is required')
         res = rep()
         self.assertEquals(expRes, res)
 
         # Executes
         analysisDir = self.reqarea#os.path.join(os.path.dirname(__file__), 'crab_AnalysisName')
-        rep = report(self.logger, ["-t", analysisDir])
+        rep = report(self.logger, self.maplistopt + ["-t", analysisDir])
         res = rep()
         expRes = CommandResult(0, None)
         self.assertEquals(expRes, res)
@@ -141,13 +132,13 @@ class CommandTest(FakeRESTServer):
         #f.close()
 
         #1) missing required -t option (the other required option, -r, is ignored)
-        go = getoutput(self.logger, [])
+        go = getoutput(self.logger, self.maplistopt)
         res = go()
         expRes = CommandResult(1, 'Error: Task option is required')
 
         #2) -t option is present but -r is missing
         analysisDir = self.reqarea
-        go = getoutput(self.logger, ["-t", analysisDir])
+        go = getoutput(self.logger, self.maplistopt + ["-t", analysisDir])
         res = go()
         expRes = CommandResult(1, 'Error: Range option is required')
 
@@ -158,7 +149,7 @@ class CommandTest(FakeRESTServer):
 
         #4) check correct behaviour without specifying output directory
         #N.B.: -p options is required for tests to skip proxy creation and delegation
-        go = getoutput(self.logger, ["-t", analysisDir, "-r", "20", "-p"])
+        go = getoutput(self.logger, self.maplistopt + ["-t", analysisDir, "-r", "20", "-p"])
         res = go()
         expRes = CommandResult(0, None)
         #check if the result directory has been created
@@ -170,7 +161,7 @@ class CommandTest(FakeRESTServer):
         self.assertFalse(os.path.isdir(destDir))
 
         #5) correct behavior and output directory specified which exists
-        go = getoutput(self.logger, ["-t", analysisDir, "-r", "20", "-o", "/tmp", "-p"])
+        go = getoutput(self.logger, self.maplistopt + ["-t", analysisDir, "-r", "20", "-o", "/tmp", "-p"])
         res = go()
         expRes = CommandResult(0, None)
         #check if the result directory has been created
@@ -181,7 +172,7 @@ class CommandTest(FakeRESTServer):
         self.assertFalse(os.path.isfile(destFile))
 
         #6) correct behavior and output directory specified which does not exists
-        go = getoutput(self.logger, ["-t", analysisDir, "-r", "20", "-o", "/tmp/asdf/qwerty", "-p"])
+        go = getoutput(self.logger, self.maplistopt + ["-t", analysisDir, "-r", "20", "-o", "/tmp/asdf/qwerty", "-p"])
         res = go()
         expRes = CommandResult(0, None)
         #check if the result directory has been created
@@ -196,7 +187,7 @@ class CommandTest(FakeRESTServer):
             shutil.rmtree("crab_" + self.TestConfig.config.General.requestName)
 
         #2) The config file is not found
-        sub = submit(self.logger, ["-c", "asdf", "-p", "/DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=mmascher/CN=720897/CN=Marco Mascheroni", \
+        sub = submit(self.logger, self.maplistopt + ["-c", "asdf", "-p", "/DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=mmascher/CN=720897/CN=Marco Mascheroni", \
                                        "-s", "127.0.0.1:8518"])
         res = sub()
         self.assertEqual(res[0], 1)
@@ -206,7 +197,7 @@ class CommandTest(FakeRESTServer):
         sections = ["General", "User", "Data", "Site" , "JobType"]#mandatory sections
         emptyConf = Configuration()
         for sec in sections:
-            sub = submit(self.logger, ["-c", "asdf", "-p", "/DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=mmascher/CN=720897/CN=Marco Mascheroni", \
+            sub = submit(self.logger, self.maplistopt + ["-c", "asdf", "-p", "/DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=mmascher/CN=720897/CN=Marco Mascheroni", \
                                            "-s", "127.0.0.1:8518"])
             res = sub()
             self.assertEqual(res[0], 1)
@@ -216,14 +207,14 @@ class CommandTest(FakeRESTServer):
         emptyConf.JobType.externalPluginFile = os.path.join( os.path.dirname(__file__), "TestPlugin.py")
         emptyConf.Site.storageSite = 'T2_XXX'
         expRes = CommandResult(0, None)
-        sub = submit(self.logger, ["-c", emptyConf, "-p", "/DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=mmascher/CN=720897/CN=Marco Mascheroni", \
+        sub = submit(self.logger, self.maplistopt + ["-c", emptyConf, "-p", "/DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=mmascher/CN=720897/CN=Marco Mascheroni", \
                                        "-s", "127.0.0.1:8518"])
         res = sub()
         self.assertEquals(res, expRes)
 
 
     def testPostMortem(self):
-        s = postmortem(self.logger, [])
+        s = postmortem(self.logger, self.maplistopt)
 
         #1) missing required -t option
         expRes = CommandResult(1, 'Error: Task option is required')
@@ -232,14 +223,14 @@ class CommandTest(FakeRESTServer):
 
         #2) correct execution
         analysisDir = self.reqarea
-        s = postmortem(self.logger, ["-t", analysisDir])
+        s = postmortem(self.logger, self.maplistopt + ["-t", analysisDir])
         res = s()
         expRes = CommandResult(0, None)
         self.assertEquals( expRes, res)
 
         #3) wrong -t option
         analysisDir = os.path.join(os.path.dirname(__file__), 'crab_XXX')
-        self.assertRaises( TaskNotFoundException, postmortem, self.logger, ["-t", analysisDir])
+        self.assertRaises( TaskNotFoundException, postmortem, self.logger, self.maplistopt + ["-t", analysisDir])
 
 
     def _prepareWorkArea(self):
