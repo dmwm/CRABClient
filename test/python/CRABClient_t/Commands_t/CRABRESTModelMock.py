@@ -9,11 +9,6 @@ import os
 SI_RESULT = {}
 SI_RESULT['server_dn']  = ''
 SI_RESULT['my_proxy'] = 'myproxy.cern.ch'
-SI_RESULT['sandbox'] = {}
-SI_RESULT['sandbox']['type'] = 'gridFtp'
-SI_RESULT['sandbox']['endpoint'] = ''
-SI_RESULT['sandbox']['port'] = ''
-SI_RESULT['sandbox']['basepath'] = ''
 
 FILE_NAME = 'src_output.root'
 goodLumisResult = '{"1":[ [1,15],  [30,50] ], "3":[ [10,15], [30,50] ]}'
