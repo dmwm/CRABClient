@@ -72,7 +72,7 @@ class submit(SubCommand):
         infosubcmd = server_info(self.logger, cmdargs = ['-s', serverurl])
         (code, serverinfo) = infosubcmd()
         if code is not 0:
-            self.logger.debug("Error retrieving server information. Stopping submission.")
+            self.logger.debug("ERROR: failure during retrieval of server information. Stopping submission.")
             return CommandResult(code, serverinfo)
 
         if not self.options.skipProxy:
@@ -105,7 +105,7 @@ class submit(SubCommand):
                              )
         (code, userinfo) = regusercmd()
         if code is not 0:
-            self.logger.debug("Error registering user on the server. Stopping submission.")
+            self.logger.debug("ERROR: user registration failed on the server. Stopping submission.")
             return CommandResult(code, serverinfo)
 
         self.logger.debug("Working on %s" % str(requestarea))

@@ -222,7 +222,7 @@ def processWorker(input, results):
             t1 = time.time()
         except (EOFError, IOError):
             crashMessage = "Hit EOF/IO in getting new work\n"
-            crashMessage += "Assuming this is a graceful break attempt.\n"
+            crashMessage += "Assuming this is a graceful break attempt."
             print crashMessage
             break
 
