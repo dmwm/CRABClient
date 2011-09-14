@@ -36,9 +36,11 @@ class postmortem(SubCommand):
             groupederrs = self.aggregateFailures(dictresult)
             self.logger.info("List of failures and jobs per each failure: (one job could have more then one failure, one per each step)")
             for hkey in groupederrs:
-                groupederrs[hkey]['jobs'].sort()
-                self.logger.info(' %s jobs failed with error "%s"' %(len(groupederrs[hkey]['jobs']), groupederrs[hkey]['error']))
-                self.logger.info('   (%s)'  %(', '.join([ str(jobid[0]) for jobid in groupederrs[hkey]['jobs'] ])) )
+                ## removing duplicates and sort
+                joberrs = list(set(groupederrs[hkey]['jobs']))
+                joberrs.sort()
+                self.logger.info(' %s jobs failed with error "%s"' %(len(joberrs), groupederrs[hkey]['error']))
+                self.logger.info('   (%s)'  %(', '.join([ str(jobid[0]) for jobid in joberrs)) )
 
         return CommandResult(0, None)
 
@@ -92,6 +94,7 @@ class postmortem(SubCommand):
 
     def aggregateFailures(self, dictresult):
         failures = {}
+        # this allows to get a sorted list of jobs even in debug print
         alljobs = map(int, dictresult.keys())
         alljobs.sort()
         ## for each job
