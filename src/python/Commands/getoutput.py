@@ -19,9 +19,9 @@ class getoutput(SubCommand):
         ## check input options and set destination directory
 
         if self.options.task is None:
-            return CommandResult(1, 'Error: Task option is required')
+            return CommandResult(1, 'ERROR: Task option is required')
         if self.options.range is None:
-            return CommandResult(1, 'Error: Range option is required')
+            return CommandResult(1, 'ERROR: Range option is required')
 
         dest = os.path.join(self.requestarea, 'results')
         if self.options.outputpath is not None:

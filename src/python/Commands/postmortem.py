@@ -18,7 +18,7 @@ class postmortem(SubCommand):
     def __call__(self):
 
         if self.options.task is None:
-            return CommandResult(1, 'Error: Task option is required')
+            return CommandResult(1, 'ERROR: Task option is required')
 
         server = HTTPRequests(self.cachedinfo['Server'] + ':' + str(self.cachedinfo['Port']))
 
@@ -84,7 +84,7 @@ class postmortem(SubCommand):
                     for singlefailure in dictresult[str(jobid)][str(retry)][step]:
                         msg = '        Failure type: %s\n' % singlefailure['type'].strip()
                         msg += '        Detailed err: %s\n' % singlefailure['details']
-                        msg += '        Exit code: %s\n' % singlefailure['exitCode']
+                        msg += '        Exit code: %s' % singlefailure['exitCode']
                         globalmsg += msg
         if store:
             open(outfile, 'w').write(globalmsg)
