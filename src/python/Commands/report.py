@@ -1,4 +1,5 @@
 import json
+import os
 
 from Commands import CommandResult
 from Commands.SubCommand import SubCommand
@@ -37,10 +38,14 @@ class report(SubCommand):
                 nLumis += (1 + lumiPairs[1] - lumiPairs[0])
         self.logger.info("Sucessfully analyzed %s lumi(s) from %s run(s)" % (nLumis, len(dictresult)))
 
-        with open(self.options.file, 'w') as jsonFile:
+        if self.options.file:
+            jsonFileName = self.options.file
+        else:
+            jsonFileName = os.path.join(self.requestarea, 'results', 'lumiReport.json')
+        with open(jsonFileName, 'w') as jsonFile:
             json.dump(dictresult, jsonFile)
             jsonFile.write("\n")
-            self.logger.info("Summary of processed lumi sections written to %s" % self.options.file)
+            self.logger.info("Summary of processed lumi sections written to %s" % jsonFileName)
 
         return CommandResult(0, None)
 
@@ -58,6 +63,6 @@ class report(SubCommand):
 
         self.parser.add_option( "-o", "--outputfile",
                                  dest = "file",
-                                 default = 'lumiReport.json',
+                                 default = None,
                                  help = "Filename to write JSON summary to" )
 
