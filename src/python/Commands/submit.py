@@ -25,6 +25,7 @@ class submit(SubCommand):
     defaultgroup = "Analysis"
     defaultteam  = "Analysis"
 
+    splitMap = {'LumiBased' : 'lumis_per_job', 'EventBased' : 'events_per_job', 'FileBased' : 'files_per_job'}
 
     def loadConfig(self, config):
         """
@@ -150,12 +151,11 @@ class submit(SubCommand):
                 if self.requestmapper[param]['default'] is not None:
                     configreq[param] = self.requestmapper[param]['default']
 
-        filesJob = getattr( self.configuration.Data, "filesPerJob", None)
-        eventsJob = getattr( self.configuration.Data, "eventsPerJob", None)
-        if filesJob is not None:
-            configreq["JobSplitArgs"] = {"files_per_job" : filesJob}
-        if eventsJob is not None:
-            configreq["JobSplitArgs"] = {"events_per_job" : eventsJob}
+        unitsPerJob = getattr( self.configuration.Data, "unitsPerJob", None)
+        splitMethod = getattr( self.configuration.Data, "splitting",   None)
+
+        if unitsPerJob is not None:
+            configreq["JobSplitArgs"] = {self.splitMap[splitMethod] : unitsPerJob}
 
         jobconfig = {}
         pluginParams = [ self.configuration, self.logger, os.path.join(requestarea, 'inputs') ]
@@ -243,10 +243,6 @@ class submit(SubCommand):
 
         if getattr(self.configuration, 'Data', None) is None:
             return False, "Crab configuration problem: Data section is missing. "
-        elif getattr( self.configuration.Data, "filesPerJob", None) and getattr( self.configuration.Data, "eventsPerJob", None):
-            #if both arguments are specified return an error
-            msg = "Crab configuration problem: you cannot specify both filesPerJob and eventsPerJob parameters. Please choose just one. "
-            return False, msg
 
         if getattr(self.configuration, 'Site', None) is None:
             return False, "Crab configuration problem: Site section is missing. "

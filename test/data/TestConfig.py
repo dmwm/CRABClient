@@ -22,7 +22,7 @@ config.section_("Data")
 config.Data.inputDataset = '/RelValProdTTbar/JobRobot-MC_3XY_V24_JobRobot-v1/GEN-SIM-DIGI-RECO'
 config.Data.splitting = 'FileBased'
 config.Data.processingVersion = 'v1'
-config.Data.filesPerJob = 100
+config.Data.unitsPerJob = 100
 
 
 ## User options
