@@ -24,15 +24,14 @@ config.section_("Data")
 config.Data.inputDataset = '/cms/data/set'
 #config.Data.publishDataName = 'MyReskimForTwo'
 config.Data.processingVersion = 'v1'
-#config.Data.splitting = 'RunBased'
+#config.Data.splitting = 'LumiBased'
 #config.Data.splitting = 'EventBased'
 #config.Data.splitting = 'FileBased'
 #config.Data.blockWhitelist = [1000000]
 #config.Data.blockBlacklist = [1000000,200000]
 #config.Data.runWhitelist = [1,2]
 #config.Data.runBlacklist = [1,2]
-#config.Data.filesPerJob = 10
-#config.Data.eventsPerJob = 100
+#config.Data.unitsPerJob = 10
 #config.Data.dbsUrl = "http://cmsdbsprod.cern.ch/cms_dbs_prod_global/servlet/DBSServlet"
 
 
