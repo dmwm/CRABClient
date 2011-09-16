@@ -40,7 +40,7 @@ class postmortem(SubCommand):
                 joberrs = list(set(groupederrs[hkey]['jobs']))
                 joberrs.sort()
                 self.logger.info(' %s jobs failed with error "%s"' %(len(joberrs), groupederrs[hkey]['error']))
-                self.logger.info('   (%s)'  %(', '.join([ str(jobid[0]) for jobid in joberrs)) )
+                self.logger.info('   (%s)'  %(', '.join([ str(jobid[0]) for jobid in joberrs])) )
 
         return CommandResult(0, None)
 
