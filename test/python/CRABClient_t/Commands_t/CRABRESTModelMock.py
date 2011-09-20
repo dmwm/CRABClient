@@ -5,6 +5,7 @@ import threading
 import cherrypy
 import imp
 import os
+import uuid
 
 SI_RESULT = {}
 SI_RESULT['server_dn']  = ''
@@ -40,6 +41,9 @@ class CRABRESTModelMock(RESTModel):
         #/goodLumis
         self._addMethod('GET', 'goodLumis', self.getGoodLumis,
                        args=['requestID'], validation=[self.isalnum])
+        #
+        self._addMethod('POST', 'lumiMask', self.postLumiMask,
+                       args=[], validation=[self.isalnum])
 
         # Server
         self._addMethod('GET', 'info', self.getServerInfo,
@@ -121,6 +125,18 @@ class CRABRESTModelMock(RESTModel):
 
     def postRequest(self, requestName):
           return {'ID': 'mmascher_crab_MyAnalysis26_110707_164957'}
+
+    def postLumiMask(self):
+        """
+        Mock version of result of ACDC upload
+        """
+
+        result = {}
+        result['DocID']  = uuid.uuid4().hex
+        result['DocRev'] = uuid.uuid4().hex
+        result['Name']   = "%s-cmsRun1" % params['RequestName']
+
+        return result
 
 
     def getJobErrors(self, requestID):

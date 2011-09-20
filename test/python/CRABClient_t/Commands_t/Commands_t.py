@@ -52,8 +52,6 @@ class CommandTest(FakeRESTServer):
         self.logger.setLevel(logging.DEBUG)
 
 
-    def
-
     def testServerInfo(self):
         si = server_info(self.logger, self.maplistopt + ["-s","localhost:8518"])
 
@@ -114,13 +112,15 @@ class CommandTest(FakeRESTServer):
         expRes = CommandResult(0, None)
         self.assertEquals(expRes, res)
 
+        lumiReportFilename = os.path.join("crab_"+self.TEST_REQ_NAME, "results", "lumiReport.json")
+
         # Wrote correct file
-        with open('lumiReport.json', 'r') as reportFile:
+        with open(lumiReportFilename, 'r') as reportFile:
             result = json.load(reportFile)
             mockResult = json.loads(CRABRESTModelMock.goodLumisResult)
             self.assertEquals(result, mockResult)
 
-        os.remove('lumiReport.json')
+        os.remove(lumiReportFilename)
 
 
     def testGetOutput(self):
@@ -212,6 +212,32 @@ class CommandTest(FakeRESTServer):
         res = sub()
         self.assertEquals(res, expRes)
 
+
+    def testLumiSubmit(self):
+        """
+        Test submission with the lumiMask parameter"
+        """
+
+        sections = ["General", "User", "Data", "Site" , "JobType"]
+        lumiConf = Configuration()
+        for sec in sections:
+            lumiConf.section_(sec)
+
+        lumiConf.General.serverUrl = "localhost:8518"
+        lumiConf.JobType.externalPluginFile = os.path.join( os.path.dirname(__file__), "TestPlugin.py")
+        lumiConf.Site.storageSite = 'T2_XXX'
+
+        lumiInput = os.path.join( os.path.dirname(__file__), "../../../data/lumiInput.json")
+        lumiConf.Data.splitting = 'LumiBased'
+        lumiConf.Data.lumiMask = 'lumiInput.json'
+
+        sub = submit(self.logger, self.maplistopt + ["-c", lumiConf,
+                                                     "-p", "/DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=mmascher/CN=720897/CN=Marco Mascheroni",
+                                                     "-s", "127.0.0.1:8518"])
+
+        res = sub()
+        expRes = CommandResult(0, None)
+        self.assertEquals(res, expRes)
 
     def testPostMortem(self):
         s = postmortem(self.logger, self.maplistopt)
