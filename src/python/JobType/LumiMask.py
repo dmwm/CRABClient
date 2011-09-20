@@ -3,6 +3,8 @@ Module to handle lumiMask.json file
 """
 
 import json
+import urllib2
+import urlparse
 
 from ServerInteractions import HTTPRequests
 
@@ -15,8 +17,16 @@ class LumiMask(object):
         self.config = config
         self.logger = logger
 
-        with open(self.config.Data.lumiMask,'r') as lumiFile:
+        # Parse Lumi list from file or URL
+        parts = urlparse.urlparse(self.config.Data.lumiMask)
+        if parts[0] in ['http', 'https']:
+            self.logger.debug('Downloading lumiMask from %s' % self.config.Data.lumiMask)
+            lumiFile = urllib2.urlopen(self.config.Data.lumiMask)
             self.lumiMask = json.load(lumiFile)
+        else:
+            with open(self.config.Data.lumiMask, 'r') as lumiFile:
+                self.logger.debug('Reading lumiMask from %s' % self.config.Data.lumiMask)
+                self.lumiMask = json.load(lumiFile)
 
 
     def upload(self, requestConfig):
@@ -28,10 +38,6 @@ class LumiMask(object):
         server = HTTPRequests(url)
         if not server:
             raise RuntimeError('No server specified for lumiMask upload')
-
-        with open(self.config.Data.lumiMask,'r') as lumiFile:
-            lumiMask = json.load(lumiFile)
-
 
         group  = self.config.User.group
         userDN = requestConfig['RequestorDN']
