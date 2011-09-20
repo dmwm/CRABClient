@@ -37,8 +37,8 @@ config.Data.processingVersion = 'v1'
 
 ## User options
 config.section_("User")
-#config.User.voRole  = ''
-#config.User.voGroup = '/cms/integration'
+#config.User.voRole  = 't1access'
+#config.User.voGroup = 'integration'
 config.User.team  = 'Analysis'
 config.User.group = 'Analysis'
 config.User.email = ''
