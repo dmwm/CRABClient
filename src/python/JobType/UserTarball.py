@@ -59,7 +59,10 @@ class UserTarball(object):
 
         # Tar up extra files the user needs
         for globName in userFiles:
-            for filename in glob.glob(globName):
+            fileNames = glob.glob(globName)
+            if not fileNames:
+                raise IOError('No files match %s' % globName)
+            for filename in fileNames:
                 self.logger.debug(" adding file %s to tarball" % filename)
                 self.tarfile.add(filename, os.path.basename(filename), recursive=True)
 
