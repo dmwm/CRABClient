@@ -13,7 +13,7 @@ from WMCore.Configuration import loadConfigurationFile, Configuration
 from WMCore.Credential.Proxy import CredentialException
 from ServerInteractions import HTTPRequests
 import types
-
+import imp
 
 class submit(SubCommand):
     """ Perform the submission to the CRABServer
@@ -46,6 +46,8 @@ class submit(SubCommand):
             valid, configmsg = self.loadConfig( self.options.config )
         except ImportError:
             return CommandResult(1, "Configuration file '%s' not found" % self.options.config)
+        except RuntimeError, re:
+            return self._extractReason( re )
         else:
             ## file is there, check if it is ok
             if not valid:
@@ -267,3 +269,28 @@ class submit(SubCommand):
                 return False, msg
 
         return True, "Valid configuration"
+
+
+    def _extractReason(self, re):
+        """
+        Get the reason of the failure without the stacktrace. Put the stacktrace in the crab.log file
+        """
+        #get only the error wihtout the stacktrace
+        filename = os.path.abspath( self.options.config )
+        cfgBaseName = os.path.basename( filename ).replace(".py", "")
+        cfgDirName = os.path.dirname( filename )
+        if  not cfgDirName:
+            modPath = imp.find_module(cfgBaseName)
+        else:
+            modPath = imp.find_module(cfgBaseName, [cfgDirName])
+        try:
+            modRef = imp.load_module(cfgBaseName, modPath[0],
+                                     modPath[1], modPath[2])
+        except Exception, ex:
+            msg = str(ex)
+
+        #workarea has not been created yet
+        with open('crab.log', 'w') as of:
+            of.write(str(re))
+
+        return CommandResult(1, "Configuration error: \n %s.\nSee the crab.log file for more details" % msg)
