@@ -245,6 +245,17 @@ class submit(SubCommand):
 
         if getattr(self.configuration, 'Data', None) is None:
             return False, "Crab configuration problem: Data section is missing. "
+        else:
+            if hasattr(self.configuration.Data, 'unitsPerJob'):
+                #check that it is a valid number
+                try:
+                    float(self.configuration.Data.unitsPerJob)
+                except ValueError:
+                    return False, "Crab configuration problem: unitsPerJob must be a valid number, not %s" % self.configuration.Data.unitsPerJob
+
+            if hasattr(self.configuration.Data, 'splitting'):
+                if not self.configuration.Data.splitting in self.splitMap.keys():
+                    return False, "Crab configuration problem: The splitting algorithm must be one of %s" % ', '.join(self.splitMap.keys())
 
         if getattr(self.configuration, 'Site', None) is None:
             return False, "Crab configuration problem: Site section is missing. "
