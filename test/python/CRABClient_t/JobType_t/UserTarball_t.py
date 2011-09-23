@@ -142,6 +142,19 @@ class UserTarballTest(unittest.TestCase):
         self.tarBalls.append(tb.name)
 
 
+    def testMissingGlob(self):
+        """
+        Test globbing and extra files
+        """
+        userFiles = ['%s/src/Module/Submodule/extra_*.txt' % (self.base),
+                     '%s/src/Module/Submodule/missing_file.txt' % (self.base)]
+
+        tb = UserTarball(name='default.tgz', logger=self.logger)
+
+        self.assertRaises(IOError, tb.addFiles, userFiles=userFiles)
+        self.tarBalls.append(tb.name)
+
+
     def testAccess(self):
         """
         Test accesses with __getattr__ to the underlying TarFile.
