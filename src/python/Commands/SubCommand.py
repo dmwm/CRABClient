@@ -56,8 +56,8 @@ class SubCommand(object):
         ## if we have got a server url we create the cache
         if serverurl:
             self.logger.debug('Contacting ' + serverurl)
-            print self.name, serverurl, self.options.mappingpath
             cmdmap = SubCommand.create_cached(self.name, serverurl, self.options.mappingpath)
+            self.logger.debug('Retrieved client-server mapping')
 
         ## not all the commands need an uri (e.g.: remote_copy)
         if cmdmap:
