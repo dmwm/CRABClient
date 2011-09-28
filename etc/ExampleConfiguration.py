@@ -17,33 +17,19 @@ config.General.requestName   = 'MyAnalysis_1'
 config.section_("JobType")
 config.JobType.pluginName  = 'Cmssw'
 config.JobType.psetName    = 'pset.py'
-#config.JobType.inputFiles  = ['/tmp/input_file']
 
 ## Specific data options
 config.section_("Data")
 config.Data.inputDataset = '/cms/data/set'
-#config.Data.publishDataName = 'MyReskimForTwo'
 config.Data.processingVersion = 'v1'
-#config.Data.splitting = 'LumiBased'
-#config.Data.splitting = 'EventBased'
-#config.Data.splitting = 'FileBased'
-#config.Data.blockWhitelist = [1000000]
-#config.Data.blockBlacklist = [1000000,200000]
-#config.Data.runWhitelist = [1,2]
-#config.Data.runBlacklist = [1,2]
-#config.Data.unitsPerJob = 10
-#config.Data.dbsUrl = "http://cmsdbsprod.cern.ch/cms_dbs_prod_global/servlet/DBSServlet"
-
+config.Data.splitting = 'LumiBased'
+config.Data.unitsPerJob = 20
 
 ## User options
 config.section_("User")
-#config.User.voRole  = 't1access'
-#config.User.voGroup = 'integration'
 config.User.team  = 'Analysis'
 config.User.group = 'Analysis'
 config.User.email = ''
 
 config.section_("Site")
 config.Site.storageSite = 'T2_XX_XXX'
-#config.Site.whitelist = ['T2_XY_XXY']
-#config.Site.blacklist = ['T2_XZ_XXZ']
