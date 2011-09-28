@@ -36,19 +36,23 @@ class status(SubCommand):
         self._printRequestDetails(dictresult)
 
         if 'states' in dictresult:
-            totalJobs = 0
-            for state in dictresult['states']:
-                totalJobs += dictresult['states'][state]['count']
-            for state in dictresult['states']:
-                count = dictresult['states'][state]['count']
-                if self.options.brief:
-                    percent = count/totalJobs*100
-                    self.logger.info("State: %-13s Count: %6s (%5.1f%%)" % (state, count, percent))
-                else:
-                    jobList = self.readableRange(dictresult['states'][state]['jobs'])
-                    self.logger.info("State: %-13s Count: %6s  Jobs: %s" % (state, count, jobList))
+            ## grouping the status by task, since we may have log collect, cleanup, analysis jobs
+            for wmtask in dictresult['states'].keys():
+                self.logger.info( '%s jobs' % wmtask.split(self.cachedinfo['RequestName'] + '/', 1)[-1] )
+                totalJobs = 0
+                for state in dictresult['states'][wmtask]:
+                    totalJobs += dictresult['states'][wmtask][state]['count']
+                for state in dictresult['states'][wmtask]:
+                    count = dictresult['states'][wmtask][state]['count']
+                    if self.options.brief:
+                        percent = count/totalJobs*100
+                        self.logger.info("  State: %-13s Count: %6s (%5.1f%%)" % (state, count, percent))
+                    else:
+                        jobList = self.readableRange(dictresult['states'][wmtask][state]['jobs'])
+                        self.logger.info("  State: %-13s Count: %6s  Jobs: %s" % (state, count, jobList))
 
         return CommandResult(0, None)
+
 
     def _printRequestDetails(self, dictresult):
         """
@@ -62,6 +66,7 @@ class status(SubCommand):
                 for message in messageL:
                     self.logger.info("Server Messages:")
                     self.logger.info("\t%s" % message)
+
 
     def setOptions(self):
         """
