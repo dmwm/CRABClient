@@ -4,7 +4,6 @@ from CredentialInteractions import CredentialInteractions
 from WMCore.Credential.Proxy import CredentialException
 from client_utilities import initProxy
 import os
-import operator
 import logging
 import subprocess
 import threading
@@ -72,7 +71,6 @@ class remote_copy(SubCommand):
 
         lcgCmd = 'lcg-cp --connect-timeout 20 --sendreceive-timeout 240 --srm-timeout 2400 --verbose -b -D srmv2'
 
-        sortedbyjob = sorted(dicttocopy.iteritems(), key = operator.itemgetter(1))
         finalresults = {}
 
         input  = multiprocessing.Queue()
@@ -82,14 +80,18 @@ class remote_copy(SubCommand):
         p = multiprocessing.Process(target = processWorker, args = (input, result))
         p.start()
 
-        self.logger.info("Starting retrieving remote files for requested jobs %s " % str([s.encode('utf-8') for s in dicttocopy.keys()]))
+        alljobs = map(int, dicttocopy.keys())
+        alljobs.sort()
+
+        self.logger.info("Starting retrieving remote files for requested jobs %s " % str(alljobs))
         ## this can be parallelized starting more processes
-        for jobid, lfn in sortedbyjob:
-            self.logger.debug("Processing job %s" % jobid)
-            localFilename = os.path.join(self.options.destination, jobid + '.' + self.options.extension)
+        for jobid in alljobs:
+            self.logger.debug("Processing job %i" % jobid)
+            lfn = dicttocopy[str(jobid)]
+            localFilename = os.path.join(self.options.destination, str(jobid) + '.' + self.options.extension)
             cmd = '%s %s file://%s' % (lcgCmd, lfn['pfn'], localFilename)
             self.logger.debug("Executing '%s' " % cmd)
-            input.put((int(jobid), cmd, ''))
+            input.put((jobid, cmd, ''))
 
             res = None
             stdout   = ''
@@ -105,8 +107,8 @@ class remote_copy(SubCommand):
                 stdout   = ''
                 exitcode = -1
 
-            self.logger.debug("Processed job %s" % jobid)
-            self.logger.debug("Verify command result %s" % jobid)
+            self.logger.debug("Processed job %i" % jobid)
+            self.logger.debug("Verify command result %i" % jobid)
 
             checkout = simpleOutputCheck(stdout)
             checkerr = simpleOutputCheck(stderr)
@@ -119,15 +121,22 @@ class remote_copy(SubCommand):
                 checksumOK = True # No checksums provided
 
             if exitcode is not 0 or (len(checkout) + len(checkerr)) > 0:
-                finalresults[jobid] = {'exit': False, 'lfn': lfn, 'error': checkout + checkerr, 'dest': None}
-                self.logger.debug("Failed retrieving job %s" % jobid)
+                ## check to track srmv1 issues, probably this is strong enough to find all of them
+                ## REMOVE this check as soon as sites will have switched to srmv2
+                if 'v1' in lfn['pfn'] and len( filter(lambda elem: elem.find('communication error on send'), checkerr) ) > 0:
+                    msgFail  = '\n\tThe site storage is using srmv1, which is deprecated and not anymore supported.\n'
+                    msgFail += '\tPlease report this issue with the PFN provided here below.\n\tPFN: "%s".' % str(lfn['pfn'])
+                    finalresults[jobid] = {'exit': False, 'lfn': lfn, 'error': msgFail, 'dest': None}
+                else:
+                    finalresults[jobid] = {'exit': False, 'lfn': lfn, 'error': checkout + checkerr, 'dest': None}
+                self.logger.debug("Failed retrieving job %i" % jobid)
             elif not checksumOK:
                 msg = "Checksum failed for job " + str(jobid)
                 finalresults[jobid] = {'exit': False, 'lfn': lfn, 'error': msg, 'dest': None}
                 self.logger.debug( msg )
             else:
                 finalresults[jobid] = {'exit': True, 'lfn': lfn, 'dest': os.path.join(self.options.destination, str(jobid) + '.' + self.options.extension), 'error': None}
-                self.logger.debug("Retrived job, checksum passed %s" % jobid)
+                self.logger.debug("Retrived job, checksum passed %i" % jobid)
 
         try:
             input.put( ('-1', 'STOP', 'control') )
@@ -140,10 +149,10 @@ class remote_copy(SubCommand):
 
         for jobid in finalresults:
             if finalresults[jobid]['exit']:
-                self.logger.info("Job %s: output in %s" %(jobid, finalresults[jobid]['dest']))
+                self.logger.info("Job %i: output in %s" %(jobid, finalresults[jobid]['dest']))
             else:
                 self.logger.debug(str(finalresults[jobid]))
-                self.logger.info("Job %s: transfer problem %s" %(jobid, str(finalresults[jobid]['error'])))
+                self.logger.info("Job %i: transfer problem %s" %(jobid, str(finalresults[jobid]['error'])))
                 globalExitcode = 1
 
         if len(finalresults.keys()) is 0:
