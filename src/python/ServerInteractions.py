@@ -64,7 +64,7 @@ class HTTPRequests(dict):
         """
         DELETE some data
         """
-        return self.makeRequest(uri = uri, data = data)
+        return self.makeRequest(uri = uri, data = data, verb = 'DELETE')
 
     def makeRequest(self, uri = None, data = {}, verb = 'GET',
                      encoder = True, decoder = True, contentType = None):
@@ -115,7 +115,7 @@ class HTTPRequests(dict):
 
     def decodeJson(self, result):
         """
-        decodeJson 
+        decodeJson
 
         decode the response result reveiced from the server
         """
@@ -132,4 +132,3 @@ class HTTPRequests(dict):
             scheme = 'https'
         netloc = '%s:%s' % (self['conn'].host, self['conn'].port)
         return urlunparse([scheme, netloc, uri, '', '', ''])
-
