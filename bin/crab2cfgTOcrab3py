@@ -1,0 +1,132 @@
+#!/usr/bin/env python
+"""
+Utility for CRAB2 to CRAB3 configuration file.
+
+- For the splitting lumis_per_job(events_per_job) is taken from the CRAB2 config files.
+- If it does not exist, I try to take total_number_of_events(lumis)/number_of_jobs.
+- The Request name is set to the name of the crab3 config file passed by the command line
+- Runselection in crab2 can be an interval like 132-255. We do not support it in crab3.
+"""
+
+import sys
+import os
+
+from ConfigParser import RawConfigParser
+from optparse import OptionParser
+
+from WMCore.Configuration import Configuration, saveConfigurationFile
+
+
+def _getsplitting(configC2, sectionC2, parameterC2):
+    if configC2.has_option('CMSSW', 'lumis_per_job') or \
+        configC2.has_option('CMSSW', 'total_number_of_lumis') and configC2.has_option('CMSSW', 'number_of_jobs'):
+        return 'LumiBased'
+    if configC2.has_option('CMSSW', 'events_per_job') or \
+        configC2.has_option('CMSSW', 'total_number_of_events') and configC2.has_option('CMSSW', 'number_of_jobs'):
+        return 'EventBased'
+    return None
+
+
+def _getunits(configC2, sectionC2, parameterC2):
+    #either lumis_per_job is set, or both total_number_of_lumis and number_of_jobs.
+    splitting = _getsplitting(configC2, sectionC2, parameterC2)
+    if splitting == 'LumiBased':
+        if configC2.has_option('CMSSW', 'lumis_per_job'):
+            return configC2.getint('CMSSW', 'lumis_per_job')
+        else:
+            return configC2.getint('CMSSW', 'total_number_of_lumis') / configC2.getint('CMSSW', 'number_of_jobs')
+    if splitting == 'EventBased':
+        if configC2.has_option('CMSSW', 'events_per_job'):
+            return configC2.getint('CMSSW', 'events_per_job')
+        else:
+            return configC2.getint('CMSSW', 'total_number_of_events') / configC2.getint('CMSSW', 'number_of_jobs')
+    return  None
+
+
+def _getlist(configC2, sectionC2, parameterC2):
+    strlist = RawConfigParser.get(configC2, sectionC2, parameterC2)
+    return strlist.split(',')
+
+
+#For each Crab3 parameter give the corresponding crab2 parameter
+paramsMap = [
+#    ('JobType'  , 'pluginName'           , True , 'CRAB'   , 'jobtype'                  , RawConfigParser.get),#maybe we'll need this in the future
+    ('JobType'  , 'psetName'             , True , 'CMSSW'  , 'pset'                     , RawConfigParser.get),
+    ('JobType'  , 'inputFiles'           , False, 'CMSSW'  , 'additional_input_file'    , _getlist),
+    ('Data'     , 'inputDataset'         , True , 'CMSSW'  , 'datasetpath'              , RawConfigParser.get),
+    ('Data'     , 'splitting'            , False, ''       , ''                         , _getsplitting),       #_getsplitting knows corresp. params
+    ('Data'     , 'unitsPerJob'          , False, ''       , ''                         , _getunits),           #_getunits does the work
+    ('Data'     , 'lumiMask'             , False, 'CMSSW'  , 'lumi_mask'                , RawConfigParser.get),
+    ('Data'     , 'runWhitelist'         , False, 'CMSSW'  , 'runselection'             , RawConfigParser.get),
+    ('Data'     , 'dbsurl'               , False, 'CMSSW'  , 'dbs_url'                  , RawConfigParser.get),
+    ('User'     , 'email'                , True , 'USER'   , 'eMail'                    , RawConfigParser.get),
+    ('User'     , 'voRole'               , False, 'GRID'   , 'role'                     , RawConfigParser.get),
+    ('User'     , 'voGroup'              , False, 'GRID'   , 'group'                    , RawConfigParser.get),
+    ('Site'     , 'storageSite'          , True , 'USER'   , 'storage_element'          , RawConfigParser.get),
+    ('Site'     , 'blacklist'            , False, 'GRID'   , 'ce_black_list'            , _getlist),
+    ('Site'     , 'whitelist'            , False, 'GRID'   , 'ce_white_list'            , _getlist),
+]
+
+
+def parseParameters():
+    parser = OptionParser()
+    (options, args) = parser.parse_args()
+    if len(args) != 2:
+        if len(args) == 1 :
+            return args[0], 'crabConfig.py'
+        else:
+            msg =  "Usage: crab2cfgTOcrab3py crab2configName.cfg crab3configName.py\n"
+            msg += "Please specify at least the CRAB2 config file name, crab3configName.py default to 'crabConfig.py'"
+            print msg
+            sys.exit(1)
+
+    return args[0], args[1]
+
+
+def getConfiguration(paramsMap, configNameC2, configNameC3):
+    configC2 = RawConfigParser()
+    configC2.read(configNameC2)
+    configC3 = Configuration()
+
+    configC3.section_("General")
+    configC3.section_("JobType")
+    configC3.section_("Data")
+    configC3.section_("User")
+    configC3.section_("Site")
+
+    configC3.JobType.pluginName = 'Cmssw'
+    configC3.Data.processingVersion = ''
+    configC3.General.requestName = os.path.splitext(os.path.basename(configNameC3))[0]
+    configC3.User.team = 'Analysis'
+    configC3.User.group = 'Analysis'
+
+    missingParams = []
+    for sectionC3, parameterC3, mandatory, sectionC2, parameterC2, getter in paramsMap:
+        try:
+            crab2paramValue = getter(configC2, sectionC2, parameterC2)
+        except Exception:
+            if mandatory:
+                missingParams.append((sectionC2, parameterC2, sectionC3, parameterC3))
+                crab2paramValue = 'Cannot find parameter "%s" in section "[%s]" of the crab2 config file' % (parameterC2, sectionC2)
+            else:
+                crab2paramValue = None
+        if crab2paramValue != None:
+            section = getattr(configC3, sectionC3)
+            setattr(section, parameterC3, crab2paramValue)
+
+    return configC3, missingParams
+
+
+if __name__ == "__main__":
+    configNameC2, configNameC3 = parseParameters()
+    if not os.path.isfile(configNameC2):
+        print "Cannot find file " + configNameC2
+        sys.exit(2)
+
+    configC3, missingParams = getConfiguration(paramsMap, configNameC2, configNameC3)
+
+    saveConfigurationFile(configC3, configNameC3)
+
+    if len(missingParams) > 0:
+        print "WARNING: Not all the mandatory parameters were found in the crab2 configuration file. Open the crab3 generated config file to know which"
+
