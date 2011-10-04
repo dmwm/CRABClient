@@ -51,7 +51,7 @@ class CMSSW(BasicJobType):
 
         configArguments['userSandbox'] = uploadResults['url']
         configArguments['InputDataset'] = self.config.Data.inputDataset
-        configArguments['ProcessingVersion'] = self.config.Data.processingVersion
+        configArguments['ProcessingVersion'] = getattr(self.config.Data, 'processingVersion', None)
 
         # Create CMSSW config
         cmsswCfg = CMSSWConfig(config=self.config, logger=self.logger,
@@ -93,9 +93,6 @@ class CMSSW(BasicJobType):
             valid = False
             reason += 'Crab configuration problem: missing Data section. '
         else:
-            if not getattr(config.Data, 'processingVersion', None):
-                valid = False
-                reason += 'Crab configuration problem: missing or null processing version. '
             if not getattr(config.Data, 'inputDataset', None):
                 valid = False
                 reason += 'Crab configuration problem: missing or null input dataset name. '
