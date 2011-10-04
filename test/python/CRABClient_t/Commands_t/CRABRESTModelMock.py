@@ -31,6 +31,10 @@ class CRABRESTModelMock(RESTModel):
                         args=['requestName'],
                         validation=[self.isalnum])
 
+        self._addMethod('DELETE', 'task', self.deleteRequest,
+                        args=['requestID'],
+                        validation=[self.isalnum])
+
         self._addMethod('GET', 'task', self.getTaskStatus,
                         args=['requestID'],
                         validation=[self.isalnum])
@@ -92,7 +96,7 @@ class CRABRESTModelMock(RESTModel):
 
 
     def getTaskStatus(self, requestID):
-        return {u'states': {u'success': {u'count': 5, u'jobs': [41, 42, 43, 44, 45]}}, \
+        return {u'states': {u'/mmascher_crab_sanitized_110930_113018/Analysis': {u'success': {u'count': 5, u'jobs': [41, 42, 43, 44, 45]}}}, \
                            u'requestDetails': {u'percent_success': 0, 'RequestStatus': 'running'}}
 
 
@@ -117,6 +121,9 @@ class CRABRESTModelMock(RESTModel):
         """
 
         return self.defaulturi
+
+    def deleteRequest(self, requestID):
+        return {"result": "ok"}
 
 
     def addNewUser(self):

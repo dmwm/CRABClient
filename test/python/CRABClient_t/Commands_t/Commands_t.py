@@ -6,6 +6,7 @@ from Commands.getoutput import getoutput
 from Commands.report import report
 from Commands.status import status
 from Commands.submit import submit
+from Commands.kill import kill
 from Commands.postmortem import postmortem
 from Commands import CommandResult
 from client_utilities import createCache, createWorkArea
@@ -69,7 +70,7 @@ class CommandTest(FakeRESTServer):
         s = status(self.logger, self.maplistopt)
 
         #1) missing required -t option
-        expRes = CommandResult(1, 'Error: Task option is required')
+        expRes = CommandResult(1, 'ERROR: Task option is required')
         res = s()
         self.assertEquals(expRes, res)
 
@@ -100,8 +101,8 @@ class CommandTest(FakeRESTServer):
         """
 
         # Missing required -t option
-        rep = report(self.logger, self.maplistopt)
-        expRes = CommandResult(1, 'Error: Task option is required')
+        expRes = CommandResult(1, 'ERROR: Task option is required')
+        rep = report(self.logger, [])
         res = rep()
         self.assertEquals(expRes, res)
 
@@ -134,13 +135,13 @@ class CommandTest(FakeRESTServer):
         #1) missing required -t option (the other required option, -r, is ignored)
         go = getoutput(self.logger, self.maplistopt)
         res = go()
-        expRes = CommandResult(1, 'Error: Task option is required')
+        expRes = CommandResult(1, 'ERROR: Task option is required')
 
         #2) -t option is present but -r is missing
         analysisDir = self.reqarea
         go = getoutput(self.logger, self.maplistopt + ["-t", analysisDir])
         res = go()
-        expRes = CommandResult(1, 'Error: Range option is required')
+        expRes = CommandResult(1, 'ERROR: Range option is required')
 
         #3) request passed with the -t option does not exist
         #res = go(["-t", analysisDir + "asdf"])
@@ -243,7 +244,7 @@ class CommandTest(FakeRESTServer):
         s = postmortem(self.logger, self.maplistopt)
 
         #1) missing required -t option
-        expRes = CommandResult(1, 'Error: Task option is required')
+        expRes = CommandResult(1, 'ERROR: Task option is required')
         res = s()
         self.assertEquals(expRes, res)
 
@@ -257,6 +258,25 @@ class CommandTest(FakeRESTServer):
         #3) wrong -t option
         analysisDir = os.path.join(os.path.dirname(__file__), 'crab_XXX')
         self.assertRaises( TaskNotFoundException, postmortem, self.logger, self.maplistopt + ["-t", analysisDir])
+
+    def testKill(self):
+        s = kill(self.logger, [])
+
+        #1) missing required -t option
+        expRes = CommandResult(1, 'ERROR: Task option is required')
+        res = s()
+        self.assertEquals(expRes, res)
+
+        #2) correct execution
+        analysisDir = self.reqarea
+        s = kill(self.logger, self.maplistopt + ["-t", analysisDir])
+        res = s()
+        expRes = CommandResult(0, None)
+        self.assertEquals( expRes, res)
+
+        #3) wrong -t option
+        analysisDir = os.path.join(os.path.dirname(__file__), 'crab_XXX')
+        self.assertRaises( TaskNotFoundException, kill, self.logger, self.maplistopt + ["-t", analysisDir])
 
 
     def _prepareWorkArea(self):
