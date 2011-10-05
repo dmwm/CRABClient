@@ -13,6 +13,7 @@ import tempfile
 import hashlib
 
 from ScramEnvironment import ScramEnvironment
+from client_exceptions import InputFileNotFoundException
 
 class UserTarball(object):
     """
@@ -61,7 +62,7 @@ class UserTarball(object):
         for globName in userFiles:
             fileNames = glob.glob(globName)
             if not fileNames:
-                raise IOError('No files match %s' % globName)
+                raise InputFileNotFoundException('The input file "%s" taken from parameter config.JobType.inputFiles cannot be found' % globName)
             for filename in fileNames:
                 self.logger.debug(" adding file %s to tarball" % filename)
                 self.tarfile.add(filename, os.path.basename(filename), recursive=True)

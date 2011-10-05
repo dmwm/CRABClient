@@ -22,3 +22,9 @@ class PSetNotFoundException(ClientException):
     Raised when the pset file used specified in the configuration is not found
     """
     exitcode = 6
+
+class InputFileNotFoundException(ClientException):
+    """
+    Raised when a file in config.JobType.inputFiles cannot be found
+    """
+    exitcode = 7
