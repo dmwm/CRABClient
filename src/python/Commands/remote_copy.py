@@ -123,7 +123,7 @@ class remote_copy(SubCommand):
             if exitcode is not 0 or (len(checkout) + len(checkerr)) > 0:
                 ## check to track srmv1 issues, probably this is strong enough to find all of them
                 ## REMOVE this check as soon as sites will have switched to srmv2
-                if 'v1' in lfn['pfn'] and len( filter(lambda elem: elem.find('communication error on send'), checkerr) ) > 0:
+                if 'v1' in lfn['pfn'] and len( filter(lambda elem: elem.find('communication error on send')==-1, checkerr) ) > 0:
                     msgFail  = '\n\tThe site storage is using srmv1, which is deprecated and not anymore supported.\n'
                     msgFail += '\tPlease report this issue with the PFN provided here below.\n\tPFN: "%s".' % str(lfn['pfn'])
                     finalresults[jobid] = {'exit': False, 'lfn': lfn, 'error': msgFail, 'dest': None}

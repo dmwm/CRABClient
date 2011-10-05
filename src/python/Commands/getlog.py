@@ -26,7 +26,7 @@ class getlog(SubCommand):
 
         dest = os.path.join(self.requestarea, 'results')
         if self.options.outputpath is not None:
-            if os.path.isabs( self.options.outputpath ):
+            if not os.path.isabs( self.options.outputpath ):
                 dest = os.path.abspath( self.options.outputpath )
             else:
                 dest = self.options.outputpath
