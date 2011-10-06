@@ -14,6 +14,7 @@ import unittest
 
 from JobType.UserTarball import UserTarball
 from WMCore.Configuration import Configuration
+from client_exceptions import InputFileNotFoundException
 
 testWMConfig = Configuration()
 
@@ -151,7 +152,7 @@ class UserTarballTest(unittest.TestCase):
 
         tb = UserTarball(name='default.tgz', logger=self.logger)
 
-        self.assertRaises(IOError, tb.addFiles, userFiles=userFiles)
+        self.assertRaises(InputFileNotFoundException, tb.addFiles, userFiles=userFiles)
         self.tarBalls.append(tb.name)
 
 
