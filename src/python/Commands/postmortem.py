@@ -74,11 +74,12 @@ class postmortem(SubCommand):
         alljobs.sort()
         globalmsg = ''
         for jobid in alljobs:
-            globalmsg += "*Job %d*\n" % jobid
+            globalmsg += "\n*Job %d*\n" % jobid
             allretry = map(int, dictresult[str(jobid)].keys())
             allretry.sort()
             for retry in allretry:
                 globalmsg += "   -retry: %d\n" % retry
+                globalmsg += "    -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*- \n"
                 for step in dictresult[str(jobid)][str(retry)]:
                     globalmsg += "      failure details for step '%s':\n" % step
                     for singlefailure in dictresult[str(jobid)][str(retry)][step]:
@@ -86,6 +87,7 @@ class postmortem(SubCommand):
                         msg += '        Detailed err: %s\n' % singlefailure['details']
                         msg += '        Exit code: %s' % singlefailure['exitCode']
                         globalmsg += msg
+                globalmsg += "\n    -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*- \n"
         if store:
             open(outfile, 'w').write(globalmsg)
             self.logger.info("Report for job failure reasons has been written into the file '%s'" % outfile)
