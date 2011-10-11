@@ -59,7 +59,7 @@ paramsMap = [
     ('Data'     , 'lumiMask'             , False, 'CMSSW'  , 'lumi_mask'                , RawConfigParser.get),
     ('Data'     , 'runWhitelist'         , False, 'CMSSW'  , 'runselection'             , RawConfigParser.get),
     ('Data'     , 'dbsurl'               , False, 'CMSSW'  , 'dbs_url'                  , RawConfigParser.get),
-    ('User'     , 'email'                , True , 'USER'   , 'eMail'                    , RawConfigParser.get),
+    ('User'     , 'email'                , False, 'USER'   , 'eMail'                    , RawConfigParser.get),
     ('User'     , 'voRole'               , False, 'GRID'   , 'role'                     , RawConfigParser.get),
     ('User'     , 'voGroup'              , False, 'GRID'   , 'group'                    , RawConfigParser.get),
     ('Site'     , 'storageSite'          , True , 'USER'   , 'storage_element'          , RawConfigParser.get),
@@ -97,6 +97,8 @@ def getConfiguration(paramsMap, configNameC2, configNameC3):
     configC3.JobType.pluginName = 'Cmssw'
     configC3.Data.processingVersion = ''
     configC3.General.requestName = os.path.splitext(os.path.basename(configNameC3))[0]
+    configC3.General.serverUrl = 'You need to set the server URL'
+    configC3.User.email = ''
     configC3.User.team = 'Analysis'
     configC3.User.group = 'Analysis'
 
