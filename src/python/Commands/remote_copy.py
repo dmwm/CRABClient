@@ -69,14 +69,14 @@ class remote_copy(SubCommand):
         else:
             logging.debug('Skipping proxy creation and delegation')
 
-        lcgCmd = 'lcg-cp --connect-timeout 20 --sendreceive-timeout 240 --srm-timeout 2400 --verbose -b -D srmv2'
+        lcgCmd = 'lcg-cp --connect-timeout 20 --sendreceive-timeout 240 --srm-timeout 1800 --verbose -b -D srmv2'
 
         finalresults = {}
 
         input  = multiprocessing.Queue()
         result = multiprocessing.Queue()
 
-        singletimeout = 20 * 60
+        singletimeout = 35 * 60
         p = multiprocessing.Process(target = processWorker, args = (input, result))
         p.start()
 
@@ -103,7 +103,7 @@ class remote_copy(SubCommand):
                 stderr   = res['stderr']
                 exitcode = res['exit']
             except Queue.Empty:
-                stderr   = "Timeout retrieving result after %i" % singletimeout
+                stderr   = "Timeout retrieving result after %i seconds" % singletimeout
                 stdout   = ''
                 exitcode = -1
 
@@ -123,7 +123,7 @@ class remote_copy(SubCommand):
             if exitcode is not 0 or (len(checkout) + len(checkerr)) > 0:
                 ## check to track srmv1 issues, probably this is strong enough to find all of them
                 ## REMOVE this check as soon as sites will have switched to srmv2
-                if 'v1' in lfn['pfn'] and len( filter(lambda elem: elem.find('communication error on send')==-1, checkerr) ) > 0:
+                if ('srmv1' in lfn['pfn'] or 'managerv1' in lfn['pfn']) and len( filter(lambda elem: elem.find('communication error on send')==-1, checkerr) ) > 0:
                     msgFail  = '\n\tThe site storage is using srmv1, which is deprecated and not anymore supported.\n'
                     msgFail += '\tPlease report this issue with the PFN provided here below.\n\tPFN: "%s".' % str(lfn['pfn'])
                     finalresults[jobid] = {'exit': False, 'lfn': lfn, 'error': msgFail, 'dest': None}
