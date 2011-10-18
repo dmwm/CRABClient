@@ -86,6 +86,9 @@ class HTTPRequests(dict):
                    "User-agent": "CRABClient/v001",
                    "Accept": "application/json"}
 
+        #Quoting the uri since it can contain the request name, and therefore spaces (see #2557)
+        uri = urllib.quote(uri)
+
         if verb != 'GET' and data:
             headers["Content-length"] = len(data)
         elif verb == 'GET' and data:
