@@ -33,6 +33,7 @@ class UserTarball(object):
         self.logger.debug("Making tarball in %s" % name)
         self.tarfile = tarfile.open(name=name, mode=mode, dereference=True)
         self.uploadurl = '/crabinterface/crab/uploadUserSandbox'
+        self.checksum = None
 
     def addFiles(self, userFiles=None):
         """
@@ -68,26 +69,25 @@ class UserTarball(object):
                 self.tarfile.add(filename, os.path.basename(filename), recursive=True)
 
 
+    def close(self):
+        """
+        Calculate the checkum and clos
+        """
+
+        self.calculateChecksum()
+        return self.tarfile.close()
+
     def upload(self):
         """
         Upload the tarball to the CRABServer
         """
-
-        self.tarfile.close()
-
-        sha256sum = hashlib.sha256()
-        with open(self.tarfile.name,'rb') as f:
-            while True:
-                chunkdata = f.read(8192)
-                if not chunkdata:
-                    break
-                sha256sum.update(chunkdata)
+        self.close()
 
         csHost = self.config.General.serverUrl
 
         with tempfile.NamedTemporaryFile() as curlOutput:
             url = csHost + self.uploadurl
-            curlCommand = 'curl -H "Accept: application/json" -F"userfile=@%s" -F"checksum=%s" %s -o %s' % (self.tarfile.name, sha256sum.hexdigest(), url, curlOutput.name)
+            curlCommand = 'curl -H "Accept: application/json" -F"userfile=@%s" -F"checksum=%s" %s -o %s' % (self.tarfile.name, self.checksum, url, curlOutput.name)
             (status, output) = commands.getstatusoutput(curlCommand)
             if status:
                 raise RuntimeError('Problem uploading user sandbox: %s' % output)
@@ -97,6 +97,29 @@ class UserTarball(object):
                     raise RuntimeError('Problem uploading user sandbox: %s ' % str(returnDict['message']))
 
         return returnDict
+
+
+    def calculateChecksum(self):
+        """
+        Calculate a checksum that doesn't depend on the tgz
+        creation data
+        """
+
+        lsl = [(x.name, int(x.size), int(x.mtime), x.uname) for x in self.tarfile.getmembers()]
+        hasher = hashlib.sha256(str(lsl))
+        self.logger.debug('tgz contents: %s' % lsl)
+        self.checksum = hasher.hexdigest()
+        self.logger.debug('Checksum: %s' % self.checksum)
+
+        #Old way reads in the file again. May use for for non-tar files if needed.
+        #sha256sum = hashlib.sha256()
+        #with open(self.tarfile.name, 'rb') as f:
+            #while True:
+                #chunkdata = f.read(8192)
+                #if not chunkdata:
+                    #break
+                #sha256sum.update(chunkdata)
+        #sha256sum.hexdigest()
 
 
     def __getattr__(self, *args):
