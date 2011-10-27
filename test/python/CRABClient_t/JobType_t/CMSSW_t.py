@@ -12,8 +12,8 @@ import logging
 import os
 import unittest
 
-from JobType.CMSSW import CMSSW
-from JobType.ScramEnvironment import ScramEnvironment
+from CRABClient.JobType.CMSSW import CMSSW
+from CRABClient.JobType.ScramEnvironment import ScramEnvironment
 
 # Re-use and extend simple configs from CMSSWConfig_t
 

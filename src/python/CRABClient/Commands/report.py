@@ -1,10 +1,10 @@
 import json
 import os
 
-from Commands import CommandResult
-from Commands.SubCommand import SubCommand
-from ServerInteractions import HTTPRequests
-from client_utilities import loadCache
+from CRABClient.Commands import CommandResult
+from CRABClient.Commands.SubCommand import SubCommand
+from CRABClient.ServerInteractions import HTTPRequests
+from CRABClient.client_utilities import loadCache
 
 
 class report(SubCommand):

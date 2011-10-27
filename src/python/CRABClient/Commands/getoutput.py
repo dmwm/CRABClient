@@ -1,18 +1,17 @@
-from Commands import CommandResult
-from Commands.remote_copy import remote_copy
-from Commands.SubCommand import SubCommand
-from ServerInteractions import HTTPRequests
+from CRABClient.Commands import CommandResult
+from CRABClient.Commands.remote_copy import remote_copy
+from CRABClient.Commands.SubCommand import SubCommand
+from CRABClient.ServerInteractions import HTTPRequests
 import os
 
-
-class getlog(SubCommand):
-    """ Retrieve the log files of the jobs specified by -r/--range option part of the
-    task identified by -t/--task option
+class getoutput(SubCommand):
+    """ Retrieve the output files of the jobs specified by -r/--range option part of
+    the task identified by -t/--task option
     """
 
     ## name should become automatically generated
-    name  = "get-log"
-    names = [name, 'log']
+    name  = "get-output"
+    names = [name, 'output']
     usage = "usage: %prog " + name + " [options] [args]"
 
     def __call__(self):
@@ -31,7 +30,7 @@ class getlog(SubCommand):
             else:
                 dest = self.options.outputpath
 
-        self.logger.info("Setting the destination directory to %s " % dest )
+        self.logger.debug("Setting the destination directory to %s " % dest )
         if not os.path.exists( dest ):
             self.logger.debug("Creating directory %s " % dest)
             os.makedirs( dest )
@@ -41,7 +40,7 @@ class getlog(SubCommand):
         ## retrieving output files location from the server
         server = HTTPRequests(self.cachedinfo['Server'] + ':' + str(self.cachedinfo['Port']))
 
-        self.logger.info('Retrieving log files for jobs %s in task %s' % ( self.options.range, self.cachedinfo['RequestName'] ) )
+        self.logger.debug('Retrieving output for jobs %s in task %s' % ( self.options.range, self.cachedinfo['RequestName'] ) )
         inputdict = {'jobRange' : self.options.range, 'requestID': self.cachedinfo['RequestName'] }
         dictresult, status, reason = server.get(self.uri, inputdict)
 
@@ -51,7 +50,7 @@ class getlog(SubCommand):
             msg = "Problem retrieving getoutput information from the server:\ninput:%s\noutput:%s\nreason:%s" % (str(inputdict), str(dictresult), str(reason))
             return CommandResult(1, msg)
 
-        arglist = ['-d', dest, '-i', dictresult, '-e', 'tgz']
+        arglist = ['-d', dest, '-i', dictresult]
         if self.options.skipProxy:
             arglist.append('-p')
         copyoutput = remote_copy( self.logger, arglist )
@@ -64,7 +63,6 @@ class getlog(SubCommand):
 
         This allows to set specific command options
         """
-
         self.parser.add_option( "-t", "--task",
                                  dest = "task",
                                  default = None,

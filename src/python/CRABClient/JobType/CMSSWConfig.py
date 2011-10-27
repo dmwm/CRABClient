@@ -7,9 +7,9 @@ import json
 import os
 
 from FWCore.ParameterSet.Modules import OutputModule
-from ServerInteractions import HTTPRequests
+from CRABClient.ServerInteractions import HTTPRequests
 from PSetTweaks.WMTweak import makeTweak
-from client_exceptions import PSetNotFoundException
+from CRABClient.client_exceptions import PSetNotFoundException
 
 class CMSSWConfig(object):
     """

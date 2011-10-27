@@ -1,6 +1,6 @@
 from optparse import OptionParser, SUPPRESS_HELP
-from ServerInteractions import HTTPRequests
-from client_utilities import loadCache, getWorkArea
+from CRABClient.ServerInteractions import HTTPRequests
+from CRABClient.client_utilities import loadCache, getWorkArea
 
 
 class SubCommand(object):

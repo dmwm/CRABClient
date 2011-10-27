@@ -5,11 +5,11 @@ CMSSW job type plug-in
 import os
 import tempfile
 
-from BasicJobType import BasicJobType
-from CMSSWConfig import CMSSWConfig
-from LumiMask import LumiMask
-from UserTarball import UserTarball
-from ScramEnvironment import ScramEnvironment
+from CRABClient.JobType.BasicJobType import BasicJobType
+from CRABClient.JobType.CMSSWConfig import CMSSWConfig
+from CRABClient.JobType.LumiMask import LumiMask
+from CRABClient.JobType.UserTarball import UserTarball
+from CRABClient.JobType.ScramEnvironment import ScramEnvironment
 
 class CMSSW(BasicJobType):
     """

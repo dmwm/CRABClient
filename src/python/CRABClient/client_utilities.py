@@ -14,13 +14,13 @@ import cPickle
 
 from string import upper
 
-from CredentialInteractions import CredentialInteractions
-from client_exceptions import TaskNotFoundException, CachefileNotFoundException
+from CRABClient.CredentialInteractions import CredentialInteractions
+from CRABClient.client_exceptions import TaskNotFoundException, CachefileNotFoundException
 
 from optparse import OptionValueError
 
 
-def getPlugins(plugins, skip):
+def getPlugins(namespace, plugins, skip):
     """
     _getPlugins_
 
@@ -29,15 +29,15 @@ def getPlugins(plugins, skip):
 
     TODO: If we use WMCore more, replace with the WMFactory.
     """
-    packagemod = __import__( plugins )
+    packagemod = __import__( '%s.%s' % (namespace, plugins), \
+                                        globals(), locals(), plugins  )
     fullpath   = packagemod.__path__[0]
-
     modules = {}
     ## iterating on the modules contained in that package
     for el in list(pkgutil.iter_modules([fullpath])):
         if el[1] not in skip:
             ## import the package module
-            mod = __import__('%s.%s' % (plugins, el[1]), \
+            mod = __import__('%s.%s.%s' % (namespace, plugins, el[1]), \
                                         globals(), locals(), el[1] )
             ## add to the module dictionary
             modules[el[1]] = getattr(mod, el[1])
@@ -84,7 +84,7 @@ def addPlugin(pluginpathname, pluginname = None):
     return modules
 
 
-def getJobTypes(jobtypepath = 'JobType'):
+def getJobTypes(jobtypepath = 'CRABClient', jobtypename = 'JobType'):
     """
     _getJobTypes_
 
@@ -92,14 +92,14 @@ def getJobTypes(jobtypepath = 'JobType'):
 
     TODO: this can also be a call to get a specific job type from the server
     """
-    allplugins = getPlugins(jobtypepath, ['BasicJobType'])
+    allplugins = getPlugins(jobtypepath, jobtypename, ['BasicJobType'])
     result = {}
     for k in allplugins:
         result[upper(k)] = allplugins[k]
     return result
 
 
-def getAvailCommands(subcmdpath = 'Commands'):
+def getAvailCommands(subcmdpath = 'CRABClient', subcmdname = 'Commands'):
     """
     _getJobTypes_
 
@@ -107,8 +107,7 @@ def getAvailCommands(subcmdpath = 'Commands'):
 
     TODO: this can also be a call to get a specific job type from the server
     """
-
-    subcmdplugins = getPlugins(subcmdpath, ['SubCommand'])
+    subcmdplugins = getPlugins(subcmdpath, subcmdname, ['SubCommand'])
     result = {}
     for k in subcmdplugins.keys():
         if subcmdplugins[k].visible:

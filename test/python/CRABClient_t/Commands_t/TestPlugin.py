@@ -1,4 +1,4 @@
-from JobType.BasicJobType import BasicJobType
+from CRABClient.JobType.BasicJobType import BasicJobType
 
 class TestPlugin(BasicJobType):
     def run(self, config):

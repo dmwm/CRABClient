@@ -1,8 +1,8 @@
-from Commands import CommandResult
-from Commands.SubCommand import SubCommand
-from CredentialInteractions import CredentialInteractions
+from CRABClient.Commands import CommandResult
+from CRABClient.Commands.SubCommand import SubCommand
+from CRABClient.CredentialInteractions import CredentialInteractions
 from WMCore.Credential.Proxy import CredentialException
-from client_utilities import initProxy
+from CRABClient.client_utilities import initProxy
 import os
 import logging
 import subprocess

@@ -12,8 +12,8 @@ import tarfile
 import tempfile
 import hashlib
 
-from ScramEnvironment import ScramEnvironment
-from client_exceptions import InputFileNotFoundException
+from CRABClient.JobType.ScramEnvironment import ScramEnvironment
+from CRABClient.client_exceptions import InputFileNotFoundException
 
 class UserTarball(object):
     """
