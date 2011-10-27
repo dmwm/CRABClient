@@ -10,7 +10,7 @@ import logging
 import os
 import unittest
 
-from JobType.ScramEnvironment import ScramEnvironment
+from CRABClient.JobType.ScramEnvironment import ScramEnvironment
 
 class ScramEnvironmentTest(unittest.TestCase):
     """

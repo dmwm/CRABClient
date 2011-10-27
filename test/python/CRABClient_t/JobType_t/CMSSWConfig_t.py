@@ -10,8 +10,8 @@ import logging
 import os
 import unittest
 
-from JobType.CMSSWConfig import CMSSWConfig
-from JobType.ScramEnvironment import ScramEnvironment
+from CRABClient.JobType.CMSSWConfig import CMSSWConfig
+from CRABClient.JobType.ScramEnvironment import ScramEnvironment
 from WMCore.Configuration import Configuration
 
 #### Test WMCore.Configuration

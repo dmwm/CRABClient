@@ -6,7 +6,7 @@ import json
 import urllib2
 import urlparse
 
-from ServerInteractions import HTTPRequests
+from CRABClient.ServerInteractions import HTTPRequests
 
 
 class LumiMask(object):

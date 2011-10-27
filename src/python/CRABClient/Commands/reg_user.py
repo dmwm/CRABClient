@@ -2,11 +2,11 @@
 This is simply taking care of registering the user
 """
 
-from Commands import CommandResult
+from CRABClient.Commands import CommandResult
 import json
-from Commands.SubCommand import SubCommand
-from ServerInteractions import HTTPRequests
-from client_utilities import validServerURL
+from CRABClient.Commands.SubCommand import SubCommand
+from CRABClient.ServerInteractions import HTTPRequests
+from CRABClient.client_utilities import validServerURL
 
 
 class reg_user(SubCommand):

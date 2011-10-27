@@ -2,16 +2,16 @@
 This is simply taking care of job submission
 """
 
-from Commands import CommandResult
-from client_utilities import getJobTypes, createCache, createWorkArea, initProxy, validServerURL, addPlugin
+from CRABClient.Commands import CommandResult
+from CRABClient.client_utilities import getJobTypes, createCache, createWorkArea, initProxy, validServerURL, addPlugin
 import json, os
 from string import upper
-from Commands.SubCommand import SubCommand
-from Commands.server_info import server_info
-from Commands.reg_user import reg_user
+from CRABClient.Commands.SubCommand import SubCommand
+from CRABClient.Commands.server_info import server_info
+from CRABClient.Commands.reg_user import reg_user
 from WMCore.Configuration import loadConfigurationFile, Configuration
 from WMCore.Credential.Proxy import CredentialException
-from ServerInteractions import HTTPRequests
+from CRABClient.ServerInteractions import HTTPRequests
 import types
 import imp
 

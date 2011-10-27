@@ -1,16 +1,16 @@
 import CRABRESTModelMock
 from FakeRESTServer import FakeRESTServer
 from WMCore.Configuration import Configuration
-from Commands.server_info import server_info
-from Commands.getoutput import getoutput
-from Commands.report import report
-from Commands.status import status
-from Commands.submit import submit
-from Commands.kill import kill
-from Commands.postmortem import postmortem
-from Commands import CommandResult
-from client_utilities import createCache, createWorkArea
-from client_exceptions import TaskNotFoundException, CachefileNotFoundException
+from CRABClient.Commands.server_info import server_info
+from CRABClient.Commands.getoutput import getoutput
+from CRABClient.Commands.report import report
+from CRABClient.Commands.status import status
+from CRABClient.Commands.submit import submit
+from CRABClient.Commands.kill import kill
+from CRABClient.Commands.postmortem import postmortem
+from CRABClient.Commands import CommandResult
+from CRABClient.client_utilities import createCache, createWorkArea
+from CRABClient.client_exceptions import TaskNotFoundException, CachefileNotFoundException
 
 import unittest
 import logging

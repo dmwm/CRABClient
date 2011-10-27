@@ -1,6 +1,6 @@
-from Commands import CommandResult
-from Commands.SubCommand import SubCommand
-from ServerInteractions import HTTPRequests
+from CRABClient.Commands import CommandResult
+from CRABClient.Commands.SubCommand import SubCommand
+from CRABClient.ServerInteractions import HTTPRequests
 
 
 class kill(SubCommand):

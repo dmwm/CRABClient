@@ -21,8 +21,8 @@ from httplib import HTTPException
 from optparse import OptionParser, OptionGroup
 from socket import error as SocketError
 
-from client_utilities import getAvailCommands
-from client_exceptions import ClientException
+from CRABClient.client_utilities import getAvailCommands
+from CRABClient.client_exceptions import ClientException
 
 
 class MyNullHandler(logging.Handler):
