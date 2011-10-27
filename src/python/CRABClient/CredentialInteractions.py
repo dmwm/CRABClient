@@ -48,7 +48,12 @@ class CredentialInteractions(object):
             # creating the proxy
             self.logger.debug("Creating a proxy for %s hours" % self.defaultDelegation['proxyValidity'] )
             userproxy.create()
-            self.logger.debug("Proxy created.")
+            proxytimeleft = userproxy.getTimeLeft()
+
+            if proxytimeleft > 0:
+                self.logger.debug("Proxy created.")
+            else:
+                raise Exception("Problems creating proxy.")
 
         return userproxy.getSubject( )
 
@@ -68,6 +73,10 @@ class CredentialInteractions(object):
             # creating the proxy
             self.logger.debug("Delegating a myproxy for %s days" % self.defaultDelegation['myproxyValidity'] )
             myproxy.delegate( serverRenewer = True )
-            self.logger.debug("My-proxy delegated.")
+            myproxytimeleft = myproxy.getMyProxyTimeLeft( serverRenewer = True )
 
+            if myproxytimeleft > 0:
+                self.logger.debug("My-proxy delegated.")
+            else:
+                raise Exception("Problems delegating My-proxy.")
 
