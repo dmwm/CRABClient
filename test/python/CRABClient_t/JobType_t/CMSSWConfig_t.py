@@ -45,10 +45,16 @@ process.TFileService = cms.Service("TFileService",
     fileName = cms.string('histograms.root')
 )
 process.copyAll = cms.OutputModule("PoolOutputModule",
-    fileName = cms.untracked.string('output.root')
+    fileName = cms.untracked.string('output.root'),
+    dataset = cms.untracked.PSet(
+        filterName = cms.untracked.string('Out1'),
+    ),
 )
 process.copySome = cms.OutputModule("PoolOutputModule",
-    fileName = cms.untracked.string('output2.root')
+    fileName = cms.untracked.string('output2.root'),
+    dataset = cms.untracked.PSet(
+        filterName = cms.untracked.string('Out2'),
+    ),
 )
 
 process.out = cms.EndPath(process.copyAll+process.copySome)

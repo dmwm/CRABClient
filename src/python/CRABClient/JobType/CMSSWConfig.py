@@ -108,60 +108,23 @@ class CMSSWConfig(object):
             if "fileName" in tFileService.parameterNames_():
                 tFiles.append(getattr(tFileService, 'fileName', None).value())
 
-        # Find all PoolOutputModule's
-        outputFinder = PoolOutputFinder()
-        for p  in self.fullConfig.process.endpaths.itervalues():
-            p.visit(outputFinder)
-        poolFiles = outputFinder.getList()
+        # Find files written by output modules
+        poolFiles = []
+        outputModuleNames = self.fullConfig.process.outputModules_().keys()
+
+        for outputModName in outputModuleNames:
+            outputModule = getattr(self.fullConfig.process, outputModName)
+            poolFiles.append(outputModule.fileName.value())
+
+        # If there are multiple output files, make sure they have filterNames set
+        if len(outputModuleNames) > 1:
+            for outputModName in outputModuleNames:
+                try:
+                    outputModule = getattr(self.fullConfig.process, outputModName)
+                    dataset = getattr(outputModule, 'dataset')
+                    filterName = getattr(dataset, 'filterName')
+                except AttributeError:
+                    raise RuntimeError('Your output module %s does not have a "dataset" PSet ' % outputModName +
+                                       'or the PSet does not have a "filterName" member.')
 
         return tFiles, poolFiles
-
-
-
-class PoolOutputFinder(object):
-    """
-    _PoolOutputFinder_
-
-    Helper class to find PoolOutputModules
-    """
-
-    def __init__(self):
-        self.poolList = []
-        self.poolDict = {}
-
-    def enter(self, visitee):
-        """
-        Enter for vistor pattern
-        """
-
-        if isinstance(visitee, OutputModule) and visitee.type_() == "PoolOutputModule":
-            filename = visitee.fileName.value().split(":")[-1]
-            self.poolList.append(filename)
-
-            try:
-                selectEvents = visitee.SelectEvents.SelectEvents.value()
-            except AttributeError:
-                selectEvents = None
-            try:
-                dataset = visitee.dataset.filterName.value()
-            except AttributeError:
-                dataset = None
-            self.poolDict.update({filename:{'dataset':dataset, 'selectEvents':selectEvents}})
-
-    def leave(self, visitee):
-        """
-        Leave for vistor pattern
-        """
-        pass
-
-    def getList(self):
-        """
-        Get the list of filenames
-        """
-        return self.poolList
-
-    def getDict(self):
-        """
-        Get a dictionary of filenames and their output data sets
-        """
-        return self.poolDict
