@@ -10,8 +10,8 @@ class postmortem(SubCommand):
     information of just one job. The is identified by -t/--task option
     """
 
-    name  = "get-errors"
-    names = [name, 'errors']
+    name  = "get-error"
+    names = [name, 'error']
     usage = "usage: %prog " + name + " [options] [args]"
 
 
@@ -29,18 +29,23 @@ class postmortem(SubCommand):
             msg = "Problem retrieving postmortem:\ninput:%s\noutput:%s\nreason:%s" % (str(self.cachedinfo['RequestName']), str(dictresult), str(reason))
             return CommandResult(1, msg)
 
-        if self.options.verbose or self.options.outputfile:
-            self.printVerbose(dictresult, self.options.outputfile, os.path.join(self.requestarea, 'results', 'jobFailures.log'))
-        else:
-            self.logger.debug("Aggregating job failures")
-            groupederrs = self.aggregateFailures(dictresult)
-            self.logger.info("List of failures and jobs per each failure: (one job could have more then one failure, one per each step)")
-            for hkey in groupederrs:
-                ## removing duplicates and sort
-                joberrs = list(set(groupederrs[hkey]['jobs']))
-                joberrs.sort()
-                self.logger.info(' %s jobs failed with error "%s"' %(len(joberrs), groupederrs[hkey]['error']))
-                self.logger.info('   (%s)'  %(', '.join([ str(jobid[0]) for jobid in joberrs])) )
+        for workflow in dictresult['errors']:
+            self.logger.info("#%i %s" % (workflow['subOrder'], workflow['request']))
+            if self.options.verbose or self.options.outputfile:
+                self.printVerbose(workflow['details'], self.options.outputfile, os.path.join(self.requestarea, 'results', 'jobFailures.log'))
+            else:
+                self.logger.debug("   Aggregating job failures")
+                groupederrs = self.aggregateFailures(workflow['details'])
+                if not groupederrs:
+                    self.logger.info("   No failures")
+                    continue
+                self.logger.info("   List of failures and jobs per each failure: (one job could have more then one failure, one per each step)")
+                for hkey in groupederrs:
+                    ## removing duplicates and sort
+                    joberrs = list(set(groupederrs[hkey]['jobs']))
+                    joberrs.sort()
+                    self.logger.info('     %s jobs failed with error "%s"' %(len(joberrs), groupederrs[hkey]['error']))
+                    self.logger.info('       (%s)'  %(', '.join([ str(jobid[0]) for jobid in joberrs])) )
 
         return CommandResult(0, None)
 
@@ -88,11 +93,14 @@ class postmortem(SubCommand):
                         msg += '        Exit code: %s' % singlefailure['exitCode']
                         globalmsg += msg
                 globalmsg += "\n    -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*- \n"
-        if store:
-            open(outfile, 'w').write(globalmsg)
-            self.logger.info("Report for job failure reasons has been written into the file '%s'" % outfile)
+        if globalmsg:
+            if store:
+                open(outfile, 'w').write(globalmsg)
+                self.logger.info("Report for job failure reasons has been written into the file '%s'" % outfile)
+            else:
+                self.logger.info(globalmsg)
         else:
-            self.logger.info(globalmsg)
+            self.logger.info("   No failures")
 
     def aggregateFailures(self, dictresult):
         failures = {}

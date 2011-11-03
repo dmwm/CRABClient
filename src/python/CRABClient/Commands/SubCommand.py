@@ -2,7 +2,6 @@ from optparse import OptionParser, SUPPRESS_HELP
 from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient.client_utilities import loadCache, getWorkArea
 
-
 class SubCommand(object):
 
     ## setting visible = False doesn't allow the sub-command to be called from CLI

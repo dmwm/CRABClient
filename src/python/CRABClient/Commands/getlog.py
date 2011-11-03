@@ -1,4 +1,4 @@
-from CRABClient.Commands import CommandResult
+from CRABClient.Commands import CommandResult, mergeResults
 from CRABClient.Commands.remote_copy import remote_copy
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ServerInteractions import HTTPRequests
@@ -42,8 +42,8 @@ class getlog(SubCommand):
         server = HTTPRequests(self.cachedinfo['Server'] + ':' + str(self.cachedinfo['Port']))
 
         self.logger.info('Retrieving log files for jobs %s in task %s' % ( self.options.range, self.cachedinfo['RequestName'] ) )
-        inputdict = {'jobRange' : self.options.range, 'requestID': self.cachedinfo['RequestName'] }
-        dictresult, status, reason = server.get(self.uri, inputdict)
+        inputdict = {'jobRange' : self.options.range}
+        dictresult, status, reason = server.get(self.uri + self.cachedinfo['RequestName'], inputdict)
 
         self.logger.debug("Result: %s" % dictresult)
 
@@ -51,11 +51,14 @@ class getlog(SubCommand):
             msg = "Problem retrieving getoutput information from the server:\ninput:%s\noutput:%s\nreason:%s" % (str(inputdict), str(dictresult), str(reason))
             return CommandResult(1, msg)
 
-        arglist = ['-d', dest, '-i', dictresult, '-e', 'tgz']
-        if self.options.skipProxy:
-            arglist.append('-p')
-        copyoutput = remote_copy( self.logger, arglist )
-        return copyoutput()
+        cpresults = []
+        for workflow in dictresult['log']:
+            arglist = ['-d', dest, '-i', workflow['output'], '-e' , 'tgz']
+            if self.options.skipProxy:
+                arglist.append('-p')
+            copyoutput = remote_copy( self.logger, arglist )
+            cpresults.append( copyoutput() )
+        return mergeResults( cpresults )
 
 
     def setOptions(self):

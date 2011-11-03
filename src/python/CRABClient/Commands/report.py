@@ -23,21 +23,24 @@ class report(SubCommand):
         server = HTTPRequests(self.cachedinfo['Server'] + ':' + str(self.cachedinfo['Port']))
 
         self.logger.debug('Looking up good lumis for task %s' % self.cachedinfo['RequestName'])
-        result, status, reason = server.get(self.uri + self.cachedinfo['RequestName'])
+        dictresult, status, reason = server.get(self.uri + self.cachedinfo['RequestName'])
 
-        self.logger.debug("Result: %s" % result)
+        self.logger.debug("Result: %s" % dictresult)
 
         if status != 200:
-            msg = "Problem retrieving good lumis:\ninput:%s\noutput:%s\nreason:%s" % (str(self.cachedinfo['RequestName']), str(result), str(reason))
+            msg = "Problem retrieving good lumis:\ninput:%s\noutput:%s\nreason:%s" % (str(self.cachedinfo['RequestName']), str(dictresult), str(reason))
             return CommandResult(1, msg)
-        dictresult = json.loads(result)
 
-        nLumis = 0
-        for run in dictresult:
-            for lumiPairs in dictresult[run]:
-                nLumis += (1 + lumiPairs[1] - lumiPairs[0])
-        self.logger.info("Sucessfully analyzed %s lumi(s) from %s run(s)" % (nLumis, len(dictresult)))
+        for workflow in dictresult[unicode("lumis")]:
+            self.logger.info('#%s %s' % (workflow['subOrder'], workflow['request']) )
+            nLumis = 0
+            wflumi = json.loads(workflow[unicode("lumis")])
+            for run in wflumi:
+                for lumiPairs in wflumi[run]:
+                    nLumis += (1 + lumiPairs[1] - lumiPairs[0])
+            self.logger.info("   Sucessfully analyzed %s lumi(s) from %s run(s)" % (nLumis, len(workflow[unicode("lumis")])))
 
+        ## TODO mcinquil - fix with campaign
         if self.options.file:
             jsonFileName = self.options.file
         else:

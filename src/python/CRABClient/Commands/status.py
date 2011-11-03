@@ -4,7 +4,6 @@ from CRABClient.Commands import CommandResult
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ServerInteractions import HTTPRequests
 
-
 class status(SubCommand):
     """
     Query the status of your tasks, or detailed information of one or more tasks
@@ -26,30 +25,31 @@ class status(SubCommand):
         self.logger.debug('Looking up detailed status of task %s' % self.cachedinfo['RequestName'])
         dictresult, status, reason = server.get(self.uri + self.cachedinfo['RequestName'])
 
-        self.logger.debug("Result: %s" % dictresult)
-
+        #self.logger.debug("Result: %s" % dictresult)
         if status != 200:
             msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(self.cachedinfo['RequestName']), str(dictresult), str(reason))
             return CommandResult(1, msg)
 
-        self.logger.info("Task Status:        %s"    % str(dictresult['requestDetails'][unicode('RequestStatus')]))
-        self._printRequestDetails(dictresult)
+        for workflow in dictresult["workflows"]:
+            self.logger.info('#%s %2s' % (workflow['subOrder'], workflow['request']) )
+            self.logger.info("   Task Status:        %s"    % str(workflow['requestDetails']['RequestStatus']))
+            self._printRequestDetails(workflow)
 
-        if 'states' in dictresult:
-            ## grouping the status by task, since we may have log collect, cleanup, analysis jobs
-            for wmtask in dictresult['states'].keys():
-                self.logger.info( '%s jobs' % wmtask.split(self.cachedinfo['RequestName'] + '/', 1)[-1] )
-                totalJobs = 0
-                for state in dictresult['states'][wmtask]:
-                    totalJobs += dictresult['states'][wmtask][state]['count']
-                for state in dictresult['states'][wmtask]:
-                    count = dictresult['states'][wmtask][state]['count']
-                    if self.options.brief:
-                        percent = count/totalJobs*100
-                        self.logger.info("  State: %-13s Count: %6s (%5.1f%%)" % (state, count, percent))
-                    else:
-                        jobList = self.readableRange(dictresult['states'][wmtask][state]['jobs'])
-                        self.logger.info("  State: %-13s Count: %6s  Jobs: %s" % (state, count, jobList))
+            if 'states' in workflow:
+                ## grouping the status by task, since we may have log collect, cleanup, analysis jobs
+                for wmtask in workflow['states'].keys():
+                    self.logger.info('   %s jobs' % wmtask.split(self.cachedinfo['RequestName'] + '/', 1)[-1] )
+                    totalJobs = 0
+                    for state in workflow['states'][wmtask]:
+                        totalJobs += workflow['states'][wmtask][state]['count']
+                    for state in workflow['states'][wmtask]:
+                        count = workflow['states'][wmtask][state]['count']
+                        if self.options.brief:
+                            percent = count/totalJobs*100
+                            self.logger.info("     State: %-13s Count: %6s (%5.1f%%)" % (state, count, percent))
+                        else:
+                            jobList = self.readableRange(workflow['states'][wmtask][state]['jobs'])
+                            self.logger.info("     State: %-13s Count: %6s  Jobs: %s" % (state, count, jobList))
 
         return CommandResult(0, None)
 
@@ -64,8 +64,8 @@ class status(SubCommand):
             for messageL in dictresult['requestDetails'][u'RequestMessages']:
                 #messages are lists
                 for message in messageL:
-                    self.logger.info("Server Messages:")
-                    self.logger.info("\t%s" % message)
+                    self.logger.info("   Server Messages:")
+                    self.logger.info("   \t%s" % message)
 
 
     def setOptions(self):
