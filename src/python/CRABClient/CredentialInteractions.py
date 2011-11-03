@@ -27,6 +27,7 @@ class CredentialInteractions(object):
                                   'group' :          group,
                                   'role':            role
                                   }
+        self.proxyChanged = False
 
 
     def createNewVomsProxy(self, timeleftthreshold = 0):
@@ -44,7 +45,15 @@ class CredentialInteractions(object):
         proxytimeleft = userproxy.getTimeLeft()
         self.logger.debug("Proxy is valid: %i" % proxytimeleft)
 
-        if proxytimeleft < timeleftthreshold:
+        #if it is not expired I check if role and/or group are changed
+        if not proxytimeleft < timeleftthreshold and self.defaultDelegation['role']!=None and  self.defaultDelegation['group']!=None:
+            group , role = userproxy.getUserGroupAndRoleFromProxy( userproxy.getProxyFilename())
+            self.defaultDelegation['role'] = self.defaultDelegation['role'] if self.defaultDelegation['role']!='' else 'NULL'
+            if group != self.defaultDelegation['group'] or role != self.defaultDelegation['role']:
+                self.proxyChanged = True
+
+        #if the proxy is expired, or we changed role and/or group, we need to create a new one
+        if proxytimeleft < timeleftthreshold or self.proxyChanged:
             # creating the proxy
             self.logger.debug("Creating a proxy for %s hours" % self.defaultDelegation['proxyValidity'] )
             userproxy.create()
@@ -69,7 +78,7 @@ class CredentialInteractions(object):
         myproxytimeleft = myproxy.getMyProxyTimeLeft( serverRenewer = True )
         self.logger.debug("Myproxy is valid: %i" % myproxytimeleft)
 
-        if myproxytimeleft < timeleftthreshold:
+        if myproxytimeleft < timeleftthreshold or self.proxyChanged:
             # creating the proxy
             self.logger.debug("Delegating a myproxy for %s days" % self.defaultDelegation['myproxyValidity'] )
             myproxy.delegate( serverRenewer = True )
