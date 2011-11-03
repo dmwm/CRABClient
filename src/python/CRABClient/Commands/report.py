@@ -39,15 +39,15 @@ class report(SubCommand):
             self.logger.info('#%s %s' % (workflow['subOrder'], workflow['request']) )
             nLumis = 0
             wflumi = json.loads(workflow[unicode("lumis")])
-            mergedLumis = mergedLumis | LumiList(compactList = wflumi)
             doubleLumis = mergedLumis & LumiList(compactList = wflumi)
+            mergedLumis = mergedLumis | LumiList(compactList = wflumi)
             for run in wflumi:
                 for lumiPairs in wflumi[run]:
                     nLumis += (1 + lumiPairs[1] - lumiPairs[0])
             self.logger.info("   Sucessfully analyzed %s lumi(s) from %s run(s)" % (nLumis, len(wflumi)))
+            if doubleLumis:
+                self.logger.info("Warning: double run-lumis processed %s" % doubleLumis)
 
-        if doubleLumis:
-            self.logger.info("Warning: double run-lumis processed %s" % doubleLumis)
         if self.options.file:
             jsonFileName = self.options.file
         else:
