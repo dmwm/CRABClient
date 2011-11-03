@@ -40,6 +40,7 @@ defaulturi = {
             'status' : {'uri': '/unittests/rest/task/'},
             'report' :    {'uri': '/unittests/rest/goodLumis/'},
             'get_client_mapping': {'uri': '/unittests/rest/requestmapping/'},
-            'get-errors': {'uri': '/unittests/rest/jobErrors/'},
+            'get-error': {'uri': '/unittests/rest/jobErrors/'},
             'kill': {'uri': '/unittests/rest/task/'},
+            'resubmit': {'uri': '/unittests/rest/resubmit/'},
 }

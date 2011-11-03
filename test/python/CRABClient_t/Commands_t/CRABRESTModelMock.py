@@ -6,6 +6,7 @@ import cherrypy
 import imp
 import os
 import uuid
+import tempfile
 
 SI_RESULT = {}
 SI_RESULT['server_dn']  = ''
@@ -62,6 +63,10 @@ class CRABRESTModelMock(RESTModel):
                         args=['requestID'],
                         validation=[self.isalnum])
 
+        self._addMethod('POST', 'resubmit', self.reSubmit,
+                        args=['requestID'],
+                        validation=[self.isalnum])
+
         cherrypy.engine.subscribe('start_thread', self.initThread)
 
 
@@ -96,14 +101,27 @@ class CRABRESTModelMock(RESTModel):
 
 
     def getTaskStatus(self, requestID):
-        return {u'states': {u'/mmascher_crab_sanitized_110930_113018/Analysis': {u'success': {u'count': 5, u'jobs': [41, 42, 43, 44, 45]}}}, \
-                           u'requestDetails': {u'percent_success': 0, 'RequestStatus': 'running'}}
+        return {u'workflows': [{u'request': u'cinquilli.nocern_crab_TESTME_1_111025_181202',
+                  u'requestDetails': {u'RequestMessages': [], u'RequestStatus': u'aborted'},
+                  u'states': {u'/cinquilli.nocern_crab_TESTME_1_111025_181202/Analysis': {u'success': {u'count': 9, u'jobIDs': [117, 118, 119, 120, 121, 122, 123, 124, 125],
+                                                                                                       u'jobs': [1, 2, 3, 4, 5, 6, 7, 8, 9]}},
+                              u'/cinquilli.nocern_crab_TESTME_1_111025_181202/Analysis/LogCollect': {u'success': {u'count': 1, u'jobIDs': [126], u'jobs': [10]}}},
+                  u'subOrder': 1},
+                 {u'request': u'cinquilli.nocern_crab_TESTME_1_resubmit_111028_000117',
+                  u'requestDetails': {u'RequestMessages': [['request failed']], u'RequestStatus': u'failed'},
+                  u'states': {},
+                  u'subOrder': 2}]}
 
 
     def getDataLocation(self, requestID, jobRange):
         f = open(FILE_NAME, 'w')
         f.close()
-        return { '20' : {'pfn' : FILE_NAME } }
+        return {u'data': [{u'output': {u'1': {u'pfn': unicode(FILE_NAME)}},
+                           u'request': u'cinquilli.nocern_crab_TESTME_1_111025_181202',
+                           u'subOrder': 1},
+                          {u'output': {},
+                           u'request': u'cinquilli.nocern_crab_TESTME_1_resubmit_111028_000117',
+                           u'subOrder': 2}]}
 
 
     def getGoodLumis(self, requestID):
@@ -147,7 +165,6 @@ class CRABRESTModelMock(RESTModel):
 
 
     def getJobErrors(self, requestID):
-        # { jobid : { retry : { step : [ details: '', type: '', exitCode: '']}}}
         failed = {'1':
                    {'0': {
                      'step1': [ { "details": "Error in StageOut: 99109\n'x.z.root' does not match regular expression /store/temp/([a-zA-Z0-9\\-_]+).root",
@@ -174,4 +191,8 @@ class CRABRESTModelMock(RESTModel):
                      }
                    }
                  }
-        return failed
+        return {u'errors': [{u'details': failed, u'request': u'cinquilli.nocern_crab_TESTME_1_111025_181202', u'subOrder': 1},
+                            {u'details': {}, u'request': u'cinquilli.nocern_crab_TESTME_1_resubmit_111028_000117', u'subOrder': 2}]}
+
+    def reSubmit(self, requestID):
+        return {"result": "ok"}

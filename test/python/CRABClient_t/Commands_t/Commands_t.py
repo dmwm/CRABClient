@@ -3,11 +3,11 @@ from FakeRESTServer import FakeRESTServer
 from WMCore.Configuration import Configuration
 from CRABClient.Commands.server_info import server_info
 from CRABClient.Commands.getoutput import getoutput
-from CRABClient.Commands.report import report
 from CRABClient.Commands.status import status
 from CRABClient.Commands.submit import submit
 from CRABClient.Commands.kill import kill
 from CRABClient.Commands.postmortem import postmortem
+from CRABClient.Commands.resubmit import resubmit
 from CRABClient.Commands import CommandResult
 from CRABClient.client_utilities import createCache, createWorkArea
 from CRABClient.client_exceptions import TaskNotFoundException, CachefileNotFoundException
@@ -99,7 +99,11 @@ class CommandTest(FakeRESTServer):
         """
         Test the functionality of the report command
         """
+        def _import(pack, mod):
+            exec("from %s import %s" % (pack, mod))
+        self.assertRaises(ImportError, _import, 'FWCore.PythonUtilities.LumiList', 'LumiList')
 
+        return
         # Missing required -t option
         expRes = CommandResult(1, 'ERROR: Task option is required')
         rep = report(self.logger, [])
@@ -152,34 +156,34 @@ class CommandTest(FakeRESTServer):
 
         #4) check correct behaviour without specifying output directory
         #N.B.: -p options is required for tests to skip proxy creation and delegation
-        go = getoutput(self.logger, self.maplistopt + ["-t", analysisDir, "-r", "20", "-p"])
-        res = go()
-        expRes = CommandResult(0, '')
-        #check if the result directory has been created
         destDir = os.path.join(analysisDir, 'results')
+        go = getoutput(self.logger, self.maplistopt + ["-t", analysisDir, "-r", "1", "-p"])
+        res = go()
+        expRes = CommandResult(0, '\n')
+        #check if the result directory has been created
         self.assertTrue(os.path.isdir(destDir))
-        self.assertTrue(os.path.isfile(os.path.join(destDir, '20.root')))
+        self.assertTrue(os.path.isfile(os.path.join(destDir, '1.root')))
         #Remove the directory
         shutil.rmtree(destDir)
         self.assertFalse(os.path.isdir(destDir))
         self.assertEquals(expRes, res)
 
         #5) correct behavior and output directory specified which exists
-        go = getoutput(self.logger, self.maplistopt + ["-t", analysisDir, "-r", "20", "-o", "/tmp", "-p"])
+        go = getoutput(self.logger, self.maplistopt + ["-t", analysisDir, "-r", "1", "-o", "/tmp", "-p"])
         res = go()
-        expRes = CommandResult(0, '')
+        expRes = CommandResult(0, '\n')
         #check if the result directory has been created
         self.assertTrue(os.path.isdir('/tmp'))
-        destFile = os.path.join('/tmp', '20.root')
+        destFile = os.path.join('/tmp', '1.root')
         self.assertTrue(os.path.isfile(destFile))
         os.remove(destFile)
         self.assertFalse(os.path.isfile(destFile))
         self.assertEquals(expRes, res)
 
         #6) correct behavior and output directory specified which does not exists
-        go = getoutput(self.logger, self.maplistopt + ["-t", analysisDir, "-r", "20", "-o", "/tmp/asdf/qwerty", "-p"])
+        go = getoutput(self.logger, self.maplistopt + ["-t", analysisDir, "-r", "1", "-o", "/tmp/asdf/qwerty", "-p"])
         res = go()
-        expRes = CommandResult(0, '')
+        expRes = CommandResult(0, '\n')
         #check if the result directory has been created
         self.assertTrue(os.path.isdir('/tmp/asdf/qwerty'))
         #Remove the directory
@@ -187,9 +191,9 @@ class CommandTest(FakeRESTServer):
         self.assertEquals(expRes, res)
 
         #7) correct behavior and output directory specified which does not exists (relative path)
-        go = getoutput(self.logger, self.maplistopt + ["-t", analysisDir, "-r", "20", "-o", "qwerty", "-p"])
+        go = getoutput(self.logger, self.maplistopt + ["-t", analysisDir, "-r", "1", "-o", "qwerty", "-p"])
         res = go()
-        expRes = CommandResult(0, '')
+        expRes = CommandResult(0, '\n')
         #check if the result directory has been created
         self.assertTrue(os.path.isdir('qwerty'))
         #Remove the directory
@@ -292,6 +296,26 @@ class CommandTest(FakeRESTServer):
         #3) wrong -t option
         analysisDir = os.path.join(os.path.dirname(__file__), 'crab_XXX')
         self.assertRaises( TaskNotFoundException, kill, self.logger, self.maplistopt + ["-t", analysisDir])
+
+
+    def testResubmit(self):
+        s = resubmit(self.logger, [])
+
+        #1) missing required -t option
+        expRes = CommandResult(1, 'ERROR: Task option is required')
+        res = s()
+        self.assertEquals(expRes, res)
+
+        #2) correct execution
+        analysisDir = self.reqarea
+        s = resubmit(self.logger, self.maplistopt + ["-t", analysisDir])
+        res = s()
+        expRes = CommandResult(0, '')
+        self.assertEquals( expRes, res)
+
+        #3) wrong -t option
+        analysisDir = os.path.join(os.path.dirname(__file__), 'crab_XXX')
+        self.assertRaises( TaskNotFoundException, resubmit, self.logger, self.maplistopt + ["-t", analysisDir])
 
 
     def _prepareWorkArea(self):
