@@ -1,6 +1,8 @@
 import json
 import os
 
+from FWCore.PythonUtilities.LumiList import LumiList
+
 from CRABClient.Commands import CommandResult
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ServerInteractions import HTTPRequests
@@ -31,22 +33,27 @@ class report(SubCommand):
             msg = "Problem retrieving good lumis:\ninput:%s\noutput:%s\nreason:%s" % (str(self.cachedinfo['RequestName']), str(dictresult), str(reason))
             return CommandResult(1, msg)
 
+        mergedLumis = LumiList()
+        doubleLumis = LumiList()
         for workflow in dictresult[unicode("lumis")]:
             self.logger.info('#%s %s' % (workflow['subOrder'], workflow['request']) )
             nLumis = 0
             wflumi = json.loads(workflow[unicode("lumis")])
+            mergedLumis = mergedLumis | LumiList(compactList = wflumi)
+            doubleLumis = mergedLumis & LumiList(compactList = wflumi)
             for run in wflumi:
                 for lumiPairs in wflumi[run]:
                     nLumis += (1 + lumiPairs[1] - lumiPairs[0])
-            self.logger.info("   Sucessfully analyzed %s lumi(s) from %s run(s)" % (nLumis, len(workflow[unicode("lumis")])))
+            self.logger.info("   Sucessfully analyzed %s lumi(s) from %s run(s)" % (nLumis, len(wflumi)))
 
-        ## TODO mcinquil - fix with campaign
+        if doubleLumis:
+            self.logger.info("Warning: double run-lumis processed %s" % doubleLumis)
         if self.options.file:
             jsonFileName = self.options.file
         else:
             jsonFileName = os.path.join(self.requestarea, 'results', 'lumiReport.json')
         with open(jsonFileName, 'w') as jsonFile:
-            json.dump(dictresult, jsonFile)
+            json.dump(mergedLumis.getCompactList(), jsonFile)
             jsonFile.write("\n")
             self.logger.info("Summary of processed lumi sections written to %s" % jsonFileName)
 
