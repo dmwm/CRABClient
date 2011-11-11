@@ -21,6 +21,8 @@ config.JobType.pluginName  = 'Cmssw'
 #config.JobType.externalPluginFile  = '/some/Plugin.py'
 config.JobType.psetName    = 'pset.py'
 #config.JobType.inputFiles  = ['/tmp/input_file']
+## Does the job write any output files that need to be collected BESIDES those in output modules or TFileService
+#config.JobType.outputFiles  = ['output_file']
 
 ## Specific data options
 config.section_("Data")
