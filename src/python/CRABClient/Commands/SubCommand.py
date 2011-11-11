@@ -33,6 +33,9 @@ class SubCommand(object):
         self.logger.debug("Executing command: '%s'" % str(self.name))
 
         self.parser = OptionParser(description = self.__doc__, usage = self.usage, add_help_option = True)
+        ## TODO: check on self.name should be removed (creating another abstraction in between or refactoring this)
+        if self.name == 'submit':
+            self.parser.disable_interspersed_args()
         self.setSuperOptions()
 
         (self.options, self.args) = self.parser.parse_args( cmdargs )
