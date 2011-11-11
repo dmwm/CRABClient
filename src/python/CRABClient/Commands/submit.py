@@ -27,7 +27,7 @@ class submit(SubCommand):
 
     splitMap = {'LumiBased' : 'lumis_per_job', 'EventBased' : 'events_per_job', 'FileBased' : 'files_per_job'}
 
-    def loadConfig(self, config):
+    def loadConfig(self, config, overrideargs):
         """
         Load the configuration file
         """
@@ -36,6 +36,14 @@ class submit(SubCommand):
             self.configuration = config
         else:
             self.configuration = loadConfigurationFile( os.path.abspath(config))
+        if overrideargs:
+            for singlearg in overrideargs:
+                fullparname, parval = singlearg.split('=')
+                # now supporting just one sub params, eg: Data.inputFiles, User.email, ...
+                parnames = fullparname.split('.', 1)
+                self.configuration.section_(parnames[0])
+                setattr(getattr(self.configuration, parnames[0]), parnames[1], parval)
+                self.logger.debug('Overriden parameter %s with %s' % (fullparname, parval))
         return self.validateConfig()
 
 
