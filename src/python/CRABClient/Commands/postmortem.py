@@ -1,9 +1,10 @@
+import os
+import hashlib
+
 from CRABClient.Commands import CommandResult
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ServerInteractions import HTTPRequests
-from CRABClient.client_utilities import loadCache, getWorkArea
-import os
-import hashlib
+
 
 class postmortem(SubCommand):
     """ Retrieve post mortem infromation of all the jobs in the task, or detailed

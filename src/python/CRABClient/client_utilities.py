@@ -136,10 +136,8 @@ def addFileLogger(logger, workingpath, logname = 'crab.log'):
     _addFileLogger_
     """
     logfullpath = os.path.join( workingpath, logname )
-    logger.debug("Setting log file %s " % logfullpath)
 
     # Log debug messages to crab.log file with more verbose format
-
     handler = logging.FileHandler( logfullpath )
     handler.setLevel(logging.DEBUG)
 
@@ -153,6 +151,8 @@ def addFileLogger(logger, workingpath, logname = 'crab.log'):
     traceback_log.propagate = False
     traceback_log.setLevel(logging.ERROR)
     traceback_log.addHandler(handler)
+
+    return logfullpath
 
 
 def createWorkArea(logger, workingArea = '.', requestName = ''):
@@ -184,9 +184,9 @@ def createWorkArea(logger, workingArea = '.', requestName = ''):
     os.mkdir(os.path.join(fullpath, 'inputs'))
 
     ## define the log file
-    addFileLogger( logger, workingpath = fullpath )
+    logfile = addFileLogger( logger, workingpath = fullpath )
 
-    return fullpath, requestName
+    return fullpath, requestName, logfile
 
 
 def createCache(requestarea, server, uniquerequestname):
@@ -228,8 +228,8 @@ def loadCache( task, logger ):
         msg = 'Cannot find .requestcache file inside the working directory for task %s' % taskName
         raise CachefileNotFoundException( msg )
 
-    addFileLogger( logger, workingpath = requestarea )
-    return cPickle.load(loadfile)
+    logfile = addFileLogger( logger, workingpath = requestarea )
+    return cPickle.load(loadfile), logfile
 
 def initProxy(serverDN, myProxy, voRole, voGroup, delegate, logger):
     proxy = CredentialInteractions(
