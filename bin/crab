@@ -156,6 +156,7 @@ class CRABClient(object):
         (exitcode, message) = cmd()
         if exitcode != 0:
             self.logger.error( message )
+        cmd.terminate()
 
 
 if __name__ == "__main__":

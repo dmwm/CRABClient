@@ -53,10 +53,10 @@ class submit(SubCommand):
             if not valid:
                 return CommandResult(1, configmsg)
 
-        requestarea, requestname = createWorkArea( self.logger,
-                                                   getattr(self.configuration.General, 'workArea', None),
-                                                   getattr(self.configuration.General, 'requestName', None)
-                                                 )
+        requestarea, requestname, self.logfile = createWorkArea( self.logger,
+                                                                 getattr(self.configuration.General, 'workArea', None),
+                                                                 getattr(self.configuration.General, 'requestName', None)
+                                                               )
 
         self.logger.debug("Started submission")
 

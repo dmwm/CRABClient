@@ -1,6 +1,9 @@
+import os
 from optparse import OptionParser, SUPPRESS_HELP
+
 from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient.client_utilities import loadCache, getWorkArea
+
 
 class SubCommand(object):
 
@@ -26,7 +29,7 @@ class SubCommand(object):
         Initialize common client parameters
         """
         self.logger = logger
-
+        self.logfile = ''
         self.logger.debug("Executing command: '%s'" % str(self.name))
 
         self.parser = OptionParser(description = self.__doc__, usage = self.usage, add_help_option = True)
@@ -49,7 +52,7 @@ class SubCommand(object):
         ## but the server name can be cached in some cases
         elif hasattr(self.options, 'task') and self.options.task:
             self.requestarea, self.requestname = getWorkArea( self.options.task )
-            self.cachedinfo = loadCache(self.requestarea, self.logger)
+            self.cachedinfo, self.logfile = loadCache(self.requestarea, self.logger)
             serverurl = self.cachedinfo['Server'] + ':' + str(self.cachedinfo['Port'])
 
         ## if we have got a server url we create the cache
@@ -70,8 +73,13 @@ class SubCommand(object):
         raise NotImplementedException
 
 
+    def terminate(self):
+        self.logger.info("Log file is %s" % os.path.abspath(self.logfile))
+
+
     def setOptions(self):
         raise NotImplementedError
+
 
     def setSuperOptions(self):
         self.parser.add_option( "--mapping-path",
