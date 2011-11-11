@@ -21,7 +21,7 @@ class CMSSW(BasicJobType):
         """
         Override run() for JobType
         """
-        configArguments = {'outputFiles'            : [],
+        configArguments = {'OutputFiles'            : [],
                            'userFiles'              : [],
                            'InputDataset'           : '',
                            'ProcessingVersion'      : '',
@@ -57,10 +57,13 @@ class CMSSW(BasicJobType):
         cmsswCfg = CMSSWConfig(config=self.config, logger=self.logger,
                                userConfig=self.config.JobType.psetName)
 
-        # Interogate CMSSW config for output file names
-        for fileList in cmsswCfg.outputFiles():
-            self.logger.debug("Adding %s to list of output files" % fileList)
-            configArguments['outputFiles'].extend(fileList)
+        # Interogate CMSSW config and user config for output file names, for now no use for edmFiles or TFiles here.
+        analysisFiles, edmFiles = cmsswCfg.outputFiles()
+        self.logger.debug("WMAgent will collect TFiles %s and EDM Files %s" % (analysisFiles, edmFiles))
+
+        outputFiles = getattr(self.config.JobType, 'outputFiles', [])
+        self.logger.debug("WMAgent will collect user files %s" % outputFiles)
+        configArguments['OutputFiles'].extend(outputFiles)
 
         # Write out CMSSW config
         cmsswCfg.writeFile(cfgOutputName)
