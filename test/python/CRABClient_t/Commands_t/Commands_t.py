@@ -35,6 +35,8 @@ class CommandTest(FakeRESTServer):
         #Dynamic import of the configuration which in principle is not in the PYTHONPATH
         self.TestConfig = imp.load_source('TestConfig', os.path.join( os.path.dirname(__file__), "../../../data/TestConfig.py"))
         FakeRESTServer.setUp(self)
+        if os.path.isdir("./crab_TestAnalysis"):
+            shutil.rmtree("./crab_TestAnalysis")
         self._prepareWorkArea()
         #time.sleep(1000)
 
@@ -295,7 +297,7 @@ class CommandTest(FakeRESTServer):
 
 
     def _prepareWorkArea(self):
-        self.reqarea, self.reqname = createWorkArea(self.logger, requestName = self.TEST_REQ_NAME)
+        self.reqarea, self.reqname, _ = createWorkArea(self.logger, requestName = self.TEST_REQ_NAME)
         server = {}
         server['conn'] = TestServerParam("127.0.0.1", 8518)
         createCache(self.reqarea, server, self.reqname)

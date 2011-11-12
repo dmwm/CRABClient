@@ -27,8 +27,6 @@ config.Data.unitsPerJob = 20
 
 ## User options
 config.section_("User")
-config.User.team  = 'Analysis'
-config.User.group = 'Analysis'
 config.User.email = ''
 
 config.section_("Site")
