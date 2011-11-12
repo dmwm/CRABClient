@@ -22,12 +22,10 @@ class submit(SubCommand):
     name  = __name__.split('.').pop()
     usage = "usage: %prog " + name + " [options] [args]"
     names = [name, 'sub']
-    defaultgroup = "Analysis"
-    defaultteam  = "Analysis"
 
     splitMap = {'LumiBased' : 'lumis_per_job', 'EventBased' : 'events_per_job', 'FileBased' : 'files_per_job'}
 
-    def loadConfig(self, config, overrideargs):
+    def loadConfig(self, config, overrideargs=None):
         """
         Load the configuration file
         """
@@ -108,8 +106,8 @@ class submit(SubCommand):
         regusercmd = reg_user(self.logger,
                               cmdargs = [
                                          '-s', serverurl,
-                                         '-g', getattr(self.configuration.User, "group", self.defaultgroup),
-                                         '-t', getattr(self.configuration.User, "team", self.defaultteam),
+                                         '-g', getattr(self.configuration.User, "group", self.requestmapper["Group"]["default"]),
+                                         '-t', getattr(self.configuration.User, "team", self.requestmapper["Team"]["default"]),
                                          '-m', getattr(self.configuration.General, "email", ""),
                                          '-c', userdn
                                         ]

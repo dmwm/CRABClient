@@ -157,8 +157,6 @@ def getConfiguration(paramsMap, configC2, configNameC3):
     configC3.General.requestName = os.path.splitext(os.path.basename(configNameC3))[0]
     configC3.General.serverUrl = 'You need to set the server URL'
     configC3.User.email = ''
-    configC3.User.team = 'Analysis'
-    configC3.User.group = 'Analysis'
 
     missingParams = []
     for sectionC3, parameterC3, mandatory, sectionC2, parameterC2, getter in paramsMap:

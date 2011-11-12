@@ -46,8 +46,8 @@ config.Data.processingVersion = 'v1'
 config.section_("User")
 #config.User.voRole  = 't1access'
 #config.User.voGroup = 'integration'
-config.User.team  = 'Analysis'
-config.User.group = 'Analysis'
+#config.User.team  = 'Analysis'
+#config.User.group = 'Analysis'
 config.User.email = ''
 
 config.section_("Site")
