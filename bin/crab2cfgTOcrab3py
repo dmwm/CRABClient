@@ -48,11 +48,16 @@ def _getlist(configC2, sectionC2, parameterC2):
     strlist = RawConfigParser.get(configC2, sectionC2, parameterC2)
     return strlist.split(',')
 
+def _getSpacedList(configC2, sectionC2, parameterC2):
+    strlist = RawConfigParser.get(configC2, sectionC2, parameterC2)
+    return strlist.split()
+
 
 #For each Crab3 parameter give the corresponding crab2 parameter
 paramsMap = [
     ('General'  , 'requestName'          , False, 'USER'   , 'ui_working_dir'           , RawConfigParser.get),
     ('JobType'  , 'psetName'             , True , 'CMSSW'  , 'pset'                     , RawConfigParser.get),
+    ('JobType'  , 'pyCfgParams'          , False, 'CMSSW'  , 'pycfg_params'             , _getSpacedList),
     ('JobType'  , 'inputFiles'           , False, 'CMSSW'  , 'additional_input_file'    , _getlist),
     ('Data'     , 'inputDataset'         , True , 'CMSSW'  , 'datasetpath'              , RawConfigParser.get),
     ('Data'     , 'splitting'            , False, ''       , ''                         , _getsplitting),       #_getsplitting knows corresp. params
@@ -82,7 +87,6 @@ notYetSuppParams = ['publish_data',
                     'additional_jdl_parameters',
                     'requirements',
                     'dont_check_proxy', #we actually have something from the command line
-                    'pycfg_params',
                     'script_exe',
                    ]
 

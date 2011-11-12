@@ -5,6 +5,7 @@ Module to handle CMSSW _cfg.py file
 import imp
 import json
 import os
+import sys
 
 from FWCore.ParameterSet.Modules import OutputModule
 from CRABClient.ServerInteractions import HTTPRequests
@@ -34,8 +35,16 @@ class CMSSWConfig(object):
             self.logger.debug("Importing CMSSW config %s" % userConfig)
             modPath = imp.find_module(cfgBaseName, [cfgDirName])
 
+            pyCfgParams = getattr(self.config.JobType, 'pyCfgParams', [])
+            if pyCfgParams:
+                originalArgv = sys.argv
+                sys.argv = [userConfig]
+                sys.argv.extend(pyCfgParams)
+
             self.fullConfig = imp.load_module(cfgBaseName, modPath[0],
                                               modPath[1],  modPath[2])
+            if pyCfgParams: # Restore original sys.argv
+                sys.argv = originalArgv
 
             self.tweakJson = makeTweak(self.fullConfig.process).jsonise()
 
