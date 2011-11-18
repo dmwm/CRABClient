@@ -12,6 +12,7 @@ from CRABClient.Commands.reg_user import reg_user
 from WMCore.Configuration import loadConfigurationFile, Configuration
 from WMCore.Credential.Proxy import CredentialException
 from CRABClient.ServerInteractions import HTTPRequests
+from CRABClient import SpellChecker
 import types
 import imp
 
@@ -75,6 +76,21 @@ class submit(SubCommand):
             serverurl = 'http://crabserver.cern.ch:8888'
 
         self.createCache( serverurl )
+
+        ######### Check if the user provided unexpected parameters ########
+        #init the dictionary with all the known parameters
+        SpellChecker.DICTIONARY = SpellChecker.train( [ val['config'] if val['config'] else '' for _, val in self.requestmapper.iteritems()] + \
+                                                      [ x for x in self._cache['submit']['other-config-params'] ] )
+        #iterate on the parameters provided by the user
+        for section in self.configuration.listSections_():
+            for attr in getattr(self.configuration, section).listSections_():
+                par = (section + '.' + attr)
+                #if the parameter is not know exit, but try to correct it before
+                if not SpellChecker.is_correct( par ):
+                    msg = 'The parameter %s is not known.' % par
+                    msg += '' if SpellChecker.correct(par) == par else 'Did you mean %s?' % SpellChecker.correct(par)
+                    return CommandResult(1, msg)
+
         #usertarball and cmsswconfig use this parameter and we should set it up in a correct way
         self.configuration.General.serverUrl = serverurl
 
@@ -120,7 +136,6 @@ class submit(SubCommand):
         self.logger.debug("Working on %s" % str(requestarea))
 
         configreq = {}
-
         for param in self.requestmapper:
             mustbetype = getattr(types, self.requestmapper[param]['type'])
 

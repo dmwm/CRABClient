@@ -16,6 +16,7 @@ class FakeRESTServer(RESTBaseUnitTest):
         self.config.Webtools.error_log_level = logging.ERROR
         self.config.Webtools.access_log_level = logging.ERROR
         self.config.Webtools.port = 8518
+        self.config.Webtools.host = '127.0.0.1'
         self.config.UnitTests.object = 'CRABRESTModelMock'
         #self.config.UnitTests.views.active.rest.logLevel = 'DEBUG'
 
