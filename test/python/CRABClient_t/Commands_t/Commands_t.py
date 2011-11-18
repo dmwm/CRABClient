@@ -37,6 +37,8 @@ class CommandTest(FakeRESTServer):
         FakeRESTServer.setUp(self)
         if os.path.isdir("./crab_TestAnalysis"):
             shutil.rmtree("./crab_TestAnalysis")
+        if os.path.isdir("./crab_TestAnalysisSubmit"):
+            shutil.rmtree("./crab_TestAnalysisSubmit")
         self._prepareWorkArea()
         #time.sleep(1000)
 
@@ -222,8 +224,18 @@ class CommandTest(FakeRESTServer):
             emptyConf.section_(sec)
 
         emptyConf.General.serverUrl = "localhost:8518"
+        emptyConf.General.requestName = 'TestAnalysisSubmit'
         emptyConf.JobType.externalPluginFile = os.path.join( os.path.dirname(__file__), "TestPlugin.py")
         emptyConf.Site.storageSite = 'T2_XXX'
+        expRes = CommandResult(0, None)
+        sub = submit(self.logger, self.maplistopt + ["-c", emptyConf, "-p", "/DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=mmascher/CN=720897/CN=Marco Mascheroni", \
+                                       "-s", "127.0.0.1:8518"])
+        res = sub()
+        self.assertEquals(res, expRes)
+
+        shutil.rmtree("./crab_TestAnalysisSubmit")
+        emptyConf.Data.runWhitelist = '1,3,9-13'
+        emptyConf.Data.runBlacklist = '1,3,9-13'
         expRes = CommandResult(0, None)
         sub = submit(self.logger, self.maplistopt + ["-c", emptyConf, "-p", "/DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=mmascher/CN=720897/CN=Marco Mascheroni", \
                                        "-s", "127.0.0.1:8518"])
