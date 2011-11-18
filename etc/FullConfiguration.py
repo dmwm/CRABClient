@@ -35,10 +35,12 @@ config.Data.processingVersion = 'v1'
 #config.Data.unitsPerJob = 10
 ##For lumiMask http and https urls are also allowed
 #config.Data.lumiMask = 'lumi.json'
-#config.Data.blockWhitelist = [1000000]
-#config.Data.blockBlacklist = [1000000,200000]
-#config.Data.runWhitelist = [1,2]
-#config.Data.runBlacklist = [1,2]
+#config.Data.blockWhitelist = ['/RelValProdTTbar/JobRobot-MC_3XY_V24_JobRobot-v1/GEN-SIM-DIGI-RECO#block1', \
+#              '/RelValProdTTbar/JobRobot-MC_3XY_V24_JobRobot-v1/GEN-SIM-DIGI-RECO#block2']
+#config.Data.blockBlacklist = ['/RelValProdTTbar/JobRobot-MC_3XY_V24_JobRobot-v1/GEN-SIM-DIGI-RECO#block1', \
+#              '/RelValProdTTbar/JobRobot-MC_3XY_V24_JobRobot-v1/GEN-SIM-DIGI-RECO#block2']
+#config.Data.runWhitelist = '1,3,9-13'
+#config.Data.runBlacklist = '1,3,9-13'
 #config.Data.dbsUrl = "http://cmsdbsprod.cern.ch/cms_dbs_prod_global/servlet/DBSServlet"
 
 
