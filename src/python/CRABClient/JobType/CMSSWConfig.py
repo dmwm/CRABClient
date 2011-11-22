@@ -7,7 +7,6 @@ import json
 import os
 import sys
 
-from FWCore.ParameterSet.Modules import OutputModule
 from CRABClient.ServerInteractions import HTTPRequests
 from PSetTweaks.WMTweak import makeTweak
 from CRABClient.client_exceptions import PSetNotFoundException

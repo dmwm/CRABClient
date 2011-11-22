@@ -54,7 +54,7 @@ class CRABClient(object):
         at appropriate level
         """
 
-        self.version = '3.0.4'
+        self.version = '3.0.6'
 
         self.sub_commands = getAvailCommands()
 
