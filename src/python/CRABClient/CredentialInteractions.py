@@ -58,8 +58,9 @@ class CredentialInteractions(object):
             self.logger.debug("Creating a proxy for %s hours" % self.defaultDelegation['proxyValidity'] )
             userproxy.create()
             proxytimeleft = userproxy.getTimeLeft()
+            group , role = userproxy.getUserGroupAndRoleFromProxy( userproxy.getProxyFilename())
 
-            if proxytimeleft > 0:
+            if proxytimeleft > 0 and  group == self.defaultDelegation['group'] and role == self.defaultDelegation['role']:
                 self.logger.debug("Proxy created.")
             else:
                 raise Exception("Problems creating proxy.")
