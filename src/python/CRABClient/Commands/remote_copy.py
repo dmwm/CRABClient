@@ -67,7 +67,7 @@ class remote_copy(SubCommand):
                 msg = "Problem during proxy creation: \n %s " % str(ce._message)
                 return CommandResult(1, msg)
         else:
-            logging.debug('Skipping proxy creation and delegation')
+            self.logger.debug('Skipping proxy creation and delegation')
 
         lcgCmd = 'lcg-cp --connect-timeout 20 --sendreceive-timeout 240 --srm-timeout 1800 --verbose -b -D srmv2'
 
@@ -90,6 +90,7 @@ class remote_copy(SubCommand):
             lfn = dicttocopy[str(jobid)]
             localFilename = os.path.join(self.options.destination, str(jobid) + '.' + self.options.extension)
             cmd = '%s %s file://%s' % (lcgCmd, lfn['pfn'], localFilename)
+            self.logger.info("Retrieving file '%s' " % lfn['pfn'])
             self.logger.debug("Executing '%s' " % cmd)
             input.put((jobid, cmd, ''))
 
@@ -107,7 +108,6 @@ class remote_copy(SubCommand):
                 stdout   = ''
                 exitcode = -1
 
-            self.logger.debug("Processed job %i" % jobid)
             self.logger.debug("Verify command result %i" % jobid)
 
             checkout = simpleOutputCheck(stdout)
@@ -128,15 +128,21 @@ class remote_copy(SubCommand):
                     msgFail += '\tPlease report this issue with the PFN provided here below.\n\tPFN: "%s".' % str(lfn['pfn'])
                     finalresults[jobid] = {'exit': False, 'lfn': lfn, 'error': msgFail, 'dest': None}
                 else:
-                    finalresults[jobid] = {'exit': False, 'lfn': lfn, 'error': checkout + checkerr, 'dest': None}
-                self.logger.debug("Failed retrieving job %i" % jobid)
+                    finalresults[jobid] = {'exit': False, 'lfn': lfn, 'output': checkout, 'error' : checkerr, 'dest': None}
+                self.logger.info("Failed retrieving job %i" % jobid)
+                if len(finalresults[jobid]['output']) > 0:
+                    self.logger.info("Output:")
+                    [self.logger.info("\t %s" % x) for x in finalresults[jobid]['output']]
+                if len(finalresults[jobid]['error']) > 0:
+                    self.logger.info("Error:")
+                    [self.logger.info("\t %s" % x) for x in finalresults[jobid]['error']]
             elif not checksumOK:
                 msg = "Checksum failed for job " + str(jobid)
                 finalresults[jobid] = {'exit': False, 'lfn': lfn, 'error': msg, 'dest': None}
-                self.logger.debug( msg )
+                self.logger.info( msg )
             else:
                 finalresults[jobid] = {'exit': True, 'lfn': lfn, 'dest': os.path.join(self.options.destination, str(jobid) + '.' + self.options.extension), 'error': None}
-                self.logger.debug("Retrived job, checksum passed %i" % jobid)
+                self.logger.info("Successfully retrived output of job %i" % jobid)
 
         try:
             input.put( ('-1', 'STOP', 'control') )
@@ -152,7 +158,7 @@ class remote_copy(SubCommand):
                 self.logger.info("Job %i: output in %s" %(jobid, finalresults[jobid]['dest']))
             else:
                 self.logger.debug(str(finalresults[jobid]))
-                self.logger.info("Job %i: transfer problem %s" %(jobid, str(finalresults[jobid]['error'])))
+                self.logger.debug("Job %i: transfer problem %s" %(jobid, str(finalresults[jobid]['error'])))
                 globalExitcode = 1
 
         if len(finalresults.keys()) is 0:

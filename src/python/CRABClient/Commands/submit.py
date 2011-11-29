@@ -325,4 +325,10 @@ class submit(SubCommand):
         with open('crab.log', 'w') as of:
             of.write(str(re))
 
-        return CommandResult(1, "Configuration error: \n %s.\nSee the crab.log file for more details" % msg)
+        return CommandResult(2000, "Configuration error: \n %s.\nSee the crab.log file for more details" % msg)
+
+
+#    def terminate(self, exitcode):
+#        #exitcode 2000 means there was a python syntax error in the configuration.
+#        if exitcode != 2000:
+#            SubCommand.terminate( self , exitcode )
