@@ -76,8 +76,10 @@ class SubCommand(object):
         raise NotImplementedException
 
 
-    def terminate(self):
-        self.logger.info("Log file is %s" % os.path.abspath(self.logfile))
+    def terminate(self, exitcode):
+        #We do not want to print logfile for each command...
+        if exitcode < 2000:
+            self.logger.info("Log file is %s" % os.path.abspath(self.logfile))
 
 
     def setOptions(self):

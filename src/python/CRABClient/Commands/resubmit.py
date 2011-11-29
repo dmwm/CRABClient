@@ -20,7 +20,7 @@ class resubmit(SubCommand):
         ## check input options
 
         if self.options.task is None:
-            return CommandResult(1, 'ERROR: Task option is required')
+            return CommandResult(2001, 'ERROR: Task option is required')
 
         ## retrieving output files location from the server
         server = HTTPRequests(self.cachedinfo['Server'] + ':' + str(self.cachedinfo['Port']))

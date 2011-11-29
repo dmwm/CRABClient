@@ -19,7 +19,7 @@ class report(SubCommand):
     def __call__(self):
 
         if self.options.task is None:
-            return CommandResult(1, 'ERROR: Task option is required')
+            return CommandResult(2001, 'ERROR: Task option is required')
 
         server = HTTPRequests(self.cachedinfo['Server'] + ':' + str(self.cachedinfo['Port']))
 
