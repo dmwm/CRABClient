@@ -64,7 +64,7 @@ class CMSSWConfig(object):
         with open(self.outputFile) as cfgFile:
             configString = cfgFile.read()
 
-        group  = self.config.User.group
+        group  = requestConfig['Group']
         userDN = requestConfig['RequestorDN']
 
         data = {'ConfFile'   : configString, 'PsetHash'    : '',
