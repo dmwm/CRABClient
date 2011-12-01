@@ -50,7 +50,7 @@ class submit(SubCommand):
         valid = False
         configmsg = 'Default'
         try:
-            valid, configmsg = self.loadConfig( self.options.config )
+            valid, configmsg = self.loadConfig( self.options.config, self.args )
         except ImportError:
             return CommandResult(1, "Configuration file '%s' not found" % self.options.config)
         except RuntimeError, re:
