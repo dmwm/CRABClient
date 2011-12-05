@@ -21,6 +21,7 @@ from httplib import HTTPException
 from optparse import OptionParser, OptionGroup
 from socket import error as SocketError
 
+from CRABClient import __version__ as client_version
 from CRABClient.client_utilities import getAvailCommands
 from CRABClient.client_exceptions import ClientException
 
@@ -54,8 +55,6 @@ class CRABClient(object):
         at appropriate level
         """
 
-        self.version = '3.0.6'
-
         self.sub_commands = getAvailCommands()
 
         usage  = "usage: %prog [options] COMMAND [command-options] [args]"
@@ -71,7 +70,7 @@ class CRABClient(object):
 
         self.parser = MyParser( usage   = usage,
                                 epilog  = epilog,
-                                version = "CRAB client v%s" % self.version
+                                version = "CRAB client v%s" % client_version
                               )
 
         # This is the important bit
@@ -132,7 +131,7 @@ class CRABClient(object):
             tbLogger = logging.getLogger('CRAB3:traceback')
             tbLogger.error("Unhandled Exception!")
             tbLogger.error("\tPlease file a bug report at https://svnweb.cern.ch/trac/CMSDMWM/newticket?component=CRABClient with the following information:")
-            tbLogger.error("\tClient Version: %s" % self.version)
+            tbLogger.error("\tClient Version: %s" % client_version)
             tbLogger.error(exc_value, exc_info=(exc_type, exc_value, tback))
 
         sys.excepthook = log_exception
