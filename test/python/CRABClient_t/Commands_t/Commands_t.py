@@ -74,7 +74,7 @@ class CommandTest(FakeRESTServer):
         s = status(self.logger, self.maplistopt)
 
         #1) missing required -t option
-        expRes = CommandResult(1, 'ERROR: Task option is required')
+        expRes = CommandResult(2001, 'ERROR: Task option is required')
         res = s()
         self.assertEquals(expRes, res)
 
@@ -143,14 +143,14 @@ class CommandTest(FakeRESTServer):
         #1) missing required -t option (the other required option, -r, is ignored)
         go = getoutput(self.logger, self.maplistopt)
         res = go()
-        expRes = CommandResult(1, 'ERROR: Task option is required')
+        expRes = CommandResult(2001, 'ERROR: Task option is required')
         self.assertEquals(expRes, res)
 
         #2) -t option is present but -r is missing
         analysisDir = self.reqarea
         go = getoutput(self.logger, self.maplistopt + ["-t", analysisDir])
         res = go()
-        expRes = CommandResult(1, 'ERROR: Range option is required')
+        expRes = CommandResult(2002, 'ERROR: Range option is required')
         self.assertEquals(expRes, res)
 
         #3) request passed with the -t option does not exist
@@ -277,7 +277,7 @@ class CommandTest(FakeRESTServer):
         s = postmortem(self.logger, self.maplistopt)
 
         #1) missing required -t option
-        expRes = CommandResult(1, 'ERROR: Task option is required')
+        expRes = CommandResult(2001, 'ERROR: Task option is required')
         res = s()
         self.assertEquals(expRes, res)
 
@@ -316,7 +316,7 @@ class CommandTest(FakeRESTServer):
         s = resubmit(self.logger, [])
 
         #1) missing required -t option
-        expRes = CommandResult(1, 'ERROR: Task option is required')
+        expRes = CommandResult(2001, 'ERROR: Task option is required')
         res = s()
         self.assertEquals(expRes, res)
 
