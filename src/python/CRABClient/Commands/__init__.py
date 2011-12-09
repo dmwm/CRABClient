@@ -8,6 +8,9 @@ from collections import namedtuple
 CommandResult = namedtuple('CommandResult', 'exit_code, data')
 
 def mergeResults( results = None ):
+    """
+    Merging more command results together
+    """
     if results is not None and len(results) > 0:
         msg = []
         exitcode = 0

@@ -41,7 +41,7 @@ class getlog(SubCommand):
         ## retrieving output files location from the server
         server = HTTPRequests(self.cachedinfo['Server'] + ':' + str(self.cachedinfo['Port']))
 
-        self.logger.info('Retrieving log files for jobs %s in task %s' % ( self.options.range, self.cachedinfo['RequestName'] ) )
+        self.logger.debug('Retrieving log file location for jobs %s in task %s' % ( self.options.range, self.cachedinfo['RequestName'] ) )
         inputdict = {'jobRange' : self.options.range}
         dictresult, status, reason = server.get(self.uri + self.cachedinfo['RequestName'], inputdict)
 
@@ -51,13 +51,21 @@ class getlog(SubCommand):
             msg = "Problem retrieving getoutput information from the server:\ninput:%s\noutput:%s\nreason:%s" % (str(inputdict), str(dictresult), str(reason))
             return CommandResult(1, msg)
 
+        totalfiles = 0
         cpresults = []
         for workflow in dictresult['log']:
             arglist = ['-d', dest, '-i', workflow['output'], '-e' , 'tgz']
             if self.options.skipProxy:
                 arglist.append('-p')
-            copyoutput = remote_copy( self.logger, arglist )
-            cpresults.append( copyoutput() )
+            if len(workflow['output']) > 0:
+                totalfiles += len(workflow['output'])
+                self.logger.info("Found %i log files for requested range" % len(workflow['output']) )
+                copyoutput = remote_copy( self.logger, arglist )
+                cpresults.append( copyoutput() )
+            else:
+                cpresults.append( CommandResult(0, '') )
+        if totalfiles == 0:
+            self.logger.info("No log file to retrieve for requested range")
         return mergeResults( cpresults )
 
 
