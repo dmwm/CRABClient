@@ -142,7 +142,7 @@ class remote_copy(SubCommand):
                 self.logger.info( msg )
             else:
                 finalresults[jobid] = {'exit': True, 'lfn': lfn, 'dest': os.path.join(self.options.destination, str(jobid) + '.' + self.options.extension), 'error': None}
-                self.logger.info("Successfully retrived output of job %i" % jobid)
+                self.logger.info("Successfully retrived file for job %i" % jobid)
 
         try:
             input.put( ('-1', 'STOP', 'control') )
@@ -155,7 +155,7 @@ class remote_copy(SubCommand):
 
         for jobid in finalresults:
             if finalresults[jobid]['exit']:
-                self.logger.info("Job %i: output in %s" %(jobid, finalresults[jobid]['dest']))
+                self.logger.info("Job %i: file in %s" %(jobid, finalresults[jobid]['dest']))
             else:
                 self.logger.debug(str(finalresults[jobid]))
                 self.logger.debug("Job %i: transfer problem %s" %(jobid, str(finalresults[jobid]['error'])))
