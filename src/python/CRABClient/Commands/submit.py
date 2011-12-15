@@ -45,7 +45,6 @@ class submit(SubCommand):
                 self.logger.debug('Overriden parameter %s with %s' % (fullparname, parval))
         return self.validateConfig()
 
-
     def __call__(self):
         valid = False
         configmsg = 'Default'
@@ -131,7 +130,7 @@ class submit(SubCommand):
         (code, userinfo) = regusercmd()
         if code is not 0:
             self.logger.debug("ERROR: user registration failed on the server. Stopping submission.")
-            return CommandResult(code, serverinfo)
+            return CommandResult(code, userinfo)
 
         self.logger.debug("Working on %s" % str(requestarea))
 
