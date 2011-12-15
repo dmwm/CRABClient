@@ -32,7 +32,7 @@ class UserTarball(object):
         self.scram = ScramEnvironment(logger=self.logger)
         self.logger.debug("Making tarball in %s" % name)
         self.tarfile = tarfile.open(name=name, mode=mode, dereference=True)
-        self.uploadurl = '/crabinterface/crab/uploadUserSandbox'
+        self.uploadurl = '/userfilecache/userfilecache/upload'
         self.checksum = None
 
     def addFiles(self, userFiles=None):
@@ -83,10 +83,10 @@ class UserTarball(object):
         """
         self.close()
 
-        csHost = self.config.General.serverUrl
+        ufcHost = self.config.General.ufccacheUrl
 
         with tempfile.NamedTemporaryFile() as curlOutput:
-            url = csHost + self.uploadurl
+            url = ufcHost + self.uploadurl
             curlCommand = 'curl -H "Accept: application/json" -F"userfile=@%s" -F"checksum=%s" %s -o %s' % (self.tarfile.name, self.checksum, url, curlOutput.name)
             (status, output) = commands.getstatusoutput(curlCommand)
             if status:
