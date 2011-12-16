@@ -87,8 +87,8 @@ class submit(SubCommand):
                 #if the parameter is not know exit, but try to correct it before
                 if not SpellChecker.is_correct( par ):
                     msg = 'The parameter %s is not known.' % par
-                    msg += '' if SpellChecker.correct(par) == par else 'Did you mean %s?' % SpellChecker.correct(par)
-                    return CommandResult(1, msg)
+                    msg += '' if SpellChecker.correct(par) == par else ' Did you mean %s?' % SpellChecker.correct(par)
+                    return CommandResult(2000, msg)
 
         #usertarball and cmsswconfig use this parameter and we should set it up in a correct way
         self.configuration.General.serverUrl = serverurl
@@ -199,7 +199,7 @@ class submit(SubCommand):
         self.logger.info("Sending the request to the server")
         self.logger.debug("Submitting %s " % str( json.dumps( configreq, sort_keys = False, indent = 4 ) ) )
 
-        dictresult, status, reason = server.post(self.uri + configreq["RequestName"], json.dumps( configreq, sort_keys = False) )
+        dictresult, status, reason = server.post(self.uri + configreq["RequestName"], json.dumps( configreq, sort_keys = False ) )
         self.logger.debug("Result: %s" % dictresult)
         if status != 200:
             msg = "Problem sending the request:\ninput:%s\noutput:%s\nreason:%s" % (str(configreq), str(dictresult), str(reason))
@@ -211,7 +211,7 @@ class submit(SubCommand):
                    % (str(configreq), str(dictresult), str(reason))
             return CommandResult(1, msg)
 
-        createCache( requestarea, server, uniquerequestname )
+        createCache( requestarea, serverurl.split(':')[0], serverurl.split(':')[1], uniquerequestname )
 
         self.logger.info("Submission completed")
         self.logger.debug("Request ID: %s " % uniquerequestname)
