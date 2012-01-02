@@ -14,6 +14,7 @@ import hashlib
 
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
 from CRABClient.client_exceptions import InputFileNotFoundException
+from WMCore.Services.UserFileCache.UserFileCache import UserFileCache
 
 class UserTarball(object):
     """
@@ -32,7 +33,6 @@ class UserTarball(object):
         self.scram = ScramEnvironment(logger=self.logger)
         self.logger.debug("Making tarball in %s" % name)
         self.tarfile = tarfile.open(name=name, mode=mode, dereference=True)
-        self.uploadurl = '/userfilecache/userfilecache/upload'
         self.checksum = None
 
     def addFiles(self, userFiles=None):
@@ -82,21 +82,8 @@ class UserTarball(object):
         Upload the tarball to the CRABServer
         """
         self.close()
-
-        ufcHost = self.config.General.ufccacheUrl
-
-        with tempfile.NamedTemporaryFile() as curlOutput:
-            url = ufcHost + self.uploadurl
-            curlCommand = 'curl -H "Accept: application/json" -F"userfile=@%s" -F"checksum=%s" %s -o %s' % (self.tarfile.name, self.checksum, url, curlOutput.name)
-            (status, output) = commands.getstatusoutput(curlCommand)
-            if status:
-                raise RuntimeError('Problem uploading user sandbox: %s' % output)
-            returnDict = json.loads(curlOutput.read())
-            if 'exception' in returnDict:
-                if returnDict['exception'] is not 200:
-                    raise RuntimeError('Problem uploading user sandbox: %s ' % str(returnDict['message']))
-
-        return returnDict
+        ufc = UserFileCache({'endpoint':'http://'+ self.config.General.ufccacheUrl + '/userfilecache'})
+        return ufc.upload(self.tarfile.name)
 
 
     def calculateChecksum(self):
