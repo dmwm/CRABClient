@@ -14,6 +14,7 @@ SI_RESULT['my_proxy'] = 'myproxy.cern.ch'
 
 FILE_NAME = 'src_output.root'
 goodLumisResult = '{"1":[ [1,15],  [30,50] ], "3":[ [10,15], [30,50] ]}'
+publishResult   = {u'status': True, u'message': 'Publication completed for campaign ewv_crab_something_1_111229_140959', u'summary': {u'/primary/secondary-out1-v1/USER': {u'files': 10, u'blocks': 1, u'existingFiles': 10}, u'/primary/secondary-out2-v1/USER': {u'files': 10, u'blocks': 1, u'existingFiles': 10}}}
 
 
 class CRABRESTModelMock(RESTModel):
@@ -42,6 +43,10 @@ class CRABRESTModelMock(RESTModel):
         #/data
         self._addMethod('GET', 'data', self.getDataLocation,
                        args=['requestID','jobRange'], validation=[self.isalnum])
+
+        self._addMethod('POST', 'publish', self.publish,
+                        args=['requestName'],
+                        validation=[self.isalnum])
 
         #/goodLumis
         self._addMethod('GET', 'goodLumis', self.getGoodLumis,
@@ -130,6 +135,13 @@ class CRABRESTModelMock(RESTModel):
         by CouchDB
         """
         return goodLumisResult
+
+
+    def publish(self, requestName):
+        """
+        Mockup to return the publication summary
+        """
+        return publishResult
 
 
     def getClientMapping(self):

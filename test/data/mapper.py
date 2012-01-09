@@ -42,6 +42,7 @@ defaulturi = {
             'server_info' : {'uri': '/unittests/rest/info/'},
             'status' : {'uri': '/unittests/rest/task/'},
             'report' :    {'uri': '/unittests/rest/goodLumis/'},
+            'publish' :    {'uri': '/unittests/rest/publish/'},
             'get_client_mapping': {'uri': '/unittests/rest/requestmapping/'},
             'get-error': {'uri': '/unittests/rest/jobErrors/'},
             'kill': {'uri': '/unittests/rest/task/'},

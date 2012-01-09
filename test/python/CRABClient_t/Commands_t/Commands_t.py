@@ -3,6 +3,7 @@ from FakeRESTServer import FakeRESTServer
 from WMCore.Configuration import Configuration
 from CRABClient.Commands.server_info import server_info
 from CRABClient.Commands.getoutput import getoutput
+from CRABClient.Commands.publish import publish
 from CRABClient.Commands.status import status
 from CRABClient.Commands.submit import submit
 from CRABClient.Commands.kill import kill
@@ -97,7 +98,32 @@ class CommandTest(FakeRESTServer):
         analysisDir = os.path.join(os.path.dirname(__file__), 'crab_XXX')
         self.assertRaises( TaskNotFoundException, status, self.logger, self.maplistopt + ["-t", analysisDir])
 
+    def testPublish(self):
+        """
+        Test the functionality of the report command
+        """
 
+        analysisDir = self.reqarea
+
+        # Missing required -t option
+        expRes = CommandResult(1, 'ERROR: Task option is required')
+        pub = publish(self.logger, self.maplistopt + ["-u", 'http:/somewhere.com/'])
+        res = pub()
+        self.assertEquals(expRes, res)
+
+        # Missing required -u option
+        expRes = CommandResult(1, 'ERROR: DBS URL option is required')
+        pub = publish(self.logger, self.maplistopt + ["-t", analysisDir])
+        res = pub()
+        self.assertEquals(expRes, res)
+
+        # Correct command
+        expRes = CommandResult(0, '')
+        pub = publish(self.logger, self.maplistopt + ["-t", analysisDir, "-u", 'http:/somewhere.com/'])
+        res = pub()
+        self.assertEquals(expRes, res)
+
+        return
 
     def testReport(self):
         """
