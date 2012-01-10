@@ -4,10 +4,10 @@ Handles client interactions with remote REST interface
 
 import urllib
 from urlparse import urlunparse
-from httplib import HTTPConnection
-#from httplib import HTTPSConnection
 from httplib import HTTPException
 from WMCore.Services.Requests import JSONRequests
+
+from WMCore.Services.pycurl_manager import RequestHandler
 
 class HTTPRequests(dict):
     """
@@ -40,7 +40,7 @@ class HTTPRequests(dict):
         i.e. - if it needs authentication, or some fancy handler
         """
         #TODO: support https here
-        return HTTPConnection(self['host'])
+        return RequestHandler()
 
     def get(self, uri = None, data = {}):
         """
@@ -84,37 +84,33 @@ class HTTPRequests(dict):
         """
         headers = {"Content-type": "application/json",
                    "User-agent": "CRABClient/v001",
-                   "Accept": "application/json"}
+                   "Accept": "application/json",
+                   #By default cURL sends a "Expect: 100-continue" headers which pycurl_manager
+                   #does not support. Overrhiding this with empty string
+                   "Expect": ""}
 
         #Quoting the uri since it can contain the request name, and therefore spaces (see #2557)
         uri = urllib.quote(uri)
 
         if verb != 'GET' and data:
             headers["Content-length"] = len(data)
-        elif verb == 'GET' and data:
-            #encode the data as a get string
-            uri = "%s?%s" % (uri, urllib.urlencode(data, doseq = True))
-            data = {}
 
-        self['conn'].connect()
-        self['conn'].request(verb, uri, data, headers)
-        response = self['conn'].getresponse()
-        result = response.read()
-        self['conn'].close()
+        url = self['host'] + uri
+        response, datares = self['conn'].request(url, data, headers, verb=verb, doseq = True)
 
         if response.status >= 400:
             e = HTTPException()
             setattr(e, 'req_data', data)
             setattr(e, 'req_headers', headers)
             setattr(e, 'url', self.buildUrl(uri))
-            setattr(e, 'result', result)
+            setattr(e, 'result', datares)
             setattr(e, 'status', response.status)
             setattr(e, 'reason', response.reason)
             setattr(e, 'headers', response.getheaders())
             raise e
 
         #result = json.loads(result)
-        return self.decodeJson(result), response.status, response.reason
+        return self.decodeJson(datares), response.status, response.reason
 
     def decodeJson(self, result):
         """

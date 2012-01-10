@@ -335,20 +335,11 @@ class CommandTest(FakeRESTServer):
     def _prepareWorkArea(self):
         self.reqarea, self.reqname, _ = createWorkArea(self.logger, requestName = self.TEST_REQ_NAME)
         server = {}
-        server['conn'] = TestServerParam("127.0.0.1", 8518)
-        createCache(self.reqarea, server, self.reqname)
+        createCache(self.reqarea, "127.0.0.1", 8518, self.reqname)
 
 
     def _cleanWorkArea(self):
         shutil.rmtree(self.reqarea)
-
-
-class TestServerParam:
-    def __init__(self, host, port):
-        self.host = host
-        self.port = port
-
-
 
 
 if __name__ == "__main__":
