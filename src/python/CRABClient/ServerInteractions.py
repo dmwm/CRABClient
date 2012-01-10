@@ -6,8 +6,8 @@ import urllib
 from urlparse import urlunparse
 from httplib import HTTPException
 from WMCore.Services.Requests import JSONRequests
-
 from WMCore.Services.pycurl_manager import RequestHandler
+from CRABClient import __version__
 
 class HTTPRequests(dict):
     """
@@ -83,12 +83,11 @@ class HTTPRequests(dict):
 
         """
         headers = {"Content-type": "application/json",
-                   "User-agent": "CRABClient/v001",
+                   "User-agent": "CRABClient/%s" % __version__,
                    "Accept": "application/json",
                    #By default cURL sends a "Expect: 100-continue" headers which pycurl_manager
                    #does not support. Overrhiding this with empty string
                    "Expect": ""}
-
         #Quoting the uri since it can contain the request name, and therefore spaces (see #2557)
         uri = urllib.quote(uri)
 
