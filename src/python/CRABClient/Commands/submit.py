@@ -48,10 +48,11 @@ class submit(SubCommand):
     def __call__(self):
         valid = False
         configmsg = 'Default'
+
+        if not os.path.isfile(self.options.config):
+            return CommandResult(2001, "Configuration file '%s' not found" % self.options.config)
         try:
             valid, configmsg = self.loadConfig( self.options.config, self.args )
-        except ImportError:
-            return CommandResult(1, "Configuration file '%s' not found" % self.options.config)
         except RuntimeError, re:
             return self._extractReason( re )
         else:
