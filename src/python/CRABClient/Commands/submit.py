@@ -102,11 +102,13 @@ class submit(SubCommand):
 
         if not self.options.skipProxy:
             try:
+                voRole = getattr(self.configuration.User, "voRole", "")
+                voGroup = getattr(self.configuration.User, "voGroup", "")
                 userdn, proxy = initProxy(
                                   serverinfo['server_dn'],
                                   serverinfo['my_proxy'],
-                                  getattr(self.configuration.User, "voRole", ""),
-                                  getattr(self.configuration.User, "voGroup", ""),
+                                  voRole,
+                                  voGroup,
                                   True,
                                   self.logger
                                 )
@@ -170,6 +172,13 @@ class submit(SubCommand):
             elif param == "RequestorDN":
                 if mustbetype == type(userdn):
                     configreq["RequestorDN"] = userdn
+            elif param == "BlacklistT1":
+                blacklistT1 = voRole != 't1access'
+                #if the user choose to remove the automatic T1 blacklisting and has not the t1acces role
+                if getattr (self.configuration.Site, 'removeT1Blacklisting', False) and blacklistT1:
+                    self.logger.info("WARNING: You disabled the T1 automatic blacklisting without having the t1access role")
+                    blacklistT1 = False
+                configreq["BlacklistT1"] = blacklistT1
             elif self.requestmapper[param]['required']:
                 if self.requestmapper[param]['default'] is not None:
                     configreq[param] = self.requestmapper[param]['default']
