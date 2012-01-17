@@ -56,3 +56,4 @@ config.section_("Site")
 config.Site.storageSite = 'T2_XX_XXX'
 #config.Site.whitelist = ['T2_XY_XXY']
 #config.Site.blacklist = ['T2_XZ_XXZ']
+#config.Site.removeT1Blacklisting = False
