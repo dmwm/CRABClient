@@ -26,7 +26,7 @@ class CredentialInteractions(object):
                                   'myproxyValidity': '7',
                                   'serverDN' :       serverdn,
                                   'group' :          group,
-                                  'role':            role
+                                  'role':            role if role != '' else 'NULL'
                                   }
         self.proxyChanged = False
 
@@ -49,7 +49,6 @@ class CredentialInteractions(object):
         #if it is not expired I check if role and/or group are changed
         if not proxytimeleft < timeleftthreshold and self.defaultDelegation['role']!=None and  self.defaultDelegation['group']!=None:
             group , role = userproxy.getUserGroupAndRoleFromProxy( userproxy.getProxyFilename())
-            self.defaultDelegation['role'] = self.defaultDelegation['role'] if self.defaultDelegation['role']!='' else 'NULL'
             if group != self.defaultDelegation['group'] or role != self.defaultDelegation['role']:
                 self.proxyChanged = True
 
