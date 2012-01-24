@@ -1,8 +1,9 @@
+import json
+import os
+
 from CRABClient.Commands import CommandResult
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ServerInteractions import HTTPRequests
-import os
-import json
 
 class publish(SubCommand):
     """ Publish the output datasets in the task identified by
@@ -19,15 +20,25 @@ class publish(SubCommand):
 
         if self.options.task is None:
             return CommandResult(1, 'ERROR: Task option is required')
-        if self.options.dbs is None:
-            return CommandResult(1, 'ERROR: DBS URL option is required')
+        if self.options.dbs is None and self.options.config is None:
+            return CommandResult(1, 'ERROR: DBS URL must be specified on the command line or in the config file')
+
+        if self.options.config:
+            valid, configmsg = self.loadConfig(self.options.config, self.args)
 
         ## retrieving output files location from the server
         server = HTTPRequests(self.cachedinfo['Server'] + ':' + str(self.cachedinfo['Port']))
 
         self.logger.debug('Requesting publication for task %s' % self.cachedinfo['RequestName'] )
 
-        inputdict = {'PublishDbsUrl': self.options.dbs}
+        if self.options.dbs:
+            inputdict = {'PublishDbsUrl': self.options.dbs}
+        else:
+            valid, configmsg = self.validateConfig(checkValues = ['publishDBS'])
+            if not valid:
+                return CommandResult(1, configmsg)
+            inputdict = {'PublishDbsUrl': self.configuration.Data.publishDbsUrl}
+
         dictresult, status, reason = server.post(self.uri + self.cachedinfo['RequestName'], json.dumps(inputdict, sort_keys=False))
         self.logger.debug("Result: %s" % dictresult)
 
@@ -64,3 +75,25 @@ class publish(SubCommand):
                                  dest = "dbs",
                                  default = None,
                                  help = "DBS server URL" )
+
+        self.parser.add_option( "-c", "--config",
+                                 dest = "config",
+                                 default = None,
+                                 help = "CRAB configuration file",
+                                 metavar = "FILE" )
+
+    def validateConfig(self, checkValues=None):
+        """
+        __validateConfig__
+
+        Checking if needed input parameters are there
+        """
+
+        if checkValues:
+            if not getattr(self.configuration, 'Data', None):
+                return False, "Crab configuration problem: Data section is missing."
+            else:
+                if not hasattr(self.configuration.Data, 'publishDbsUrl'):
+                    return False, "Neither command line nor config specifies a DBS URL."
+
+        return True, "Valid configuration"

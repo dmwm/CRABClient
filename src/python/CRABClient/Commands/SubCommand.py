@@ -4,6 +4,8 @@ from optparse import OptionParser, SUPPRESS_HELP
 from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient.client_utilities import loadCache, getWorkArea
 
+from WMCore.Configuration import loadConfigurationFile, Configuration
+
 
 class SubCommand(object):
 
@@ -95,3 +97,31 @@ class SubCommand(object):
             self.setOptions()
         except NotImplementedError:
             pass
+
+    def loadConfig(self, config, overrideargs=None):
+        """
+        Load the configuration file
+        """
+        self.logger.debug('Loading configuration')
+        if type(config) == Configuration:
+            self.configuration = config
+        else:
+            self.configuration = loadConfigurationFile( os.path.abspath(config))
+        if overrideargs:
+            for singlearg in overrideargs:
+                fullparname, parval = singlearg.split('=')
+                # now supporting just one sub params, eg: Data.inputFiles, User.email, ...
+                parnames = fullparname.split('.', 1)
+                self.configuration.section_(parnames[0])
+                setattr(getattr(self.configuration, parnames[0]), parnames[1], parval)
+                self.logger.debug('Overriden parameter %s with %s' % (fullparname, parval))
+        return self.validateConfig()
+
+    def validateConfig(self):
+        """
+        __validateConfig__
+
+        Checking if needed input parameters are there
+        """
+
+        return True, "Valid configuration"
