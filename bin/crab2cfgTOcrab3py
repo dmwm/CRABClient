@@ -65,19 +65,19 @@ paramsMap = [
     ('Data'     , 'lumiMask'             , False, 'CMSSW'  , 'lumi_mask'                , RawConfigParser.get),
     ('Data'     , 'runWhitelist'         , False, 'CMSSW'  , 'runselection'             , RawConfigParser.get),
     ('Data'     , 'dbsurl'               , False, 'CMSSW'  , 'dbs_url'                  , RawConfigParser.get),
-    ('User'     , 'email'                , False, 'USER'   , 'eMail'                    , RawConfigParser.get),
+    ('User'     , 'email'                , False, 'USER'   , 'email'                    , RawConfigParser.get),
     ('User'     , 'voRole'               , False, 'GRID'   , 'role'                     , RawConfigParser.get),
     ('User'     , 'voGroup'              , False, 'GRID'   , 'group'                    , RawConfigParser.get),
     ('Site'     , 'storageSite'          , True , 'USER'   , 'storage_element'          , RawConfigParser.get),
     ('Site'     , 'blacklist'            , False, 'GRID'   , 'se_black_list'            , _getlist),
     ('Site'     , 'whitelist'            , False, 'GRID'   , 'se_white_list'            , _getlist),
+    ('Site'     , 'removeT1Blacklisting' , False, 'GRID'   , 'remove_default_blacklist' , RawConfigParser.getboolean),
+    ('Data'     , 'publishDbsUrl'        , False, 'USER'   , 'dbs_url_for_publication'  , RawConfigParser.get),
+    ('Data'     , 'publishDataName'      , False, 'USER'   , 'publish_data_name'        , RawConfigParser.get),
 ]
-#TODO: Add [USER] 'publish_data', and [USER] 'publish_data_name' when we will support publication
 
 #Not yet supported parameters. If they are present in the crab2cfg file we print a message saying they are not yet supported
-notYetSuppParams = ['publish_data',
-                    'publish_data_name',
-                    'dbs_url_for_publication',
+notYetSuppParams = [
                     'first_run',
                     'generator',
                     'skip_TFileService_output',
@@ -91,7 +91,8 @@ notYetSuppParams = ['publish_data',
                    ]
 
 #List of deprecated parameters. We don't print a warning message for them.
-deprecatedParams = ['use_server', #of course we use it
+deprecatedParams = ['publish_data', #publishing is on demand
+                    'use_server', #of course we use it
                     'scheduler',
                     'jobtype',
                     'return_data',
