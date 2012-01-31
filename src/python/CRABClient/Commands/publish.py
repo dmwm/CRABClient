@@ -1,5 +1,6 @@
 import json
 import os
+import pycurl
 
 from CRABClient.Commands import CommandResult
 from CRABClient.Commands.SubCommand import SubCommand
@@ -39,7 +40,12 @@ class publish(SubCommand):
                 return CommandResult(1, configmsg)
             inputdict = {'PublishDbsUrl': self.configuration.Data.publishDbsUrl}
 
-        dictresult, status, reason = server.post(self.uri + self.cachedinfo['RequestName'], json.dumps(inputdict, sort_keys=False))
+        try:
+            dictresult, status, reason = server.post(self.uri + self.cachedinfo['RequestName'], json.dumps(inputdict, sort_keys=False))
+        except pycurl.error as e:
+            if e.args[0] == pycurl.E_OPERATION_TIMEOUTED:
+                return CommandResult(1, 'Publication has been started. Re-issue publish command in a few minutes for results.')
+            raise
         self.logger.debug("Result: %s" % dictresult)
 
         if status != 200:
@@ -48,7 +54,7 @@ class publish(SubCommand):
 
         success = dictresult['status']
         self.logger.info(dictresult['message'])
-        summary = dictresult['summary']
+        summary = dictresult.get('summary', {})
         for datasetName in summary:
             if summary[datasetName]['existingFiles']:
                 self.logger.info(' Dataset %s, %s files already exist, added %s new files in %s new blocks' %
