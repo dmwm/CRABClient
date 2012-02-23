@@ -63,7 +63,7 @@ paramsMap = [
     ('Data'     , 'splitting'            , False, ''       , ''                         , _getsplitting),       #_getsplitting knows corresp. params
     ('Data'     , 'unitsPerJob'          , False, ''       , ''                         , _getunits),           #_getunits does the work
     ('Data'     , 'lumiMask'             , False, 'CMSSW'  , 'lumi_mask'                , RawConfigParser.get),
-    ('Data'     , 'runWhitelist'         , False, 'CMSSW'  , 'runselection'             , RawConfigParser.get),
+    ('Data'     , 'runRange'             , False, 'CMSSW'  , 'runselection'             , RawConfigParser.get), 
     ('Data'     , 'dbsurl'               , False, 'CMSSW'  , 'dbs_url'                  , RawConfigParser.get),
     ('User'     , 'email'                , False, 'USER'   , 'email'                    , RawConfigParser.get),
     ('User'     , 'voRole'               , False, 'GRID'   , 'role'                     , RawConfigParser.get),

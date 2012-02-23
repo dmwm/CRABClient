@@ -35,6 +35,11 @@ config.Data.processingVersion = 'v1'
 #config.Data.unitsPerJob = 10
 ##For lumiMask http and https urls are also allowed
 #config.Data.lumiMask = 'lumi.json'
+
+# Both forms are permissible
+#config.Data.runRange = '1000-1100,1200-1250'
+#config.Data.runRange = [1000, 1001]
+
 #config.Data.blockWhitelist = ['/RelValProdTTbar/JobRobot-MC_3XY_V24_JobRobot-v1/GEN-SIM-DIGI-RECO#block1', \
 #              '/RelValProdTTbar/JobRobot-MC_3XY_V24_JobRobot-v1/GEN-SIM-DIGI-RECO#block2']
 #config.Data.blockBlacklist = ['/RelValProdTTbar/JobRobot-MC_3XY_V24_JobRobot-v1/GEN-SIM-DIGI-RECO#block1', \

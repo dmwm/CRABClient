@@ -41,11 +41,12 @@ class LumiMask(object):
 
         group  = self.config.User.group
         userDN = requestConfig['RequestorDN']
+        runRange = getattr(self.config.Data, 'runRange', [])
 
         data = {'LumiMask'    : self.lumiMask, 'DatasetName' : self.config.Data.inputDataset,
                 'Description' : '',            'RequestName' : requestConfig['RequestName'],
                 'Group'       : group,         'UserDN'      : userDN,
-                'Label'       : '',
+                'Label'       : '',            'RunRange'    : runRange,
                }
         jsonString = json.dumps(data, sort_keys=False)
 
