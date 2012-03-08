@@ -16,15 +16,15 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   introduction
-   quickstart
-   installation
-   configuration
-   running
-..   crab-library
-   code-doc
-..   dependencies
-   release-notes
+   userdoc/introduction
+   userdoc/quickstart
+   userdoc/installation
+   userdoc/configuration
+   userdoc/running
+   userdoc/crab-library
+   userdoc/dependencies
+   changelog
+   code/modules
    references
 
 Indices and tables

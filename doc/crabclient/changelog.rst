@@ -1,5 +1,5 @@
-Release notes
-=========================
+CRABClient release notes
+========================
 This section contains the list of changes between each subsequent realeases of CRAB Client. Changes are grouped by release.
 .. Grouping can be also at greater level with release series.
 

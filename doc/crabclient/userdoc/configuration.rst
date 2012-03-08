@@ -13,12 +13,12 @@ Description
 In CRAB-3 era the configuration is in Python language and it consists of configuration object imported from the core library deployed together with the client.
 It can be instanciated as in the following example:
 
-.. literalinclude:: ../config/ExampleConfiguration.py
+.. literalinclude:: ../../config/ExampleConfiguration.py
    :lines: 5,8
 
 Once the Configuration object has been created it is possible to add new sections directly into it. To create a new section and to add parameters it is enough to use the following code:
 
-.. literalinclude:: ../config/ExampleConfiguration.py
+.. literalinclude:: ../../config/ExampleConfiguration.py
    :lines: 10-12
 
 Currently 5 sections are supported: **General**, **JobType**, **Data**, **User** and **Site**.
@@ -66,7 +66,7 @@ Basic Example
 
 This is a basic example of configuration:
 
-.. literalinclude:: ../config/ExampleConfiguration.py
+.. literalinclude:: ../../config/ExampleConfiguration.py
 
 
 Job Splitting
