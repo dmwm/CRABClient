@@ -10,10 +10,7 @@ class getlog(SubCommand):
     task identified by -t/--task option
     """
 
-    ## name should become automatically generated
-    name  = "get-log"
-    names = [name, 'log']
-    usage = "usage: %prog " + name + " [options] [args]"
+    shortnames = ['log']
 
     def __call__(self):
 
@@ -91,10 +88,10 @@ class getlog(SubCommand):
                                 default = None,
                                 help = 'Where the output files retrieved will be stored in the local file system',
                                 metavar = 'DIRECTORY' )
-
-        self.parser.add_option( "-p", "--skip-proxy",
-                                action = "store_true",
-                                dest = "skipProxy",
-                                default = None,
-                                help = "Skip Grid proxy creation and myproxy delegation")
+#moved to SubOption
+#        self.parser.add_option( "-p", "--skip-proxy",
+#                                action = "store_true",
+#                                dest = "skipProxy",
+#                                default = None,
+#                                help = "Skip Grid proxy creation and myproxy delegation")
 

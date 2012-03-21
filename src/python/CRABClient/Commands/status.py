@@ -1,8 +1,11 @@
 from __future__ import division # I want floating points
 
-from CRABClient.Commands import CommandResult
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ServerInteractions import HTTPRequests
+from CRABClient.client_exceptions import MissingOptionException, RESTCommunicationException
+
+class Resp:
+    campaign, campaignStatus, jobsPerState, detailsPerState, detailsPerSite = range(5)
 
 class status(SubCommand):
     """
@@ -10,49 +13,93 @@ class status(SubCommand):
     identified by -t/--task option
     """
 
-    name  = __name__.split('.').pop()
-    names = [name, 'stat']
-    usage = "usage: %prog " + name + " [options] [args]"
+    shortnames = ['st']
 
-
+    states = ['submitted', 'failure', 'queued', 'success']
+    abbreviations = {'submitted' : 's', 'failure': 'f', 'queued' : 'q', 'success' : 'u'}
     def __call__(self):
+        if not self.options.task:
+            raise MissingOptionException('ERROR: Task option is required')
 
-        if self.options.task is None:
-            return CommandResult(2001, 'ERROR: Task option is required')
-
-        server = HTTPRequests(self.cachedinfo['Server'] + ':' + str(self.cachedinfo['Port']))
+        port = ':' + self.cachedinfo['Port'] if self.cachedinfo['Port'] else '' #TODO handle this in a global way for other commands
+        server = HTTPRequests(self.cachedinfo['Server'] + port, self.proxyfilename)
 
         self.logger.debug('Looking up detailed status of task %s' % self.cachedinfo['RequestName'])
-        dictresult, status, reason = server.get(self.uri + self.cachedinfo['RequestName'])
+        dictresult, status, reason = server.get(self.uri, data = { 'campaign' : self.cachedinfo['RequestName']})
 
-        #self.logger.debug("Result: %s" % dictresult)
         if status != 200:
             msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(self.cachedinfo['RequestName']), str(dictresult), str(reason))
-            return CommandResult(1, msg)
+            raise RESTCommunicationException(msg)
 
-        for workflow in dictresult["workflows"]:
-            self.logger.info('#%s %2s' % (workflow['subOrder'], workflow['request']) )
-            self.logger.info("   Task Status:        %s"    % str(workflow['requestDetails']['RequestStatus']))
-            self._printRequestDetails(workflow)
+        #TODO: _printRequestDetails
+        self.logger.debug(dictresult)
+        listresult = dictresult['result']
 
-            if 'states' in workflow:
-                ## grouping the status by task, since we may have log collect, cleanup, analysis jobs
-                for wmtask in workflow['states'].keys():
-                    self.logger.info('   %s jobs' % wmtask.split(self.cachedinfo['RequestName'] + '/', 1)[-1] )
-                    totalJobs = 0
-                    for state in workflow['states'][wmtask]:
-                        totalJobs += workflow['states'][wmtask][state]['count']
-                    for state in workflow['states'][wmtask]:
-                        count = workflow['states'][wmtask][state]['count']
-                        if self.options.brief:
-                            percent = count/totalJobs*100
-                            self.logger.info("     State: %-13s Count: %6s (%5.1f%%)" % (state, count, percent))
-                        else:
-                            jobList = self.readableRange(workflow['states'][wmtask][state]['jobs'])
-                            self.logger.info("     State: %-13s Count: %6s  Jobs: %s" % (state, count, jobList))
+        if self.options.site or self.options.failure:
+            errresult, status, reason = server.get('/crabserver/data/workflow', \
+                                data = { 'workflow' : self.cachedinfo['RequestName'], 'subresource' : 'errors', 'shortformat' : 1 if self.options.failure else 0})
+            if status != 200:
+                msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(self.cachedinfo['RequestName']), str(errresult), str(reason))
+                raise RESTCommunicationException(msg)
+            self.logger.debug(str(errresult))
 
-        return CommandResult(0, None)
+        self.logger.info("Task Status:\t\t%s" % listresult[Resp.campaignStatus])
+        states = listresult[Resp.jobsPerState]
+        total = states['total']
+        frmt = ''
+        resubmissions = 0
+        for status in states:
+            if states[status] > 0 and status not in ['total', 'first', 'retry']:
+                frmt += status + ' %.1f %%\t' % ( states[status]*100/total )
+        if frmt == '' and total != 0:
+            frmt = 'jobs are being submitted'
+        self.logger.info('Details:\t\t%s' % frmt)
 
+        self.logger.info(('Using %d site(s):\t' % len(listresult[Resp.detailsPerSite])) + \
+                           ('' if len(listresult[Resp.detailsPerSite])>4 else ', '.join(listresult[Resp.detailsPerSite].keys())))
+
+        if self.options.site:
+            if not listresult[Resp.detailsPerSite]:
+                self.logger.info("Information per site are not available.")
+            for site in listresult[Resp.detailsPerSite]:
+                self.logger.info("%s: " % site)
+                states = listresult[Resp.detailsPerSite][site][0]
+                frmt = '    '
+                for status in states:
+                    if states[status] > 0:
+                        frmt += status + ' %.1f %%\t' % ( states[status]*100/total )
+                self.logger.info(frmt)
+                self._printSiteErrors(errresult, site, total)
+
+        for status in self.states:
+            if listresult[Resp.detailsPerState].has_key(status) and listresult[Resp.detailsPerState][status].has_key('retry'):
+                resubmissions += listresult[Resp.detailsPerState][status]['retry']
+            if getattr(self.options, status) and listresult[Resp.detailsPerState].has_key(status):
+                states = listresult[Resp.detailsPerState][status]
+                frmt = status + " breakdown:\t"
+                for st in states:
+                    if st != 'first' and st != 'retry':
+                        frmt += st + '   %.1f %%\t' % ( states[st]*100/total )
+                self.logger.info(frmt)
+
+        if resubmissions:
+            self.logger.info('%.1f %% using the automatic resubmission' % (resubmissions*100/total))
+
+        #XXX: The exit code here is the one generated by Report.getExitCode and is not necessarily the CMSSWException one
+        if self.options.failure:
+            self.logger.info("List of errors:")
+            for err in errresult['result'][0]:
+                self.logger.info("  %.1f %% have exit code %s" % (err['value']*100/total, err['key'][2]))
+
+    def _printSiteErrors(self, errresult, site, total):
+        """
+        Print the error details of the site (when option -i is used)
+        """
+        _, _, EXITCODE, ERRLIST, SITE = range(5)
+        if errresult.has_key('result') and len(errresult['result'])>0:
+            for row in errresult['result'][0]:
+                if row['key'][SITE] == site:
+                     self.logger.info("    %.1f %% with exit code %s. Error list: %s" % (row['value']*100/total, row['key'][EXITCODE], row['key'][ERRLIST]))
 
     def _printRequestDetails(self, dictresult):
         """
@@ -79,11 +126,19 @@ class status(SubCommand):
                                  default = None,
                                  help = "Same as -c/-continue" )
 
-        self.parser.add_option( "-b", "--brief",
-                                 dest = "brief",
+        for status in self.states:
+            self.parser.add_option( "-"+self.abbreviations[status], "--"+status,
+                                 dest = status,
                                  action = "store_true",
                                  default = False,
-                                 help = "Provide just a summary of the status" )
+                                 help = "Provide details about %s jobs" % status)
+
+        self.parser.add_option( "-i", "--site",
+                                 dest = "site",
+                                 action = "store_true",
+                                 default = False,
+                                 help = "Provide details about sites" )
+
 
 
     def readableRange(self, jobArray):

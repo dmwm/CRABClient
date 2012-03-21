@@ -41,6 +41,9 @@ def getPlugins(namespace, plugins, skip):
                                         globals(), locals(), el[1] )
             ## add to the module dictionary
             modules[el[1]] = getattr(mod, el[1])
+            #set the default name if it has not been overridden in the class
+            if not hasattr(modules[el[1]], 'name'):
+                setattr(modules[el[1]], 'name', modules[el[1]].__name__)
 
     return modules
 
@@ -111,7 +114,7 @@ def getAvailCommands(subcmdpath = 'CRABClient', subcmdname = 'Commands'):
     result = {}
     for k in subcmdplugins.keys():
         if subcmdplugins[k].visible:
-            result[subcmdplugins[k].name] = {'names': subcmdplugins[k].names, 'module': subcmdplugins[k]}
+            result[k] = subcmdplugins[k]
 
     return result
 
@@ -231,7 +234,23 @@ def loadCache( task, logger ):
     logfile = addFileLogger( logger, workingpath = requestarea )
     return cPickle.load(loadfile), logfile
 
-def initProxy(serverDN, myProxy, voRole, voGroup, delegate, logger):
+def initProxy(voRole, voGroup, logger):
+    #First two parameters (serverDN and myProxy) are not required for proxy creation
+    proxy = CredentialInteractions(
+                                    None,
+                                    None,
+                                    voRole,
+                                    voGroup,
+                                    logger
+                                  )
+
+    logger.debug("Checking credentials")
+    userdn, proxyfilename = proxy.createNewVomsProxy( timeleftthreshold = 600 )
+
+    return userdn, proxyfilename
+
+
+def delegateProxy(serverDN, myProxy, voRole, voGroup, logger):
     proxy = CredentialInteractions(
                                     serverDN,
                                     myProxy,
@@ -240,14 +259,8 @@ def initProxy(serverDN, myProxy, voRole, voGroup, delegate, logger):
                                     logger
                                   )
 
-    logger.info("Checking credentials")
-    userdn = proxy.createNewVomsProxy( timeleftthreshold = 600 )
-
-    if delegate:
-        logger.info("Registering user credentials")
-        proxy.createNewMyProxy( timeleftthreshold = 60 * 60 * 24 * 3)
-
-    return userdn, proxy
+    logger.info("Registering user credentials")
+    proxy.createNewMyProxy( timeleftthreshold = 60 * 60 * 24 * 3)
 
 def validServerURL(option, opt_str, value, parser):
     """
@@ -262,11 +275,11 @@ def validServerURL(option, opt_str, value, parser):
 
 def validURL(serverurl, attrtohave = ['scheme', 'netloc', 'hostname', 'port'], attrtonothave = ['path', 'params', 'query', 'fragment', 'username', 'password']):
     """
-    returning false if the format is different from http://host:port
+    returning false if the format is different from https://host:port
     """
     tempurl = serverurl
-    if not serverurl.startswith('http://'):
-        tempurl = 'http://' + serverurl
+    if not serverurl.startswith('https://'):
+        tempurl = 'https://' + serverurl
     from urlparse import urlparse
     parsedurl = urlparse(tempurl)
     for elem in attrtohave:

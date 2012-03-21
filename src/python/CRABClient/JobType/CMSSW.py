@@ -21,19 +21,19 @@ class CMSSW(BasicJobType):
         """
         Override run() for JobType
         """
-        configArguments = {'OutputFiles'            : [],
-                           'userFiles'              : [],
-                           'InputDataset'           : '',
-                           'ProcessingVersion'      : '',
-                           'AnalysisConfigCacheDoc' : '',
-                           'ACDCDoc'                : '',
+        configArguments = {'addoutputfiles'            : [],
+                           'adduserfiles'              : [],
+                           'inputdata'                 : '',
+#                           'ProcessingVersion'         : '',
+                           'configdoc'                 : '',
+#                           'ACDCDoc'                   : '',
                           }
 
         # Get SCRAM environment
         scram = ScramEnvironment(logger=self.logger)
 
-        configArguments.update({'ScramArch'    : scram.scramArch,
-                                'CMSSWVersion' : scram.cmsswVersion, })
+        configArguments.update({'jobarch'    : scram.scramArch,
+                                'jobsw' : scram.cmsswVersion, })
 
         # Build tarball
         if self.workdir:
@@ -46,12 +46,11 @@ class CMSSW(BasicJobType):
         with UserTarball(name=tarFilename, logger=self.logger, config=self.config) as tb:
             inputFiles = getattr(self.config.JobType, 'inputFiles', [])
             tb.addFiles(userFiles=inputFiles)
-            configArguments['userFiles'] = [os.path.basename(f) for f in inputFiles]
+            configArguments['adduserfiles'] = [os.path.basename(f) for f in inputFiles]
             uploadResults = tb.upload()
-
-        configArguments['userSandbox'] = uploadResults['url']
-        configArguments['InputDataset'] = self.config.Data.inputDataset
-        configArguments['ProcessingVersion'] = getattr(self.config.Data, 'processingVersion', None)
+        configArguments['userisburl'] = 'https://'+ self.config.General.ufccacheUrl + '/userfilecache/data/file?hashkey=' + uploadResults['result'][0]['hashkey']#XXX hardcoded
+        configArguments['inputdata'] = self.config.Data.inputDataset
+#        configArguments['ProcessingVersion'] = getattr(self.config.Data, 'processingVersion', None)
 
         # Create CMSSW config
         cmsswCfg = CMSSWConfig(config=self.config, logger=self.logger,
@@ -63,22 +62,21 @@ class CMSSW(BasicJobType):
 
         outputFiles = getattr(self.config.JobType, 'outputFiles', [])
         self.logger.debug("WMAgent will collect user files %s" % outputFiles)
-        configArguments['OutputFiles'].extend(outputFiles)
+        configArguments['addoutputfiles'].extend(outputFiles)
 
         # Write out CMSSW config
         cmsswCfg.writeFile(cfgOutputName)
         result = cmsswCfg.upload(requestConfig)
-        configArguments['AnalysisConfigCacheDoc'] = result[0]['DocID']
+        configArguments['configdoc'] = result['DocID']
 
         # Upload lumi mask if it exists
         lumiMaskName = getattr(self.config.Data, 'lumiMask', None)
-
         if lumiMaskName:
             self.logger.debug("Uploading lumi mask %s" % lumiMaskName)
             lumiMask = LumiMask(config=self.config, logger=self.logger)
             result = lumiMask.upload(requestConfig)
             self.logger.debug("ACDC Fileset created with DocID %s" % result[0]['Name'])
-            configArguments['ACDCDoc'] = result[0]['Name']
+#            configArguments['ACDCDoc'] = result[0]['Name']
 
         return tarFilename, configArguments
 

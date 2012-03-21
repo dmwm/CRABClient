@@ -6,6 +6,7 @@ class ClientException(Exception):
     """
     pass
 
+
 class TaskNotFoundException(ClientException):
     """
     Raised when the task directory is not found
@@ -18,9 +19,9 @@ class CachefileNotFoundException(ClientException):
     """
     exitcode = 3005
 
-class PSetNotFoundException(ClientException):
+class ConfigException(ClientException):
     """
-    Raised when the pset file used specified in the configuration is not found
+    Raised when there are issues with the config cache
     """
     exitcode = 3006
 
@@ -30,8 +31,33 @@ class InputFileNotFoundException(ClientException):
     """
     exitcode = 3007
 
+class ConfigurationException(ClientException):
+    """
+    Raised when the task directory is not found
+    """
+    exitcode = 3008
+
+class MissingOptionException(ConfigurationException):
+    """
+    Raised when the task directory is not found
+    """
+    exitcode = 3008
+
+class RESTCommunicationException(ClientException):
+    """
+    Raised when the REST does not answer the 200 HTTP code
+    """
+    exitcode = 3009
+
 class ProxyCreationException(ClientException):
     """
     Raised when a there is a problem in proxy creation. exitcode > 2000 prints log
     """
-    exitcode = 8
+    exitcode = 3010
+
+class EnvironmentException(ClientException):
+    """
+    Raised when a there is a problem in the environment where the client is executed.
+    E.g.: if the X509_CERT_DIR variable is not set we raise this exception
+    """
+    exitcode = 3011

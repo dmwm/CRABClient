@@ -3,11 +3,13 @@ Handles client interactions with remote REST interface
 """
 
 import urllib
+import os
 from urlparse import urlunparse
 from httplib import HTTPException
 from WMCore.Services.Requests import JSONRequests
 from WMCore.Services.pycurl_manager import RequestHandler
 from CRABClient import __version__
+from CRABClient.client_exceptions import EnvironmentException
 
 class HTTPRequests(dict):
     """
@@ -22,7 +24,7 @@ class HTTPRequests(dict):
     is used more in the client.
     """
 
-    def __init__(self, url = 'localhost'):
+    def __init__(self, url = 'localhost', proxyfilename = None):
         """
         Initialise an HTTP handler
         """
@@ -30,6 +32,7 @@ class HTTPRequests(dict):
         self.setdefault("accept_type", 'text/html')
         self.setdefault("content_type", 'application/x-www-form-urlencoded')
         self.setdefault("host", url)
+        self.setdefault("proxyfilename", proxyfilename)
         # get the URL opener
         self.setdefault("conn", self.getUrlOpener())
 
@@ -82,20 +85,20 @@ class HTTPRequests(dict):
         as a string.
 
         """
-        headers = {"Content-type": "application/json",
+        headers = {
                    "User-agent": "CRABClient/%s" % __version__,
-                   "Accept": "application/json",
-                   #By default cURL sends a "Expect: 100-continue" headers which pycurl_manager
-                   #does not support. Overrhiding this with empty string
-                   "Expect": ""}
+                   "Accept": "*/*",
+                  }
+
         #Quoting the uri since it can contain the request name, and therefore spaces (see #2557)
         uri = urllib.quote(uri)
 
-        if verb != 'GET' and data:
-            headers["Content-length"] = len(data)
-
-        url = self['host'] + uri
-        response, datares = self['conn'].request(url, data, headers, verb=verb, doseq = True)
+#        pycurl set this automatically
+#        if verb != 'GET' and data:
+#            headers["Content-length"] = len(data)
+        url = 'https://' + self['host'] + uri
+        response, datares = self['conn'].request(url, data, headers, verb=verb, doseq = True, ckey=self['proxyfilename'], cert=self['proxyfilename'], \
+                            capath=self.getCACertPath())#, verbose=True)# for debug
 
         if response.status >= 400:
             e = HTTPException()
@@ -125,8 +128,13 @@ class HTTPRequests(dict):
         """
         Prepares the remote URL
         """
-        scheme = 'http'
-        if self['conn'].__class__.__name__.startswith('HTTPS'):
-            scheme = 'https'
+        scheme = 'https'
         netloc = '%s:%s' % (self['conn'].host, self['conn'].port)
         return urlunparse([scheme, netloc, uri, '', '', ''])
+
+    @staticmethod
+    def getCACertPath():
+        if os.environ.has_key("X509_CERT_DIR"):
+            return os.environ["X509_CERT_DIR"]
+        else:
+            raise EnvironmentException("The X509_CERT_DIR variable is not set. Did you forget to source the Grid UI?")

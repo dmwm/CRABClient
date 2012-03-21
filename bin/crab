@@ -56,12 +56,11 @@ class CRABClient(object):
         """
 
         self.sub_commands = getAvailCommands()
-
         usage  = "usage: %prog [options] COMMAND [command-options] [args]"
         epilog = '\nValid commands are: \n'
         for k in sorted(self.sub_commands.keys()):
-            epilog += '  %s' % k
-            epilog += epilog.join( [' (%s)' % name for name in self.sub_commands[k]['names'] if not name == k ] )
+            epilog += '  %s' % self.sub_commands[k].name
+            epilog += ''.join( [' (%s)' % name for name in self.sub_commands[k].shortnames ] )
             epilog += '\n'
         epilog += "To get single command help run:\n  crab command --help|-h\n"
 
@@ -145,19 +144,14 @@ class CRABClient(object):
 
         sub_cmd = None
         try:
-            sub_cmd = next( v for k,v in self.sub_commands.items() if args[0] in v['names'] )
+            sub_cmd = next( v for k,v in self.sub_commands.items() if args[0] in v.shortnames or args[0]==v.name)
         except StopIteration:
             print "'" + str(args[0]) + "' is not a valid command."
             print self.parser.print_help()
             sys.exit(-1)
-        self.cmd = sub_cmd['module'](self.logger, args[1:])
+        self.cmd = sub_cmd(self.logger, args[1:])
 
-        (exitcode, message) = self.cmd()
-        if exitcode != 0:
-            self.logger.error( message )
-
-        return exitcode
-
+        self.cmd()
 
 
 if __name__ == "__main__":
@@ -170,7 +164,8 @@ if __name__ == "__main__":
     exitcode = 1
     client = CRABClient()
     try:
-        exitcode = client()
+        client()
+        exitcode = 0 #no exceptions no errors
     except KeyError, ke:
         # The single quotes in KeyErrors are annoying...
         logging.getLogger('CRAB3:traceback').exception('Caught exception')
@@ -191,13 +186,13 @@ if __name__ == "__main__":
         errmsg = "ERROR: %s (%s): " % (he.reason, he.status)
         ## answer can be a json or not
         try:
-            errmsg += " '%s'" % json.loads(he.result)['message']
+            errmsg += " '%s'" % he.result
         except ValueError:
             pass
         client.logger.error(errmsg)
         client.logger.debug('Command failed with URI: %s' % he.url)
         client.logger.debug('     Input data: %s' % he.req_data)
-        client.logger.debug('     Request headers: %s' % he.req_headers)
+#        client.logger.debug('     Request headers: %s' % he.req_headers)
         logging.getLogger('CRAB3:traceback').exception('Caught exception')
         exitcode = he.status
     except ClientException, ce:

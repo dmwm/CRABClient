@@ -61,11 +61,7 @@ class remote_copy(SubCommand):
         dicttocopy = self.options.inputdict
 
         if not self.options.skipProxy:
-            try:
-                initProxy( None, None, self.options.role, self.options.group, False, self.logger)
-            except CredentialException, ce:
-                msg = "Problem during proxy creation: \n %s " % str(ce._message)
-                return CommandResult(1, msg)
+            _, self.proxyfilename = initProxy( None, None, self.options.role, self.options.group, self.logger)
         else:
             self.logger.debug('Skipping proxy creation and delegation')
 

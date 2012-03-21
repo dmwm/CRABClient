@@ -3,7 +3,7 @@ Contains the logic and wraps calls to WMCore.Credential.Proxy
 """
 
 from WMCore.Credential.Proxy import Proxy
-from client_exceptions import ProxyCreationException
+from CRABClient.client_exceptions import ProxyCreationException
 
 class CredentialInteractions(object):
     '''
@@ -60,12 +60,12 @@ class CredentialInteractions(object):
             proxytimeleft = userproxy.getTimeLeft()
             group , role = userproxy.getUserGroupAndRoleFromProxy( userproxy.getProxyFilename())
 
-            if proxytimeleft > 0 and  group == self.defaultDelegation['group'] and role == self.defaultDelegation['role']:
+            if proxytimeleft > 0 and group == self.defaultDelegation['group'] and role == self.defaultDelegation['role']:
                 self.logger.debug("Proxy created.")
             else:
                 raise ProxyCreationException("Problems creating proxy.")
 
-        return userproxy.getSubject( )
+        return userproxy.getSubject( ), userproxy.getProxyFilename()
 
     def createNewMyProxy(self, timeleftthreshold = 0):
         """

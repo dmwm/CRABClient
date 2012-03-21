@@ -3,17 +3,13 @@ import os
 import pycurl
 
 from CRABClient.Commands import CommandResult
-from CRABClient.Commands.SubCommand import SubCommand
+from CRABClient.Commands.SubCommand import SubCommand, ConfigCommand
 from CRABClient.ServerInteractions import HTTPRequests
 
-class publish(SubCommand):
+class publish(SubCommand, ConfigCommand):
     """ Publish the output datasets in the task identified by
     -t/--task option
     """
-
-    name  = __name__.split('.').pop()
-    names = [name]
-    usage = "usage: %prog " + name + " [options] [args]"
 
     def __call__(self):
 

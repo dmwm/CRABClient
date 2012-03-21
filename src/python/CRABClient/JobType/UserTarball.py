@@ -82,7 +82,10 @@ class UserTarball(object):
         Upload the tarball to the CRABServer
         """
         self.close()
-        ufc = UserFileCache({'endpoint':'http://'+ self.config.General.ufccacheUrl + '/userfilecache'})
+
+        #XXX: I dont like the /userfilecache/data/file hardcoded
+        ufc = UserFileCache({'endpoint':'https://'+ self.config.General.ufccacheUrl + '/crabcache/data/file', \
+                                          "proxyfilename" : self.config.JobType.proxyfilename, "capath" : self.config.JobType.capath, "newrest" : True})
         return ufc.upload(self.tarfile.name)
 
 

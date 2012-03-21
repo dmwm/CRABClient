@@ -6,10 +6,13 @@ import imp
 import json
 import os
 import sys
+import hashlib
+import logging
 
 from CRABClient.ServerInteractions import HTTPRequests
 from PSetTweaks.WMTweak import makeTweak
-from CRABClient.client_exceptions import PSetNotFoundException
+from CRABClient.client_exceptions import ConfigException
+from WMCore.Cache.WMConfigCache import ConfigCache, ConfigCacheException #TODO add to the RPM spec file
 
 class CMSSWConfig(object):
     """
@@ -29,7 +32,7 @@ class CMSSWConfig(object):
 
             if not os.path.isfile( userConfig ):
                 msg = "Cannot find file %s" % userConfig
-                raise PSetNotFoundException( msg )
+                raise ConfigException( msg )
 
             self.logger.debug("Importing CMSSW config %s" % userConfig)
             modPath = imp.find_module(cfgBaseName, [cfgDirName])
@@ -48,34 +51,40 @@ class CMSSWConfig(object):
             self.tweakJson = makeTweak(self.fullConfig.process).jsonise()
 
 
+    #TODO Since we are able to write direcly in couch, how can I guarantee a user does not delete other user's config caches?
     def upload(self, requestConfig):
         """
         Upload the config file to the server
         """
-
         if not self.outputFile:
-            raise RuntimeError('You must write out the config before uploading it')
-
-        url = self.config.General.serverUrl
-        server = HTTPRequests(url)
-        if not server:
-            raise RuntimeError('No server specified for config upload')
+            raise ConfigException('You must write out the config before uploading it')
 
         with open(self.outputFile) as cfgFile:
             configString = cfgFile.read()
 
-        group  = requestConfig['Group']
-        userDN = requestConfig['RequestorDN']
+        try:
+            configCache = ConfigCache(self.config.General.configcacheUrl, self.config.General.configcacheName, usePYCurl=True, \
+                                      ckey=self.config.JobType.proxyfilename, cert=self.config.JobType.proxyfilename, \
+                                      capath=self.config.JobType.capath)
+            configCache.createUserGroup("Analysis", '') #User empty works
 
-        data = {'ConfFile'   : configString, 'PsetHash'    : '',
-                'Group'      : group,        'UserDN'    : userDN,
-                'Label'      : '',           'Description' : '',
-                'PsetTweaks' : self.tweakJson,
-               }
-        jsonString = json.dumps(data, sort_keys=False)
+            configMD5 = hashlib.md5(configString).hexdigest()
+            configCache.document['md5_hash'] = configMD5
+            configCache.document['pset_hash'] = '' #Why that was empty?
+            configCache.attachments['configFile'] = configString
 
-        result = server.post(uri='/crabinterface/crab/config/', data=jsonString)
-        self.logger.debug('Result of POST: %s' % str(result))
+            configCache.setPSetTweaks(json.loads(self.tweakJson))
+
+            configCache.setLabel('')
+            configCache.setDescription('')
+            configCache.save()
+            result = {}
+            result['DocID']  = configCache.document["_id"]
+            result['DocRev'] = configCache.document["_rev"]
+        except ConfigCacheException, ex:
+            msg = "Error: problem uploading the configuration"
+            logging.getLogger('CRAB3:traceback').exception('Caught exception')
+            raise ConfigException("Problem during the upload of the configuration.")
         return result
 
 

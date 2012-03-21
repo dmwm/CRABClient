@@ -2,44 +2,37 @@
 This is simply taking care of job submission
 """
 
-from CRABClient.Commands import CommandResult
-from CRABClient.client_utilities import getJobTypes, createCache, createWorkArea, initProxy, validServerURL, addPlugin
+from CRABClient.client_utilities import getJobTypes, createCache, createWorkArea, initProxy, delegateProxy, validServerURL, addPlugin
 import json, os
 from string import upper
-from CRABClient.Commands.SubCommand import SubCommand
+from CRABClient.Commands.SubCommand import SubCommand, ConfigCommand
 from CRABClient.Commands.server_info import server_info
 from CRABClient.Commands.reg_user import reg_user
 from WMCore.Configuration import loadConfigurationFile, Configuration
 from WMCore.Credential.Proxy import CredentialException
 from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient import SpellChecker
+from CRABClient.ServerInteractions import HTTPRequests
+from CRABClient.client_exceptions import MissingOptionException, ConfigurationException, RESTCommunicationException
 import types
 import imp
+import urllib
 
-class submit(SubCommand):
+class submit(SubCommand, ConfigCommand):
     """ Perform the submission to the CRABServer
     """
 
-    name  = __name__.split('.').pop()
-    usage = "usage: %prog " + name + " [options] [args]"
-    names = [name, 'sub']
-
-    splitMap = {'LumiBased' : 'lumis_per_job', 'EventBased' : 'events_per_job', 'FileBased' : 'files_per_job'}
+    shortnames = ['sub']
 
     def __call__(self):
         valid = False
         configmsg = 'Default'
 
         if not os.path.isfile(self.options.config):
-            return CommandResult(2001, "Configuration file '%s' not found" % self.options.config)
-        try:
-            valid, configmsg = self.loadConfig( self.options.config, self.args )
-        except RuntimeError, re:
-            return self._extractReason( re )
-        else:
-            ## file is there, check if it is ok
-            if not valid:
-                return CommandResult(1, configmsg)
+            raise MissingOptionException("Configuration file '%s' not found" % self.options.config)
+
+        #store the configuration file in self.configuration
+        self.loadConfig( self.options.config, self.args )
 
         requestarea, requestname, self.logfile = createWorkArea( self.logger,
                                                                  getattr(self.configuration.General, 'workArea', None),
@@ -53,14 +46,15 @@ class submit(SubCommand):
             serverurl = self.options.server
         elif getattr( self.configuration.General, 'serverUrl', None ) is not None:
             serverurl = self.configuration.General.serverUrl
-        else:
-            serverurl = 'http://crabserver.cern.ch:8888'
+#TODO: For sure the server url should not be handled here. Find an intelligent way for this
+#        else:
+#            serverurl = 'http://crabserver.cern.ch:8888'
 
         self.createCache( serverurl )
 
         ######### Check if the user provided unexpected parameters ########
         #init the dictionary with all the known parameters
-        SpellChecker.DICTIONARY = SpellChecker.train( [ val['config'] if val['config'] else '' for _, val in self.requestmapper.iteritems()] + \
+        SpellChecker.DICTIONARY = SpellChecker.train( [ val['config'] for _, val in self.requestmapper.iteritems() if val['config'] ] + \
                                                       [ x for x in self._cache['submit']['other-config-params'] ] )
         #iterate on the parameters provided by the user
         for section in self.configuration.listSections_():
@@ -70,51 +64,30 @@ class submit(SubCommand):
                 if not SpellChecker.is_correct( par ):
                     msg = 'The parameter %s is not known.' % par
                     msg += '' if SpellChecker.correct(par) == par else ' Did you mean %s?' % SpellChecker.correct(par)
-                    return CommandResult(2000, msg)
+                    raise ConfigurationException(msg)
 
         #usertarball and cmsswconfig use this parameter and we should set it up in a correct way
         self.configuration.General.serverUrl = serverurl
 
-        infosubcmd = server_info(self.logger, cmdargs = ['-s', serverurl])
-        (code, serverinfo) = infosubcmd()
-        if code is not 0:
-            self.logger.debug("ERROR: failure during retrieval of server information. Stopping submission.")
-            return CommandResult(code, serverinfo)
+#TODO figure out how to do this
+#        infosubcmd = server_info(self.logger, cmdargs = ['-s', serverurl])
+#        (code, serverinfo) = infosubcmd()
+#        if code is not 0:
+#            self.logger.debug("ERROR: failure during retrieval of server information. Stopping submission.")
+#            return CommandResult(code, serverinfo)
 
+        #delegating the proxy (creation done in SubCommand)
         if not self.options.skipProxy:
-            try:
-                voRole = getattr(self.configuration.User, "voRole", "")
-                voGroup = getattr(self.configuration.User, "voGroup", "")
-                userdn, proxy = initProxy(
-                                  serverinfo['server_dn'],
-                                  serverinfo['my_proxy'],
-                                  voRole,
-                                  voGroup,
-                                  True,
-                                  self.logger
-                                )
-            except CredentialException, ce:
-                msg = "Problem during proxy creation: \n %s " % ce._message
-                return CommandResult(1, msg)
+            voRole = getattr(self.configuration.User, "voRole", "")
+            voGroup = getattr(self.configuration.User, "voGroup", "")
+            userdn, self.proxyfilename = initProxy( voRole, voGroup, self.logger )
+#TODO            delegateProxy( serverinfo['server_dn'], serverinfo['my_proxy'], voRole, voGroup, self.logger )
+            delegateProxy( '/C=IT/O=INFN/OU=Host/L=LNL/CN=crabas.lnl.infn.it', 'myproxy.cern.ch', voRole, voGroup, self.logger )
         else:
             userdn = self.options.skipProxy
             self.logger.debug('Skipping proxy creation and delegation. Usind %s as userDN' % userdn)
 
         uniquerequestname = None
-
-        regusercmd = reg_user(self.logger,
-                              cmdargs = [
-                                         '-s', serverurl,
-                                         '-g', getattr(self.configuration.User, "group", self.requestmapper["Group"]["default"]),
-                                         '-t', getattr(self.configuration.User, "team", self.requestmapper["Team"]["default"]),
-                                         '-m', getattr(self.configuration.General, "email", ""),
-                                         '-c', userdn
-                                        ]
-                             )
-        (code, userinfo) = regusercmd()
-        if code is not 0:
-            self.logger.debug("ERROR: user registration failed on the server. Stopping submission.")
-            return CommandResult(code, userinfo)
 
         self.logger.debug("Working on %s" % str(requestarea))
 
@@ -133,44 +106,33 @@ class submit(SubCommand):
                     if mustbetype == type(temp):
                         configreq[param] = temp
                     else:
-                        return CommandResult(1, "Unvalid type " + str(type(temp)) + " for parameter " + self.requestmapper[param]['config'] + ". It is needed a " + str(mustbetype) + ".")
+                        raise ConfigurationException(1, "Invalid type " + str(type(temp)) + " for parameter " + self.requestmapper[param]['config'] + ". It is needed a " + str(mustbetype) + ".")
                 elif self.requestmapper[param]['default'] is not None:
                     configreq[param] = self.requestmapper[param]['default']
                 elif self.requestmapper[param]['required']:
-                    return CommandResult(1, "Missing parameter " + self.requestmapper[param]['config'] + " from the configuration.")
+                    raise ConfigurationException(1, "Missing parameter " + self.requestmapper[param]['config'] + " from the configuration.")
                 else:
                     ## parameter not strictly required
                     pass
-            elif param == "Requestor":
-                if mustbetype == type(userinfo['hn_name']):
-                    configreq["Requestor"] = userinfo['hn_name']
-            elif param == "Username":
-                if mustbetype == type(userinfo['hn_name']):
-                    configreq["Username"] = userinfo['hn_name']
-            elif param == "RequestName":
+            if param == "workflow":
                 if mustbetype == type(requestname):
-                    configreq["RequestName"] = requestname
-            elif param == "RequestorDN":
-                if mustbetype == type(userdn):
-                    configreq["RequestorDN"] = userdn
-            elif param == "BlacklistT1":
+                    configreq["workflow"] = requestname
+            elif param == "savelogsflag":
+                configreq["savelogsflag"] = 1 if temp else 0
+            elif param == "blacklistT1":
                 blacklistT1 = voRole != 't1access'
                 #if the user choose to remove the automatic T1 blacklisting and has not the t1acces role
                 if getattr (self.configuration.Site, 'removeT1Blacklisting', False) and blacklistT1:
                     self.logger.info("WARNING: You disabled the T1 automatic blacklisting without having the t1access role")
                     blacklistT1 = False
-                configreq["BlacklistT1"] = blacklistT1
+                configreq["blacklistT1"] = 1 if blacklistT1 else 0
             elif self.requestmapper[param]['required']:
                 if self.requestmapper[param]['default'] is not None:
                     configreq[param] = self.requestmapper[param]['default']
 
-        unitsPerJob = getattr( self.configuration.Data, "unitsPerJob", None)
-        splitMethod = getattr( self.configuration.Data, "splitting",   None)
-
-        if unitsPerJob is not None:
-            configreq["JobSplitArgs"] = {self.splitMap[splitMethod] : unitsPerJob}
-
         jobconfig = {}
+        self.configuration.JobType.proxyfilename = self.proxyfilename
+        self.configuration.JobType.capath = HTTPRequests.getCACertPath()
         pluginParams = [ self.configuration, self.logger, os.path.join(requestarea, 'inputs') ]
         if getattr(self.configuration.JobType, 'pluginName', None) is not None:
             jobtypes    = getJobTypes()
@@ -185,31 +147,32 @@ class submit(SubCommand):
 
         configreq.update(jobconfig)
 
-        server = HTTPRequests(serverurl)
+        server = HTTPRequests(serverurl, self.proxyfilename)
 
         self.logger.info("Sending the request to the server")
-        self.logger.debug("Submitting %s " % str( json.dumps( configreq, sort_keys = False, indent = 4 ) ) )
+        self.logger.debug("Submitting %s " % str( configreq ) )
 
-        dictresult, status, reason = server.post(self.uri + configreq["RequestName"], json.dumps( configreq, sort_keys = False ) )
+        dictresult, status, reason = server.put( self.uri, data = self._encodeRequest(configreq) )
         self.logger.debug("Result: %s" % dictresult)
         if status != 200:
             msg = "Problem sending the request:\ninput:%s\noutput:%s\nreason:%s" % (str(configreq), str(dictresult), str(reason))
-            return CommandResult(1, msg)
-        elif dictresult.has_key("ID"):
-            uniquerequestname = dictresult["ID"]
+            raise RESTCommunicationException(msg)
+        elif dictresult.has_key("result"):
+            uniquerequestname = dictresult["result"][0]["RequestName"]
         else:
             msg = "Problem during submission, no request ID returned:\ninput:%s\noutput:%s\nreason:%s" \
                    % (str(configreq), str(dictresult), str(reason))
-            return CommandResult(1, msg)
+            raise RESTCommunicationException(msg)
 
-        createCache( requestarea, serverurl.split(':')[0], serverurl.split(':')[1], uniquerequestname )
+        tmpsplit = serverurl.split(':')
+        createCache( requestarea, tmpsplit[0], tmpsplit[1] if len(tmpsplit)>1 else '', uniquerequestname )
 
         self.logger.info("Submission completed")
         self.logger.debug("Request ID: %s " % uniquerequestname)
 
         self.logger.debug("Ended submission")
 
-        return CommandResult(0, None)
+        return uniquerequestname
 
 
     def setOptions(self):
@@ -224,12 +187,6 @@ class submit(SubCommand):
                                  default = './crabConfig.py',
                                  help = "CRAB configuration file",
                                  metavar = "FILE" )
-
-        self.parser.add_option( "-p", "--skip-proxy",
-                                 dest = "skipProxy",
-                                 default = False,
-                                 help = "Skip Grid proxy creation and myproxy delegation",
-                                 metavar = "USERDN" )
 
         self.parser.add_option( "-s", "--server",
                                  dest = "server",
@@ -263,11 +220,6 @@ class submit(SubCommand):
                     float(self.configuration.Data.unitsPerJob)
                 except ValueError:
                     return False, "Crab configuration problem: unitsPerJob must be a valid number, not %s" % self.configuration.Data.unitsPerJob
-
-            if hasattr(self.configuration.Data, 'splitting'):
-                if not self.configuration.Data.splitting in self.splitMap.keys():
-                    return False, "Crab configuration problem: The splitting algorithm must be one of %s" % ', '.join(self.splitMap.keys())
-
         if getattr(self.configuration, 'Site', None) is None:
             return False, "Crab configuration problem: Site section is missing. "
         elif getattr(self.configuration.Site, "storageSite", None) is None:
@@ -292,33 +244,17 @@ class submit(SubCommand):
 
         return True, "Valid configuration"
 
-
-    def _extractReason(self, re):
+    def _encodeRequest( self, configreq):
+        """ Used to encode the request from a dict to a string. Include the code needed for transforming lists in the format required by
+            cmsweb, e.g.:   adduserfiles = ['file1','file2']  ===>  [...]adduserfiles=file1&adduserfiles=file2[...]
         """
-        Get the reason of the failure without the stacktrace. Put the stacktrace in the crab.log file
-        """
-        #get only the error wihtout the stacktrace
-        filename = os.path.abspath( self.options.config )
-        cfgBaseName = os.path.basename( filename ).replace(".py", "")
-        cfgDirName = os.path.dirname( filename )
-        if  not cfgDirName:
-            modPath = imp.find_module(cfgBaseName)
-        else:
-            modPath = imp.find_module(cfgBaseName, [cfgDirName])
-        try:
-            modRef = imp.load_module(cfgBaseName, modPath[0],
-                                     modPath[1], modPath[2])
-        except Exception, ex:
-            msg = str(ex)
-
-        #workarea has not been created yet
-        with open('crab.log', 'w') as of:
-            of.write(str(re))
-
-        return CommandResult(2000, "Configuration error: \n %s.\nSee the crab.log file for more details" % msg)
-
-
-#    def terminate(self, exitcode):
-#        #exitcode 2000 means there was a python syntax error in the configuration.
-#        if exitcode != 2000:
-#            SubCommand.terminate( self , exitcode )
+        listParams = ['adduserfiles', 'addoutputfiles', 'sitewhitelist', 'siteblacklist', 'blockwhitelist', 'blockblacklist'] #TODO automate this using ClientMapping
+        encodedLists = ''
+        for lparam in listParams:
+            if lparam in configreq:
+                if len(configreq[lparam])>0:
+                    encodedLists += ('&%s=' % lparam) + ('&%s=' % lparam).join()
+                del configreq[lparam]
+        encoded = urllib.urlencode(configreq) + urllib.quote(encodedLists)
+        self.logger.debug('Encoded submit request: %s' % encoded)
+        return encoded
