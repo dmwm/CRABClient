@@ -42,7 +42,6 @@ class HTTPRequests(dict):
         that a sub class can override it to have different type of connection
         i.e. - if it needs authentication, or some fancy handler
         """
-        #TODO: support https here
         return RequestHandler()
 
     def get(self, uri = None, data = {}):

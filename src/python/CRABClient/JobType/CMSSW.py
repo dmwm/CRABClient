@@ -48,7 +48,7 @@ class CMSSW(BasicJobType):
             tb.addFiles(userFiles=inputFiles)
             configArguments['adduserfiles'] = [os.path.basename(f) for f in inputFiles]
             uploadResults = tb.upload()
-        configArguments['userisburl'] = 'https://'+ self.config.General.ufccacheUrl + '/userfilecache/data/file?hashkey=' + uploadResults['result'][0]['hashkey']#XXX hardcoded
+        configArguments['userisburl'] = 'https://'+ self.config.General.ufccacheUrl + '/crabcache/data/file?hashkey=' + uploadResults['result'][0]['hashkey']#XXX hardcoded
         configArguments['inputdata'] = self.config.Data.inputDataset
 #        configArguments['ProcessingVersion'] = getattr(self.config.Data, 'processingVersion', None)
 

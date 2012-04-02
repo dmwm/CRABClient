@@ -183,6 +183,7 @@ if __name__ == "__main__":
         logging.getLogger('CRAB3:traceback').exception('Caught exception')
         exitcode = 3
     except HTTPException, he:
+        client.logger.info("Error contacting the server.")
         if he.headers.has_key('X-Error-Detail'):
             client.logger.info('Server answered with: %s' % he.headers['X-Error-Detail'])
         if he.headers.has_key('X-Error-Info'):

@@ -12,7 +12,7 @@ import logging
 from CRABClient.ServerInteractions import HTTPRequests
 from PSetTweaks.WMTweak import makeTweak
 from CRABClient.client_exceptions import ConfigException
-from WMCore.Cache.WMConfigCache import ConfigCache, ConfigCacheException #TODO add to the RPM spec file
+from WMCore.Cache.WMConfigCache import ConfigCache, ConfigCacheException
 
 class CMSSWConfig(object):
     """

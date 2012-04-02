@@ -49,7 +49,7 @@ class submit(SubCommand, ConfigCommand):
 #TODO: For sure the server url should not be handled here. Find an intelligent way for this
         else:
             serverurl = 'http://cmsweb.cern.ch'
-        if not hasattr( self.configuration, 'ufccacheUrl' ):
+        if not hasattr( self.configuration.General, 'ufccacheUrl' ):
             self.configuration.General.ufccacheUrl = serverurl
 
         self.createCache( serverurl )
@@ -255,8 +255,8 @@ class submit(SubCommand, ConfigCommand):
         for lparam in listParams:
             if lparam in configreq:
                 if len(configreq[lparam])>0:
-                    encodedLists += ('&%s=' % lparam) + ('&%s=' % lparam).join()
+                    encodedLists += ('&%s=' % lparam) + ('&%s=' % lparam).join(configreq[lparam])
                 del configreq[lparam]
-        encoded = urllib.urlencode(configreq) + urllib.quote(encodedLists)
+        encoded = urllib.urlencode(configreq) + encodedLists
         self.logger.debug('Encoded submit request: %s' % encoded)
         return encoded
