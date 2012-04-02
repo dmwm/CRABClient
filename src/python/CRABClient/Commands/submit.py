@@ -47,8 +47,10 @@ class submit(SubCommand, ConfigCommand):
         elif getattr( self.configuration.General, 'serverUrl', None ) is not None:
             serverurl = self.configuration.General.serverUrl
 #TODO: For sure the server url should not be handled here. Find an intelligent way for this
-#        else:
-#            serverurl = 'http://crabserver.cern.ch:8888'
+        else:
+            serverurl = 'http://cmsweb.cern.ch'
+        if not hasattr( self.configuration, 'ufccacheUrl' ):
+            self.configuration.General.ufccacheUrl = serverurl
 
         self.createCache( serverurl )
 

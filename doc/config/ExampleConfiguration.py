@@ -21,7 +21,7 @@ config.JobType.psetName    = 'pset.py'
 ## Specific data options
 config.section_("Data")
 config.Data.inputDataset = '/cms/data/set'
-config.Data.processingVersion = 'v1'
+#config.Data.processingVersion = 'v1'
 config.Data.splitting = 'LumiBased'
 config.Data.unitsPerJob = 20
 

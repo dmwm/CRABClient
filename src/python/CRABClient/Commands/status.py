@@ -45,7 +45,7 @@ class status(SubCommand):
 
         self.logger.info("Task Status:\t\t%s" % listresult[Resp.campaignStatus])
         states = listresult[Resp.jobsPerState]
-        total = states['total']
+        total = sum( states[st] for st in states )
         frmt = ''
         resubmissions = 0
         for status in states:
