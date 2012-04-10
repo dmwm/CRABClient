@@ -2,6 +2,7 @@ import os
 from optparse import OptionParser, SUPPRESS_HELP
 
 from CRABClient.client_utilities import loadCache, getWorkArea, initProxy
+from CRABClient.client_exceptions import ConfigurationException
 
 from WMCore.Configuration import loadConfigurationFile, Configuration
 
@@ -83,7 +84,7 @@ class SubCommand(object):
 
     def __call__(self):
         self.logger.info("This is a 'nothing to do' command")
-        raise NotImplementedException
+        raise NotImplementedError
 
 
     def terminate(self, exitcode):
