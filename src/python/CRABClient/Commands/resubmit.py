@@ -9,11 +9,9 @@ class resubmit(SubCommand):
     """ Resubmit the failed jobs of the task identified by
     -t/--task option
     """
-
-    ## name should become automatically generated
-    name  = "resubmit"
-    names = [name]
-    usage = "usage: %prog " + name + " [options] [args]"
+    #TODO delete CommandResult and use raise Exception
+    #TODO use requiresTaskOption in ClientMapping and validateOptions
+    visible = False
 
     def __call__(self):
 

@@ -2,6 +2,7 @@ from CRABClient.Commands import CommandResult, mergeResults
 from CRABClient.Commands.remote_copy import remote_copy
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ServerInteractions import HTTPRequests
+from CRABClient.client_exceptions import ConfigurationException
 import os
 
 class getoutput(SubCommand):
@@ -13,12 +14,6 @@ class getoutput(SubCommand):
     shortnames = ['output', 'out']
 
     def __call__(self):
-
-        ## check input options and set destination directory
-
-        if self.options.task is None:
-            return CommandResult(2001, 'ERROR: Task option is required')
-
         #Figuring out the destination directory
         dest = os.path.join(self.requestarea, 'results')
         if self.options.outputpath is not None:
@@ -29,11 +24,6 @@ class getoutput(SubCommand):
 
         #Creating the destination directory if necessary
         self.logger.info("Setting the destination directory to %s " % dest )
-        if not os.path.exists( dest ):
-            self.logger.debug("Creating directory %s " % dest)
-            os.makedirs( dest )
-        elif not os.path.isdir( dest ):
-            return CommandResult(1, 'Destination directory is a file')
 
         #Retrieving output files location from the server
         self.logger.debug('Retrieving output file location for %s of task %s' % ( self.options.quantity, self.cachedinfo['RequestName'] ) )
@@ -43,7 +33,7 @@ class getoutput(SubCommand):
 
         if status != 200:
             msg = "Problem retrieving getoutput information from the server:\ninput:%s\noutput:%s\nreason:%s" % (str(inputdict), str(dictresult), str(reason))
-            return CommandResult(1, msg)
+            raise ConfigurationException(msg)
 
         totalfiles = len( dictresult['result'] )
         cpresults = []
@@ -55,12 +45,9 @@ class getoutput(SubCommand):
         if len(workflow) > 0:
             self.logger.info("Retrieving %s files" % totalfiles )
             copyoutput = remote_copy( self.logger, arglist )
-            cpresults.append( copyoutput() )
-        else:
-            cpresults.append( CommandResult(0, '') )
+
         if totalfiles == 0:
-            self.logger.info("No output file to retrieve for requested range")
-        return mergeResults( cpresults )
+            self.logger.info("No output file to retrieve")
 
 
     def setOptions(self):
@@ -69,11 +56,6 @@ class getoutput(SubCommand):
 
         This allows to set specific command options
         """
-        self.parser.add_option( "-t", "--task",
-                                 dest = "task",
-                                 default = None,
-                                 help = "Same as -c/-continue" )
-
         self.parser.add_option( '-q', '--quantity',
                                 dest = 'quantity',
                                 default = -1,
@@ -84,3 +66,11 @@ class getoutput(SubCommand):
                                 default = None,
                                 help = 'Where the output files retrieved will be stored in the local file system',
                                 metavar = 'DIRECTORY' )
+
+    def validateOptions(self):
+        #Creating the destination directory if necessary
+        if not os.path.exists( dest ):
+            self.logger.debug("Creating directory %s " % dest)
+            os.makedirs( dest )
+        elif not os.path.isdir( dest ):
+            raise ConfigurationException('Destination directory is a file')

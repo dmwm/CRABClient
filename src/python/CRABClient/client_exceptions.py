@@ -33,13 +33,13 @@ class InputFileNotFoundException(ClientException):
 
 class ConfigurationException(ClientException):
     """
-    Raised when the task directory is not found
+    Raised when there is an issue with configuration/command line parameters
     """
     exitcode = 3008
 
 class MissingOptionException(ConfigurationException):
     """
-    Raised when the task directory is not found
+    Raised when a mandatory option is not found in the command line
     """
     exitcode = 3008
 

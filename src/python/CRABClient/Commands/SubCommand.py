@@ -3,6 +3,7 @@ from optparse import OptionParser, SUPPRESS_HELP
 
 from CRABClient.client_utilities import loadCache, getWorkArea, initProxy
 from CRABClient.client_exceptions import ConfigurationException
+from CRABClient.ClientMapping import mapping
 
 from WMCore.Configuration import loadConfigurationFile, Configuration
 
@@ -18,16 +19,18 @@ class SubCommand(object):
     #Default command name is the name of the command class, but it is also possible to set the name attribute in the subclass
     #if the command name does not correspond to the class name (getlog => get-log)
 
-    _cache = {}
-    def create_cached(cls, cmd):
-        if cls._cache == {}:
-            from CRABClient.ClientMapping import defaulturi
-            cls._cache = defaulturi
-        if cmd in cls._cache:
-            return cls._cache[cmd]
-        return None
-    create_cached = classmethod(create_cached)
-
+    def loadMapping(self):
+        """
+        Load the command mapping from ClientMapping
+        """
+        #XXX Isn't it better to just copy the mapping with self.mapping = mapping[self.name] instead of copying each parameter?
+        if self.name in mapping:
+            self.uri = mapping[self.name]['uri']
+            if 'map' in mapping[self.name]:
+                self.requestmapper = mapping[self.name]['map']
+            self.requiresTaskOption = 'requiresTaskOption' in mapping[self.name] and mapping[self.name]['requiresTaskOption']
+            if 'other-config-params' in mapping[self.name]:
+                self.otherConfigParams = mapping[self.name]['other-config-params']
 
     def __init__(self, logger, cmdargs = []):
         """
@@ -40,13 +43,20 @@ class SubCommand(object):
         self.logfile = ''
         self.logger.debug("Executing command: '%s'" % str(self.name))
 
+        ##Get the mapping
+        self.loadMapping()
+
         self.parser = OptionParser(description = self.__doc__, usage = self.usage, add_help_option = True)
         ## TODO: check on self.name should be removed (creating another abstraction in between or refactoring this)
         if self.name == 'submit':
             self.parser.disable_interspersed_args()
         self.setSuperOptions()
 
+        ##Parse the command line parameters
         (self.options, self.args) = self.parser.parse_args( cmdargs )
+
+        ##Validate the command line parameters before initing the proxy
+        self.validateOptions()
 
         ##The submit command handles this stuff later because it needs to load the config
         ##and to figure out which server to contact.
@@ -62,8 +72,6 @@ class SubCommand(object):
     def createCache(self, serverurl = None):
         """ Loads the ClientMapping and set up the server url
         """
-        cmdmap = None
-
         ## if the server name is an CLI option
         if hasattr(self.options, 'server') and self.options.server is not None:
             self.serverurl = self.options.server
@@ -73,15 +81,6 @@ class SubCommand(object):
             self.cachedinfo, self.logfile = loadCache(self.requestarea, self.logger)
             port = ':' + self.cachedinfo['Port'] if self.cachedinfo['Port'] else ''
             self.serverurl = self.cachedinfo['Server'] + port
-
-        ## if we have got a server url from the parameter list we create the cache. Submit uses this
-        cmdmap = SubCommand.create_cached(self.name)
-
-        ## not all the commands need an uri (e.g.: remote_copy)
-        if cmdmap:
-            self.uri = cmdmap['uri']
-            if 'map' in cmdmap:
-                self.requestmapper = cmdmap['map']
 
 
     def __call__(self):
@@ -100,17 +99,34 @@ class SubCommand(object):
 
 
     def setSuperOptions(self):
+        try:
+            self.setOptions()
+        except NotImplementedError:
+            pass
+
         self.parser.add_option( "-p", "--skip-proxy",
                                  dest = "skipProxy",
                                  default = False,
                                  help = "Skip Grid proxy creation and myproxy delegation",
                                  metavar = "USERDN" )
 
-        try:
-            self.setOptions()
-        except NotImplementedError:
-            pass
+        if self.requiresTaskOption:
+            self.parser.add_option( "-t", "--task",
+                                     dest = "task",
+                                     default = None,
+                                     help = "Same as -c/-continue" )
 
+
+
+    def validateOptions(self):
+        """
+        __validateOptions__
+
+        Validate the command line options of the command
+        Raise a ConfigurationException in case of error, does not do anything if ok
+        """
+        if self.requiresTaskOption and not self.options.task:
+            raise MissingOptionException('ERROR: Task option is required')
 
 class ConfigCommand:
     """ Commands which needs to load the configuration file (e.g.: submit, publish) must subclass ConfigCommand
@@ -175,5 +191,6 @@ class ConfigCommand:
         __validateConfig__
 
         Checking if needed input parameters are there
+        Not all the commands requires a configuration
         """
         return True, "Valid configuration"

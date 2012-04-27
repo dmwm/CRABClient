@@ -10,6 +10,9 @@ class publish(SubCommand, ConfigCommand):
     """ Publish the output datasets in the task identified by
     -t/--task option
     """
+    #TODO delete CommandResult and use raise Exception
+    #TODO use requiresTaskOption in ClientMapping and validateOptions
+    visible = False
 
     def __call__(self):
 

@@ -7,11 +7,9 @@ class kill(SubCommand):
     """
     Simply call the server side of the kill
     """
-
-    name  = __name__.split('.').pop()
-    names = [name, 'kill']
-    usage = "usage: %prog " + name + " [options] [args]"
-
+    #TODO delete CommandResult and use raise Exception
+    #TODO use requiresTaskOption in ClientMapping and validateOptions
+    visible = False
 
     def __call__(self):
         if self.options.task is None:

@@ -11,6 +11,9 @@ from CRABClient.ServerInteractions import HTTPRequests
 class report(SubCommand):
     """ Get the list of good lumis for your task identified by -t/--task option
     """
+    #TODO delete CommandResult and use raise Exception
+    #TODO use requiresTaskOption in ClientMapping and validateOptions
+    visible = False
 
 
     def __call__(self):

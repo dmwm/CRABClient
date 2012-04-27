@@ -18,9 +18,6 @@ class status(SubCommand):
     states = ['submitted', 'failure', 'queued', 'success']
     abbreviations = {'submitted' : 's', 'failure': 'f', 'queued' : 'q', 'success' : 'u'}
     def __call__(self):
-        if not self.options.task:
-            raise MissingOptionException('ERROR: Task option is required')
-
         server = HTTPRequests(self.serverurl, self.proxyfilename)
 
         self.logger.debug('Looking up detailed status of task %s' % self.cachedinfo['RequestName'])
@@ -35,7 +32,7 @@ class status(SubCommand):
         listresult = dictresult['result']
 
         if self.options.site or self.options.failure:
-            errresult, status, reason = server.get('/crabserver/data/workflow', \
+            errresult, status, reason = server.get('/crabserver/workflow', \
                                 data = { 'workflow' : self.cachedinfo['RequestName'], 'subresource' : 'errors', 'shortformat' : 1 if self.options.failure else 0})
             if status != 200:
                 msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(self.cachedinfo['RequestName']), str(errresult), str(reason))
@@ -120,11 +117,6 @@ class status(SubCommand):
 
         This allows to set specific command options
         """
-        self.parser.add_option( "-t", "--task",
-                                 dest = "task",
-                                 default = None,
-                                 help = "Same as -c/-continue" )
-
         for status in self.states:
             self.parser.add_option( "-"+self.abbreviations[status], "--"+status,
                                  dest = status,

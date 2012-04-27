@@ -10,14 +10,12 @@ class postmortem(SubCommand):
     """ Retrieve post mortem infromation of all the jobs in the task, or detailed
     information of just one job. The is identified by -t/--task option
     """
-
-    name  = "get-error"
-    names = [name, 'error']
-    usage = "usage: %prog " + name + " [options] [args]"
-
+    #TODO delete CommandResult and use raise Exception
+    #TODO use requiresTaskOption in ClientMapping
+    visible = False
+    names = ['err', 'error']
 
     def __call__(self):
-
         if self.options.task is None:
             return CommandResult(2001, 'ERROR: Task option is required')
 

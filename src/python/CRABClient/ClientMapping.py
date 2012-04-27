@@ -13,7 +13,7 @@ the input data type.
 
 import time
 
-defaulturi = {
+mapping = {
     'submit' :  { 'uri': '/crabserver/workflow',
                   'map':  {
                             "jobtype"       : {"default": "Analysis",       "config": None,                     "type": "StringType",  "required": True },
@@ -32,7 +32,7 @@ defaulturi = {
                             "blockblacklist"    : {"default": None,             "config": 'Data.blockBlacklist',    "type": "ListType",    "required": False},
                             "splitalgo"         : {"default": None,             "config": 'Data.splitting',         "type": "StringType",  "required": False},
                             "algoargs"          : {"default": None,             "config": 'Data.unitsPerJob',       "type": "IntType",  "required": False},
-                            "addoutputfiles"      : {"default": [],               "config": 'JobType.outputFiles',    "type": "ListType",    "required": False},
+                            "addoutputfiles"    : {"default": [],               "config": 'JobType.outputFiles',    "type": "ListType",    "required": False},
                             "blacklistT1"       : {"default": True,             "config": None,                     "type": "BooleanType", "required": False},
                           },
 
@@ -42,13 +42,14 @@ defaulturi = {
                                            "JobType.inputFiles", "JobType.pyCfgParams",
                                            "Data.unitsPerJob", "Data.splitting", "Data.inputDataset", "Data.lumiMask",
                                            "User.email", "Data.publishDbsUrl", "Site.removeT1Blacklisting", "General.configcacheUrl" , "General.configcacheName"
-                                          ]
+                                          ],
+                  'requiresTaskOption' : False
                 },
 #    'get-log' :  {'uri': '/crabinterface/crab/log/'},
-    'getoutput'   : {'uri': '/crabserver/workflow'},
+    'getoutput'   : {'uri': '/crabserver/workflow', 'requiresTaskOption' : True},
 #    'reg_user'    : {'uri': '/crabinterface/crab/user/'},
 #    'server_info' : {'uri': '/crabinterface/crab/info/'},
-    'status' : {'uri': '/crabserver/campaign'},
+    'status' : {'uri': '/crabserver/campaign', 'requiresTaskOption' : True},
 #    'upload' : {'uri': '/crabinterface/crab/uploadUserSandbox'},
 #    'get-error': {'uri': '/crabinterface/crab/jobErrors/'},
 #    'report': {'uri': '/crabinterface/crab/goodLumis/'},

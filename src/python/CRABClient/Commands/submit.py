@@ -57,7 +57,7 @@ class submit(SubCommand, ConfigCommand):
         ######### Check if the user provided unexpected parameters ########
         #init the dictionary with all the known parameters
         SpellChecker.DICTIONARY = SpellChecker.train( [ val['config'] for _, val in self.requestmapper.iteritems() if val['config'] ] + \
-                                                      [ x for x in self._cache['submit']['other-config-params'] ] )
+                                                      [ x for x in self.otherConfigParams ] )
         #iterate on the parameters provided by the user
         for section in self.configuration.listSections_():
             for attr in getattr(self.configuration, section).listSections_():

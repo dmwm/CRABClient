@@ -9,6 +9,9 @@ class getlog(SubCommand):
     """ Retrieve the log files of the jobs specified by -r/--range option part of the
     task identified by -t/--task option
     """
+    #TODO delete CommandResult and use raise Exception
+    #TODO use requiresTaskOption in ClientMapping and validateOptions
+    visible = False
 
     shortnames = ['log']
 
