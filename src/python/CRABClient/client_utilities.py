@@ -20,6 +20,12 @@ from CRABClient.client_exceptions import TaskNotFoundException, CachefileNotFoun
 from optparse import OptionValueError
 
 
+class colors:
+    RED = '\033[91m'
+    GREEN = '\033[92m'
+    NORMAL = '\033[0m'
+
+
 def getPlugins(namespace, plugins, skip):
     """
     _getPlugins_

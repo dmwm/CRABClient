@@ -21,8 +21,7 @@ class status(SubCommand):
         if not self.options.task:
             raise MissingOptionException('ERROR: Task option is required')
 
-        port = ':' + self.cachedinfo['Port'] if self.cachedinfo['Port'] else '' #TODO handle this in a global way for other commands
-        server = HTTPRequests(self.cachedinfo['Server'] + port, self.proxyfilename)
+        server = HTTPRequests(self.serverurl, self.proxyfilename)
 
         self.logger.debug('Looking up detailed status of task %s' % self.cachedinfo['RequestName'])
         dictresult, status, reason = server.get(self.uri, data = { 'campaign' : self.cachedinfo['RequestName']})

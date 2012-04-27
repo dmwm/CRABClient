@@ -14,7 +14,7 @@ the input data type.
 import time
 
 defaulturi = {
-    'submit' :  { 'uri': '/crabserver/data/workflow',
+    'submit' :  { 'uri': '/crabserver/workflow',
                   'map':  {
                             "jobtype"       : {"default": "Analysis",       "config": None,                     "type": "StringType",  "required": True },
                             "workflow"       : {"default": None,             "config": None,                     "type": "StringType",  "required": True },
@@ -45,10 +45,10 @@ defaulturi = {
                                           ]
                 },
 #    'get-log' :  {'uri': '/crabinterface/crab/log/'},
-#    'get-output'   : {'uri': '/crabinterface/crab/data/'},
+    'getoutput'   : {'uri': '/crabserver/workflow'},
 #    'reg_user'    : {'uri': '/crabinterface/crab/user/'},
 #    'server_info' : {'uri': '/crabinterface/crab/info/'},
-    'status' : {'uri': '/crabserver/data/campaign'},
+    'status' : {'uri': '/crabserver/campaign'},
 #    'upload' : {'uri': '/crabinterface/crab/uploadUserSandbox'},
 #    'get-error': {'uri': '/crabinterface/crab/jobErrors/'},
 #    'report': {'uri': '/crabinterface/crab/goodLumis/'},

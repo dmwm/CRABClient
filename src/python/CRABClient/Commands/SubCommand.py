@@ -60,20 +60,22 @@ class SubCommand(object):
 
 
     def createCache(self, serverurl = None):
+        """ Loads the ClientMapping and set up the server url
+        """
         cmdmap = None
 
         ## if the server name is an CLI option
         if hasattr(self.options, 'server') and self.options.server is not None:
-            serverurl = self.options.server
+            self.serverurl = self.options.server
         ## but the server name can be cached in some cases
         elif hasattr(self.options, 'task') and self.options.task:
             self.requestarea, self.requestname = getWorkArea( self.options.task )
             self.cachedinfo, self.logfile = loadCache(self.requestarea, self.logger)
-            serverurl = self.cachedinfo['Server'] + ':' + str(self.cachedinfo['Port'])
+            port = ':' + self.cachedinfo['Port'] if self.cachedinfo['Port'] else ''
+            self.serverurl = self.cachedinfo['Server'] + port
 
-        ## if we have got a server url we create the cache
-        if serverurl:
-            cmdmap = SubCommand.create_cached(self.name)
+        ## if we have got a server url from the parameter list we create the cache. Submit uses this
+        cmdmap = SubCommand.create_cached(self.name)
 
         ## not all the commands need an uri (e.g.: remote_copy)
         if cmdmap:

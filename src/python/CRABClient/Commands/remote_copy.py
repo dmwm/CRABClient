@@ -11,6 +11,7 @@ import multiprocessing, Queue
 import time
 
 from WMCore.FwkJobReport.FileInfo import readAdler32, readCksum
+from CRABClient.client_utilities import colors
 
 class remote_copy(SubCommand):
 
@@ -44,16 +45,6 @@ class remote_copy(SubCommand):
                                 dest = "group",
                                 default = None )
 
-        self.parser.add_option( "-e", "--extension",
-                                dest = "extension",
-                                default = 'root' )
-
-        self.parser.add_option( "-p", "--skip-proxy",
-                                action = "store_true",
-                                dest = "skipProxy",
-                                default = None,
-                                help = "Skip Grid proxy creation and myproxy delegation")
-
 
     def __call__(self):
         globalExitcode = -1
@@ -61,7 +52,7 @@ class remote_copy(SubCommand):
         dicttocopy = self.options.inputdict
 
         if not self.options.skipProxy:
-            _, self.proxyfilename = initProxy( None, None, self.options.role, self.options.group, self.logger)
+            _, self.proxyfilename = initProxy( self.options.role, self.options.group, self.logger)
         else:
             self.logger.debug('Skipping proxy creation and delegation')
 
@@ -76,19 +67,14 @@ class remote_copy(SubCommand):
         p = multiprocessing.Process(target = processWorker, args = (input, result))
         p.start()
 
-        alljobs = map(int, dicttocopy.keys())
-        alljobs.sort()
-
-        self.logger.info("Starting retrieving remote files for requested jobs %s " % str(alljobs))
         ## this can be parallelized starting more processes
-        for jobid in alljobs:
-            self.logger.debug("Processing job %i" % jobid)
-            lfn = dicttocopy[str(jobid)]
-            localFilename = os.path.join(self.options.destination, str(jobid) + '.' + self.options.extension)
-            cmd = '%s %s file://%s' % (lcgCmd, lfn['pfn'], localFilename)
-            self.logger.info("Retrieving file '%s' " % lfn['pfn'])
+        for file in dicttocopy:
+            fileid = file['pfn'].split('/')[-1]
+            localFilename = os.path.join(self.options.destination, str(fileid))
+            cmd = '%s %s file://%s' % (lcgCmd, file['pfn'], localFilename)
+            self.logger.info("Retrieving file '%s' " % fileid)
             self.logger.debug("Executing '%s' " % cmd)
-            input.put((jobid, cmd, ''))
+            input.put((fileid, cmd))
 
             res = None
             stdout   = ''
@@ -104,41 +90,40 @@ class remote_copy(SubCommand):
                 stdout   = ''
                 exitcode = -1
 
-            self.logger.debug("Verify command result %i" % jobid)
+            self.logger.debug("Verify command result")
 
             checkout = simpleOutputCheck(stdout)
             checkerr = simpleOutputCheck(stderr)
-
             checksumOK = False
-            if hasattr(lfn, 'checksums'):
-                self.logger.debug("Checksum '%s'" %str(lfn['checksums']))
-                checksumOK = checksumChecker(localFilename, lfn['checksums'])
+            if hasattr(file, 'checksum'):
+                self.logger.debug("Checksum '%s'" %str(file['checksum']))
+                checksumOK = checksumChecker(localFilename, file['checksum'])
             else:
                 checksumOK = True # No checksums provided
 
             if exitcode is not 0 or (len(checkout) + len(checkerr)) > 0:
                 ## check to track srmv1 issues, probably this is strong enough to find all of them
                 ## REMOVE this check as soon as sites will have switched to srmv2
-                if ('srmv1' in lfn['pfn'] or 'managerv1' in lfn['pfn']) and len( filter(lambda elem: elem.find('communication error on send')!=-1, checkerr) ) > 0:
+                if ('srmv1' in file['pfn'] or 'managerv1' in file['pfn']) and len( filter(lambda elem: elem.find('communication error on send')!=-1, checkerr) ) > 0:
                     msgFail  = '\n\tThe site storage is using srmv1, which is deprecated and not anymore supported.\n'
-                    msgFail += '\tPlease report this issue with the PFN provided here below.\n\tPFN: "%s".' % str(lfn['pfn'])
-                    finalresults[jobid] = {'exit': False, 'lfn': lfn, 'error': msgFail, 'dest': None}
+                    msgFail += '\tPlease report this issue with the PFN provided here below.\n\tPFN: "%s".' % str(file['pfn'])
+                    finalresults[fileid] = {'exit': False, 'error': msgFail, 'dest': None}
                 else:
-                    finalresults[jobid] = {'exit': False, 'lfn': lfn, 'output': checkout, 'error' : checkerr, 'dest': None}
-                self.logger.info("Failed retrieving job %i" % jobid)
-                if len(finalresults[jobid]['output']) > 0:
+                    finalresults[fileid] = {'exit': False, 'output': checkout, 'error' : checkerr, 'dest': None}
+                self.logger.info(colors.RED + "Failed retrieving file %s" % fileid + colors.NORMAL)
+                if len(finalresults[fileid]['output']) > 0:
                     self.logger.info("Output:")
-                    [self.logger.info("\t %s" % x) for x in finalresults[jobid]['output']]
-                if len(finalresults[jobid]['error']) > 0:
+                    [self.logger.info("\t %s" % x) for x in finalresults[fileid]['output']]
+                if len(finalresults[fileid]['error']) > 0:
                     self.logger.info("Error:")
-                    [self.logger.info("\t %s" % x) for x in finalresults[jobid]['error']]
+                    [self.logger.info("\t %s" % x) for x in finalresults[fileid]['error']]
             elif not checksumOK:
-                msg = "Checksum failed for job " + str(jobid)
-                finalresults[jobid] = {'exit': False, 'lfn': lfn, 'error': msg, 'dest': None}
+                msg = "Checksum failed for job " + str(fileid)
+                finalresults[fileid] = {'exit': False, 'error': msg, 'dest': None}
                 self.logger.info( msg )
             else:
-                finalresults[jobid] = {'exit': True, 'lfn': lfn, 'dest': os.path.join(self.options.destination, str(jobid) + '.' + self.options.extension), 'error': None}
-                self.logger.info("Successfully retrived file for job %i" % jobid)
+                finalresults[fileid] = {'exit': True, 'dest': os.path.join(self.options.destination, str(fileid)), 'error': None}
+                self.logger.info(colors.GREEN + "Successfully retrived file %s" % fileid + colors.NORMAL)
 
         try:
             input.put( ('-1', 'STOP', 'control') )
@@ -149,12 +134,12 @@ class remote_copy(SubCommand):
             p.terminate()
             time.sleep(1)
 
-        for jobid in finalresults:
-            if finalresults[jobid]['exit']:
-                self.logger.info("Job %i: file in %s" %(jobid, finalresults[jobid]['dest']))
+        for fileid in finalresults:
+            if finalresults[fileid]['exit']:
+                self.logger.info("File %s has been placed in %s" %(fileid, finalresults[fileid]['dest']))
             else:
-                self.logger.debug(str(finalresults[jobid]))
-                self.logger.debug("Job %i: transfer problem %s" %(jobid, str(finalresults[jobid]['error'])))
+                self.logger.debug(str(finalresults[fileid]))
+                self.logger.debug("File %s: transfer problem %s" %(fileid, str(finalresults[fileid]['error'])))
                 globalExitcode = 1
 
         if len(finalresults.keys()) is 0:
@@ -201,8 +186,11 @@ def simpleOutputCheck(outlines):
              line.find("unrecognized option") != -1 or \
              line.find("invalid option") != -1:
             problems.append(line)
-        elif line.find("timeout") != -1:
+        elif line.find("timeout") != -1 or \
+             line.find("timed out") != -1:
             problems.append(line)
+
+
     return problems
 
 
@@ -226,10 +214,9 @@ def processWorker(input, results):
     jsout = None
 
     while True:
-        type = ''
         workid = None
         try:
-            workid, work, type = input.get()
+            pfn, work = input.get()
             t1 = time.time()
         except (EOFError, IOError):
             crashMessage = "Hit EOF/IO in getting new work\n"
@@ -246,7 +233,7 @@ def processWorker(input, results):
         stdout, stderr = pipe.communicate()
 
         results.put( {
-                       'workid': workid,
+                       'pfn': pfn,
                        'stdout': stdout,
                        'stderr': stderr,
                        'exit':   pipe.returncode
