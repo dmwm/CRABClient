@@ -14,9 +14,8 @@ class status(SubCommand):
     """
 
     shortnames = ['st']
-
     states = ['submitted', 'failure', 'queued', 'success']
-    abbreviations = {'submitted' : 's', 'failure': 'f', 'queued' : 'q', 'success' : 'u'}
+
     def __call__(self):
         server = HTTPRequests(self.serverurl, self.proxyfilename)
 
@@ -68,15 +67,18 @@ class status(SubCommand):
                 self._printSiteErrors(errresult, site, total)
 
         for status in self.states:
-            if listresult[Resp.detailsPerState].has_key(status) and listresult[Resp.detailsPerState][status].has_key('retry'):
-                resubmissions += listresult[Resp.detailsPerState][status]['retry']
-            if getattr(self.options, status) and listresult[Resp.detailsPerState].has_key(status):
+            if listresult[Resp.detailsPerState].has_key(status):
+                if listresult[Resp.detailsPerState][status].has_key('retry'):
+                    resubmissions += listresult[Resp.detailsPerState][status]['retry']
                 states = listresult[Resp.detailsPerState][status]
                 frmt = status + " breakdown:\t"
+                detailsFound = False
                 for st in states:
                     if st != 'first' and st != 'retry':
                         frmt += st + '   %.1f %%\t' % ( states[st]*100/total )
-                self.logger.info(frmt)
+                    detailsFound = True
+                if detailsFound:#print only if there are details
+                    self.logger.info(frmt)
 
         if resubmissions:
             self.logger.info('%.1f %% using the automatic resubmission' % (resubmissions*100/total))
@@ -117,50 +119,14 @@ class status(SubCommand):
 
         This allows to set specific command options
         """
-        for status in self.states:
-            self.parser.add_option( "-"+self.abbreviations[status], "--"+status,
-                                 dest = status,
+        self.parser.add_option( "-f", "--failure",
+                                 dest = 'failure',
                                  action = "store_true",
                                  default = False,
-                                 help = "Provide details about %s jobs" % status)
+                                 help = "Provide details about failed jobs")
 
         self.parser.add_option( "-i", "--site",
                                  dest = "site",
                                  action = "store_true",
                                  default = False,
                                  help = "Provide details about sites" )
-
-
-
-    def readableRange(self, jobArray):
-        """
-        Take array of job numbers and concatenate 1,2,3 to 1-3
-        return string
-        """
-        def readableSubRange(subRange):
-            """
-            Return a string for each sub range
-            """
-            if len(subRange) == 1:
-                return "%s" % (subRange[0])
-            else:
-                return "%s-%s" % (subRange[0], subRange[len(subRange)-1])
-
-        # Sort the list and generate a structure like [[1], [4,5,6], [10], [12]]
-        jobArray.sort()
-
-        previous = jobArray[0]-1
-        listOfRanges = []
-        outputJobs = []
-        for job in jobArray:
-            if previous+1 == job:
-                outputJobs.append(job)
-            else:
-                listOfRanges.append(outputJobs)
-                outputJobs = [job]
-            previous = job
-        if outputJobs:
-            listOfRanges.append(outputJobs)
-
-        # Convert the structure to a readable string
-        return ','.join([readableSubRange(x) for x in listOfRanges])
