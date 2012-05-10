@@ -2,7 +2,7 @@ import os
 from optparse import OptionParser, SUPPRESS_HELP
 
 from CRABClient.client_utilities import loadCache, getWorkArea, initProxy
-from CRABClient.client_exceptions import ConfigurationException
+from CRABClient.client_exceptions import ConfigurationException, MissingOptionException
 from CRABClient.ClientMapping import mapping
 
 from WMCore.Configuration import loadConfigurationFile, Configuration

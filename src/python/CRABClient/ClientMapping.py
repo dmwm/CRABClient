@@ -45,8 +45,9 @@ mapping = {
                                           ],
                   'requiresTaskOption' : False
                 },
-#    'get-log' :  {'uri': '/crabinterface/crab/log/'},
-    'getoutput'   : {'uri': '/crabserver/workflow', 'requiresTaskOption' : True},
+    'getlog'       : {'uri': '/crabserver/workflow', 'requiresTaskOption' : True},
+    'getoutput'    : {'uri': '/crabserver/workflow', 'requiresTaskOption' : True},
+    'remote_copy'  : {'uri': None, 'requiresTaskOption' : False},
 #    'reg_user'    : {'uri': '/crabinterface/crab/user/'},
 #    'server_info' : {'uri': '/crabinterface/crab/info/'},
     'status' : {'uri': '/crabserver/campaign', 'requiresTaskOption' : True},
