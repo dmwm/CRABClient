@@ -88,8 +88,8 @@ class submit(SubCommand, ConfigCommand):
             voRole = getattr(self.configuration.User, "voRole", "")
             voGroup = getattr(self.configuration.User, "voGroup", "")
             userdn, self.proxyfilename = initProxy( voRole, voGroup, self.logger )
-#TODO            delegateProxy( serverinfo['server_dn'], serverinfo['my_proxy'], voRole, voGroup, self.logger )
-            delegateProxy( '/C=IT/O=INFN/OU=Host/L=LNL/CN=crabas.lnl.infn.it', 'myproxy.cern.ch', voRole, voGroup, self.logger )
+            #XXX Temporary solution. Need to figure out hot to delegate credential to the several hypothetical WMAgent out there
+            delegateProxy( self.configuration.General.delegateTo, 'myproxy.cern.ch', voRole, voGroup, self.logger )
         else:
             userdn = self.options.skipProxy
             self.logger.debug('Skipping proxy creation and delegation. Usind %s as userDN' % userdn)
@@ -215,6 +215,9 @@ class submit(SubCommand, ConfigCommand):
 
         if getattr(self.configuration, 'General', None) is None:
             return False, "Crab configuration problem: general section is missing. "
+        else:
+            if not getattr(self.configuration.General, 'delegateTo', None):
+                return False, "Crab configuration problem: General.delegateTo parameter is missing. "
 
         if getattr(self.configuration, 'User', None) is None:
             return False, "Crab configuration problem: User section is missing ."

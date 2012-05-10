@@ -10,6 +10,7 @@ config = Configuration()
 ## General options for the client
 config.section_("General")
 config.General.requestName   = 'MyAnalysis_1'
+config.General.delegateTo   = 'AgentDN'
 #config.General.serverUrl     = 'yourserver:0000'
 
 ## Specific option of the job type
