@@ -51,6 +51,11 @@ class submit(SubCommand, ConfigCommand):
             serverurl = 'http://cmsweb.cern.ch'
         if not hasattr( self.configuration.General, 'ufccacheUrl' ):
             self.configuration.General.ufccacheUrl = serverurl
+        if not hasattr( self.configuration.General, 'configcacheUrl' ):
+            #https is required because configcache does not use ServerInteractions
+            self.configuration.General.configcacheUrl = 'https://' + serverurl + '/couchdb'
+        if not hasattr( self.configuration.General, 'configcacheName' ):
+            self.configuration.General.configcacheName = 'reqmgr_config_cache'
 
         self.createCache( serverurl )
 
@@ -108,7 +113,8 @@ class submit(SubCommand, ConfigCommand):
                     if mustbetype == type(temp):
                         configreq[param] = temp
                     else:
-                        raise ConfigurationException(1, "Invalid type " + str(type(temp)) + " for parameter " + self.requestmapper[param]['config'] + ". It is needed a " + str(mustbetype) + ".")
+                        raise ConfigurationException(1, "Invalid type " + str(type(temp)) + " for parameter " + self.requestmapper[param]['config'] \
+                                   + ". It is needed a " + str(mustbetype) + ".")
                 elif self.requestmapper[param]['default'] is not None:
                     configreq[param] = self.requestmapper[param]['default']
                 elif self.requestmapper[param]['required']:

@@ -11,7 +11,10 @@ config = Configuration()
 config.section_("General")
 config.General.requestName   = 'MyAnalysis_1'
 #config.General.workArea   = '/path/to/workarea'
-#config.General.serverUrl     = 'yourserver:0000'
+#config.General.serverUrl     = 'yourserver[:0000]' #https shema is used. If the port is not specified default 443 will be used
+#config.General.ufccacheUrl = 'yourserver[:0000]'   #same as above
+#config.General.configcacheUrl   = 'http[s]://yourserver[:0000]' #Schema is required here (it is not necessary to use a frontend)
+#config.General.configcacheName   = 'reqmgr_config_cache'
 
 ## Specific option of the job type
 ## these options are directly readable from the job type plugin
