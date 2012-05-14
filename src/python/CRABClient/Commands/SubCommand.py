@@ -1,4 +1,5 @@
 import os
+import imp
 from optparse import OptionParser, SUPPRESS_HELP
 
 from CRABClient.client_utilities import loadCache, getWorkArea, initProxy
