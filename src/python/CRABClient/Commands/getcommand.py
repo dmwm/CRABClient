@@ -64,6 +64,7 @@ class getcommand(SubCommand):
 
     def validateOptions(self):
         #Figuring out the destination directory
+        SubCommand.validateOptions(self)
         self.dest = None
         if self.options.outputpath is not None:
             if not os.path.isabs( self.options.outputpath ):

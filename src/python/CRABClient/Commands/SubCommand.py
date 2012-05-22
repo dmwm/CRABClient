@@ -71,7 +71,7 @@ class SubCommand(object):
 
 
     def createCache(self, serverurl = None):
-        """ Loads the ClientMapping and set up the server url
+        """ Loads the client cache and set up the server url
         """
         ## if the server name is an CLI option
         if hasattr(self.options, 'server') and self.options.server is not None:
