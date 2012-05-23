@@ -11,7 +11,7 @@ from CRABClient.JobType.LumiMask import LumiMask
 from CRABClient.JobType.UserTarball import UserTarball
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
 
-class CMSSW(BasicJobType):
+class Analysis(BasicJobType):
     """
     CMSSW job type plug-in
     """
@@ -23,7 +23,6 @@ class CMSSW(BasicJobType):
         """
         configArguments = {'addoutputfiles'            : [],
                            'adduserfiles'              : [],
-                           'inputdata'                 : '',
 #                           'ProcessingVersion'         : '',
                            'configdoc'                 : '',
 #                           'ACDCDoc'                   : '',
@@ -49,7 +48,8 @@ class CMSSW(BasicJobType):
             configArguments['adduserfiles'] = [os.path.basename(f) for f in inputFiles]
             uploadResults = tb.upload()
         configArguments['userisburl'] = 'https://'+ self.config.General.ufccacheUrl + '/crabcache/file?hashkey=' + uploadResults['result'][0]['hashkey']#XXX hardcoded
-        configArguments['inputdata'] = self.config.Data.inputDataset
+        if getattr(self.config.Data, 'inputDataset', None):
+            configArguments['inputdata'] = self.config.Data.inputDataset
 #        configArguments['ProcessingVersion'] = getattr(self.config.Data, 'processingVersion', None)
 
         # Create CMSSW config
@@ -78,6 +78,8 @@ class CMSSW(BasicJobType):
             self.logger.debug("ACDC Fileset created with DocID %s" % result[0]['Name'])
 #            configArguments['ACDCDoc'] = result[0]['Name']
 
+        configArguments['jobtype'] = 'Analysis'
+
         return tarFilename, configArguments
 
 
@@ -87,19 +89,31 @@ class CMSSW(BasicJobType):
         required values are there and optional values don't conflict
         """
 
+        valid, reason = self.validateBasicConfig(config)
+        if not valid:
+            return (valid, reason)
+
+        if not getattr(config.Data, 'inputDataset', None):
+            valid = False
+            reason += 'Crab configuration problem: missing or null input dataset name. '
+
+        return (valid, reason)
+
+    def validateBasicConfig(self, config):
+        """
+        Validate the common portion of the config for data and MC making sure
+        required values are there and optional values don't conflict
+        """
+
         valid = True
         reason = ''
 
         if not getattr(config, 'Data', None):
             valid = False
             reason += 'Crab configuration problem: missing Data section. '
-        else:
-            if not getattr(config.Data, 'inputDataset', None):
-                valid = False
-                reason += 'Crab configuration problem: missing or null input dataset name. '
+
         if not getattr(config.JobType, 'psetName', None):
             valid = False
             reason += 'Crab configuration problem: missing or null CMSSW config file name. '
 
         return (valid, reason)
-
