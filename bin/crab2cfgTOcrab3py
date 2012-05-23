@@ -63,7 +63,7 @@ paramsMap = [
     ('Data'     , 'splitting'            , False, ''       , ''                         , _getsplitting),       #_getsplitting knows corresp. params
     ('Data'     , 'unitsPerJob'          , False, ''       , ''                         , _getunits),           #_getunits does the work
     ('Data'     , 'lumiMask'             , False, 'CMSSW'  , 'lumi_mask'                , RawConfigParser.get),
-    ('Data'     , 'runRange'             , False, 'CMSSW'  , 'runselection'             , RawConfigParser.get), 
+    ('Data'     , 'runRange'             , False, 'CMSSW'  , 'runselection'             , RawConfigParser.get),
     ('Data'     , 'dbsurl'               , False, 'CMSSW'  , 'dbs_url'                  , RawConfigParser.get),
     ('User'     , 'email'                , False, 'USER'   , 'email'                    , RawConfigParser.get),
     ('User'     , 'voRole'               , False, 'GRID'   , 'role'                     , RawConfigParser.get),
@@ -147,6 +147,23 @@ def parseParameters():
 
     return args[0], args[1]
 
+def checkMonteCarlo(configC3, configC2):
+    """
+    May not be 100% accurate
+    """
+    monteCarlo = False
+    if configC2.has_option('CMSSW', 'generator'):
+        monteCarlo = True
+
+    if configC2.has_option('CMSSW', 'datasetpath') and configC2.get('CMSSW', 'datasetpath') == 'None':
+        monteCarlo = True
+
+    if monteCarlo:
+        print 'This appears to be a Monte Carlo job, setting type to PrivateMC'
+        configC3.JobType.pluginName = 'PrivateMC'
+        configC3.Data.totalUnits = configC2.getint('CMSSW', 'total_number_of_events')
+
+    return monteCarlo
 
 def getConfiguration(paramsMap, configC2, configNameC3):
     configC3 = Configuration()
@@ -157,7 +174,7 @@ def getConfiguration(paramsMap, configC2, configNameC3):
     configC3.section_("User")
     configC3.section_("Site")
 
-    configC3.JobType.pluginName = 'Cmssw'
+    configC3.JobType.pluginName = 'Analysis'
     configC3.Data.processingVersion = ''
     configC3.General.requestName = os.path.splitext(os.path.basename(configNameC3))[0]
     configC3.General.serverUrl = 'You need to set the server URL'
@@ -176,6 +193,9 @@ def getConfiguration(paramsMap, configC2, configNameC3):
         if crab2paramValue != None:
             section = getattr(configC3, sectionC3)
             setattr(section, parameterC3, crab2paramValue)
+
+    # Is this CRAB2 config a MC config?
+    checkMonteCarlo(configC3, configC2)
 
     return configC3, missingParams
 
