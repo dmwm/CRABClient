@@ -133,7 +133,15 @@ class HTTPRequests(dict):
 
     @staticmethod
     def getCACertPath():
+        """ Get the CA certificate path. It looks for it in the X509_CERT_DIR variable if present
+            or return /etc/grid-security/certificates/ instead (if it exists)
+            If a CA certificate path cannot be found throws a EnvironmentException exception
+        """
+        caDefault = '/etc/grid-security/certificates/'
         if os.environ.has_key("X509_CERT_DIR"):
             return os.environ["X509_CERT_DIR"]
+        elif os.path.isdir(caDefault):
+            return caDefault
         else:
-            raise EnvironmentException("The X509_CERT_DIR variable is not set. Did you forget to source the Grid UI?")
+            raise EnvironmentException("The X509_CERT_DIR variable is not set and the %s directory cannot be found.\n" % caDefault +
+                                        "Cannot find the CA certificate path to ahuthenticate the server.")
