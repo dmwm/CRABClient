@@ -70,7 +70,10 @@ class remote_copy(SubCommand):
         ## this can be parallelized starting more processes
         for file in dicttocopy:
             fileid = file['pfn'].split('/')[-1]
-            localFilename = os.path.join(self.options.destination, str(fileid))
+            dirpath = os.path.join(self.options.destination, file['suffix'] if 'suffix' in file else '')
+            if not os.path.isdir(dirpath):
+                os.makedirs(dirpath)
+            localFilename = os.path.join(dirpath,  str(fileid))
             cmd = '%s %s file://%s' % (lcgCmd, file['pfn'], localFilename)
             self.logger.info("Retrieving file '%s' " % fileid)
             self.logger.debug("Executing '%s' " % cmd)
@@ -122,7 +125,7 @@ class remote_copy(SubCommand):
                 finalresults[fileid] = {'exit': False, 'error': msg, 'dest': None}
                 self.logger.info( msg )
             else:
-                finalresults[fileid] = {'exit': True, 'dest': os.path.join(self.options.destination, str(fileid)), 'error': None}
+                finalresults[fileid] = {'exit': True, 'dest': os.path.join(dirpath, str(fileid)), 'error': None}
                 self.logger.info(colors.GREEN + "Successfully retrived file %s" % fileid + colors.NORMAL)
 
         try:
@@ -143,7 +146,7 @@ class remote_copy(SubCommand):
                 globalExitcode = 1
 
         if len(finalresults.keys()) is 0:
-            self.logger.info("Nothing to retrieve.")
+            self.logger.info("Nothing has been retrieved.")
         else:
             self.logger.info("Retrieval completed")
 
@@ -190,8 +193,7 @@ def simpleOutputCheck(outlines):
              line.find("timed out") != -1:
             problems.append(line)
 
-
-    return problems
+    return set(problems)
 
 
 import time, fcntl, select,signal

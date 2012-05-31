@@ -13,10 +13,10 @@ class getcommand(SubCommand):
     visible = False
 
     def __call__(self, subresource):
-        #Creating the destination directory if necessary
-        self.logger.info("Setting the destination directory to %s " % self.dest )
+        #Setting default destination if -o is not provided
+        if not self.dest:
+            self.dest = os.path.join(self.requestarea, 'results')
 
-        self.dest = os.path.join(self.requestarea, 'results')
         #Creating the destination directory if necessary
         if not os.path.exists( self.dest ):
             self.logger.debug("Creating directory %s " % self.dest)
@@ -24,11 +24,14 @@ class getcommand(SubCommand):
         elif not os.path.isdir( self.dest ):
             raise ConfigurationException('Destination directory is a file')
 
+        self.logger.info("Setting the destination directory to %s " % self.dest )
+
         #Retrieving output files location from the server
         self.logger.debug('Retrieving file location for %s of task %s' % ( self.options.quantity, self.cachedinfo['RequestName'] ) )
         server = HTTPRequests(self.serverurl, self.proxyfilename)
         dictresult, status, reason = server.get(self.uri, data = { 'workflow' : self.cachedinfo['RequestName'], 'subresource' : subresource, 'limit' : self.options.quantity })
         self.logger.debug('Server result: %s' % dictresult )
+        dictresult = self.processServerResult(dictresult)
 
         if status != 200:
             msg = "Problem retrieving information from the server:\ninput:%s\noutput:%s\nreason:%s" % (str(inputdict), str(dictresult), str(reason))
@@ -47,7 +50,11 @@ class getcommand(SubCommand):
             copyoutput()
 
         if totalfiles == 0:
-            self.logger.info("No file to retrieve")
+            self.logger.info("No files to retrieve")
+
+    def processServerResult(self, result):
+        #no modifications by default
+        return result
 
 
     def setOptions(self):
