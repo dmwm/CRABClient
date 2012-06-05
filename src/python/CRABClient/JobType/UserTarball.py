@@ -84,7 +84,7 @@ class UserTarball(object):
         self.close()
 
         #XXX: I dont like the /userfilecache/data/file hardcoded
-        ufc = UserFileCache({'endpoint':'https://'+ self.config.General.ufccacheUrl + '/crabcache/file', \
+        ufc = UserFileCache({'endpoint': "https://" + self.config.General.ufccacheUrl + "/crabcache", \
                                           "proxyfilename" : self.config.JobType.proxyfilename, "capath" : self.config.JobType.capath, "newrest" : True})
         return ufc.upload(self.tarfile.name)
 

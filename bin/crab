@@ -109,10 +109,6 @@ class CRABClient(object):
         console.setLevel(loglevel)
         logger.addHandler(console)
 
-        tbLogger = logging.getLogger('CRAB3:traceback')
-        nh = MyNullHandler()
-        tbLogger.addHandler(nh)
-
         self.logger = logger
 
 

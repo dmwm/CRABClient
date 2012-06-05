@@ -4,6 +4,7 @@ Contains the logic and wraps calls to WMCore.Credential.Proxy
 
 from WMCore.Credential.Proxy import Proxy
 from CRABClient.client_exceptions import ProxyCreationException
+import logging
 
 class CredentialInteractions(object):
     '''
@@ -19,7 +20,8 @@ class CredentialInteractions(object):
         '''
         self.logger = logger
         self.defaultDelegation = {
-                                  'logger':          self.logger,
+                                  #do not print messages coming from Proxy library, but put them into the file
+                                  'logger':          logging.getLogger('CRAB3:traceback'),
                                   'vo':              'cms',
                                   'myProxySvr':      myproxy,
                                   'proxyValidity'  : '24:00',
