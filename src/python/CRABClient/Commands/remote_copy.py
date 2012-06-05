@@ -68,13 +68,13 @@ class remote_copy(SubCommand):
         p.start()
 
         ## this can be parallelized starting more processes
-        for file in dicttocopy:
-            fileid = file['pfn'].split('/')[-1]
-            dirpath = os.path.join(self.options.destination, file['suffix'] if 'suffix' in file else '')
+        for myfile in dicttocopy:
+            fileid = myfile['pfn'].split('/')[-1]
+            dirpath = os.path.join(self.options.destination, myfile['suffix'] if 'suffix' in myfile else '')
             if not os.path.isdir(dirpath):
                 os.makedirs(dirpath)
             localFilename = os.path.join(dirpath,  str(fileid))
-            cmd = '%s %s file://%s' % (lcgCmd, file['pfn'], localFilename)
+            cmd = '%s %s file://%s' % (lcgCmd, myfile['pfn'], localFilename)
             self.logger.info("Retrieving file '%s' " % fileid)
             self.logger.debug("Executing '%s' " % cmd)
             input.put((fileid, cmd))
@@ -98,18 +98,18 @@ class remote_copy(SubCommand):
             checkout = simpleOutputCheck(stdout)
             checkerr = simpleOutputCheck(stderr)
             checksumOK = False
-            if hasattr(file, 'checksum'):
-                self.logger.debug("Checksum '%s'" %str(file['checksum']))
-                checksumOK = checksumChecker(localFilename, file['checksum'])
+            if hasattr(myfile, 'checksum'):
+                self.logger.debug("Checksum '%s'" %str(myfile['checksum']))
+                checksumOK = checksumChecker(localFilename, myfile['checksum'])
             else:
                 checksumOK = True # No checksums provided
 
             if exitcode is not 0 or (len(checkout) + len(checkerr)) > 0:
                 ## check to track srmv1 issues, probably this is strong enough to find all of them
                 ## REMOVE this check as soon as sites will have switched to srmv2
-                if ('srmv1' in file['pfn'] or 'managerv1' in file['pfn']) and len( filter(lambda elem: elem.find('communication error on send')!=-1, checkerr) ) > 0:
+                if ('srmv1' in myfile['pfn'] or 'managerv1' in myfile['pfn']) and len( filter(lambda elem: elem.find('communication error on send')!=-1, checkerr) ) > 0:
                     msgFail  = '\n\tThe site storage is using srmv1, which is deprecated and not anymore supported.\n'
-                    msgFail += '\tPlease report this issue with the PFN provided here below.\n\tPFN: "%s".' % str(file['pfn'])
+                    msgFail += '\tPlease report this issue with the PFN provided here below.\n\tPFN: "%s".' % str(myfile['pfn'])
                     finalresults[fileid] = {'exit': False, 'error': msgFail, 'dest': None}
                 else:
                     finalresults[fileid] = {'exit': False, 'output': checkout, 'error' : checkerr, 'dest': None}

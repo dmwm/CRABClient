@@ -28,32 +28,31 @@ The task is identified by -t/--task option
         """
         self.parser.add_option( '-q', '--quantity',
                                 dest = 'quantity',
-                                default = 1,
-                                help = 'A number which express the number of files you want to retrieve. Defaut one log per exitcode' )
+                                help = 'A number which express the number of files you want to retrieve (or all). Defaut one log per exitcode' )
         getcommand.setOptions(self)
 
     def processServerResult(self, result):
         newresult = []
         saveLog = self._hasLogCollect(result)
 
-        for file in result['result']:
+        for myfile in result['result']:
             #drop items with no pfn and error (server uses return the error message)
-            if not 'pfn' in file and 'error' in file:
-                self.logger.info("Cannot find the log of jobs with exitcode %s: %s" % (file['exitcode'],file['error']))
+            if not 'pfn' in myfile and 'error' in myfile:
+                self.logger.info("Cannot find the log of jobs with exitcode %s: %s" % (myfile['exitcode'],myfile['error']))
                 continue
             #append the file if the task has no output from logcollectjobs
             if not saveLog:
                 #set the suffix of the file (exitcode)
-                file['suffix'] = "ec" + str(file['exitcode'])
-                newresult.append(file)
+                myfile['suffix'] = "ec" + str(myfile['exitcode'])
+                newresult.append(myfile)
             #otherwise only append logcollect output (the big tar.gz)
-            elif file['type']=='logCollect':
-               newresult.append(file)
+            elif myfile['type']=='logCollect':
+               newresult.append(myfile)
 
         return {'result' : newresult}
 
     def _hasLogCollect(self, result):
-        for file in result['result']:
-            if 'type' in file and file['type'] in 'logCollect':
+        for myfile in result['result']:
+            if 'type' in myfile and myfile['type'] in 'logCollect':
                 return True
         return False

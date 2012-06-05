@@ -27,9 +27,13 @@ class getcommand(SubCommand):
         self.logger.info("Setting the destination directory to %s " % self.dest )
 
         #Retrieving output files location from the server
-        self.logger.debug('Retrieving file location for %s of task %s' % ( self.options.quantity, self.cachedinfo['RequestName'] ) )
+        self.logger.debug('Retrieving locations for task %s' % self.cachedinfo['RequestName'] )
+        inputdict =  { 'workflow' : self.cachedinfo['RequestName'], 'subresource' : subresource}
+        if getattr(self.options, 'quantity', None):
+            self.logger.debug('Retrieving %s file locations' % self.options.quantity )
+            inputdict['limit'] = self.options.quantity
         server = HTTPRequests(self.serverurl, self.proxyfilename)
-        dictresult, status, reason = server.get(self.uri, data = { 'workflow' : self.cachedinfo['RequestName'], 'subresource' : subresource, 'limit' : self.options.quantity })
+        dictresult, status, reason = server.get(self.uri, data = inputdict)
         self.logger.debug('Server result: %s' % dictresult )
         dictresult = self.processServerResult(dictresult)
 
@@ -78,3 +82,7 @@ class getcommand(SubCommand):
                 self.dest = os.path.abspath( self.options.outputpath )
             else:
                 self.dest = self.options.outputpath
+
+        #convert all to -1
+        if getattr(self.options, 'quantity', None) == 'all':
+            self.options.quantity = -1

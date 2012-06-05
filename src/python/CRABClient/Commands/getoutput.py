@@ -25,6 +25,5 @@ class getoutput(getcommand):
         """
         self.parser.add_option( '-q', '--quantity',
                                 dest = 'quantity',
-                                default = -1,
-                                help = 'A number which express the number of files you want to retrieve. Defaut all outputs' )
+                                help = 'A number which express the number of files you want to retrieve (or all). Defaut one output' )
         getcommand.setOptions(self)
