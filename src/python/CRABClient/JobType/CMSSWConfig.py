@@ -66,6 +66,15 @@ class CMSSWConfig(object):
             configCache = ConfigCache(self.config.General.configcacheUrl, self.config.General.configcacheName, usePYCurl=True, \
                                       ckey=self.config.JobType.proxyfilename, cert=self.config.JobType.proxyfilename, \
                                       capath=self.config.JobType.capath)
+        except ConfigCacheException, ex:
+            #If the user is getting 500 from the server there probably is a missing entry in authmap.json
+            msg = "Problem during the upload of the configuration. Please check if your" + \
+                    " user is enabled to access the ConfigCache couchdb %s/%s" % (self.config.General.configcacheUrl, \
+                                                                                self.config.General.configcacheName)
+            logging.getLogger('CRAB3:traceback').exception('Caught exception')
+            raise ConfigException(msg)
+
+        try:
             configCache.createUserGroup("Analysis", '') #User empty works
 
             configMD5 = hashlib.md5(configString).hexdigest()
@@ -82,9 +91,9 @@ class CMSSWConfig(object):
             result['DocID']  = configCache.document["_id"]
             result['DocRev'] = configCache.document["_rev"]
         except ConfigCacheException, ex:
-            msg = "Error: problem uploading the configuration"
+            msg = "Problem during the upload of the configuration."
             logging.getLogger('CRAB3:traceback').exception('Caught exception')
-            raise ConfigException("Problem during the upload of the configuration.")
+            raise ConfigException(msg)
         return result
 
 
