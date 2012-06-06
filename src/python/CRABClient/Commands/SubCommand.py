@@ -2,7 +2,7 @@ import os
 import imp
 from optparse import OptionParser, SUPPRESS_HELP
 
-from CRABClient.client_utilities import loadCache, getWorkArea, initProxy
+from CRABClient.client_utilities import loadCache, getWorkArea, delegateProxy, initProxy, server_info
 from CRABClient.client_exceptions import ConfigurationException, MissingOptionException
 from CRABClient.ClientMapping import mapping
 
@@ -60,14 +60,26 @@ class SubCommand(object):
         self.validateOptions()
 
         ##The submit command handles this stuff later because it needs to load the config
-        ##and to figure out which server to contact.
+        ##and to figure out which server to contact before.
         if self.name != 'submit':
             self.createCache()
-            #the submit does this later because it can set
-            if not self.options.skipProxy:
-                _, self.proxyfilename = initProxy( '', '', self.logger)
-            else:
-                self.logger.debug('Skipping proxy creation')
+            self.handleProxy()
+
+
+    def handleProxy(self):
+        """ Init the user proxy, and delegate it if necessary.
+        """
+        if not self.options.skipProxy:
+            _, self.proxyfilename, proxyobj = initProxy( self.voRole, self.voGroup, self.logger )
+            #get the dn of the agents from the server
+            agentDNs = server_info('delegatedn', self.serverurl, self.proxyfilename)
+            #for each agentDN received from the server, delegate it!
+            #XXX Temporary solution. Need to figure out how to delegate credential to the several WMAgent
+            #without forcing the user to insert the password several times
+            for serverDN in agentDNs:
+                delegateProxy( serverDN, 'myproxy.cern.ch', proxyobj, self.logger)
+        else:
+            self.logger.debug('Skipping proxy creation')
 
 
     def createCache(self, serverurl = None):
@@ -82,6 +94,9 @@ class SubCommand(object):
             self.cachedinfo, self.logfile = loadCache(self.requestarea, self.logger)
             port = ':' + self.cachedinfo['Port'] if self.cachedinfo['Port'] else ''
             self.serverurl = self.cachedinfo['Server'] + port
+            #TODO Save them in the cache
+            self.voGroup = self.cachedinfo['voRole'] if not self.options.voRole else self.options.voRole
+            self.voRole = self.cachedinfo['voGroup'] if not self.options.voGroup else self.options.voGroup
 
 
     def __call__(self):
@@ -116,6 +131,14 @@ class SubCommand(object):
                                      dest = "task",
                                      default = None,
                                      help = "Same as -c/-continue" )
+
+        self.parser.add_option( "-r", "--voRole",
+                                dest = "voRole",
+                                default = '' )
+
+        self.parser.add_option( "-g", "--voGroup",
+                                dest = "voGroup",
+                                default = '' )
 
 
 

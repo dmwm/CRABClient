@@ -20,12 +20,12 @@ class CredentialInteractions(object):
         '''
         self.logger = logger
         self.defaultDelegation = {
-                                  #do not print messages coming from Proxy library, but put them into the file
+                                  #do not print messages coming from Proxy library, but put them into the logfile
                                   'logger':          logging.getLogger('CRAB3:traceback'),
                                   'vo':              'cms',
                                   'myProxySvr':      myproxy,
                                   'proxyValidity'  : '24:00',
-                                  'myproxyValidity': '7',
+                                  'myproxyValidity': "720:00", #30 days
                                   'serverDN' :       serverdn,
                                   'group' :          group,
                                   'role':            role if role != '' else 'NULL'
@@ -83,7 +83,7 @@ class CredentialInteractions(object):
 
         if myproxytimeleft < timeleftthreshold or self.proxyChanged:
             # creating the proxy
-            self.logger.debug("Delegating a myproxy for %s days" % self.defaultDelegation['myproxyValidity'] )
+            self.logger.debug("Delegating a myproxy for %s hours" % self.defaultDelegation['myproxyValidity'] )
             myproxy.delegate( serverRenewer = True )
             myproxytimeleft = myproxy.getMyProxyTimeLeft( serverRenewer = True )
 

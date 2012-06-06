@@ -111,6 +111,12 @@ class CRABClient(object):
 
         self.logger = logger
 
+        #Instructions needed in case of early failures: sometimes the traceback logger
+        #has not been set yet. The right file handler is only added when the workarea
+        #of the task is created
+        tbLogger = logging.getLogger('CRAB3:traceback')
+        nh = MyNullHandler()
+        tbLogger.addHandler(nh)
 
         # Replace excepthook with logger
         def log_exception(exc_type, exc_value, tback):

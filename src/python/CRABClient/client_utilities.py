@@ -20,6 +20,9 @@ from CRABClient.client_exceptions import TaskNotFoundException, CachefileNotFoun
 from optparse import OptionValueError
 
 
+#if certificates in myproxy expires in less than RENEW_MYPROXY_THRESHOLD days renew them
+RENEW_MYPROXY_THRESHOLD = 15
+
 class colors:
     RED = '\033[91m'
     GREEN = '\033[92m'
@@ -199,12 +202,14 @@ def createWorkArea(logger, workingArea = '.', requestName = ''):
     return fullpath, requestName, logfile
 
 
-def createCache(requestarea, host, port, uniquerequestname):
+def createCache(requestarea, host, port, uniquerequestname, voRole, voGroup):
     touchfile = open(os.path.join(requestarea, '.requestcache'), 'w')
     neededhandlers = {
                       "Server" : host,
                       "Port" : port,
-                      "RequestName" : uniquerequestname
+                      "RequestName" : uniquerequestname,
+                      "voRole" : voRole,
+                      "voGroup" : voGroup
                      }
     cPickle.dump(neededhandlers, touchfile)
     touchfile.close()
@@ -241,11 +246,11 @@ def loadCache( task, logger ):
     logfile = addFileLogger( logger, workingpath = requestarea )
     return cPickle.load(loadfile), logfile
 
+#TODO delete initProxy (and delegate proxy) and just use CredentialInteractions in commands
 def initProxy(voRole, voGroup, logger):
-    #First two parameters (serverDN and myProxy) are not required for proxy creation
     proxy = CredentialInteractions(
-                                    None,
-                                    None,
+                                    '',
+                                    '',
                                     voRole,
                                     voGroup,
                                     logger
@@ -253,21 +258,17 @@ def initProxy(voRole, voGroup, logger):
 
     logger.debug("Checking credentials")
     userdn, proxyfilename = proxy.createNewVomsProxy( timeleftthreshold = 600 )
+    #return also the proxy because successive proxy delegations needs to use the
+    #same proxy instsance
+    return userdn, proxyfilename, proxy
 
-    return userdn, proxyfilename
 
-
-def delegateProxy(serverDN, myProxy, voRole, voGroup, logger):
-    proxy = CredentialInteractions(
-                                    serverDN,
-                                    myProxy,
-                                    voRole,
-                                    voGroup,
-                                    logger
-                                  )
+def delegateProxy(serverDN, myProxy, proxyobj, logger):
+    proxyobj.defaultDelegation['serverDN'] = serverDN
+    proxyobj.defaultDelegation['myProxySvr'] = myProxy
 
     logger.info("Registering user credentials")
-    proxy.createNewMyProxy( timeleftthreshold = 60 * 60 * 24 * 3)
+    proxyobj.createNewMyProxy( timeleftthreshold = 60 * 60 * 24 * RENEW_MYPROXY_THRESHOLD)
 
 def validServerURL(option, opt_str, value, parser):
     """
@@ -298,3 +299,21 @@ def validURL(serverurl, attrtohave = ['scheme', 'netloc', 'hostname', 'port'], a
         if not str( elemval ) == '' and elemval is not None:
             return False
     return True
+
+
+#XXX Trying to do it as a Command causes a lot of headaches (and workaround code).
+#Since server_info class needs SubCommand, and SubCommand needs server_info for
+#delegating the proxy then we are screwed
+#If anyone has a better solution please go on, otherwise live with that one :) :)
+from CRABClient.ServerInteractions import HTTPRequests
+from CRABClient.client_exceptions import RESTCommunicationException
+def server_info(subresource, server, proxyfilename):
+    """
+    Get relevant information about the server
+    """
+
+    server = HTTPRequests(server, proxyfilename)
+
+    dictresult, status, reason = server.get('/crabserver/info', {'subresource' : subresource})
+
+    return dictresult['result']

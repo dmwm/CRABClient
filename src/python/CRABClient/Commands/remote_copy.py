@@ -1,8 +1,6 @@
 from CRABClient.Commands import CommandResult
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.CredentialInteractions import CredentialInteractions
-from WMCore.Credential.Proxy import CredentialException
-from CRABClient.client_utilities import initProxy
 import os
 import logging
 import subprocess
@@ -37,24 +35,11 @@ class remote_copy(SubCommand):
                                 dest = "inputdict",
                                 default = None )
 
-        self.parser.add_option( "-r", "--role",
-                                dest = "role",
-                                default = None )
-
-        self.parser.add_option( "-g", "--group",
-                                dest = "group",
-                                default = None )
-
 
     def __call__(self):
         globalExitcode = -1
 
         dicttocopy = self.options.inputdict
-
-        if not self.options.skipProxy:
-            _, self.proxyfilename = initProxy( self.options.role, self.options.group, self.logger)
-        else:
-            self.logger.debug('Skipping proxy creation and delegation')
 
         lcgCmd = 'lcg-cp --connect-timeout 20 --sendreceive-timeout 240 --srm-timeout 1800 --verbose -b -D srmv2'
 

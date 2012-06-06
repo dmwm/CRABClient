@@ -2,14 +2,13 @@
 This is simply taking care of job submission
 """
 
-from CRABClient.client_utilities import getJobTypes, createCache, createWorkArea, initProxy, delegateProxy, validServerURL, addPlugin
+from CRABClient.client_utilities import getJobTypes, createCache, createWorkArea, validServerURL, addPlugin
 import json, os
 from string import upper
 from CRABClient.Commands.SubCommand import SubCommand, ConfigCommand
 from CRABClient.Commands.server_info import server_info
 from CRABClient.Commands.reg_user import reg_user
 from WMCore.Configuration import loadConfigurationFile, Configuration
-from WMCore.Credential.Proxy import CredentialException
 from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient import SpellChecker
 from CRABClient.ServerInteractions import HTTPRequests
@@ -43,21 +42,21 @@ class submit(SubCommand, ConfigCommand):
 
         #determine the serverurl
         if self.options.server:
-            serverurl = self.options.server
+            self.serverurl = self.options.server
         elif getattr( self.configuration.General, 'serverUrl', None ) is not None:
-            serverurl = self.configuration.General.serverUrl
+            self.serverurl = self.configuration.General.serverUrl
 #TODO: For sure the server url should not be handled here. Find an intelligent way for this
         else:
-            serverurl = 'http://cmsweb.cern.ch'
+            self.serverurl = 'http://cmsweb.cern.ch'
         if not hasattr( self.configuration.General, 'ufccacheUrl' ):
-            self.configuration.General.ufccacheUrl = serverurl
+            self.configuration.General.ufccacheUrl = self.serverurl
         if not hasattr( self.configuration.General, 'configcacheUrl' ):
             #https is required because configcache does not use ServerInteractions
-            self.configuration.General.configcacheUrl = 'https://' + serverurl + '/couchdb'
+            self.configuration.General.configcacheUrl = 'https://' + self.serverurl + '/couchdb'
         if not hasattr( self.configuration.General, 'configcacheName' ):
             self.configuration.General.configcacheName = 'reqmgr_config_cache'
 
-        self.createCache( serverurl )
+        self.createCache( self.serverurl )
 
         ######### Check if the user provided unexpected parameters ########
         #init the dictionary with all the known parameters
@@ -74,7 +73,7 @@ class submit(SubCommand, ConfigCommand):
                     raise ConfigurationException(msg)
 
         #usertarball and cmsswconfig use this parameter and we should set it up in a correct way
-        self.configuration.General.serverUrl = serverurl
+        self.configuration.General.serverUrl = self.serverurl
 
 #TODO figure out how to do this
 #        infosubcmd = server_info(self.logger, cmdargs = ['-s', serverurl])
@@ -85,11 +84,9 @@ class submit(SubCommand, ConfigCommand):
 
         #delegating the proxy (creation done in SubCommand)
         if not self.options.skipProxy:
-            voRole = getattr(self.configuration.User, "voRole", "")
-            voGroup = getattr(self.configuration.User, "voGroup", "")
-            userdn, self.proxyfilename = initProxy( voRole, voGroup, self.logger )
-            #XXX Temporary solution. Need to figure out hot to delegate credential to the several hypothetical WMAgent out there
-            delegateProxy( self.configuration.General.delegateTo, 'myproxy.cern.ch', voRole, voGroup, self.logger )
+            self.voRole = getattr(self.configuration.User, "voRole", "")
+            self.voGroup = getattr(self.configuration.User, "voGroup", "")
+            self.handleProxy()
         else:
             userdn = self.options.skipProxy
             self.logger.debug('Skipping proxy creation and delegation. Usind %s as userDN' % userdn)
@@ -128,7 +125,7 @@ class submit(SubCommand, ConfigCommand):
             elif param == "savelogsflag":
                 configreq["savelogsflag"] = 1 if temp else 0
             elif param == "blacklistT1":
-                blacklistT1 = voRole != 't1access'
+                blacklistT1 = self.voRole != 't1access'
                 #if the user choose to remove the automatic T1 blacklisting and has not the t1acces role
                 if getattr (self.configuration.Site, 'removeT1Blacklisting', False) and blacklistT1:
                     self.logger.info("WARNING: You disabled the T1 automatic blacklisting without having the t1access role")
@@ -155,7 +152,7 @@ class submit(SubCommand, ConfigCommand):
 
         configreq.update(jobconfig)
 
-        server = HTTPRequests(serverurl, self.proxyfilename)
+        server = HTTPRequests(self.serverurl, self.proxyfilename)
 
         self.logger.info("Sending the request to the server")
         self.logger.debug("Submitting %s " % str( configreq ) )
@@ -172,8 +169,8 @@ class submit(SubCommand, ConfigCommand):
                    % (str(configreq), str(dictresult), str(reason))
             raise RESTCommunicationException(msg)
 
-        tmpsplit = serverurl.split(':')
-        createCache( requestarea, tmpsplit[0], tmpsplit[1] if len(tmpsplit)>1 else '', uniquerequestname )
+        tmpsplit = self.serverurl.split(':')
+        createCache( requestarea, tmpsplit[0], tmpsplit[1] if len(tmpsplit)>1 else '', uniquerequestname, voRole = self.voRole, voGroup = self.voGroup )
 
         self.logger.info("Submission completed")
         self.logger.debug("Request ID: %s " % uniquerequestname)
@@ -215,9 +212,6 @@ class submit(SubCommand, ConfigCommand):
 
         if getattr(self.configuration, 'General', None) is None:
             return False, "Crab configuration problem: general section is missing. "
-        else:
-            if not getattr(self.configuration.General, 'delegateTo', None):
-                return False, "Crab configuration problem: General.delegateTo parameter is missing. "
 
         if getattr(self.configuration, 'User', None) is None:
             return False, "Crab configuration problem: User section is missing ."

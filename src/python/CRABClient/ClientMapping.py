@@ -40,7 +40,7 @@ mapping = {
                                            "General.serverUrl", "General.ufccacheUrl", "General.requestName", "General.workArea",
                                            "JobType.pluginName", "JobType.externalPluginFile", "JobType.psetName",
                                            "JobType.inputFiles", "JobType.pyCfgParams",
-                                           "Data.unitsPerJob", "Data.splitting", "Data.inputDataset", "Data.lumiMask", "General.delegateTo",
+                                           "Data.unitsPerJob", "Data.splitting", "Data.inputDataset", "Data.lumiMask",
                                            "User.email", "Data.publishDbsUrl", "Site.removeT1Blacklisting", "General.configcacheUrl" , "General.configcacheName"
                                           ],
                   'requiresTaskOption' : False
@@ -49,7 +49,6 @@ mapping = {
     'getoutput'    : {'uri': '/crabserver/workflow', 'requiresTaskOption' : True},
     'remote_copy'  : {'uri': None, 'requiresTaskOption' : False},
 #    'reg_user'    : {'uri': '/crabinterface/crab/user/'},
-#    'server_info' : {'uri': '/crabinterface/crab/info/'},
     'status' : {'uri': '/crabserver/campaign', 'requiresTaskOption' : True},
 #    'upload' : {'uri': '/crabinterface/crab/uploadUserSandbox'},
 #    'get-error': {'uri': '/crabinterface/crab/jobErrors/'},
