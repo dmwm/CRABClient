@@ -7,6 +7,7 @@ import subprocess
 import threading
 import multiprocessing, Queue
 import time
+from math import ceil
 
 from WMCore.FwkJobReport.FileInfo import readAdler32, readCksum
 from CRABClient.client_utilities import colors
@@ -35,50 +36,66 @@ class remote_copy(SubCommand):
                                 dest = "inputdict",
                                 default = None )
 
-
     def __call__(self):
+        """
+        Copying locally files staged remotely.
+         *Using a subprocess to encapsulate the copy command.
+         *Using a timeout to avoid wiating too long
+           - srm timeout based on file size
+           - first transfer assumes a relatively slow bandiwth `downspeed`
+           - next transfers depends on previous speed
+           - srm timeout cannot be less then `minsrmtimeout`
+           - if size is unknown default srm timeout is `srmtimeout`
+        """
         globalExitcode = -1
 
         dicttocopy = self.options.inputdict
 
-        lcgCmd = 'lcg-cp --connect-timeout 20 --sendreceive-timeout 240 --srm-timeout 1800 --verbose -b -D srmv2'
+        lcgCmd = 'lcg-cp --connect-timeout 20 --sendreceive-timeout 240 --verbose -b -D srmv2'
+        lcgtimeout = 20 + 240 + 60 #giving 1 extra minute: 5min20"
+        srmtimeout = 900 #default transfer timeout in case the file size is unknown: 15min
+        minsrmtimeout = 60 #timeout cannot be less then 1min
+        downspeed = float(250*1024) #default speed assumes a download of 250KB/s
 
         finalresults = {}
 
-        input  = multiprocessing.Queue()
-        result = multiprocessing.Queue()
+        #this can be parallelized starting more processes in startchildproc
+        input, result, proc = self.startchildproc(processWorker)
 
-        singletimeout = 35 * 60
-        p = multiprocessing.Process(target = processWorker, args = (input, result))
-        p.start()
-
-        ## this can be parallelized starting more processes
         for myfile in dicttocopy:
             fileid = myfile['pfn'].split('/')[-1]
+
             dirpath = os.path.join(self.options.destination, myfile['suffix'] if 'suffix' in myfile else '')
             if not os.path.isdir(dirpath):
                 os.makedirs(dirpath)
             localFilename = os.path.join(dirpath,  str(fileid))
-            cmd = '%s %s file://%s' % (lcgCmd, myfile['pfn'], localFilename)
+
+            maxtime = srmtimeout if not 'size' in myfile else int(ceil(2*float(myfile['size'])/downspeed)) #timeout based on file size and download speed * 2
+            localsrmtimeout = minsrmtimeout if maxtime < minsrmtimeout else maxtime #do not want a too shrt timeout
+            cmd = '%s %s %s file://%s' % (lcgCmd, ' --srm-timeout ' + str(localsrmtimeout) + ' ', myfile['pfn'], localFilename)
+
             self.logger.info("Retrieving file '%s' " % fileid)
             self.logger.debug("Executing '%s' " % cmd)
             input.put((fileid, cmd))
-
+            starttime = time.time()
+            endtime = 0
             res = None
             stdout   = ''
             stderr   = ''
             exitcode = -1
             try:
-                res = result.get(block = True, timeout = singletimeout)
+                res = result.get(block = True, timeout = lcgtimeout+localsrmtimeout)
+                self.logger.debug("Command finished")
+                endtime = time.time()
                 stdout   = res['stdout']
                 stderr   = res['stderr']
                 exitcode = res['exit']
             except Queue.Empty:
-                stderr   = "Timeout retrieving result after %i seconds" % singletimeout
+                self.logger.debug("Command timed out")
+                stderr   = "Timeout retrieving result after %i seconds" % (lcgtimeout+localsrmtimeout)
                 stdout   = ''
                 exitcode = -1
-
-            self.logger.debug("Verify command result")
+                downspeed -= downspeed*0.5 #if fails for timeout, reducing download bandwidth of 50%
 
             checkout = simpleOutputCheck(stdout)
             checkerr = simpleOutputCheck(stderr)
@@ -97,6 +114,8 @@ class remote_copy(SubCommand):
                     msgFail += '\tPlease report this issue with the PFN provided here below.\n\tPFN: "%s".' % str(myfile['pfn'])
                     finalresults[fileid] = {'exit': False, 'error': msgFail, 'dest': None}
                 else:
+                    if 'timeout' in stdout or 'timeout' in stderr or 'timed out' in stdout or 'timed out' in stderr:
+                        downspeed -= downspeed*0.5 #if fails for timeout, reducing download bandwidth of 50%
                     finalresults[fileid] = {'exit': False, 'output': checkout, 'error' : checkerr, 'dest': None}
                 self.logger.info(colors.RED + "Failed retrieving file %s" % fileid + colors.NORMAL)
                 if len(finalresults[fileid]['output']) > 0:
@@ -112,15 +131,11 @@ class remote_copy(SubCommand):
             else:
                 finalresults[fileid] = {'exit': True, 'dest': os.path.join(dirpath, str(fileid)), 'error': None}
                 self.logger.info(colors.GREEN + "Successfully retrived file %s" % fileid + colors.NORMAL)
+                tottime = endtime - starttime
+                downspeed = float(myfile['size'])/ceil(float(tottime)) #calculating average of download bandwidth during last copy
+                self.logger.debug("Transfer took %.1f sec. and average speed of %.1f KB/s" % (tottime, downspeed/float(1024)))
 
-        try:
-            input.put( ('-1', 'STOP', 'control') )
-        except Exception, ex:
-            pass
-        finally:
-            # giving the time to the sub-process to exit
-            p.terminate()
-            time.sleep(1)
+        self.stopchildproc(input, proc)
 
         for fileid in finalresults:
             if finalresults[fileid]['exit']:
@@ -138,6 +153,29 @@ class remote_copy(SubCommand):
         if globalExitcode == -1:
             globalExitcode = 0
         return CommandResult(globalExitcode, '')
+
+    def startchildproc(self, childprocess):
+        """
+        starting sub process and creating the queue
+        """
+        input  = multiprocessing.Queue()
+        result = multiprocessing.Queue()
+        p = multiprocessing.Process(target = childprocess, args = (input, result))
+        p.start()
+        return input, result, p
+
+    def stopchildproc(self, inqueue, childprocess):
+        """
+        simply sending a STOP message to the sub process
+        """
+        try:
+            inqueue.put( ('-1', 'STOP', 'control') )
+        except Exception, ex:
+            pass
+        finally:
+            # giving the time to the sub-process to exit
+            childprocess.terminate()
+            time.sleep(1)
 
 
 def simpleOutputCheck(outlines):
