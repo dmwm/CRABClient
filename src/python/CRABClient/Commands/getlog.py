@@ -35,10 +35,13 @@ The task is identified by -t/--task option
         newresult = []
         saveLog = self._hasLogCollect(result)
 
+        #prepare the list of exit codes found
+        foundExitCodes = [str(myfile['exitcode']) for myfile in result['result'] if 'type' in myfile and myfile['type'] in 'logArchive']
         for myfile in result['result']:
-            #drop items with no pfn and error (server uses return the error message)
-            if not 'pfn' in myfile and 'error' in myfile:
-                self.logger.info("Cannot find the log of jobs with exitcode %s: %s" % (myfile['exitcode'],myfile['error']))
+            if 'missing' in myfile:
+                #tell the user if the server did not find a log for any of the missing exit codes
+                for ec in set(myfile['missing'].keys()) - set(foundExitCodes):
+                    self.logger.info("Cannot find a log for exit code %s" % ec)
                 continue
             #append the file if the task has no output from logcollectjobs
             if not saveLog:
@@ -53,6 +56,6 @@ The task is identified by -t/--task option
 
     def _hasLogCollect(self, result):
         for myfile in result['result']:
-            if 'type' in myfile and myfile['type'] in 'logCollect':
+            if 'type' in myfile and myfile['type'] == 'logCollect':
                 return True
         return False

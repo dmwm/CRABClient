@@ -30,6 +30,7 @@ class SubCommand(object):
             if 'map' in mapping[self.name]:
                 self.requestmapper = mapping[self.name]['map']
             self.requiresTaskOption = 'requiresTaskOption' in mapping[self.name] and mapping[self.name]['requiresTaskOption']
+            self.initializeProxy = True if 'initializeProxy' not in mapping[self.name] else mapping[self.name]['initializeProxy']
             if 'other-config-params' in mapping[self.name]:
                 self.otherConfigParams = mapping[self.name]['other-config-params']
 
@@ -69,7 +70,7 @@ class SubCommand(object):
     def handleProxy(self):
         """ Init the user proxy, and delegate it if necessary.
         """
-        if not self.options.skipProxy:
+        if not self.options.skipProxy and self.initializeProxy:
             _, self.proxyfilename, proxyobj = initProxy( self.voRole, self.voGroup, self.logger )
             #get the dn of the agents from the server
             agentDNs = server_info('delegatedn', self.serverurl, self.proxyfilename)

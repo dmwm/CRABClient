@@ -47,9 +47,9 @@ mapping = {
                 },
     'getlog'       : {'uri': '/crabserver/workflow', 'requiresTaskOption' : True},
     'getoutput'    : {'uri': '/crabserver/workflow', 'requiresTaskOption' : True},
-    'remote_copy'  : {'uri': None, 'requiresTaskOption' : False},
+    'remote_copy'  : {'uri': None, 'requiresTaskOption' : False, 'initializeProxy' : False},#proxy already inited by the calling command
 #    'reg_user'    : {'uri': '/crabinterface/crab/user/'},
-    'status' : {'uri': '/crabserver/campaign', 'requiresTaskOption' : True},
+    'status' : {'uri': '/crabserver/workflow', 'requiresTaskOption' : True},
 #    'upload' : {'uri': '/crabinterface/crab/uploadUserSandbox'},
 #    'get-error': {'uri': '/crabinterface/crab/jobErrors/'},
 #    'report': {'uri': '/crabinterface/crab/goodLumis/'},

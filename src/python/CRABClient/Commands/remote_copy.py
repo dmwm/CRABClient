@@ -1,3 +1,4 @@
+from __future__ import division
 from CRABClient.Commands import CommandResult
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.CredentialInteractions import CredentialInteractions
@@ -70,8 +71,8 @@ class remote_copy(SubCommand):
                 os.makedirs(dirpath)
             localFilename = os.path.join(dirpath,  str(fileid))
 
-            maxtime = srmtimeout if not 'size' in myfile else int(ceil(2*float(myfile['size'])/downspeed)) #timeout based on file size and download speed * 2
-            localsrmtimeout = minsrmtimeout if maxtime < minsrmtimeout else maxtime #do not want a too shrt timeout
+            maxtime = srmtimeout if not 'size' in myfile or myfile['size']==0 else int(ceil(2*myfile['size']/downspeed)) #timeout based on file size and download speed * 2
+            localsrmtimeout = minsrmtimeout if maxtime < minsrmtimeout else maxtime #do not want a too short timeout
             cmd = '%s %s %s file://%s' % (lcgCmd, ' --srm-timeout ' + str(localsrmtimeout) + ' ', myfile['pfn'], localFilename)
 
             self.logger.info("Retrieving file '%s' " % fileid)
@@ -132,8 +133,8 @@ class remote_copy(SubCommand):
                 finalresults[fileid] = {'exit': True, 'dest': os.path.join(dirpath, str(fileid)), 'error': None}
                 self.logger.info(colors.GREEN + "Successfully retrived file %s" % fileid + colors.NORMAL)
                 tottime = endtime - starttime
-                downspeed = float(myfile['size'])/ceil(float(tottime)) #calculating average of download bandwidth during last copy
-                self.logger.debug("Transfer took %.1f sec. and average speed of %.1f KB/s" % (tottime, downspeed/float(1024)))
+                downspeed = myfile['size']/tottime #calculating average of download bandwidth during last copy
+                self.logger.debug("Transfer took %.1f sec. and average speed of %.1f KB/s" % (tottime, downspeed/1024))
 
         self.stopchildproc(input, proc)
 

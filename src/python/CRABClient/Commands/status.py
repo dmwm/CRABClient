@@ -20,7 +20,7 @@ class status(SubCommand):
         server = HTTPRequests(self.serverurl, self.proxyfilename)
 
         self.logger.debug('Looking up detailed status of task %s' % self.cachedinfo['RequestName'])
-        dictresult, status, reason = server.get(self.uri, data = { 'campaign' : self.cachedinfo['RequestName']})
+        dictresult, status, reason = server.get(self.uri, data = { 'workflow' : self.cachedinfo['RequestName']})
 
         if status != 200:
             msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(self.cachedinfo['RequestName']), str(dictresult), str(reason))
