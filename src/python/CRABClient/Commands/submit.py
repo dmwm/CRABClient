@@ -6,7 +6,6 @@ from CRABClient.client_utilities import getJobTypes, createCache, createWorkArea
 import json, os
 from string import upper
 from CRABClient.Commands.SubCommand import SubCommand, ConfigCommand
-from CRABClient.Commands.server_info import server_info
 from CRABClient.Commands.reg_user import reg_user
 from WMCore.Configuration import loadConfigurationFile, Configuration
 from CRABClient.ServerInteractions import HTTPRequests
@@ -74,13 +73,6 @@ class submit(SubCommand, ConfigCommand):
 
         #usertarball and cmsswconfig use this parameter and we should set it up in a correct way
         self.configuration.General.serverUrl = self.serverurl
-
-#TODO figure out how to do this
-#        infosubcmd = server_info(self.logger, cmdargs = ['-s', serverurl])
-#        (code, serverinfo) = infosubcmd()
-#        if code is not 0:
-#            self.logger.debug("ERROR: failure during retrieval of server information. Stopping submission.")
-#            return CommandResult(code, serverinfo)
 
         #delegating the proxy (creation done in SubCommand)
         if not self.options.skipProxy:
