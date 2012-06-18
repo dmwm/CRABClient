@@ -53,7 +53,7 @@ mapping = {
 #    'upload' : {'uri': '/crabinterface/crab/uploadUserSandbox'},
 #    'get-error': {'uri': '/crabinterface/crab/jobErrors/'},
 #    'report': {'uri': '/crabinterface/crab/goodLumis/'},
-#    'kill':   {'uri': '/crabinterface/crab/task/'},
-#    'resubmit': {'uri': '/crabinterface/crab/reprocessTask/'},
+    'kill':   {'uri': '/crabserver/workflow', 'requiresTaskOption' : True},
+    'resubmit': {'uri': '/crabserver/workflow', 'requiresTaskOption' : True},
 #    'publish': {'uri': '/crabinterface/crab/publish/'},
 }

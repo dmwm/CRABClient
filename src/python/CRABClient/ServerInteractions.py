@@ -92,7 +92,6 @@ class HTTPRequests(dict):
         #Quoting the uri since it can contain the request name, and therefore spaces (see #2557)
         uri = urllib.quote(uri)
 
-#        pycurl set this automatically
 #        if verb != 'GET' and data:
 #            headers["Content-length"] = len(data)
         url = 'https://' + self['host'] + uri
