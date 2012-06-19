@@ -24,6 +24,7 @@ mapping = {
 #                            "ProcessingVersion" : {"default": "v1",             "config": 'Data.processingVersion', "type": "StringType",  "required": True },
                             #TODO
 #                            "DbsUrl"            : {"default": "http://cmsdbsprod.cern.ch/cms_dbs_prod_global/servlet/DBSServlet", "config": 'Data.dbsUrl', "type": "StringType",  "required": True },
+                            "publishdbsurl"     : {"default": None,             "config": 'Data.publishDbsUrl',     "type": "StringType",  "required": False},
                             "sitewhitelist"     : {"default": None,             "config": 'Site.whitelist',         "type": "ListType",    "required": False},
                             "siteblacklist"     : {"default": None,             "config": 'Site.blacklist',         "type": "ListType",    "required": False},
                             "runwhitelist"      : {"default": None,             "config": 'Data.runWhitelist',      "type": "StringType",    "required": False},
@@ -41,7 +42,7 @@ mapping = {
                                            "JobType.pluginName", "JobType.externalPluginFile", "JobType.psetName",
                                            "JobType.inputFiles", "JobType.pyCfgParams",
                                            "Data.unitsPerJob", "Data.splitting", "Data.inputDataset", "Data.lumiMask",
-                                           "User.email", "Data.publishDbsUrl", "Site.removeT1Blacklisting", "General.configcacheUrl" , "General.configcacheName"
+                                           "User.email", "Site.removeT1Blacklisting", "General.configcacheUrl" , "General.configcacheName"
                                           ],
                   'requiresTaskOption' : False
                 },
