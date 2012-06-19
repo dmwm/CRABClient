@@ -80,6 +80,7 @@ class SubCommand(object):
             for serverDN in agentDNs:
                 delegateProxy( serverDN, 'myproxy.cern.ch', proxyobj, self.logger)
         else:
+            self.proxyfilename = self.options.skipProxy
             self.logger.debug('Skipping proxy creation')
 
 

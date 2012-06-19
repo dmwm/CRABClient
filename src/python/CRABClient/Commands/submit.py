@@ -75,13 +75,9 @@ class submit(SubCommand, ConfigCommand):
         self.configuration.General.serverUrl = self.serverurl
 
         #delegating the proxy (creation done in SubCommand)
-        if not self.options.skipProxy:
-            self.voRole = getattr(self.configuration.User, "voRole", "")
-            self.voGroup = getattr(self.configuration.User, "voGroup", "")
-            self.handleProxy()
-        else:
-            userdn = self.options.skipProxy
-            self.logger.debug('Skipping proxy creation and delegation. Usind %s as userDN' % userdn)
+        self.voRole = getattr(self.configuration.User, "voRole", "")
+        self.voGroup = getattr(self.configuration.User, "voGroup", "")
+        self.handleProxy()
 
         uniquerequestname = None
 
