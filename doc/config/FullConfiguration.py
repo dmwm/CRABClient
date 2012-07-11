@@ -50,7 +50,7 @@ config.Data.processingVersion = 'v1'
 #config.Data.runWhitelist = '1,3,9-13'
 #config.Data.runBlacklist = '1,3,9-13'
 #config.Data.dbsUrl = "http://cmsdbsprod.cern.ch/cms_dbs_prod_global/servlet/DBSServlet"
-
+#config.Data.publishDbsUrl = "https://cmsdbsprod.cern.ch:8443/cms_dbs_ph_analysis_02_writer/servlet/DBSServlet"
 
 ## User options
 config.section_("User")
