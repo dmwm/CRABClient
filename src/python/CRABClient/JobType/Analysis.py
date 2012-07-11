@@ -10,6 +10,7 @@ from CRABClient.JobType.CMSSWConfig import CMSSWConfig
 from CRABClient.JobType.LumiMask import LumiMask
 from CRABClient.JobType.UserTarball import UserTarball
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
+from FWCore.PythonUtilities.LumiList import LumiList
 
 class Analysis(BasicJobType):
     """
@@ -117,3 +118,17 @@ class Analysis(BasicJobType):
             reason += 'Crab configuration problem: missing or null CMSSW config file name. '
 
         return (valid, reason)
+
+    def report(self, inputdata):
+        """
+        Computes the processed lumis, merges if needed and returns the compacted list.
+        """
+        mergedlumis = LumiList()
+        doublelumis = LumiList()
+        for report in inputdata:
+            doublelumis = mergedlumis & LumiList(runsAndLumis=report)
+            mergedlumis = mergedlumis | LumiList(runsAndLumis=report)
+            if doublelumis:
+                self.logger.info("Warning: double run-lumis processed %s" % doublelumis)
+        self.logger.info("Processed %d lumis" % len(mergedlumis.getLumis()))
+        return mergedlumis.getCompactList()

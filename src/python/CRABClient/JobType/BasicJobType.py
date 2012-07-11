@@ -15,15 +15,16 @@ class BasicJobType(object):
     """
 
     def __init__(self, config, logger, workingdir):
+        self.logger = logger
         ## Before everything checking if the config is ok
-        result, msg = self.validateConfig( config )
-        if result:
-            self.config  = config
-            self.logger  = logger
-            self.workdir = workingdir
-        else:
-            ## the config was not ok, returning a proper message
-            raise Exception( msg )
+        if config:
+            result, msg = self.validateConfig( config )
+            if result:
+                self.config  = config
+                self.workdir = workingdir
+            else:
+                ## the config was not ok, returning a proper message
+                raise Exception( msg )
 
 
     def run(self):
@@ -43,3 +44,12 @@ class BasicJobType(object):
         """
         ## (boolean with the result of the validation, eventual error message)
         return (True, '')
+
+
+    def report(self, inputdata):
+        """
+        _report_
+
+        Report the summary of the job type.
+        """
+        raise NotImplementedError()

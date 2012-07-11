@@ -1,63 +1,48 @@
 import json
 import os
+from string import upper
 
-from FWCore.PythonUtilities.LumiList import LumiList
-
-from CRABClient.Commands import CommandResult
+from CRABClient.Commands.request_type import request_type
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ServerInteractions import HTTPRequests
-
+from CRABClient.client_utilities import getJobTypes
 
 class report(SubCommand):
     """ Get the list of good lumis for your task identified by -t/--task option
     """
-    #TODO delete CommandResult and use raise Exception
-    #TODO use requiresTaskOption in ClientMapping and validateOptions
-    visible = False
+    visible = True
 
+    name  = __name__.split('.').pop()
+    usage = "usage: %prog " + name + " [options] [args]"
 
     def __call__(self):
 
-        if self.options.task is None:
-            return CommandResult(2001, 'ERROR: Task option is required')
+        server = HTTPRequests(self.serverurl, self.proxyfilename)
 
-        server = HTTPRequests(self.cachedinfo['Server'] + ':' + str(self.cachedinfo['Port']))
-
-        self.logger.debug('Looking up good lumis for task %s' % self.cachedinfo['RequestName'])
-        dictresult, status, reason = server.get(self.uri + self.cachedinfo['RequestName'])
+        self.logger.debug('Looking up report for task %s' % self.cachedinfo['RequestName'])
+        dictresult, status, reason = server.get(self.uri, data = {'workflow': self.cachedinfo['RequestName'], 'subresource': 'report'})
 
         self.logger.debug("Result: %s" % dictresult)
 
         if status != 200:
-            msg = "Problem retrieving good lumis:\ninput:%s\noutput:%s\nreason:%s" % (str(self.cachedinfo['RequestName']), str(dictresult), str(reason))
-            return CommandResult(1, msg)
+            msg = "Problem retrieving report:\ninput:%s\noutput:%s\nreason:%s" % (str(self.cachedinfo['RequestName']), str(dictresult), str(reason))
+            raise RESTCommunicationException(msg)
 
-        mergedLumis = LumiList()
-        doubleLumis = LumiList()
-        for workflow in dictresult[unicode("lumis")]:
-            self.logger.info('#%s %s' % (workflow['subOrder'], workflow['request']) )
-            nLumis = 0
-            wflumi = json.loads(workflow[unicode("lumis")])
-            doubleLumis = mergedLumis & LumiList(compactList = wflumi)
-            mergedLumis = mergedLumis | LumiList(compactList = wflumi)
-            for run in wflumi:
-                for lumiPairs in wflumi[run]:
-                    nLumis += (1 + lumiPairs[1] - lumiPairs[0])
-            self.logger.info("   Sucessfully analyzed %s lumi(s) from %s run(s)" % (nLumis, len(wflumi)))
-            if doubleLumis:
-                self.logger.info("Warning: double run-lumis processed %s" % doubleLumis)
+        reqtype = request_type(self.logger, ['-t', self.cachedinfo['RequestName'], '--proxyfile', self.proxyfilename, '--skip-proxy', '1'])
+        requesttype = reqtype()
+        jobtypes = getJobTypes()
+        plugjobtype = jobtypes[upper(requesttype)](config=None, logger=self.logger, workingdir=None)
 
-        if self.options.file:
-            jsonFileName = self.options.file
+        formattedreport = plugjobtype.report(dictresult["result"])
+
+        if self.outfile:
+            jsonFileName = self.outfile
         else:
-            jsonFileName = os.path.join(self.requestarea, 'results', 'lumiReport.json')
+            jsonFileName = os.path.join(self.requestarea, 'results', 'report.json')
         with open(jsonFileName, 'w') as jsonFile:
-            json.dump(mergedLumis.getCompactList(), jsonFile)
+            json.dump(formattedreport, jsonFile)
             jsonFile.write("\n")
-            self.logger.info("Summary of processed lumi sections written to %s" % jsonFileName)
-
-        return CommandResult(0, None)
-
+            self.logger.info("Summary of report written to %s" % jsonFileName)
 
     def setOptions(self):
         """
@@ -65,13 +50,14 @@ class report(SubCommand):
 
         This allows to set specific command options
         """
-        self.parser.add_option( "-t", "--task",
-                                 dest = "task",
-                                 default = None,
-                                 help = "Task name to report on " )
-
         self.parser.add_option( "-o", "--outputfile",
-                                 dest = "file",
+                                 dest = "outfile",
                                  default = None,
                                  help = "Filename to write JSON summary to" )
 
+    def validateOptions(self):
+        """
+        Check if the output file is given and set as attribute
+        """
+        SubCommand.validateOptions(self)
+        setattr(self, 'outfile', getattr(self.options, 'outfile', None))
