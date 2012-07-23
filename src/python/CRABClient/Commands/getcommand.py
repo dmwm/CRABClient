@@ -12,7 +12,7 @@ class getcommand(SubCommand):
 
     visible = False
 
-    def __call__(self, subresource):
+    def __call__(self, **argv):
         #Setting default destination if -o is not provided
         if not self.dest:
             self.dest = os.path.join(self.requestarea, 'results')
@@ -28,7 +28,8 @@ class getcommand(SubCommand):
 
         #Retrieving output files location from the server
         self.logger.debug('Retrieving locations for task %s' % self.cachedinfo['RequestName'] )
-        inputdict =  { 'workflow' : self.cachedinfo['RequestName'], 'subresource' : subresource}
+        inputdict =  { 'workflow' : self.cachedinfo['RequestName'] }
+        inputdict.update(argv)
         if getattr(self.options, 'quantity', None):
             self.logger.debug('Retrieving %s file locations' % self.options.quantity )
             inputdict['limit'] = self.options.quantity
