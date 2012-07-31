@@ -48,10 +48,11 @@ def getPlugins(namespace, plugins, skip):
             ## import the package module
             mod = __import__('%s.%s.%s' % (namespace, plugins, el[1]), \
                                         globals(), locals(), el[1] )
-            ## add to the module dictionary
-            modules[el[1]] = getattr(mod, el[1])
+            ## add to the module dictionary.
+            ## N.B. Utilitiy modules like LumiMask do not have classes inside them
+            modules[el[1]] = getattr(mod, el[1], None)
             #set the default name if it has not been overridden in the class
-            if not hasattr(modules[el[1]], 'name'):
+            if not hasattr(modules[el[1]], 'name') and modules[el[1]]:
                 setattr(modules[el[1]], 'name', modules[el[1]].__name__)
 
     return modules

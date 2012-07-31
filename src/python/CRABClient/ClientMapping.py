@@ -27,8 +27,6 @@ mapping = {
                             "publishdbsurl"     : {"default": None,             "config": 'Data.publishDbsUrl',     "type": "StringType",  "required": False},
                             "sitewhitelist"     : {"default": None,             "config": 'Site.whitelist',         "type": "ListType",    "required": False},
                             "siteblacklist"     : {"default": None,             "config": 'Site.blacklist',         "type": "ListType",    "required": False},
-                            "runwhitelist"      : {"default": None,             "config": 'Data.runWhitelist',      "type": "StringType",    "required": False},
-                            "runblacklist"      : {"default": None,             "config": 'Data.runBlacklist',      "type": "StringType",    "required": False},
                             "blockwhitelist"    : {"default": None,             "config": 'Data.blockWhitelist',    "type": "ListType",    "required": False},
                             "blockblacklist"    : {"default": None,             "config": 'Data.blockBlacklist',    "type": "ListType",    "required": False},
                             "splitalgo"         : {"default": None,             "config": 'Data.splitting',         "type": "StringType",  "required": False},
@@ -41,7 +39,7 @@ mapping = {
                                            "General.serverUrl", "General.ufccacheUrl", "General.requestName", "General.workArea",
                                            "JobType.pluginName", "JobType.externalPluginFile", "JobType.psetName",
                                            "JobType.inputFiles", "JobType.pyCfgParams",
-                                           "Data.unitsPerJob", "Data.splitting", "Data.inputDataset", "Data.lumiMask",
+                                           "Data.unitsPerJob", "Data.splitting", "Data.inputDataset", "Data.lumiMask", "Data.runRange",
                                            "User.email", "Site.removeT1Blacklisting", "General.configcacheUrl" , "General.configcacheName"
                                           ],
                   'requiresTaskOption' : False

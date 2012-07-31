@@ -6,50 +6,58 @@ import json
 import urllib2
 import urlparse
 
+import WMCore
 from CRABClient.ServerInteractions import HTTPRequests
+from CRABClient.client_exceptions import ConfigurationException
 
 
-class LumiMask(object):
+def getLumiMask(config, logger=None):
     """
-    Class to handle LumiMask JSON file
+    Takes the lumiMask and runRange parameter and return the lumiMask dict.
+    lumiMask: either an http address or a json file on the disk
+    runRange: a string range like '1,2,5-8' containing the runs the user are
+             interested to. Runs in lumiMask are filtered according to runRange
+    returns: a dict in the json format
+             (e.g.: {'1':[[3,5],[7,9]],'4':[[1,1],[5,10]]})
     """
-    def __init__(self, config, logger=None):
-        self.config = config
-        self.logger = logger
+    # Parse Lumi list from file or URL
+    parts = urlparse.urlparse(config.Data.lumiMask)
+    if parts[0] in ['http', 'https']:
+        logger.debug('Downloading lumiMask from %s' % config.Data.lumiMask)
+        lumiFile = urllib2.urlopen(config.Data.lumiMask)
+        lumiMask = json.load(lumiFile)
+    else:
+        with open(config.Data.lumiMask, 'r') as lumiFile:
+            logger.debug('Reading lumiMask from %s' % config.Data.lumiMask)
+            lumiMask = json.load(lumiFile)
 
-        # Parse Lumi list from file or URL
-        parts = urlparse.urlparse(self.config.Data.lumiMask)
-        if parts[0] in ['http', 'https']:
-            self.logger.debug('Downloading lumiMask from %s' % self.config.Data.lumiMask)
-            lumiFile = urllib2.urlopen(self.config.Data.lumiMask)
-            self.lumiMask = json.load(lumiFile)
+    runRange = _expandRange( getattr(config.Data, 'runRange', ''))
+
+    return dict((run, lumi) for run, lumi in lumiMask.iteritems() if not runRange or run in runRange)
+
+
+
+def _expandRange(myrange):
+    """
+    Used to expand the runRange parameter
+    Take a string like '1,2,5-8' and return a list of integers [1,2,5,6,7,8]
+    """
+    myrange = myrange.replace(' ','')
+    if not myrange:
+        return []
+    try:
+        WMCore.Lexicon.jobrange(myrange)
+    except AssertionError, ex:
+        raise ConfigurationException("Invalid runRange: %s" % myrange)
+
+    myrange = myrange.split(',')
+    result = []
+    for element in myrange:
+        if element.count('-') > 0:
+            mySubRange = element.split('-')
+            subInterval = range( int(mySubRange[0]), int(mySubRange[1])+1)
+            result.extend(subInterval)
         else:
-            with open(self.config.Data.lumiMask, 'r') as lumiFile:
-                self.logger.debug('Reading lumiMask from %s' % self.config.Data.lumiMask)
-                self.lumiMask = json.load(lumiFile)
+            restult.append(int(element))
 
-
-    def upload(self, requestConfig):
-        """
-        Upload the lumi mask file to the server
-        """
-
-        url = self.config.General.serverUrl
-        server = HTTPRequests(url)
-        if not server:
-            raise RuntimeError('No server specified for lumiMask upload')
-
-        group  = self.config.User.group
-        userDN = requestConfig['RequestorDN']
-        runRange = getattr(self.config.Data, 'runRange', [])
-
-        data = {'LumiMask'    : self.lumiMask, 'DatasetName' : self.config.Data.inputDataset,
-                'Description' : '',            'RequestName' : requestConfig['RequestName'],
-                'Group'       : group,         'UserDN'      : userDN,
-                'Label'       : '',            'RunRange'    : runRange,
-               }
-        jsonString = json.dumps(data, sort_keys=False)
-
-        result = server.post(uri='/crabinterface/crab/lumiMask/', data=jsonString)
-        self.logger.debug('Result of LumiMask POST: %s' % str(result))
-        return result
+    return result
