@@ -7,7 +7,7 @@ import tempfile
 
 from CRABClient.JobType.BasicJobType import BasicJobType
 from CRABClient.JobType.CMSSWConfig import CMSSWConfig
-from CRABClient.JobType.LumiMask import LumiMask
+from CRABClient.JobType.LumiMask import getLumiMask
 from CRABClient.JobType.UserTarball import UserTarball
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
 from FWCore.PythonUtilities.LumiList import LumiList
@@ -24,9 +24,7 @@ class Analysis(BasicJobType):
         """
         configArguments = {'addoutputfiles'            : [],
                            'adduserfiles'              : [],
-#                           'ProcessingVersion'         : '',
                            'configdoc'                 : '',
-#                           'ACDCDoc'                   : '',
                           }
 
         # Get SCRAM environment
@@ -70,14 +68,18 @@ class Analysis(BasicJobType):
         result = cmsswCfg.upload(requestConfig)
         configArguments['configdoc'] = result['DocID']
 
-        # Upload lumi mask if it exists
+        # Set up lumi mask if it exists
         lumiMaskName = getattr(self.config.Data, 'lumiMask', None)
         if lumiMaskName:
-            self.logger.debug("Uploading lumi mask %s" % lumiMaskName)
-            lumiMask = LumiMask(config=self.config, logger=self.logger)
-            result = lumiMask.upload(requestConfig)
-            self.logger.debug("ACDC Fileset created with DocID %s" % result[0]['Name'])
-#            configArguments['ACDCDoc'] = result[0]['Name']
+            #
+            self.logger.debug("Attaching lumi mask %s to the request" % lumiMaskName)
+            lumiDict = getLumiMask(config=self.config, logger=self.logger)
+            configArguments['runs'] = lumiDict.keys()
+            #for each run we'll encode the lumis as a string representing a list of integers
+            #[[1,2],[5,5]] ==> '1,2,5,5'
+            configArguments['lumis'] = [ str(reduce(lambda x,y: x+y, \
+                                            lumiDict[run]))[1:-1].replace(' ','') \
+                                            for run in configArguments['runs'] ]
 
         configArguments['jobtype'] = 'Analysis'
 

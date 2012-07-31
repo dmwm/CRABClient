@@ -241,12 +241,13 @@ class submit(SubCommand, ConfigCommand):
         """ Used to encode the request from a dict to a string. Include the code needed for transforming lists in the format required by
             cmsweb, e.g.:   adduserfiles = ['file1','file2']  ===>  [...]adduserfiles=file1&adduserfiles=file2[...]
         """
-        listParams = ['adduserfiles', 'addoutputfiles', 'sitewhitelist', 'siteblacklist', 'blockwhitelist', 'blockblacklist'] #TODO automate this using ClientMapping
+        #TODO automate this using ClientMapping
+        listParams = ['adduserfiles', 'addoutputfiles', 'sitewhitelist', 'siteblacklist', 'blockwhitelist', 'blockblacklist', 'runs', 'lumis']
         encodedLists = ''
         for lparam in listParams:
             if lparam in configreq:
                 if len(configreq[lparam])>0:
-                    encodedLists += ('&%s=' % lparam) + ('&%s=' % lparam).join(configreq[lparam])
+                    encodedLists += ('&%s=' % lparam) + ('&%s=' % lparam).join( map(urllib.quote, configreq[lparam]) )
                 del configreq[lparam]
         encoded = urllib.urlencode(configreq) + encodedLists
         self.logger.debug('Encoded submit request: %s' % encoded)
