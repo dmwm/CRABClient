@@ -46,6 +46,7 @@ mapping = {
                                           ],
                   'requiresTaskOption' : False
                 },
+    'geterror'     : {'uri': '/crabserver/workflow', 'requiresTaskOption' : True},
     'getlog'       : {'uri': '/crabserver/workflow', 'requiresTaskOption' : True},
     'getoutput'    : {'uri': '/crabserver/workflow', 'requiresTaskOption' : True},
     'remote_copy'  : {'uri': None, 'requiresTaskOption' : False, 'initializeProxy' : False},#proxy already inited by the calling command
