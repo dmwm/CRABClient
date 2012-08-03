@@ -93,7 +93,7 @@ class status(SubCommand):
         """
         Print the error details of the site (when option -i is used)
         """
-        _, _, EXITCODE, ERRLIST, SITE = range(5)
+        _, _, EXITCODE, SITE, ERRLIST = range(5)
         if errresult.has_key('result') and len(errresult['result'])>0:
             for row in errresult['result'][0]:
                 if row['key'][SITE] == site:
