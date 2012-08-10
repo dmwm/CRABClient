@@ -55,6 +55,9 @@ class Analysis(BasicJobType):
         cmsswCfg = CMSSWConfig(config=self.config, logger=self.logger,
                                userConfig=self.config.JobType.psetName)
 
+        if cmsswCfg.getGlobalTag():
+            configArguments['globaltag'] = cmsswCfg.getGlobalTag()
+
         # Interogate CMSSW config and user config for output file names, for now no use for edmFiles or TFiles here.
         analysisFiles, edmFiles = cmsswCfg.outputFiles()
         self.logger.debug("WMAgent will collect TFiles %s and EDM Files %s" % (analysisFiles, edmFiles))
