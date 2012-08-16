@@ -56,7 +56,7 @@ class resubmit(SubCommand):
         #which is not really user friendly.
         #Moreover, I prefer to be independent from Lexicon. I'll the regex here.
         sn_re = "^T[1-3]_[A-Z]{2}(_[A-Za-z0-9]+)+$" #sn_re => SiteName_RegularExpression
-        sn_rec = re.compile("^T[1-3]_[A-Z]{2}(_[A-Za-z0-9]+)+$") #sn_rec => SiteName_RegularExpressionCompiled
+        sn_rec = re.compile(sn_re) #sn_rec => SiteName_RegularExpressionCompiled
 
         self.sitewhitelist = ''
         self.siteblsklist = ''
@@ -69,6 +69,5 @@ class resubmit(SubCommand):
                     if not sn_rec.match(site):
                         raise ConfigException("The sitename %s dows not look like a valid CMS name (not matching %s)" % (site, sn_re) )
                     result += "&%s=%s" % (siteList, site)
-            print self.options, siteList, result
             setattr(self, siteList, result)
 
