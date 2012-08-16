@@ -14,7 +14,8 @@ class status(SubCommand):
     """
 
     shortnames = ['st']
-    states = ['submitted', 'failure', 'queued', 'success']
+    complexStates = ['submitted', 'failure', 'queued', 'success']
+    statesMessage = {'submitted':'', 'failure':'', 'queued':'', 'success':'Transfers details: '}
 
     def __call__(self):
         server = HTTPRequests(self.serverurl, self.proxyfilename)
@@ -30,59 +31,63 @@ class status(SubCommand):
         self.logger.debug(dictresult)
         listresult = dictresult['result']
 
+        #Getting detailed information if "site" or "failure" options are used.
+        #In these cases we need to get the "jobs" information because the "agent" information are not enough
         if self.options.site or self.options.failure:
             errresult, status, reason = server.get('/crabserver/workflow', \
-                                data = { 'workflow' : self.cachedinfo['RequestName'], 'subresource' : 'errors', 'shortformat' : 1 if self.options.failure else 0})
+                                data = { 'workflow' : self.cachedinfo['RequestName'], 'subresource' : 'errors', 'shortformat' : 0 if self.options.site else 1})
             if status != 200:
                 msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(self.cachedinfo['RequestName']), str(errresult), str(reason))
                 raise RESTCommunicationException(msg)
             self.logger.debug(str(errresult))
 
+        #printing the "task status"
         self.logger.info("Task Status:\t\t%s" % listresult[Resp.campaignStatus])
-        states = listresult[Resp.jobsPerState]
-        total = sum( states[st] for st in states )
-        frmt = ''
-        resubmissions = 0
-        for status in states:
-            if states[status] > 0 and status not in ['total', 'first', 'retry']:
-                frmt += status + ' %.1f %%\t' % ( states[status]*100/total )
-        if frmt == '' and total != 0:
-            frmt = 'jobs are being submitted'
-        self.logger.info('Details:\t\t%s' % frmt)
 
+        #print details about the sites
         self.logger.info(('Using %d site(s):\t' % len(listresult[Resp.detailsPerSite])) + \
                            ('' if len(listresult[Resp.detailsPerSite])>4 else ', '.join(listresult[Resp.detailsPerSite].keys())))
 
+        #printing the status of the task
+        self.logger.info('Details:')
+        states = listresult[Resp.jobsPerState]
+        total = sum( states[st] for st in states )
+        resubmissions = 0
+        for status in states:
+            line = ''
+            detailsLine = ''
+            if states[status] > 0:# and status not in ['total', 'first', 'retry']:
+                line += '  ' + status + ' %.1f %%\t' % ( states[status]*100/total )
+
+            if status in self.complexStates and status in listresult[Resp.detailsPerState]:
+                if 'retry' in listresult[Resp.detailsPerState][status]:
+                    resubmissions += listresult[Resp.detailsPerState][status]['retry']
+
+                for detailStatus in listresult[Resp.detailsPerState][status]:
+                    if detailStatus not in ['first','retry']:
+                        detailsLine += '  ' + detailStatus + ' %.1f %%  ' % ( listresult[Resp.detailsPerState][status][detailStatus]*100/states[status] )
+
+            self.logger.info(line + ('\t('+self.statesMessage[status]+detailsLine+')' if detailsLine else ''))
+
+        if resubmissions:
+            self.logger.info('%.1f %% using the automatic resubmission' % (resubmissions*100/total))
+
+        #--site option
         if self.options.site:
             if not listresult[Resp.detailsPerSite]:
                 self.logger.info("Information per site are not available.")
             for site in listresult[Resp.detailsPerSite]:
                 self.logger.info("%s: " % site)
                 states = listresult[Resp.detailsPerSite][site][0]
-                frmt = '    '
+                line = '    '
                 for status in states:
                     if states[status] > 0:
-                        frmt += status + ' %.1f %%\t' % ( states[status]*100/total )
-                self.logger.info(frmt)
+                        line += status + ' %.1f %%\t' % ( states[status]*100/total )
+                self.logger.info(line)
                 self._printSiteErrors(errresult, site, total)
 
-        for status in self.states:
-            if listresult[Resp.detailsPerState].has_key(status):
-                if listresult[Resp.detailsPerState][status].has_key('retry'):
-                    resubmissions += listresult[Resp.detailsPerState][status]['retry']
-                states = listresult[Resp.detailsPerState][status]
-                frmt = status + " breakdown:\t"
-                detailsFound = False
-                for st in states:
-                    if st != 'first' and st != 'retry':
-                        frmt += st + '   %.1f %%\t' % ( states[st]*100/total )
-                    detailsFound = True
-                if detailsFound:#print only if there are details
-                    self.logger.info(frmt)
 
-        if resubmissions:
-            self.logger.info('%.1f %% using the automatic resubmission' % (resubmissions*100/total))
-
+        #--failure option
         #XXX: The exit code here is the one generated by Report.getExitCode and is not necessarily the CMSSWException one
         if self.options.failure:
             self.logger.info("List of errors:")
