@@ -93,10 +93,11 @@ class status(SubCommand):
             self.logger.info("List of jobs errors:")
             for err in errresult['result'][0]['jobs']:
                 self.logger.info("  %.1f %% have exit code %s" % (err['value']*100/total, err['key'][2]))
-            self.logger.info("List of transfer errors:")
-            total = errresult['result'][0]['transfers']['state']['total']
-            for err, num in errresult['result'][0]['transfers']['failures_reasons'].items():
-                self.logger.info("  %.1f %% have error %s" % (num, err))
+            if 'state' in errresult['result'][0]['transfers'] and 'failures_reasons' in errresult['result'][0]['transfers']:
+                self.logger.info("List of transfer errors:")
+                total_transf = errresult['result'][0]['transfers']['state']['total']
+                for err, num in errresult['result'][0]['transfers']['failures_reasons'].items():
+                    self.logger.info("  %.1f %% have error %s" % (num/total_transf, err))
 
     def _printSiteErrors(self, errresult, site, total):
         """
