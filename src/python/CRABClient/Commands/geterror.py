@@ -15,7 +15,12 @@ class geterror(SubCommand):
         server = HTTPRequests(self.serverurl, self.proxyfilename)
 
         self.logger.debug('Getting errors of task %s' % self.cachedinfo['RequestName'])
-        dictresult, status, reason = server.get(self.uri, data = { 'workflow' : self.cachedinfo['RequestName'], 'subresource' : 'fwjr'})
+        options = { 'workflow' : self.cachedinfo['RequestName'], 'subresource' : 'fwjr' }
+        if getattr(self.options, 'quantity', None):
+            options.update({'limit' : self.options.quantity})
+        if getattr(self.options, 'exitcode', None):
+            options.update({'exitcode' : self.options.exitcode})
+        dictresult, status, reason = server.get(self.uri, data = options)
         self.logger.debug(dictresult)
 
         if status != 200:
