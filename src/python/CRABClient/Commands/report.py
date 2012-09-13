@@ -28,7 +28,7 @@ class report(SubCommand):
             msg = "Problem retrieving report:\ninput:%s\noutput:%s\nreason:%s" % (str(self.cachedinfo['RequestName']), str(dictresult), str(reason))
             raise RESTCommunicationException(msg)
 
-        reqtype = request_type(self.logger, ['-t', self.cachedinfo['RequestName'], '--proxyfile', self.proxyfilename, '--skip-proxy', '1'])
+        reqtype = request_type(self.logger, ['-t', self.options.task, '--proxyfile', self.proxyfilename, '--skip-proxy', '1'])
         requesttype = reqtype()
         jobtypes = getJobTypes()
         plugjobtype = jobtypes[upper(requesttype)](config=None, logger=self.logger, workingdir=None)
