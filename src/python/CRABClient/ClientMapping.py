@@ -20,7 +20,7 @@ mapping = {
                             "workflow"       : {"default": None,             "config": None,                     "type": "StringType",  "required": True },
                             "savelogsflag"      : {"default": False,            "config": 'General.saveLogs',       "type": "BooleanType", "required": True },
                             "asyncdest"         : {"default": None,             "config": 'Site.storageSite',       "type": "StringType",  "required": True },
-                            "publishname"       : {"default": str(int(time.time())), "config": 'Data.publishDataName',   "type": "StringType",  "required": True },
+                            "publishname"       : {"default": None, "config": 'Data.publishDataName',   "type": "StringType",  "required": False },
 #                            "ProcessingVersion" : {"default": "v1",             "config": 'Data.processingVersion', "type": "StringType",  "required": True },
                             #TODO
 #                            "DbsUrl"            : {"default": "http://cmsdbsprod.cern.ch/cms_dbs_prod_global/servlet/DBSServlet", "config": 'Data.dbsUrl', "type": "StringType",  "required": True },
