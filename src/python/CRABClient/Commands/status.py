@@ -5,7 +5,7 @@ from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient.client_exceptions import MissingOptionException, RESTCommunicationException
 
 class Resp:
-    campaign, campaignStatus, jobsPerState, detailsPerState, detailsPerSite = range(5)
+    campaign, campaignStatus, jobsPerState, detailsPerState, detailsPerSite, transferDetails = range(6)
 
 class status(SubCommand):
     """
@@ -14,8 +14,8 @@ class status(SubCommand):
     """
 
     shortnames = ['st']
-    complexStates = ['submitted', 'failure', 'queued', 'success']
-    statesMessage = {'submitted':'', 'failure':'', 'queued':'', 'success':'Transfers details: '}
+    complexStates = ['submitted', 'failure', 'queued']
+    statesMessage = {'submitted':'', 'failure':'', 'queued':''}
 
     def __call__(self):
         server = HTTPRequests(self.serverurl, self.proxyfilename)
@@ -49,7 +49,7 @@ class status(SubCommand):
             self.logger.info(('Using %d site(s):\t' % len(listresult[Resp.detailsPerSite])) + \
                                ('' if len(listresult[Resp.detailsPerSite])>4 else ', '.join(listresult[Resp.detailsPerSite].keys())))
 
-        #printing the status of the task
+        #print the status of the task
         finalMessage = ''
         states = listresult[Resp.jobsPerState]
         total = sum( states[st] for st in states )
@@ -72,10 +72,21 @@ class status(SubCommand):
                 finalMessage += line + ('\t('+self.statesMessage[status]+detailsLine+')\n' if detailsLine else '\n')
 
         if finalMessage:
-            self.logger.info('Details:\n' + finalMessage[:-1]) #stripping last \n
+            self.logger.info('Jobs Details:\n' + finalMessage[:-1]) #stripping last \n
 
         if resubmissions:
             self.logger.info('  Using the automatic resubmission (%.1f %%)' % (resubmissions*100/total))
+
+        #print the details about the transfers
+        if listresult[Resp.transferDetails]:
+            self.logger.info('Further Details:')
+            #{u'publication_state': {u'published': 15}, u'state': {u'total': 15, u'done': 15}}
+            transfStates = listresult[Resp.transferDetails]['state']
+            self.logger.info('  transfers:\t' + (' %.1f %%    '.join(transfStates)+' %.1f %%') % tuple(map(lambda x: x*100/total, transfStates.values())))
+
+            if 'publication_state' in listresult[Resp.transferDetails] and listresult[Resp.transferDetails]['publication_state']:
+                publStates = listresult[Resp.transferDetails]['publication_state']
+                self.logger.info('  publication:\t' + (' %.1f %%    '.join(publStates)+' %.1f %%') % tuple(map(lambda x: x*100/total, publStates.values())))
 
         #--site option
         if self.options.site:
@@ -100,9 +111,9 @@ class status(SubCommand):
                 self.logger.info("  %.1f %% have exit code %s" % (err['value']*100/total, err['key'][2]))
             if 'state' in errresult['result'][0]['transfers'] and 'failures_reasons' in errresult['result'][0]['transfers']:
                 self.logger.info("List of transfer errors:")
-                total_transf = errresult['result'][0]['transfers']['state']['total']
+                total_transf = sum(errresult['result'][0]['transfers']['state'].values())
                 for err, num in errresult['result'][0]['transfers']['failures_reasons'].items():
-                    self.logger.info("  %.1f %% have error %s" % (num/total_transf, err))
+                    self.logger.info("  %.1f %% have error %s" % (num/total_transf * 100, err))
 
     def _printSiteErrors(self, errresult, site, total):
         """
