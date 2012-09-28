@@ -53,7 +53,7 @@ class submit(SubCommand, ConfigCommand):
             #https is required because configcache does not use ServerInteractions
             self.configuration.General.configcacheUrl = 'https://' + self.serverurl + '/couchdb'
         if not hasattr( self.configuration.General, 'configcacheName' ):
-            self.configuration.General.configcacheName = 'reqmgr_config_cache'
+            self.configuration.General.configcacheName = 'analysis_reqmgr_config_cache'
 
         self.createCache( self.serverurl )
 
