@@ -30,7 +30,7 @@ mapping = {
                             "blockwhitelist"    : {"default": None,             "config": 'Data.blockWhitelist',    "type": "ListType",    "required": False},
                             "blockblacklist"    : {"default": None,             "config": 'Data.blockBlacklist',    "type": "ListType",    "required": False},
                             "splitalgo"         : {"default": None,             "config": 'Data.splitting',         "type": "StringType",  "required": False},
-                            "algoargs"          : {"default": None,             "config": 'Data.unitsPerJob',       "type": "IntType",  "required": False},
+                            "algoargs"          : {"default": None,             "config": 'Data.unitsPerJob',       "type": "IntType",  "required": True},
                             "addoutputfiles"    : {"default": [],               "config": 'JobType.outputFiles',    "type": "ListType",    "required": False},
                             "blacklistT1"       : {"default": True,             "config": None,                     "type": "BooleanType", "required": False},
                           },
