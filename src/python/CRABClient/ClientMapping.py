@@ -33,6 +33,8 @@ mapping = {
                             "algoargs"          : {"default": None,             "config": 'Data.unitsPerJob',       "type": "IntType",  "required": False},
                             "addoutputfiles"    : {"default": [],               "config": 'JobType.outputFiles',    "type": "ListType",    "required": False},
                             "blacklistT1"       : {"default": True,             "config": None,                     "type": "BooleanType", "required": False},
+                            "vorole"            : {"default": None,             "config": 'User.voRole',            "type": "StringType",  "required": False},
+                            "vogroup"           : {"default": None,             "config": 'User.voGroup',           "type": "StringType",  "required": False}
                           },
 
                   'other-config-params' : [

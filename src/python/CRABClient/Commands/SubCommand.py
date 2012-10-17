@@ -97,8 +97,8 @@ class SubCommand(object):
             port = ':' + self.cachedinfo['Port'] if self.cachedinfo['Port'] else ''
             self.serverurl = self.cachedinfo['Server'] + port
             #TODO Save them in the cache
-            self.voGroup = self.cachedinfo['voRole'] if not self.options.voRole else self.options.voRole
-            self.voRole = self.cachedinfo['voGroup'] if not self.options.voGroup else self.options.voGroup
+            self.voRole = self.cachedinfo['voRole'] if not self.options.voRole else self.options.voRole
+            self.voGroup = self.cachedinfo['voGroup'] if not self.options.voGroup else self.options.voGroup
 
 
     def __call__(self):
