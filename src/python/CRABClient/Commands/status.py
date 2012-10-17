@@ -111,9 +111,9 @@ class status(SubCommand):
                 self.logger.info("  %.1f %% have exit code %s" % (err['value']*100/total, err['key'][2]))
             if 'state' in errresult['result'][0]['transfers'] and 'failures_reasons' in errresult['result'][0]['transfers']:
                 self.logger.info("List of transfer errors:")
-                total_transf = sum(errresult['result'][0]['transfers']['state'].values())
+                #total_transf = sum(errresult['result'][0]['transfers']['state'].values())
                 for err, num in errresult['result'][0]['transfers']['failures_reasons'].items():
-                    self.logger.info("  %.1f %% have error %s" % (num/total_transf * 100, err))
+                    self.logger.info("  %.1f %% have error %s" % (num/total * 100, err))
 
     def _printSiteErrors(self, errresult, site, total):
         """
