@@ -135,5 +135,6 @@ class Analysis(BasicJobType):
             mergedlumis = mergedlumis | LumiList(runsAndLumis=report)
             if doublelumis:
                 self.logger.info("Warning: double run-lumis processed %s" % doublelumis)
-        self.logger.info("Processed %d lumis" % len(mergedlumis.getLumis()))
-        return mergedlumis.getCompactList()
+        compactlist = mergedlumis.getLumis()
+        self.logger.debug("Processed %d lumis" % len(compactlist))
+        return len(compactlist), compactlist

@@ -33,16 +33,34 @@ class report(SubCommand):
         jobtypes = getJobTypes()
         plugjobtype = jobtypes[upper(requesttype)](config=None, logger=self.logger, workingdir=None)
 
-        formattedreport = plugjobtype.report(dictresult["result"])
+        #remove and print output dataset information
+        outindexlist = [i for i,el in enumerate(dictresult["result"]) if 'out' in el]
+        outi = None
+        if len(outindexlist) == 1 and dictresult["result"][outindexlist[0]]['out']:
+            outi = outindexlist[0]
+            for dataset in dictresult["result"][outi]["out"].keys():
+                self.logger.info("Dataset name after publication is: %s " % str(dataset))
+                self.logger.info("                       total size: %d Bytes" % dictresult["result"][outi]["out"][dataset].get("size", 0))
+                self.logger.info("                     total events: %d " % dictresult["result"][outi]["out"][dataset].get("events", 0))
+                self.logger.info("                      total files: %d " % dictresult["result"][outi]["out"][dataset].get("count", 0))
+            #this has to be removed to avoid issues with lumi report
+            del dictresult["result"][outi]
 
-        if self.outfile:
-            jsonFileName = self.outfile
+        howmanylumi, formattedreport = plugjobtype.report(dictresult["result"])
+        if outi is not None:
+            self.logger.info("            total processed lumis: %d " % howmanylumi)
         else:
-            jsonFileName = os.path.join(self.requestarea, 'results', 'report.json')
-        with open(jsonFileName, 'w') as jsonFile:
-            json.dump(formattedreport, jsonFile)
-            jsonFile.write("\n")
-            self.logger.info("Summary of report written to %s" % jsonFileName)
+            self.logger.info("Processed %d lumis." %howmanylumi)
+
+        if howmanylumi > 0:
+            if self.outfile:
+               jsonFileName = self.outfile
+            else:
+                jsonFileName = os.path.join(self.requestarea, 'results', 'report.json')
+            with open(jsonFileName, 'w') as jsonFile:
+                json.dump(formattedreport, jsonFile)
+                jsonFile.write("\n")
+                self.logger.info("Summary of report written to %s" % jsonFileName)
 
     def setOptions(self):
         """
