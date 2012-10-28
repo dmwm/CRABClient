@@ -27,14 +27,21 @@ class geterror(SubCommand):
             msg = "Problem retrieving errors:\ninput:%s\noutput:%s\nreason:%s" % (str(self.cachedinfo['RequestName']), str(dictresult), str(reason))
             raise RESTCommunicationException(msg)
 
+        def printerr(step, error):
+            """Takes care of priting out to stdout"""
+            if error and step != 'exitcode':
+                self.logger.info("\t%sErrors for step: %s%s" % (colors.RED, colors.NORMAL, step))
+                for err in error:
+                    self.logger.info("\t\t%sError type: %s%s" % (colors.RED, colors.NORMAL, err['type']))
+                    self.logger.info("\t\t%sMessage: %s%s" % (colors.RED, colors.NORMAL, err['details']))
+
         for fwjr in sorted(dictresult['result'], key=lambda x: x['exitcode']):
             self.logger.info("\n%sErrors for exit code %s%s" % (colors.RED, colors.NORMAL, fwjr['exitcode']))
-            for step in fwjr:
-                if fwjr[step] and step!='exitcode':
-                    self.logger.info("\t%sErrors for step: %s%s" % (colors.RED, colors.NORMAL, step))
-                    for error in fwjr[step]:
-                        self.logger.info("\t\t%sError type: %s%s" % (colors.RED, colors.NORMAL, error['type']))
-                        self.logger.info("\t\t%sMessage: %s%s" % (colors.RED, colors.NORMAL, error['details']))
+            if 'PerformanceError' in fwjr:
+                printerr('PerformanceError', fwjr['PerformanceError'])
+            else:
+                for step in fwjr:
+                    printerr(step, fwjr[step])
 
     def setOptions(self):
         """
