@@ -50,7 +50,8 @@ class geterror(SubCommand):
                     else:
                         for step in fwjr:
                             printerr(step, fwjr[step], outfile)
-        self.logger.info("Detailed errors per exit code can be found here: %s" % outdir)
+        if dictresult['result']:
+            self.logger.info("Detailed errors per exit code can be found here: %s" % outdir)
 
     def setOptions(self):
         """
