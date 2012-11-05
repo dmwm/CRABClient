@@ -127,12 +127,12 @@ class CRABClient(object):
             Adapted from Doug Hellmann
             """
             # This goes to the console
-            logging.getLogger('CRAB3').error("%s: %s" % (exc_type.__name__, exc_value))
+            logging.getLogger('CRAB3').error("ERROR: %s: %s" % (exc_type.__name__, exc_value))
+            logging.getLogger('CRAB3').error("\n\tPlease file a new issue at https://github.com/dmwm/CRABClient/issues/new including last lines of crab.log.")
+            logging.getLogger('CRAB3').error("\tClient Version: %s" % client_version)
             # This goes to the log file
             tbLogger = logging.getLogger('CRAB3:traceback')
             tbLogger.error("Unhandled Exception!")
-            tbLogger.error("\tPlease file a bug report at https://svnweb.cern.ch/trac/CMSDMWM/newticket?component=CRABClient with the following information:")
-            tbLogger.error("\tClient Version: %s" % client_version)
             tbLogger.error(exc_value, exc_info=(exc_type, exc_value, tback))
 
         sys.excepthook = log_exception
