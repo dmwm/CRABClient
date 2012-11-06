@@ -108,7 +108,7 @@ class status(SubCommand):
         if self.options.failure and total:
             self.logger.info("List of jobs errors:")
             for err in errresult['result'][-1]['jobs']:
-                self.logger.info("  %.2f %% have exit code %s" % (err['value']*100/total, err['key'][2]))
+                self.logger.info("  %.2f %% have exit code %s" % (err['value']*100/total, err['key'][3]))
             if 'state' in errresult['result'][-1]['transfers'] and 'failures_reasons' in errresult['result'][-1]['transfers']:
                 self.logger.info("List of transfer errors:")
                 #total_transf = sum(errresult['result'][0]['transfers']['state'].values())
@@ -119,7 +119,7 @@ class status(SubCommand):
         """
         Print the error details of the site (when option -i is used)
         """
-        _, _, EXITCODE, SITE, ERRLIST = range(5)
+        _, _, _, EXITCODE, SITE, ERRLIST = range(6)
         if 'result' in errresult and len(errresult['result'])>0:
             for row in errresult['result'][-1]['jobs']:
                 if row['key'][SITE] == site:
