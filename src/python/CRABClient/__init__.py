@@ -2,4 +2,4 @@
 """
 CRAB Client modules
 """
-__version__ = "3.1.4"
+__version__ = "3.1.5"
