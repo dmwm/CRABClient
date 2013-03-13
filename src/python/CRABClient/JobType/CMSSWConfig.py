@@ -154,9 +154,3 @@ class CMSSWConfig(object):
                                        'or the PSet does not have a "filterName" member.')
 
         return tFiles, poolFiles
-
-    def getGlobalTag(self):
-        try:
-            return json.loads(self.tweakJson)["process"]["GlobalTag"]["globaltag"]
-        except KeyError:
-            return ''

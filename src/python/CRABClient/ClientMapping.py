@@ -13,8 +13,9 @@ the input data type.
 
 import time
 
+instance = 'dev'
 mapping = {
-    'submit' :  { 'uri': '/crabserver/workflow',
+    'submit' :  { 'uri': '/crabserver/%s/workflow' %instance,
                   'map':  {
                             "jobtype"       : {"default": "Analysis",       "config": None,                     "type": "StringType",  "required": True },
                             "workflow"       : {"default": None,             "config": None,                     "type": "StringType",  "required": True },
@@ -46,13 +47,12 @@ mapping = {
                                           ],
                   'requiresTaskOption' : False
                 },
-    'geterror'     : {'uri': '/crabserver/workflow', 'requiresTaskOption' : True},
-    'getlog'       : {'uri': '/crabserver/workflow', 'requiresTaskOption' : True},
-    'getoutput'    : {'uri': '/crabserver/workflow', 'requiresTaskOption' : True},
+    'getlog'       : {'uri': '/crabserver/%s/workflow' % instance, 'requiresTaskOption' : True},
+    'getoutput'    : {'uri': '/crabserver/%s/workflow' % instance, 'requiresTaskOption' : True},
     'remote_copy'  : {'uri': None, 'requiresTaskOption' : False, 'initializeProxy' : False},#proxy already inited by the calling command
-    'status' : {'uri': '/crabserver/workflow', 'requiresTaskOption' : True},
-    'report': {'uri': '/crabserver/workflow', 'requiresTaskOption': True},
-    'kill':   {'uri': '/crabserver/workflow', 'requiresTaskOption' : True},
-    'resubmit': {'uri': '/crabserver/workflow', 'requiresTaskOption' : True},
-    'request_type': {'uri': '/crabserver/workflow', 'requiresTaskOption': True},
+    'status' : {'uri': '/crabserver/%s/workflow' % instance, 'requiresTaskOption' : True},
+#    'report': {'uri': '/crabserver/workflow', 'requiresTaskOption': True},
+    'kill':   {'uri': '/crabserver/%s/workflow' % instance, 'requiresTaskOption' : True},
+    'resubmit': {'uri': '/crabserver/%s/workflow' % instance, 'requiresTaskOption' : True},
+    'request_type': {'uri': '/crabserver/%s/workflow' % instance, 'requiresTaskOption': True},
 }

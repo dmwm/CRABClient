@@ -17,10 +17,7 @@ The task is identified by -t/--task option
     visible = True #overwrite getcommand
 
     def __call__(self):
-        if self.options.exitcode:
-            getcommand.__call__(self, subresource = 'logs', exitcode = self.options.exitcode)
-        else:
-            getcommand.__call__(self, subresource = 'logs')
+        getcommand.__call__(self, subresource = 'logs')
 
 
     def setOptions(self):
@@ -31,12 +28,10 @@ The task is identified by -t/--task option
         """
         self.parser.add_option( '-q', '--quantity',
                                 dest = 'quantity',
-                                help = 'A number which express the number of files you want to retrieve (or all). Defaut one log per exitcode' )
-        self.parser.add_option( '-e', '--exitcode',
-                                dest = 'exitcode',
-                                help = 'Retrieve the logs only for this exitcode' )
+                                help = 'A number which express the number of files you want to retrieve (or "all")' )
         getcommand.setOptions(self)
 
+    """
     def processServerResult(self, result):
         newresult = []
         saveLog = self._hasLogCollect(result)
@@ -59,6 +54,7 @@ The task is identified by -t/--task option
                newresult.append(myfile)
 
         return {'result' : newresult}
+    """
 
     def _hasLogCollect(self, result):
         for myfile in result['result']:

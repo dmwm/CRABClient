@@ -33,6 +33,9 @@ class getcommand(SubCommand):
         if getattr(self.options, 'quantity', None):
             self.logger.debug('Retrieving %s file locations' % self.options.quantity )
             inputdict['limit'] = self.options.quantity
+        if getattr(self.options, 'pandaids', None):
+            self.logger.debug('Retrieving jobs %s' % self.options.pandaids )
+            inputdict['pandaids'] = self.options.pandaids
         server = HTTPRequests(self.serverurl, self.proxyfilename)
         dictresult, status, reason = server.get(self.uri, data = inputdict)
         self.logger.debug('Server result: %s' % dictresult )
@@ -73,6 +76,12 @@ class getcommand(SubCommand):
                                 default = None,
                                 help = 'Where the files retrieved will be stored in the local file system',
                                 metavar = 'DIRECTORY' )
+
+        self.parser.add_option( '-i', '--pandaids',
+                                dest = 'pandaids',
+                                default = None,
+                                help = 'Ids of the jobs you want to retrieve. Comma separated list of intgers',
+                                metavar = 'JOBIDS' )
 
     def validateOptions(self):
         #Figuring out the destination directory
