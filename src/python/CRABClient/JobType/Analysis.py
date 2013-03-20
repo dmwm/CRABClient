@@ -76,8 +76,6 @@ class Analysis(BasicJobType):
 
         # Write out CMSSW config
         cmsswCfg.writeFile(cfgOutputName)
-        result = cmsswCfg.upload(requestConfig)
-        configArguments['configdoc'] = result['DocID']
 
         # Upload lumi mask if it exists
         lumiMaskName = getattr(self.config.Data, 'lumiMask', None)
