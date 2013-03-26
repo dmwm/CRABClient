@@ -26,42 +26,33 @@ class status(SubCommand):
 
         self.logger.debug('Looking up detailed status of task %s' % self.cachedinfo['RequestName'])
         dictresult, status, reason = server.get(self.uri, data = { 'workflow' : self.cachedinfo['RequestName']})
+        dictresult = dictresult['result'][0] #take just the significant part
 
         if status != 200:
             msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(self.cachedinfo['RequestName']), str(dictresult), str(reason))
             raise RESTCommunicationException(msg)
 
         self.logger.debug(dictresult) #should be something like {u'result': [[123, u'ciao'], [456, u'ciao']]}
-        listresult = dictresult['result']
 
-        self.logger.info("Task name:\t\t%s" % self.cachedinfo['RequestName'])
+        self.logger.info("Task name:\t\t\t%s" % self.cachedinfo['RequestName'])
+        self.logger.info("Task status:\t\t\t%s" % dictresult['status'])
 
         #Print the url of the panda monitor
-#        if listresult[Resp.jobDefId]:
-#            p = Proxy({'logger' : self.logger})
-#            username = urllib.quote(p.getUserName())
-#            for jobdefid in listresult[Resp.jobDefId]:
-#                self.logger.info("Panda url:\t\thttp://panda.cern.ch/server/pandamon/query?job=*&jobsetID=%s&user=%s" % (jobdefid, username))
+        if dictresult['taskFailureMsg']:
+            self.logger.error("%sError during task injection:%s\t%s" % (colors.RED,colors.NORMAL,dictresult['taskFailureMsg']))
+        elif dictresult['jobSetID']:
+            p = Proxy({'logger' : self.logger})
+            username = urllib.quote(p.getUserName())
+            self.logger.info("Panda url:\t\t\thttp://panda.cern.ch/server/pandamon/query?job=*&jobsetID=%s&user=%s" % (dictresult['jobSetID'], username))
 
-#        if listresult[Resp.workflowErr]:
-#            self.logger.error("Workflow has encountered an error: ")
-#            for errtype in listresult[Resp.workflowErr]:
-#                self.logger.error("\t %s: %s" %(errtype, listresult[Resp.workflowErr][errtype]))
-
-        states = listresult[Resp.jobsPerState]
+        #Print information about jobs
+        states = dictresult['jobsPerStatus']
         total = sum( states[st] for st in states )
         frmt = ''
-        resubmissions = 0
         for status in states:
-            if states[status] > 0 and status not in ['total', 'first', 'retry']:
-                frmt += status + ' %s\t' % self._percentageString(states[status], total)
-        if frmt == '' and total != 0:
-            frmt = 'jobs are being submitted'
-        self.logger.info('Details:\t\t%s' % frmt)
-
-        if listresult[Resp.detailsPerSite]:
-            self.logger.info(('Using %d site(s):\t' % len(listresult[Resp.detailsPerSite])) + \
-                               ('' if len(listresult[Resp.detailsPerSite])>4 else ', '.join(listresult[Resp.detailsPerSite].keys())))
+            frmt += status + ' %s\t' % self._percentageString(states[status], total)
+        if frmt:
+            self.logger.info('Details:\t\t\t%s' % frmt)
 
 
     def setOptions(self):
