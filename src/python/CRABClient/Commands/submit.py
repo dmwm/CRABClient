@@ -16,6 +16,8 @@ import types
 import imp
 import urllib
 
+import CRABInterface.DagmanDataWorkflow as DagmanDataWorkflow
+
 class submit(SubCommand, ConfigCommand):
     """ Perform the submission to the CRABServer
     """
@@ -31,6 +33,8 @@ class submit(SubCommand, ConfigCommand):
 
         #store the configuration file in self.configuration
         self.loadConfig( self.options.config, self.args )
+
+        standalone = getattr(self.configuration.General, 'standalone', False)
 
         requestarea, requestname, self.logfile = createWorkArea( self.logger,
                                                                  getattr(self.configuration.General, 'workArea', None),
@@ -77,7 +81,8 @@ class submit(SubCommand, ConfigCommand):
         #delegating the proxy (creation done in SubCommand)
         self.voRole = getattr(self.configuration.User, "voRole", "")
         self.voGroup = getattr(self.configuration.User, "voGroup", "")
-        self.handleProxy()
+        if not standalone:
+            self.handleProxy()
 
         uniquerequestname = None
 
@@ -140,6 +145,46 @@ class submit(SubCommand, ConfigCommand):
 
         configreq.update(jobconfig)
 
+        if standalone:
+            uniquerequestname = self.doSubmitDagman(configreq)
+        else:
+            uniquerequestname = self.doSubmit(configreq)
+
+        tmpsplit = self.serverurl.split(':')
+        createCache( requestarea, tmpsplit[0], tmpsplit[1] if len(tmpsplit)>1 else '', uniquerequestname, voRole = self.voRole, voGroup = self.voGroup, standalone = standalone )
+
+        self.logger.info("Submission completed")
+        self.logger.debug("Request ID: %s " % uniquerequestname)
+
+        self.logger.debug("Ended submission")
+
+        return uniquerequestname
+
+    def doSubmitDagman(self, configreq):
+        dag = DagmanDataWorkflow.DagmanDataWorkflow()
+        configreq.setdefault('siteblacklist', [])
+        configreq.setdefault('sitewhitelist', [])
+        configreq.setdefault('blockblacklist', [])
+        configreq.setdefault('blockwhitelist', [])
+        configreq.setdefault('splitalgo', "LumiBased")
+        configreq.setdefault('userisburl', configreq['cacheurl'])
+        configreq.setdefault('adduserfiles', [])
+        configreq.setdefault('publishname', '')
+        configreq.setdefault('campaign', '')
+        configreq.setdefault('dbsurl', '')
+        configreq.setdefault('publishdbsurl', '')
+        # TODO: calculate these correctly:
+        configreq.setdefault('userhn', 'bbockelm')
+        configreq.setdefault('vorole', 'cmsuser')
+        configreq.setdefault('vogroup', '/cms')
+        configreq.setdefault('userdn', '/CN=bbockelm')
+        configreq.setdefault('runs', [])
+        configreq.setdefault('lumis', [])
+        print configreq
+        return dag.submit(**configreq)[0]['RequestName']
+
+    def doSubmit(self, configreq):
+
         server = HTTPRequests(self.serverurl, self.proxyfilename)
 
         self.logger.info("Sending the request to the server")
@@ -156,14 +201,6 @@ class submit(SubCommand, ConfigCommand):
             msg = "Problem during submission, no request ID returned:\ninput:%s\noutput:%s\nreason:%s" \
                    % (str(configreq), str(dictresult), str(reason))
             raise RESTCommunicationException(msg)
-
-        tmpsplit = self.serverurl.split(':')
-        createCache( requestarea, tmpsplit[0], tmpsplit[1] if len(tmpsplit)>1 else '', uniquerequestname, voRole = self.voRole, voGroup = self.voGroup )
-
-        self.logger.info("Submission completed")
-        self.logger.debug("Request ID: %s " % uniquerequestname)
-
-        self.logger.debug("Ended submission")
 
         return uniquerequestname
 

@@ -55,10 +55,11 @@ def _x509_CApath():
     except:
         pass
     # get X509_CERT_DIR
-    gridSrc = _getGridSrc()
-    com = "%s echo $X509_CERT_DIR" % gridSrc
-    tmpOut = commands.getoutput(com)
-    return tmpOut.split('\n')[-1]
+    #gridSrc = _getGridSrc()
+    #com = "%s echo $X509_CERT_DIR" % gridSrc
+    #tmpOut = commands.getoutput(com)
+    #return tmpOut.split('\n')[-1]
+    return '/etc/grid-security/certificates'
 
 
 
@@ -69,7 +70,7 @@ class _Curl:
         # path to curl
         self.path = 'curl --user-agent "dqcurl" '
         # verification of the host certificate
-        self.verifyHost = False
+        self.verifyHost = True
         # request a compressed response
         self.compress = True
         # SSL cert/key
@@ -86,6 +87,7 @@ class _Curl:
             com += ' --insecure'
         else:
             com += ' --capath %s' %  _x509_CApath()
+            com += ' --cacert %s' %  _x509()
         if self.compress:
             com += ' --compressed'
         if self.sslCert != '':
@@ -137,6 +139,7 @@ class _Curl:
             com += ' --insecure'
         else:
             com += ' --capath %s' %  _x509_CApath()
+            com += ' --cacert %s' %  _x509()
         if self.compress:
             com += ' --compressed'
         if self.sslCert != '':
@@ -187,6 +190,9 @@ class _Curl:
         com = '%s --silent' % self.path
         if not self.verifyHost:
             com += ' --insecure'
+        else:
+            com += ' --capath %s' %  _x509_CApath()
+            com += ' --cacert %s' %  _x509()
         if self.compress:
             com += ' --compressed'
         if self.sslCert != '':
@@ -274,7 +280,7 @@ def putFile(file,verbose=False,useCacheSrv=False,reuseSandbox=False):
     filename = ""
     servername = ""
     if status !=0:
-        raise PanDaException("Failure uploading input file into PanDa")
+        raise PanDaException("Failure uploading input file into PanDa (status = %s)" % status)
     else:
        matchURL = re.search("(http.*://[^/]+)/", baseURLCSRVSSL)
        return 0, "True:%s:%s" % (matchURL.group(1), file.split('/')[-1]) 

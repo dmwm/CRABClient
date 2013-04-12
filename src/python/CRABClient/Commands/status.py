@@ -21,18 +21,31 @@ class status(SubCommand):
     def _percentageString(self, value, total):
         return "%.2f %% %s(%s/%s)%s" % ((value*100/total), colors.GRAY, value, total, colors.NORMAL)
 
+    def doStatus(self, data):
+        if 'standalone' in self.cachedinfo and self.cachedinfo['standalone']:
+            dag = __import__("CRABInterface.DagmanDataWorkflow").DagmanDataWorkflow.DagmanDataWorkflow()
+            # TODO: Calculate correct HN name.
+            dictresult = dag.status(data['workflow'], 'bbockelm')
+            # TODO: Calculate HTCondor status.
+            status = 'OK'
+        else:
+            server = HTTPRequests(self.serverurl, self.proxyfilename)
+
+            self.logger.debug('Looking up detailed status of task %s' % self.cachedinfo['RequestName'])
+            dictresult, status, reason = server.get(self.uri, data = { 'workflow' : self.cachedinfo['RequestName']})
+            dictresult = dictresult['result'][0] #take just the significant part
+
+            if status != 200:
+                msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(self.cachedinfo['RequestName']), str(dictresult), str(reason))
+                raise RESTCommunicationException(msg)
+
+            self.logger.debug(dictresult) #should be something like {u'result': [[123, u'ciao'], [456, u'ciao']]}
+
+        return dictresult, status
+
     def __call__(self):
-        server = HTTPRequests(self.serverurl, self.proxyfilename)
 
-        self.logger.debug('Looking up detailed status of task %s' % self.cachedinfo['RequestName'])
-        dictresult, status, reason = server.get(self.uri, data = { 'workflow' : self.cachedinfo['RequestName']})
-        dictresult = dictresult['result'][0] #take just the significant part
-
-        if status != 200:
-            msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(self.cachedinfo['RequestName']), str(dictresult), str(reason))
-            raise RESTCommunicationException(msg)
-
-        self.logger.debug(dictresult) #should be something like {u'result': [[123, u'ciao'], [456, u'ciao']]}
+        dictresult, status = self.doStatus({ 'workflow' : self.cachedinfo['RequestName']})
 
         self.logger.info("Task name:\t\t\t%s" % self.cachedinfo['RequestName'])
         self.logger.info("Task status:\t\t\t%s" % dictresult['status'])

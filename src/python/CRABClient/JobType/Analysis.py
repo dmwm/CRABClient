@@ -11,7 +11,6 @@ from CRABClient.JobType.LumiMask import getLumiMask
 from CRABClient.JobType.UserTarball import UserTarball
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
 from CRABClient import PandaInterface
-from FWCore.PythonUtilities.LumiList import LumiList
 
 class Analysis(BasicJobType):
     """
@@ -133,6 +132,7 @@ class Analysis(BasicJobType):
         """
         Computes the processed lumis, merges if needed and returns the compacted list.
         """
+        from FWCore.PythonUtilities.LumiList import LumiList
         mergedlumis = LumiList()
         doublelumis = LumiList()
         for report in inputdata:

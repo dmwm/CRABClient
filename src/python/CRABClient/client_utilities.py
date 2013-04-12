@@ -204,14 +204,15 @@ def createWorkArea(logger, workingArea = '.', requestName = ''):
     return fullpath, requestName, logfile
 
 
-def createCache(requestarea, host, port, uniquerequestname, voRole, voGroup):
+def createCache(requestarea, host, port, uniquerequestname, voRole, voGroup, standalone=False):
     touchfile = open(os.path.join(requestarea, '.requestcache'), 'w')
     neededhandlers = {
                       "Server" : host,
                       "Port" : port,
                       "RequestName" : uniquerequestname,
                       "voRole" : voRole,
-                      "voGroup" : voGroup
+                      "voGroup" : voGroup,
+                      "standalone" : standalone,
                      }
     cPickle.dump(neededhandlers, touchfile)
     touchfile.close()
