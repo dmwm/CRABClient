@@ -41,6 +41,7 @@ class CredentialInteractions(object):
         """
         ## TODO add the change to have user-cert/key defined in the config.
         userproxy = Proxy( self.defaultDelegation )
+        self.userproxy = userproxy
 
         proxytimeleft = 0
         self.logger.debug("Getting proxy life time left")

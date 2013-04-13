@@ -17,6 +17,7 @@ import imp
 import urllib
 
 import CRABInterface.DagmanDataWorkflow as DagmanDataWorkflow
+from WMCore.Credential.Proxy import Proxy
 
 class submit(SubCommand, ConfigCommand):
     """ Perform the submission to the CRABServer
@@ -81,8 +82,8 @@ class submit(SubCommand, ConfigCommand):
         #delegating the proxy (creation done in SubCommand)
         self.voRole = getattr(self.configuration.User, "voRole", "")
         self.voGroup = getattr(self.configuration.User, "voGroup", "")
-        if not standalone:
-            self.handleProxy()
+        self.handleProxy(standalone)
+        print self.proxyobj.userproxy.getSubject()
 
         uniquerequestname = None
 
@@ -161,7 +162,8 @@ class submit(SubCommand, ConfigCommand):
         return uniquerequestname
 
     def doSubmitDagman(self, configreq):
-        dag = DagmanDataWorkflow.DagmanDataWorkflow()
+        dag = DagmanDataWorkflow.DagmanDataWorkflow(config = self.configuration)
+        proxy = Proxy({'logger': self.logger})
         configreq.setdefault('siteblacklist', [])
         configreq.setdefault('sitewhitelist', [])
         configreq.setdefault('blockblacklist', [])
@@ -177,7 +179,7 @@ class submit(SubCommand, ConfigCommand):
         configreq.setdefault('userhn', 'bbockelm')
         configreq.setdefault('vorole', 'cmsuser')
         configreq.setdefault('vogroup', '/cms')
-        configreq.setdefault('userdn', '/CN=bbockelm')
+        configreq.setdefault('userdn', proxy.getSubject(self.proxyfilename))
         configreq.setdefault('runs', [])
         configreq.setdefault('lumis', [])
         print configreq
