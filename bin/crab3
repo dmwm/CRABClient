@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# Simple bootstrap script for unit tests.
+# Does mostly python environment munging so we can use the system python
+# (required for the HTCondor python deps).
+#
+unset LD_LIBRARY_PATH
+export PATH=/usr/bin:/bin
+export PYTHONPATH=~/projects/CRABClient/src/python/:~/projects/WMCore/src/python/:~/projects/CRABServer/src/python/:~/projects/CAFUtilities/src/python/:/cvmfs/cms.cern.ch/slc5_amd64_gcc462/cms/cmssw/CMSSW_5_3_7/python
+exec /usr/bin/python ~/projects/CRABClient/bin/crab "$@"
+
