@@ -11,8 +11,8 @@ fi
 # Does mostly python environment munging so we can use the system python
 # (required for the HTCondor python deps).
 #
-if [ "X$CRAB_DEV_ENVIRON" != "X" ]; then
-  export PYTHONPATH=~/projects/CRABClient/src/python/:~/projects/WMCore/src/python/:~/projects/CRABServer/src/python/:~/projects/CAFUtilities/src/python/:$CRAB_BASE/CRAB3.zip
+if [ "X$CRAB_DEV_BASE" != "X" ]; then
+  export PYTHONPATH=$CRAB_DEV_BASE/CRABClient/src/python/:$CRAB_DEV_BASE/WMCore/src/python/:$CRAB_DEV_BASE/CRABServer/src/python/:$CRAB_DEV_BASE/CAFUtilities/src/python/:$CRAB_BASE/CRAB3.zip
 fi
 if [ "X$CMS_PATH" != "X" ]; then
   PYTHONPATH=$PYTHONPATH:$CMS_PATH/slc5_amd64_gcc462/external/py2-pycurl/7.19.0/lib/python2.6/site-packages
