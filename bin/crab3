@@ -23,7 +23,6 @@ if [ "X$CRAB_USE_SYSTEM_PYTHON" != "X" ]; then
   export PYTHONPATH=/cvmfs/cms.cern.ch/slc5_amd64_gcc462/cms/cmssw/CMSSW_5_3_7/python:$PYTHONPATH
   exec /usr/bin/python ~/projects/CRABClient/bin/crab "$@"
 else
-  echo $PYTHONPATH
   python2.6 $CRAB_BASE/crab "$@"
 fi
 
