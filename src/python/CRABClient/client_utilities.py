@@ -5,6 +5,7 @@ This contains some utility methods for the client
 """
 
 import os
+import re
 import datetime
 import logging
 
@@ -143,6 +144,11 @@ def getRequestName(requestName = None):
         return prefix + postfix
     else:
         return prefix + requestName # + '_' + postfix
+
+
+GWMS_REQUESTNAME_RE = re.compile("^[0-9]{6,6}_")
+def isGWMS(requestName):
+    return not GWMS_REQUESTNAME_RE.match(requestName)
 
 
 def addFileLogger(logger, workingpath, logname = 'crab.log'):
