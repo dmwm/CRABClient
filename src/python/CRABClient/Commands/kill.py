@@ -1,6 +1,7 @@
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient.client_exceptions import RESTCommunicationException
+from WMCore.Credential.Proxy import Proxy
 import urllib
 
 class kill(SubCommand):
@@ -13,7 +14,16 @@ class kill(SubCommand):
         server = HTTPRequests(self.serverurl, self.proxyfilename)
 
         self.logger.debug('Killing task %s' % self.cachedinfo['RequestName'])
-        dictresult, status, reason = server.delete(self.uri, data = urllib.urlencode({ 'workflow' : self.cachedinfo['RequestName']}))
+
+        if not self.standalone:
+            dictresult, status, reason = server.delete(self.uri, data = urllib.urlencode({ 'workflow' : self.cachedinfo['RequestName']}))
+        else:
+            proxy = Proxy({'logger': self.logger})
+            dag = __import__("CRABInterface.DagmanDataWorkflow").DagmanDataWorkflow.DagmanDataWorkflow()
+            status = 200
+            reason = 'OK'
+            userdn = proxy.getSubject(self.proxyfilename)
+            dictresult = dag.kill(self.cachedinfo['RequestName'], True, userdn=userdn)
         self.logger.debug("Result: %s" % dictresult)
 
         if status != 200:

@@ -26,8 +26,7 @@ class status(SubCommand):
             dag = __import__("CRABInterface.DagmanDataWorkflow").DagmanDataWorkflow.DagmanDataWorkflow()
             # TODO: Calculate correct HN name.
             dictresult = dag.status(data['workflow'], 'bbockelm')
-            # TODO: Calculate HTCondor status.
-            status = 'OK'
+            status = 200 # Fake an HTTP code to match PanDA
         else:
             server = HTTPRequests(self.serverurl, self.proxyfilename)
 

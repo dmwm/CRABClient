@@ -26,30 +26,36 @@ class getcommand(SubCommand):
 
         self.logger.info("Setting the destination directory to %s " % self.dest )
 
-        #Retrieving output files location from the server
-        self.logger.debug('Retrieving locations for task %s' % self.cachedinfo['RequestName'] )
-        inputdict =  { 'workflow' : self.cachedinfo['RequestName'] }
-        inputdict.update(argv)
-        if getattr(self.options, 'quantity', None):
-            self.logger.debug('Retrieving %s file locations' % self.options.quantity )
-            inputdict['limit'] = self.options.quantity
-        if getattr(self.options, 'pandaids', None):
-            self.logger.debug('Retrieving jobs %s' % self.options.pandaids )
-            inputdict['pandaids'] = self.options.pandaids
-        server = HTTPRequests(self.serverurl, self.proxyfilename)
-        dictresult, status, reason = server.get(self.uri, data = inputdict)
-        self.logger.debug('Server result: %s' % dictresult )
-        dictresult = self.processServerResult(dictresult)
+        if not self.standalone:
+            #Retrieving output files location from the server
+            self.logger.debug('Retrieving locations for task %s' % self.cachedinfo['RequestName'] )
+            inputdict =  { 'workflow' : self.cachedinfo['RequestName'] }
+            inputdict.update(argv)
+            if getattr(self.options, 'quantity', None):
+                self.logger.debug('Retrieving %s file locations' % self.options.quantity )
+                inputdict['limit'] = self.options.quantity
+            if getattr(self.options, 'pandaids', None):
+                self.logger.debug('Retrieving jobs %s' % self.options.pandaids )
+                inputdict['pandaids'] = self.options.pandaids
+            server = HTTPRequests(self.serverurl, self.proxyfilename)
+            dictresult, status, reason = server.get(self.uri, data = inputdict)
+            self.logger.debug('Server result: %s' % dictresult )
+            dictresult = self.processServerResult(dictresult)
 
-        if status != 200:
-            msg = "Problem retrieving information from the server:\ninput:%s\noutput:%s\nreason:%s" % (str(inputdict), str(dictresult), str(reason))
-            raise ConfigurationException(msg)
+            if status != 200:
+                msg = "Problem retrieving information from the server:\ninput:%s\noutput:%s\nreason:%s" % (str(inputdict), str(dictresult), str(reason))
+                raise ConfigurationException(msg)
+            workflow = dictresult['result']        #TODO assigning workflow to dictresult. for the moment we have only one wf
 
-        totalfiles = len( dictresult['result'] )
+        else:
+            dag = __import__("CRABInterface.DagmanDataWorkflow").DagmanDataWorkflow.DagmanDataWorkflow()
+            quantity = getattr(self.options, 'quantity', -1)
+            workflow = dag.outputLocation(self.cachedinfo['RequestName'], self.options.quantity, [])['result']
+
+        totalfiles = len(workflow)
         cpresults = []
 #        for workflow in dictresult['result']: TODO re-enable this when we will have resubmissions
-        workflow = dictresult['result']        #TODO assigning workflow to dictresult. for the moment we have only one wf
-        arglist = ['-d', self.dest, '-i', workflow]
+        arglist = ['-d', self.dest, '-i', workflow, '-t', self.options.task]
         if self.options.skipProxy:
             arglist.append('-p')
         if len(workflow) > 0:

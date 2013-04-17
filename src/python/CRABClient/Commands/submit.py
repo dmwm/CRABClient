@@ -83,7 +83,6 @@ class submit(SubCommand, ConfigCommand):
         self.voRole = getattr(self.configuration.User, "voRole", "")
         self.voGroup = getattr(self.configuration.User, "voGroup", "")
         self.handleProxy(standalone)
-        print self.proxyobj.userproxy.getSubject()
 
         uniquerequestname = None
 
@@ -182,7 +181,6 @@ class submit(SubCommand, ConfigCommand):
         configreq.setdefault('userdn', proxy.getSubject(self.proxyfilename))
         configreq.setdefault('runs', [])
         configreq.setdefault('lumis', [])
-        print configreq
         return dag.submit(**configreq)[0]['RequestName']
 
     def doSubmit(self, configreq):

@@ -50,7 +50,7 @@ mapping = {
                 },
     'getlog'       : {'uri': '/crabserver/%s/workflow' % instance, 'requiresTaskOption' : True},
     'getoutput'    : {'uri': '/crabserver/%s/workflow' % instance, 'requiresTaskOption' : True},
-    'remote_copy'  : {'uri': None, 'requiresTaskOption' : False, 'initializeProxy' : False},#proxy already inited by the calling command
+    'remote_copy'  : {'uri': None, 'requiresTaskOption' : False, 'initializeProxy' : False, 'requiresTaskOption': True},#proxy already inited by the calling command
     'status' : {'uri': '/crabserver/%s/workflow' % instance, 'requiresTaskOption' : True},
 #    'report': {'uri': '/crabserver/workflow', 'requiresTaskOption': True},
     'kill':   {'uri': '/crabserver/%s/workflow' % instance, 'requiresTaskOption' : True},

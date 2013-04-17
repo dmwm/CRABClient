@@ -64,7 +64,7 @@ class SubCommand(object):
         ##and to figure out which server to contact before.
         if self.name != 'submit':
             self.createCache()
-            self.handleProxy()
+            self.handleProxy(self.standalone)
 
 
     def handleProxy(self, standalone=False):
@@ -81,8 +81,9 @@ class SubCommand(object):
             #for each agentDN received from the server, delegate it!
             #XXX Temporary solution. Need to figure out how to delegate credential to the several WMAgent
             #without forcing the user to insert the password several times
-            for serverDN in agentDNs:
-                delegateProxy( serverDN, 'myproxy.cern.ch', self.proxyobj, self.logger)
+            if not standalone:
+                for serverDN in agentDNs:
+                    delegateProxy( serverDN, 'myproxy.cern.ch', self.proxyobj, self.logger)
         else:
             self.proxyfilename = self.options.skipProxy
             self.logger.debug('Skipping proxy creation')
@@ -103,6 +104,7 @@ class SubCommand(object):
             #TODO Save them in the cache
             self.voRole = self.cachedinfo['voRole'] if not self.options.voRole else self.options.voRole
             self.voGroup = self.cachedinfo['voGroup'] if not self.options.voGroup else self.options.voGroup
+            self.standalone = self.cachedinfo.get('standalone', False)
 
 
     def __call__(self):
