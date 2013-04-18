@@ -38,7 +38,7 @@ class UserTarball(object):
         self.tarfile = tarfile.open(name=name , mode=mode, dereference=True)
         self.checksum = None
 
-    def addFiles(self, userFiles=None):
+    def addFiles(self, userFiles=None, cfgOutputName=None):
         """
         Add the necessary files to the tarball
         """
@@ -72,9 +72,12 @@ class UserTarball(object):
                 self.tarfile.add(filename, os.path.basename(filename), recursive=True)
 
         # Adding the pset file to the tarfile
+        if cfgOutputName:
+            self.tarfile.add(cfgOutputName, arcname='PSet.py')
         currentPath = os.getcwd()
-        psetfile = getattr(self.config.JobType, 'psetName', None)
-        self.tarfile.add(os.path.join(currentPath, psetfile), arcname='PSet.py')
+
+#        psetfile = getattr(self.config.JobType, 'psetName', None)
+#        self.tarfile.add(os.path.join(currentPath, psetfile), arcname='PSet.py')
 
     def close(self):
         """

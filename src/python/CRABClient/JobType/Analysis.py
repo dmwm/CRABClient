@@ -44,16 +44,8 @@ class Analysis(BasicJobType):
             _dummy, tarFilename   = tempfile.mkstemp(suffix='.tgz')
             _dummy, cfgOutputName = tempfile.mkstemp(suffix='_cfg.py')
 
-        with UserTarball(name=tarFilename, logger=self.logger, config=self.config) as tb:
-            inputFiles = getattr(self.config.JobType, 'inputFiles', [])
-            tb.addFiles(userFiles=inputFiles)
-            configArguments['adduserfiles'] = [os.path.basename(f) for f in inputFiles]
-            uploadResults = tb.upload()
         #configArguments['userisburl'] = 'https://'+ self.config.General.ufccacheUrl + '/crabcache/file?hashkey=' + uploadResults['hashkey']#XXX hardcoded
         #configArguments['userisburl'] = 'INSERTuserisburl'#XXX hardcoded
-        self.logger.debug("Result uploading input files: %s " % str(uploadResults))
-        configArguments['cachefilename'] = uploadResults[1]
-        configArguments['cacheurl'] = uploadResults[0]
         if getattr(self.config.Data, 'inputDataset', None):
             configArguments['inputdata'] = self.config.Data.inputDataset
 #        configArguments['ProcessingVersion'] = getattr(self.config.Data, 'processingVersion', None)
@@ -66,16 +58,26 @@ class Analysis(BasicJobType):
 
         # Interogate CMSSW config and user config for output file names, for now no use for edmFiles or TFiles here.
         analysisFiles, edmFiles = cmsswCfg.outputFiles()
-        self.logger.debug("WMAgent will collect TFiles %s and EDM Files %s" % (analysisFiles, edmFiles))
+        self.logger.debug("TFiles %s and EDM Files %s will be collected" % (analysisFiles, edmFiles))
         configArguments['tfileoutfiles'] = analysisFiles
         configArguments['edmoutfiles'] = edmFiles
 
         outputFiles = getattr(self.config.JobType, 'outputFiles', [])
-        self.logger.debug("WMAgent will collect user files %s" % outputFiles)
+        self.logger.debug("User files %s will be collected" % outputFiles)
         configArguments['addoutputfiles'].extend(outputFiles)
 
         # Write out CMSSW config
         cmsswCfg.writeFile(cfgOutputName)
+
+        with UserTarball(name=tarFilename, logger=self.logger, config=self.config) as tb:
+            inputFiles = getattr(self.config.JobType, 'inputFiles', [])
+            tb.addFiles(userFiles=inputFiles, cfgOutputName=cfgOutputName)
+            configArguments['adduserfiles'] = [os.path.basename(f) for f in inputFiles]
+            uploadResults = tb.upload()
+
+        self.logger.debug("Result uploading input files: %s " % str(uploadResults))
+        configArguments['cachefilename'] = uploadResults[1]
+        configArguments['cacheurl'] = uploadResults[0]
 
         # Upload lumi mask if it exists
         lumiMaskName = getattr(self.config.Data, 'lumiMask', None)
