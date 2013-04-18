@@ -241,8 +241,8 @@ class submit(SubCommand, ConfigCommand):
         """ Used to encode the request from a dict to a string. Include the code needed for transforming lists in the format required by
             cmsweb, e.g.:   adduserfiles = ['file1','file2']  ===>  [...]adduserfiles=file1&adduserfiles=file2[...]
         """
-        #TODO automate this using ClientMapping
-        listParams = ['adduserfiles', 'addoutputfiles', 'sitewhitelist', 'siteblacklist', 'blockwhitelist', 'blockblacklist', 'runs', 'lumis']
+        listParams = ['adduserfiles', 'addoutputfiles', 'sitewhitelist', 'siteblacklist', 'blockwhitelist', 'blockblacklist',
+                      'tfileoutfiles', 'edmoutfiles', 'runs', 'lumis'] #TODO automate this using ClientMapping
         encodedLists = ''
         for lparam in listParams:
             if lparam in configreq:

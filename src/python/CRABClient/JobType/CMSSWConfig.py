@@ -51,52 +51,6 @@ class CMSSWConfig(object):
             self.tweakJson = makeTweak(self.fullConfig.process).jsonise()
 
 
-    #TODO Since we are able to write direcly in couch, how can I guarantee a user does not delete other user's config caches?
-    def upload(self, requestConfig):
-        """
-        Upload the config file to the server
-        """
-        if not self.outputFile:
-            raise ConfigException('You must write out the config before uploading it')
-
-        with open(self.outputFile) as cfgFile:
-            configString = cfgFile.read()
-
-        try:
-            configCache = ConfigCache(self.config.General.configcacheUrl, self.config.General.configcacheName, usePYCurl=True, \
-                                      ckey=self.config.JobType.proxyfilename, cert=self.config.JobType.proxyfilename, \
-                                      capath=self.config.JobType.capath)
-        except ConfigCacheException, ex:
-            #If the user is getting 500 from the server there probably is a missing entry in authmap.json
-            msg = "Problem during the upload of the configuration. Please check if your" + \
-                    " user is enabled to access the ConfigCache couchdb %s/%s" % (self.config.General.configcacheUrl, \
-                                                                                self.config.General.configcacheName)
-            logging.getLogger('CRAB3:traceback').exception('Caught exception')
-            raise ConfigException(msg)
-
-        try:
-            configCache.createUserGroup("Analysis", '') #User empty works
-
-            configMD5 = hashlib.md5(configString).hexdigest()
-            configCache.document['md5_hash'] = configMD5
-            configCache.document['pset_hash'] = '' #Why that was empty?
-            configCache.attachments['configFile'] = configString
-
-            configCache.setPSetTweaks(json.loads(self.tweakJson))
-
-            configCache.setLabel('')
-            configCache.setDescription('')
-            configCache.save()
-            result = {}
-            result['DocID']  = configCache.document["_id"]
-            result['DocRev'] = configCache.document["_rev"]
-        except ConfigCacheException, ex:
-            msg = "Problem during the upload of the configuration."
-            logging.getLogger('CRAB3:traceback').exception('Caught exception')
-            raise ConfigException(msg)
-        return result
-
-
     def writeFile(self, filename= 'CMSSW.py'):
         """
         Persist fully expanded _cfg.py file
@@ -154,9 +108,3 @@ class CMSSWConfig(object):
                                        'or the PSet does not have a "filterName" member.')
 
         return tFiles, poolFiles
-
-    def getGlobalTag(self):
-        try:
-            return json.loads(self.tweakJson)["process"]["GlobalTag"]["globaltag"]
-        except KeyError:
-            return ''
