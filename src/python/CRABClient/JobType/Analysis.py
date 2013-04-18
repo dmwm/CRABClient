@@ -10,7 +10,7 @@ from CRABClient.JobType.CMSSWConfig import CMSSWConfig
 from CRABClient.JobType.LumiMask import getLumiMask
 from CRABClient.JobType.UserTarball import UserTarball
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
-from CRABClient import PandaInterface
+import PandaServerInterface as PandaInterface
 from FWCore.PythonUtilities.LumiList import LumiList
 
 class Analysis(BasicJobType):

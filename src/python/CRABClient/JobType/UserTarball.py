@@ -15,7 +15,7 @@ import sys
 
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
 from CRABClient.client_exceptions import InputFileNotFoundException, CachefileNotFoundException
-import CRABClient.PandaInterface as PandaInterface
+import PandaServerInterface as PandaInterface
 from WMCore.Services.UserFileCache.UserFileCache import UserFileCache
 from WMCore.Configuration import loadConfigurationFile, Configuration
 
