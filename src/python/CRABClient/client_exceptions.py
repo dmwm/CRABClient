@@ -61,3 +61,9 @@ class EnvironmentException(ClientException):
     E.g.: if the X509_CERT_DIR variable is not set we raise this exception
     """
     exitcode = 3011
+
+class PanDaException(ClientException):
+    """
+    Specific errors coming from interaction with PanDa
+    """
+    exitcode = 3100

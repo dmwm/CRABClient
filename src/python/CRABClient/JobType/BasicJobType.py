@@ -45,7 +45,6 @@ class BasicJobType(object):
         ## (boolean with the result of the validation, eventual error message)
         return (True, '')
 
-
     def report(self, inputdata):
         """
         _report_

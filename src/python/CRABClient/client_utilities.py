@@ -26,6 +26,7 @@ RENEW_MYPROXY_THRESHOLD = 15
 class colors:
     RED = '\033[91m'
     GREEN = '\033[92m'
+    GRAY = '\033[90m'
     NORMAL = '\033[0m'
 
 
@@ -315,6 +316,6 @@ def server_info(subresource, server, proxyfilename):
 
     server = HTTPRequests(server, proxyfilename)
 
-    dictresult, status, reason = server.get('/crabserver/info', {'subresource' : subresource})
+    dictresult, status, reason = server.get('/crabserver/dev/info', {'subresource' : subresource})
 
     return dictresult['result']

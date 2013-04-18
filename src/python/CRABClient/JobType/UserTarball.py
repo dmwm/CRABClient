@@ -11,10 +11,13 @@ import os
 import tarfile
 import tempfile
 import hashlib
+import sys
 
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
-from CRABClient.client_exceptions import InputFileNotFoundException
+from CRABClient.client_exceptions import InputFileNotFoundException, CachefileNotFoundException
+import PandaServerInterface as PandaInterface
 from WMCore.Services.UserFileCache.UserFileCache import UserFileCache
+from WMCore.Configuration import loadConfigurationFile, Configuration
 
 class UserTarball(object):
     """
@@ -32,10 +35,10 @@ class UserTarball(object):
         self.logger = logger
         self.scram = ScramEnvironment(logger=self.logger)
         self.logger.debug("Making tarball in %s" % name)
-        self.tarfile = tarfile.open(name=name, mode=mode, dereference=True)
+        self.tarfile = tarfile.open(name=name , mode=mode, dereference=True)
         self.checksum = None
 
-    def addFiles(self, userFiles=None):
+    def addFiles(self, userFiles=None, cfgOutputName=None):
         """
         Add the necessary files to the tarball
         """
@@ -68,6 +71,13 @@ class UserTarball(object):
                 self.logger.debug(" adding file %s to tarball" % filename)
                 self.tarfile.add(filename, os.path.basename(filename), recursive=True)
 
+        # Adding the pset file to the tarfile
+        if cfgOutputName:
+            self.tarfile.add(cfgOutputName, arcname='PSet.py')
+        currentPath = os.getcwd()
+
+#        psetfile = getattr(self.config.JobType, 'psetName', None)
+#        self.tarfile.add(os.path.join(currentPath, psetfile), arcname='PSet.py')
 
     def close(self):
         """
@@ -79,15 +89,36 @@ class UserTarball(object):
 
     def upload(self):
         """
-        Upload the tarball to the CRABServer
+        Upload the tarball to the Panda Cache
         """
         self.close()
+        archiveName = self.tarfile.name
+        serverUrl = ""
+        self.logger.debug(" uploading archive to cache %s " % archiveName)
+        status,out = PandaInterface.putFile(archiveName, verbose=False, useCacheSrv=True, reuseSandbox=True)
+
+        if out.startswith('NewFileName:'):
+            # found the same input sandbox to reuse
+            self.logger.debug("out: %s" % out)
+            self.logger.debug("status: %s" % status)
+            self.logger.debug("found the same input sandbox to reuse")
+            archiveName = out.split(':')[-1]
+            serverUrl = "https://%s:%s" % (out.split(':')[-2], '25443')
+            self.logger.debug("archiveName: %s" %archiveName)
+        elif out.startswith('True'):
+            archiveName = out.split(':')[-1]
+            serverUrl = "%s:%s:%s" % (out.split(':')[-4], out.split(':')[-3], out.split(':')[-2])
+        else:
+            self.logger.error( str(out) )
+            self.logger.error("failed to upload source files with %s" % status)
+            raise CachefileNotFoundException
 
         #XXX: I dont like the /userfilecache/data/file hardcoded
-        ufc = UserFileCache({'endpoint': "https://" + self.config.General.ufccacheUrl + "/crabcache", \
-                                          "proxyfilename" : self.config.JobType.proxyfilename, "capath" : self.config.JobType.capath, "newrest" : True})
-        return ufc.upload(self.tarfile.name)
+        #ufc = UserFileCache({'endpoint': "https://" + self.config.General.ufccacheUrl + "/crabcache", \
+        #                                  "proxyfilename" : self.config.JobType.proxyfilename, "capath" : self.config.JobType.capath, "newrest" : True})
 
+        #return ufc.upload(self.tarfile.name)
+        return serverUrl, archiveName
 
     def calculateChecksum(self):
         """
