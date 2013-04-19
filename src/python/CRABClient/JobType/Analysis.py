@@ -78,6 +78,7 @@ class Analysis(BasicJobType):
         self.logger.debug("Result uploading input files: %s " % str(uploadResults))
         configArguments['cachefilename'] = uploadResults[1]
         configArguments['cacheurl'] = uploadResults[0]
+        isbchecksum = uploadResults[2]
 
         # Upload lumi mask if it exists
         lumiMaskName = getattr(self.config.Data, 'lumiMask', None)
@@ -93,7 +94,7 @@ class Analysis(BasicJobType):
 
         configArguments['jobtype'] = 'Analysis'
 
-        return tarFilename, configArguments
+        return tarFilename, configArguments, isbchecksum
 
 
     def validateConfig(self, config):

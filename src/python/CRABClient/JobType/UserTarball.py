@@ -118,7 +118,7 @@ class UserTarball(object):
         #                                  "proxyfilename" : self.config.JobType.proxyfilename, "capath" : self.config.JobType.capath, "newrest" : True})
 
         #return ufc.upload(self.tarfile.name)
-        return serverUrl, archiveName
+        return serverUrl, archiveName, self.checksum
 
     def calculateChecksum(self):
         """
