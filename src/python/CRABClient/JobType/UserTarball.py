@@ -127,10 +127,10 @@ class UserTarball(object):
         """
 
         lsl = [(x.name, int(x.size), int(x.mtime), x.uname) for x in self.tarfile.getmembers()]
-        hasher = hashlib.sha256(str(lsl))
+        hasher = hashlib.md5(str(lsl))
         self.logger.debug('tgz contents: %s' % lsl)
         self.checksum = hasher.hexdigest()
-        self.logger.debug('Checksum: %s' % self.checksum)
+        self.logger.debug('MD5 checksum: %s' % self.checksum)
 
         #Old way reads in the file again. May use for for non-tar files if needed.
         #sha256sum = hashlib.sha256()
