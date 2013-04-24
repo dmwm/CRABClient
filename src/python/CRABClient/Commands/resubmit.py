@@ -1,6 +1,7 @@
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient.client_exceptions import ConfigException, RESTCommunicationException
+from WMCore.Credential.Proxy import Proxy
 import urllib
 import re
 
@@ -9,18 +10,26 @@ class resubmit(SubCommand):
     -t/--task option
     """
     def __call__(self):
-        ## retrieving output files location from the server
-        server = HTTPRequests(self.serverurl, self.proxyfilename)
-
         self.logger.debug('Requesting resubmission for failed jobs in task %s' % self.cachedinfo['RequestName'] )
-        #inputdict = { "TaskResubmit": "Analysis", "ForceResubmit" : force }
-        dictresult, status, reason = server.post(self.uri, data = urllib.urlencode({ 'workflow' : self.cachedinfo['RequestName']}) + \
-                                                    self.sitewhitelist + self.siteblacklist)
-        self.logger.debug("Result: %s" % dictresult)
+        if not self.standalone:
+            ## retrieving output files location from the server
+            server = HTTPRequests(self.serverurl, self.proxyfilename)
 
-        if status != 200:
-            msg = "Problem retrieving resubmitting the task to the server:\ninput:%s\noutput:%s\nreason:%s" % (str(inputdict), str(dictresult), str(reason))
-            raise RESTCommunicationException(msg)
+            #inputdict = { "TaskResubmit": "Analysis", "ForceResubmit" : force }
+            dictresult, status, reason = server.post(self.uri, data = urllib.urlencode({ 'workflow' : self.cachedinfo['RequestName']}) + \
+                                                        self.sitewhitelist + self.siteblacklist)
+            self.logger.debug("Result: %s" % dictresult)
+
+            if status != 200:
+                msg = "Problem retrieving resubmitting the task to the server:\ninput:%s\noutput:%s\nreason:%s" % (str(inputdict), str(dictresult), str(reason))
+                raise RESTCommunicationException(msg)
+        else:
+            proxy = Proxy({'logger': self.logger})
+            dag = __import__("CRABInterface.DagmanDataWorkflow").DagmanDataWorkflow.DagmanDataWorkflow()
+            status = 200
+            reason = 'OK'
+            userdn = proxy.getSubject(self.proxyfilename)
+            dictresult = dag.resubmit(self.cachedinfo['RequestName'], self.sitewhitelist, self.siteblacklist, userdn=userdn)
 
         self.logger.info("Resubmission succesfully requested")
 
