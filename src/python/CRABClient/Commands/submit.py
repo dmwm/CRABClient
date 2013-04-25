@@ -8,6 +8,7 @@ from string import upper
 from CRABClient.Commands.SubCommand import SubCommand, ConfigCommand
 from CRABClient.Commands.reg_user import reg_user
 from WMCore.Configuration import loadConfigurationFile, Configuration
+from WMCore.Services.SiteDB.SiteDB import SiteDBJSON
 from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient import SpellChecker
 from CRABClient.ServerInteractions import HTTPRequests
@@ -175,10 +176,16 @@ class submit(SubCommand, ConfigCommand):
         configreq.setdefault('dbsurl', '')
         configreq.setdefault('publishdbsurl', '')
         # TODO: calculate these correctly:
-        configreq.setdefault('userhn', 'bbockelm')
         configreq.setdefault('vorole', 'cmsuser')
         configreq.setdefault('vogroup', '/cms')
-        configreq.setdefault('userdn', proxy.getSubject(self.proxyfilename))
+        dn = proxy.getSubject(self.proxyfilename)
+        try:
+            userhn = SiteDBJSON().dnUserName(dn)
+        except Exception:
+            # TODO: Rethrow?
+            userhn = __import__("getpass").getuser() + ".nocern"
+        configreq.setdefault('userdn', dn)
+        configreq.setdefault('userhn', userhn)
         configreq.setdefault('runs', [])
         configreq.setdefault('lumis', [])
         return dag.submit(**configreq)[0]['RequestName']

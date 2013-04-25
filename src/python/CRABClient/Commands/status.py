@@ -24,8 +24,7 @@ class status(SubCommand):
     def doStatus(self, data):
         if 'standalone' in self.cachedinfo and self.cachedinfo['standalone']:
             dag = __import__("CRABInterface.DagmanDataWorkflow").DagmanDataWorkflow.DagmanDataWorkflow()
-            # TODO: Calculate correct HN name.
-            dictresult = dag.status(data['workflow'], 'bbockelm')
+            dictresult = dag.status(data['workflow'], '')
             status = 200 # Fake an HTTP code to match PanDA
         else:
             server = HTTPRequests(self.serverurl, self.proxyfilename)
