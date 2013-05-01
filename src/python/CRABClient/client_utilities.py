@@ -265,12 +265,12 @@ def initProxy(voRole, voGroup, logger):
     return userdn, proxyfilename, proxy
 
 
-def delegateProxy(serverDN, myProxy, proxyobj, logger):
+def delegateProxy(serverDN, myProxy, proxyobj, logger, nokey=False):
     proxyobj.defaultDelegation['serverDN'] = serverDN
     proxyobj.defaultDelegation['myProxySvr'] = myProxy
 
     logger.debug("Registering user credentials for server %s" % serverDN)
-    proxyobj.createNewMyProxy( timeleftthreshold = 60 * 60 * 24 * RENEW_MYPROXY_THRESHOLD)
+    proxyobj.createNewMyProxy( timeleftthreshold = 60 * 60 * 24 * RENEW_MYPROXY_THRESHOLD, nokey=nokey)
 
 def validServerURL(option, opt_str, value, parser):
     """
@@ -318,4 +318,4 @@ def server_info(subresource, server, proxyfilename):
 
     dictresult, status, reason = server.get('/crabserver/dev/info', {'subresource' : subresource})
 
-    return dictresult['result']
+    return dictresult['result'][0]
