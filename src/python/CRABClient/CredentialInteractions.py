@@ -86,7 +86,7 @@ class CredentialInteractions(object):
         if myproxytimeleft < timeleftthreshold or self.proxyChanged:
             # creating the proxy
             self.logger.debug("Delegating a myproxy for %s hours" % self.defaultDelegation['myproxyValidity'] )
-            myproxy.delegate( serverRenewer = True )
+            myproxy.delegate(serverRenewer = True, nokey=nokey)
             myproxytimeleft = myproxy.getMyProxyTimeLeft(serverRenewer=True, nokey=nokey)
 
             if myproxytimeleft > 0:
