@@ -33,7 +33,7 @@ class CredentialInteractions(object):
         self.proxyChanged = False
 
 
-    def createNewVomsProxy(self, timeleftthreshold = 0):
+    def createNewVomsProxy(self, timeleftthreshold=0):
         """
         Handles the proxy creation:
            - checks if a valid proxy still exists
@@ -41,6 +41,7 @@ class CredentialInteractions(object):
         """
         ## TODO add the change to have user-cert/key defined in the config.
         userproxy = Proxy( self.defaultDelegation )
+        userproxy.userDN = userproxy.getSubject()
 
         proxytimeleft = 0
         self.logger.debug("Getting proxy life time left")
@@ -69,23 +70,24 @@ class CredentialInteractions(object):
 
         return userproxy.getSubject( ), userproxy.getProxyFilename()
 
-    def createNewMyProxy(self, timeleftthreshold = 0):
+    def createNewMyProxy(self, timeleftthreshold=0, nokey=False):
         """
         Handles the MyProxy creation
         """
         myproxy = Proxy ( self.defaultDelegation )
+        myproxy.userDN = myproxy.getSubject()
 
         myproxytimeleft = 0
         self.logger.debug("Getting myproxy life time left for %s" % self.defaultDelegation["myProxySvr"])
         # does it return an integer that indicates?
-        myproxytimeleft = myproxy.getMyProxyTimeLeft( serverRenewer = True )
+        myproxytimeleft = myproxy.getMyProxyTimeLeft(serverRenewer=True, nokey=nokey)
         self.logger.debug("Myproxy is valid: %i" % myproxytimeleft)
 
         if myproxytimeleft < timeleftthreshold or self.proxyChanged:
             # creating the proxy
             self.logger.debug("Delegating a myproxy for %s hours" % self.defaultDelegation['myproxyValidity'] )
-            myproxy.delegate( serverRenewer = True )
-            myproxytimeleft = myproxy.getMyProxyTimeLeft( serverRenewer = True )
+            myproxy.delegate(serverRenewer = True, nokey=nokey)
+            myproxytimeleft = myproxy.getMyProxyTimeLeft(serverRenewer=True, nokey=nokey)
 
             if myproxytimeleft > 0:
                 self.logger.debug("My-proxy delegated.")
