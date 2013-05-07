@@ -25,7 +25,6 @@ class Analysis(BasicJobType):
         """
         configArguments = {'addoutputfiles'            : [],
                            'adduserfiles'              : [],
-                           'configdoc'                 : '',
                            'tfileoutfiles'             : [],
                            'edmoutfiles'               : [],
                           }
