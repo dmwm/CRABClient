@@ -269,7 +269,7 @@ def delegateProxy(serverDN, myProxy, proxyobj, logger):
     proxyobj.defaultDelegation['serverDN'] = serverDN
     proxyobj.defaultDelegation['myProxySvr'] = myProxy
 
-    logger.info("Registering user credentials")
+    logger.debug("Registering user credentials for server %s" % serverDN)
     proxyobj.createNewMyProxy( timeleftthreshold = 60 * 60 * 24 * RENEW_MYPROXY_THRESHOLD)
 
 def validServerURL(option, opt_str, value, parser):
