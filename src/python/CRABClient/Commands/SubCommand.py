@@ -77,7 +77,6 @@ class SubCommand(object):
             #for each agentDN received from the server, delegate it!
             #XXX Temporary solution. Need to figure out how to delegate credential to the several WMAgent
             #without forcing the user to insert the password several times
-            self.logger.error("CAZZO " + str(alldns))
             if 'rest' in alldns and alldns['rest']:
                 delegateProxy(alldns['rest'], 'myproxy.cern.ch', proxyobj, self.logger, nokey=True)
             if 'services' in alldns:
