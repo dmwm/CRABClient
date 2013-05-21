@@ -136,14 +136,15 @@ class submit(SubCommand, ConfigCommand):
         if getattr(self.configuration.JobType, 'pluginName', None) is not None:
             jobtypes    = getJobTypes()
             plugjobtype = jobtypes[upper(self.configuration.JobType.pluginName)](*pluginParams)
-            inputfiles, jobconfig = plugjobtype.run(configreq)
+            inputfiles, jobconfig, isbchecksum = plugjobtype.run(configreq)
         else:
             fullname = self.configuration.JobType.externalPluginFile
             basename = os.path.basename(fullname).split('.')[0]
             plugin = addPlugin(fullname)[basename]
             pluginInst = plugin(*pluginParams)
-            inputfiles, jobconfig = pluginInst.run(configreq)
+            inputfiles, jobconfig, isbchecksum = pluginInst.run(configreq)
 
+        configreq['publishname'] = "%s-%s" %(configreq['publishname'], isbchecksum)
         configreq.update(jobconfig)
 
         if standalone:

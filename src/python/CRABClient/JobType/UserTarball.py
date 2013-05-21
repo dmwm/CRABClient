@@ -15,7 +15,7 @@ import sys
 
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
 from CRABClient.client_exceptions import InputFileNotFoundException, CachefileNotFoundException
-import CRABClient.PandaInterface as PandaInterface
+import PandaServerInterface as PandaInterface
 from WMCore.Services.UserFileCache.UserFileCache import UserFileCache
 from WMCore.Configuration import loadConfigurationFile, Configuration
 
@@ -38,7 +38,7 @@ class UserTarball(object):
         self.tarfile = tarfile.open(name=name , mode=mode, dereference=True)
         self.checksum = None
 
-    def addFiles(self, userFiles=None):
+    def addFiles(self, userFiles=None, cfgOutputName=None):
         """
         Add the necessary files to the tarball
         """
@@ -72,9 +72,12 @@ class UserTarball(object):
                 self.tarfile.add(filename, os.path.basename(filename), recursive=True)
 
         # Adding the pset file to the tarfile
+        if cfgOutputName:
+            self.tarfile.add(cfgOutputName, arcname='PSet.py')
         currentPath = os.getcwd()
-        psetfile = getattr(self.config.JobType, 'psetName', None)
-        self.tarfile.add(os.path.join(currentPath, psetfile), arcname='PSet.py')
+
+#        psetfile = getattr(self.config.JobType, 'psetName', None)
+#        self.tarfile.add(os.path.join(currentPath, psetfile), arcname='PSet.py')
 
     def close(self):
         """
@@ -115,7 +118,7 @@ class UserTarball(object):
         #                                  "proxyfilename" : self.config.JobType.proxyfilename, "capath" : self.config.JobType.capath, "newrest" : True})
 
         #return ufc.upload(self.tarfile.name)
-        return serverUrl, archiveName
+        return serverUrl, archiveName, self.checksum
 
     def calculateChecksum(self):
         """
@@ -124,10 +127,10 @@ class UserTarball(object):
         """
 
         lsl = [(x.name, int(x.size), int(x.mtime), x.uname) for x in self.tarfile.getmembers()]
-        hasher = hashlib.sha256(str(lsl))
+        hasher = hashlib.md5(str(lsl))
         self.logger.debug('tgz contents: %s' % lsl)
         self.checksum = hasher.hexdigest()
-        self.logger.debug('Checksum: %s' % self.checksum)
+        self.logger.debug('MD5 checksum: %s' % self.checksum)
 
         #Old way reads in the file again. May use for for non-tar files if needed.
         #sha256sum = hashlib.sha256()

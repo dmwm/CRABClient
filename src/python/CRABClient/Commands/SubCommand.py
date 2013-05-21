@@ -73,17 +73,15 @@ class SubCommand(object):
         if not self.options.skipProxy and self.initializeProxy:
             _, self.proxyfilename, self.proxyobj = initProxy( self.voRole, self.voGroup, self.logger )
             #get the dn of the agents from the server
-            if standalone:
-                # TODO: Un-hardcode this for unit tests
-                agentDNs = ['/DC=org/DC=doegrids/OU=Services/CN=hcc-briantest.unl.edu']
-            else:
-                agentDNs = server_info('delegatedn', self.serverurl, self.proxyfilename)
+            alldns = server_info('delegatedn', self.serverurl, self.proxyfilename)
             #for each agentDN received from the server, delegate it!
             #XXX Temporary solution. Need to figure out how to delegate credential to the several WMAgent
             #without forcing the user to insert the password several times
-            if not standalone:
-                for serverDN in agentDNs:
-                    delegateProxy( serverDN, 'myproxy.cern.ch', self.proxyobj, self.logger)
+            if 'rest' in alldns and alldns['rest']:
+                delegateProxy(alldns['rest'], 'myproxy.cern.ch', proxyobj, self.logger, nokey=True)
+            if 'services' in alldns:
+                for serverdn in alldns['services']:
+                    delegateProxy(serverdn, 'myproxy.cern.ch', proxyobj, self.logger, nokey=False)
         else:
             self.proxyfilename = self.options.skipProxy
             self.logger.debug('Skipping proxy creation')
