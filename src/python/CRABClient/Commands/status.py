@@ -45,6 +45,11 @@ class status(SubCommand):
             username = urllib.quote(p.getUserName())
             self.logger.info("Panda url:\t\t\thttp://panda.cern.ch/server/pandamon/query?job=*&jobsetID=%s&user=%s" % (dictresult['jobSetID'], username))
 
+        if dictresult['jobdefErrors']:
+            self.logger.error("Submission partially failed: %s jobgroup not submittet out of %s:" % (dictresult['failedJobdefs'], dictresult['totalJobdefs']))
+            for error in dictresult['jobdefErrors']:
+                self.logger.info("\t%s" % error)
+
         #Print information about jobs
         states = dictresult['jobsPerStatus']
         total = sum( states[st] for st in states )
