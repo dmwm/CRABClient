@@ -61,8 +61,12 @@ class remote_copy(SubCommand):
         finalresults = {}
 
         #this can be parallelized starting more processes in startchildproc
-        input, result, proc = self.startchildproc(processWorker)
-
+        old_ld_library_path = os.environ['LD_LIBRARY_PATH']
+        os.environ['LD_LIBRARY_PATH'] = ''
+        try:
+            input, result, proc = self.startchildproc(processWorker)
+        finally:
+            os.environ['LD_LIBRARY_PATH'] = old_ld_library_path
         for myfile in dicttocopy:
             fileid = myfile['pfn'].split('/')[-1]
 
