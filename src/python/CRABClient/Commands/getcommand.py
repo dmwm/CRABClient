@@ -4,6 +4,7 @@ from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient.client_exceptions import ConfigurationException
 import os
+import re
 
 class getcommand(SubCommand):
     """ Retrieve the output files of a number of jobs specified by the -q/--quantity option. The task
@@ -28,21 +29,21 @@ class getcommand(SubCommand):
 
         #Retrieving output files location from the server
         self.logger.debug('Retrieving locations for task %s' % self.cachedinfo['RequestName'] )
-        inputdict =  { 'workflow' : self.cachedinfo['RequestName'] }
-        inputdict.update(argv)
+        inputlist =  [ ('workflow', self.cachedinfo['RequestName']) ]
+        inputlist.extend(list(argv.iteritems()))
         if getattr(self.options, 'quantity', None):
             self.logger.debug('Retrieving %s file locations' % self.options.quantity )
-            inputdict['limit'] = self.options.quantity
+            inputlist.append( ('limit',self.options.quantity) )
         if getattr(self.options, 'jobids', None):
             self.logger.debug('Retrieving jobs %s' % self.options.jobids )
-            inputdict['jobids'] = self.options.jobids
+            inputlist.extend( self.options.jobids )
         server = HTTPRequests(self.serverurl, self.proxyfilename)
-        dictresult, status, reason = server.get(self.uri, data = inputdict)
+        dictresult, status, reason = server.get(self.uri, data = inputlist)
         self.logger.debug('Server result: %s' % dictresult )
         dictresult = self.processServerResult(dictresult)
 
         if status != 200:
-            msg = "Problem retrieving information from the server:\ninput:%s\noutput:%s\nreason:%s" % (str(inputdict), str(dictresult), str(reason))
+            msg = "Problem retrieving information from the server:\ninput:%s\noutput:%s\nreason:%s" % (str(inputlist), str(dictresult), str(reason))
             raise ConfigurationException(msg)
 
         totalfiles = len( dictresult['result'] )
@@ -96,3 +97,10 @@ class getcommand(SubCommand):
         #convert all to -1
         if getattr(self.options, 'quantity', None) == 'all':
             self.options.quantity = -1
+
+        #check the format of jobids
+        if getattr(self.options, 'jobids', None):
+            if re.compile('^\d+(,\d+)*$').match(self.options.jobids):
+                self.options.jobids = [('jobids',jobid) for jobid in self.options.jobids.split(',')]
+            else:
+                raise ConfigurationException("The command line option jobids should be a comma separated list of integers")

@@ -28,7 +28,7 @@ The task is identified by -t/--task option
         """
         self.parser.add_option( '-q', '--quantity',
                                 dest = 'quantity',
-                                help = 'A number which express the number of files you want to retrieve (or "all")' )
+                                help = 'The number of logs you want to retrieve (or "all"). Ignored if --jobids is used.' )
         getcommand.setOptions(self)
 
     """

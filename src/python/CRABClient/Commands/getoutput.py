@@ -25,6 +25,5 @@ class getoutput(getcommand):
         """
         self.parser.add_option( '-q', '--quantity',
                                 dest = 'quantity',
-                                help = 'A number which express the number of files you want to retrieve (or all).' +
-                                       'Defaut one output. "all" will only retrieve the files already transfered.' )
+                                help = 'The number of output files you want to retrieve (or "all"). Ignored if --jobids is used.' )
         getcommand.setOptions(self)
