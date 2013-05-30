@@ -12,6 +12,8 @@ the input data type.
 """
 
 import time
+import CRABClient.Commands as submitcmd
+
 
 instance = 'dev'
 mapping = {
@@ -44,7 +46,7 @@ mapping = {
                                            "JobType.inputFiles", "JobType.pyCfgParams",
                                            "Data.unitsPerJob", "Data.splitting", "Data.inputDataset", "Data.lumiMask", "Data.runRange",
                                            "User.email", "Site.removeT1Blacklisting", "General.configcacheUrl" , "General.configcacheName",
-                                           "General.standalone", "General.condorPool", "General.condorScheddList",
+                                           "General.standalone", "General.condorPool", "General.condorScheddList", "General.enableGsissh"
                                           ],
                   'requiresTaskOption' : False
                 },

@@ -210,7 +210,7 @@ def createWorkArea(logger, workingArea = '.', requestName = ''):
     return fullpath, requestName, logfile
 
 
-def createCache(requestarea, host, port, uniquerequestname, voRole, voGroup, standalone=False):
+def createCache(requestarea, host, port, uniquerequestname, voRole, voGroup, originalConfig={}):
     touchfile = open(os.path.join(requestarea, '.requestcache'), 'w')
     neededhandlers = {
                       "Server" : host,
@@ -218,7 +218,7 @@ def createCache(requestarea, host, port, uniquerequestname, voRole, voGroup, sta
                       "RequestName" : uniquerequestname,
                       "voRole" : voRole,
                       "voGroup" : voGroup,
-                      "standalone" : standalone,
+                      "OriginalConfig" : originalConfig,
                      }
     cPickle.dump(neededhandlers, touchfile)
     touchfile.close()
@@ -267,7 +267,7 @@ def initProxy(voRole, voGroup, logger):
 
     logger.debug("Checking credentials")
     old_ld_library_path = os.environ['LD_LIBRARY_PATH']
-    os.environ['LD_LIBRARY_PATH'] = ''
+    #os.environ['LD_LIBRARY_PATH'] = ''
     try:
         userdn, proxyfilename = proxy.createNewVomsProxy( timeleftthreshold = 600 )
     finally:

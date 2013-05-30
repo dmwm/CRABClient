@@ -19,7 +19,6 @@ import urllib
 
 import CRABInterface.DagmanDataWorkflow as DagmanDataWorkflow
 from WMCore.Credential.Proxy import Proxy
-
 class submit(SubCommand, ConfigCommand):
     """ Perform the submission to the CRABServer
     """
@@ -44,7 +43,6 @@ class submit(SubCommand, ConfigCommand):
                                                                )
 
         self.logger.debug("Started submission")
-
         #determine the serverurl
         if self.options.server:
             self.serverurl = self.options.server
@@ -153,7 +151,7 @@ class submit(SubCommand, ConfigCommand):
             uniquerequestname = self.doSubmit(configreq)
 
         tmpsplit = self.serverurl.split(':')
-        createCache( requestarea, tmpsplit[0], tmpsplit[1] if len(tmpsplit)>1 else '', uniquerequestname, voRole = self.voRole, voGroup = self.voGroup, standalone = standalone )
+        createCache( requestarea, tmpsplit[0], tmpsplit[1] if len(tmpsplit)>1 else '', uniquerequestname, voRole = self.voRole, voGroup = self.voGroup, originalConfig = self.configuration)
 
         self.logger.info("Submission completed")
         self.logger.debug("Request ID: %s " % uniquerequestname)

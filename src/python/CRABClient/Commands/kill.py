@@ -15,15 +15,23 @@ class kill(SubCommand):
 
         self.logger.debug('Killing task %s' % self.cachedinfo['RequestName'])
 
-        if not self.standalone:
-            dictresult, status, reason = server.delete(self.uri, data = urllib.urlencode({ 'workflow' : self.cachedinfo['RequestName']}))
-        else:
+        if getattr(self.cachedinfo['OriginalConfig'].General, 'standalone', False):
+            # Talk to HTCondor either directly or via gsissh
+            # NOTE: have to import here to keep from circular imports
+            import CRABInterface.DagmanDataWorkflow as DagmanModule
+            dag = DagmanModule.DagmanDataWorkflow(
+                                    config = self.cachedinfo['OriginalConfig'],
+                                        )
             proxy = Proxy({'logger': self.logger})
-            dag = __import__("CRABInterface.DagmanDataWorkflow").DagmanDataWorkflow.DagmanDataWorkflow()
             status = 200
             reason = 'OK'
             userdn = proxy.getSubject(self.proxyfilename)
             dictresult = dag.kill(self.cachedinfo['RequestName'], True, userdn=userdn)
+
+        else:
+            # Talk with a CRABServer
+            dictresult, status, reason = server.delete(self.uri, data = urllib.urlencode({ 'workflow' : self.cachedinfo['RequestName']}))
+
         self.logger.debug("Result: %s" % dictresult)
 
         if status != 200:

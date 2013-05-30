@@ -8,7 +8,6 @@ from CRABClient.client_exceptions import MissingOptionException, RESTCommunicati
 
 from WMCore.Credential.Proxy import Proxy
 
-
 class status(SubCommand):
     """
     Query the status of your tasks, or detailed information of one or more tasks
@@ -22,11 +21,18 @@ class status(SubCommand):
         return "%.2f %% %s(%s/%s)%s" % ((value*100/total), colors.GRAY, value, total, colors.NORMAL)
 
     def doStatus(self, data):
-        if 'standalone' in self.cachedinfo and self.cachedinfo['standalone']:
-            dag = __import__("CRABInterface.DagmanDataWorkflow").DagmanDataWorkflow.DagmanDataWorkflow()
+        if getattr(self.cachedinfo['OriginalConfig'].General, 'standalone', False):
+            # Talk to HTCondor either directly or via gsissh
+            # NOTE: have to import here to keep from circular imports
+            import CRABInterface.DagmanDataWorkflow as DagmanModule
+            dag = DagmanModule.DagmanDataWorkflow( 
+                                    config = self.cachedinfo['OriginalConfig'], 
+                                        )
             dictresult = dag.status(data['workflow'], '')
             status = 200 # Fake an HTTP code to match PanDA
+            monitorUrl = None
         else:
+            # Talk to the server
             server = HTTPRequests(self.serverurl, self.proxyfilename)
 
             self.logger.debug('Looking up detailed status of task %s' % self.cachedinfo['RequestName'])
@@ -36,14 +42,14 @@ class status(SubCommand):
             if status != 200:
                 msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(self.cachedinfo['RequestName']), str(dictresult), str(reason))
                 raise RESTCommunicationException(msg)
+            monitorUrl = 'pandaMon'
 
             self.logger.debug(dictresult) #should be something like {u'result': [[123, u'ciao'], [456, u'ciao']]}
 
-        return dictresult, status
+        return dictresult, status, monitorUrl
 
     def __call__(self):
-
-        dictresult, status = self.doStatus({ 'workflow' : self.cachedinfo['RequestName']})
+        dictresult, status, monitorUrl = self.doStatus({ 'workflow' : self.cachedinfo['RequestName']})
 
         self.logger.info("Task name:\t\t\t%s" % self.cachedinfo['RequestName'])
         self.logger.info("Task status:\t\t\t%s" % dictresult['status'])
@@ -54,7 +60,9 @@ class status(SubCommand):
         elif dictresult['jobSetID']:
             p = Proxy({'logger' : self.logger})
             username = urllib.quote(p.getUserName())
-            self.logger.info("Panda url:\t\t\thttp://panda.cern.ch/server/pandamon/query?job=*&jobsetID=%s&user=%s" % (dictresult['jobSetID'], username))
+            # Dump a web URL only if it exists, support future URL schema 
+            if monitorUrl == 'pandaMon':
+                self.logger.info("Monitoring url:\t\t\thttp://panda.cern.ch/server/pandamon/query?job=*&jobsetID=%s&user=%s" % (dictresult['jobSetID'], username))
 
         if dictresult['jobdefErrors']:
             self.logger.error("Submission partially failed: %s jobgroup not submittet out of %s:" % (dictresult['failedJobdefs'], dictresult['totalJobdefs']))

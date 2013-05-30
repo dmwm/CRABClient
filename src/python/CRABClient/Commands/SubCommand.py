@@ -106,8 +106,9 @@ class SubCommand(object):
             #TODO Save them in the cache
             self.voRole = self.cachedinfo['voRole'] if not self.options.voRole else self.options.voRole
             self.voGroup = self.cachedinfo['voGroup'] if not self.options.voGroup else self.options.voGroup
-            self.standalone = self.cachedinfo.get('standalone', False)
-
+            self.originalConfig = self.cachedinfo.get('OriginalConfig')
+            self.standalone = getattr(self.originalConfig.General, 'standalone', False)
+            self.enableGsissh = getattr(self.originalConfig.General, 'enableGsissh', False)
 
     def __call__(self):
         self.logger.info("This is a 'nothing to do' command")
