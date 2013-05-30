@@ -46,7 +46,8 @@ class status(SubCommand):
             self.logger.info("Panda url:\t\t\thttp://panda.cern.ch/server/pandamon/query?job=*&jobsetID=%s&user=%s" % (dictresult['jobSetID'], username))
 
         if dictresult['jobdefErrors']:
-            self.logger.error("Submission partially failed: %s jobgroup not submittet out of %s:" % (dictresult['failedJobdefs'], dictresult['totalJobdefs']))
+            self.logger.error("%sSubmission partially failed:%s\t%s jobgroup not submittet out of %s:" % (colors.RED, colors.NORMAL,\
+                                                            dictresult['failedJobdefs'], dictresult['totalJobdefs']))
             for error in dictresult['jobdefErrors']:
                 self.logger.info("\t%s" % error)
 
