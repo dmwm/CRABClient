@@ -1,10 +1,12 @@
 """
 Contains the logic and wraps calls to WMCore.Credential.Proxy
 """
+import logging
 
 from WMCore.Credential.Proxy import Proxy
+
 from CRABClient.client_exceptions import ProxyCreationException
-import logging
+
 
 class CredentialInteractions(object):
     '''

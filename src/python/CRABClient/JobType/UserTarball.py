@@ -13,11 +13,12 @@ import tempfile
 import hashlib
 import sys
 
+from WMCore.Configuration import loadConfigurationFile, Configuration
+import PandaServerInterface as PandaInterface
+
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
 from CRABClient.client_exceptions import InputFileNotFoundException, CachefileNotFoundException
-import PandaServerInterface as PandaInterface
-from WMCore.Services.UserFileCache.UserFileCache import UserFileCache
-from WMCore.Configuration import loadConfigurationFile, Configuration
+
 
 class UserTarball(object):
     """
@@ -113,11 +114,6 @@ class UserTarball(object):
             self.logger.error("failed to upload source files with %s" % status)
             raise CachefileNotFoundException
 
-        #XXX: I dont like the /userfilecache/data/file hardcoded
-        #ufc = UserFileCache({'endpoint': "https://" + self.config.General.ufccacheUrl + "/crabcache", \
-        #                                  "proxyfilename" : self.config.JobType.proxyfilename, "capath" : self.config.JobType.capath, "newrest" : True})
-
-        #return ufc.upload(self.tarfile.name)
         return serverUrl, archiveName, self.checksum
 
     def calculateChecksum(self):
