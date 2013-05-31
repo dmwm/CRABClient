@@ -1,7 +1,4 @@
 from __future__ import division
-from CRABClient.Commands import CommandResult
-from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.CredentialInteractions import CredentialInteractions
 import os
 import logging
 import subprocess
@@ -11,7 +8,12 @@ import time
 from math import ceil
 
 from WMCore.FwkJobReport.FileInfo import readAdler32, readCksum
+
+from CRABClient.Commands import CommandResult
+from CRABClient.Commands.SubCommand import SubCommand
+from CRABClient.CredentialInteractions import CredentialInteractions
 from CRABClient.client_utilities import colors
+
 
 class remote_copy(SubCommand):
 

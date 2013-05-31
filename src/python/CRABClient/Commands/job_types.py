@@ -1,6 +1,7 @@
 from CRABClient.Commands import CommandResult
 from CRABClient.Commands.SubCommand import SubCommand
 
+
 class job_types(SubCommand):
     """
     List all the job types the client supports

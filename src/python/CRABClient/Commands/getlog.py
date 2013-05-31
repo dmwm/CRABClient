@@ -4,6 +4,7 @@ from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.Commands.getcommand import getcommand
 from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient.client_exceptions import ConfigurationException
+
 import os
 
 class getlog(getcommand):

@@ -1,8 +1,10 @@
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient.client_exceptions import ConfigException, RESTCommunicationException
+
 import urllib
 import re
+
 
 class resubmit(SubCommand):
     """ Resubmit the failed jobs of the task identified by

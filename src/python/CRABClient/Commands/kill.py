@@ -1,7 +1,9 @@
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient.client_exceptions import RESTCommunicationException
+
 import urllib
+
 
 class kill(SubCommand):
     """
