@@ -1,6 +1,7 @@
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ServerInteractions import HTTPRequests
 
+
 class request_type(SubCommand):
     """ Return the string of the workflow type identified by -t/--task option
     """

@@ -2,19 +2,19 @@
 This is simply taking care of job submission
 """
 
-from CRABClient.client_utilities import getJobTypes, createCache, createWorkArea, validServerURL, addPlugin
+import types
+import urllib
 import json, os
 from string import upper
-from CRABClient.Commands.SubCommand import SubCommand, ConfigCommand
-from CRABClient.Commands.reg_user import reg_user
+
 from WMCore.Configuration import loadConfigurationFile, Configuration
-from CRABClient.ServerInteractions import HTTPRequests
+
+from CRABClient.Commands.SubCommand import SubCommand, ConfigCommand
 from CRABClient import SpellChecker
 from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient.client_exceptions import MissingOptionException, ConfigurationException, RESTCommunicationException
-import types
-import imp
-import urllib
+from CRABClient.client_utilities import getJobTypes, createCache, createWorkArea, validServerURL, addPlugin
+
 
 class submit(SubCommand, ConfigCommand):
     """ Perform the submission to the CRABServer
