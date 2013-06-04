@@ -2,19 +2,19 @@
 This is simply taking care of job submission
 """
 
-import types
-import urllib
+from CRABClient.client_utilities import getJobTypes, createCache, createWorkArea, validServerURL, addPlugin
 import json, os
 from string import upper
-
-from WMCore.Configuration import loadConfigurationFile, Configuration
-
 from CRABClient.Commands.SubCommand import SubCommand, ConfigCommand
+from CRABClient.Commands.reg_user import reg_user
+from WMCore.Configuration import loadConfigurationFile, Configuration
+from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient import SpellChecker
 from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient.client_exceptions import MissingOptionException, ConfigurationException, RESTCommunicationException
-from CRABClient.client_utilities import getJobTypes, createCache, createWorkArea, validServerURL, addPlugin
-
+import types
+import imp
+import urllib
 
 class submit(SubCommand, ConfigCommand):
     """ Perform the submission to the CRABServer
@@ -86,7 +86,6 @@ class submit(SubCommand, ConfigCommand):
         configreq = {}
         for param in self.requestmapper:
             mustbetype = getattr(types, self.requestmapper[param]['type'])
-
             if self.requestmapper[param]['config']:
                 attrs = self.requestmapper[param]['config'].split('.')
                 temp = self.configuration
@@ -119,9 +118,6 @@ class submit(SubCommand, ConfigCommand):
                     self.logger.info("WARNING: You disabled the T1 automatic blacklisting without having the t1access role")
                     blacklistT1 = False
                 configreq["blacklistT1"] = 1 if blacklistT1 else 0
-            elif self.requestmapper[param]['required']:
-                if self.requestmapper[param]['default'] is not None:
-                    configreq[param] = self.requestmapper[param]['default']
 
         jobconfig = {}
         self.configuration.JobType.proxyfilename = self.proxyfilename
@@ -198,7 +194,6 @@ class submit(SubCommand, ConfigCommand):
 
         Checking if needed input parameters are there
         """
-
         if getattr(self.configuration, 'General', None) is None:
             return False, "Crab configuration problem: general section is missing. "
 

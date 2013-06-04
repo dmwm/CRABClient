@@ -11,8 +11,6 @@ to have the client doing a basic sanity check on
 the input data type.
 """
 
-import time
-
 instance = 'dev'
 mapping = {
     'submit' :  { 'uri': '/crabserver/%s/workflow' %instance,
