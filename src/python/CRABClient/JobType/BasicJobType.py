@@ -6,6 +6,7 @@ Conventions:
 """
 
 from WMCore.Configuration import Configuration
+from FWCore.PythonUtilities.LumiList import LumiList
 
 class BasicJobType(object):
     """
@@ -45,10 +46,17 @@ class BasicJobType(object):
         ## (boolean with the result of the validation, eventual error message)
         return (True, '')
 
-    def report(self, inputdata):
-        """
-        _report_
 
-        Report the summary of the job type.
+    @staticmethod
+    def mergeLumis(inputdata, lumimask):
         """
-        raise NotImplementedError()
+        Computes the processed lumis, merges if needed and returns the compacted list.
+        """
+        mergedlumis = LumiList()
+        doublelumis = LumiList()
+        for report in inputdata:
+            doublelumis = mergedlumis & LumiList(runsAndLumis=report)
+            mergedlumis = mergedlumis | LumiList(runsAndLumis=report)
+            if doublelumis:
+                self.logger.info("Warning: double run-lumis processed %s" % doublelumis)
+        return mergedlumis.getCompactList(), (LumiList(compactList=lumimask) - mergedlumis).getCompactList()
