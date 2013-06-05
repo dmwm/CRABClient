@@ -111,6 +111,8 @@ class submit(SubCommand, ConfigCommand):
                     configreq["workflow"] = requestname
             elif param == "savelogsflag":
                 configreq["savelogsflag"] = 1 if temp else 0
+            elif param == "publication":
+                configreq["publication"] = 1 if temp else 0
             elif param == "blacklistT1":
                 blacklistT1 = self.voRole != 't1access'
                 #if the user choose to remove the automatic T1 blacklisting and has not the t1acces role
@@ -209,6 +211,8 @@ class submit(SubCommand, ConfigCommand):
                     float(self.configuration.Data.unitsPerJob)
                 except ValueError:
                     return False, "Crab configuration problem: unitsPerJob must be a valid number, not %s" % self.configuration.Data.unitsPerJob
+            if getattr(self.configuration.Data, 'publication', None) and not (hasattr(self.configuration.Data, 'publishDataName') and hasattr(self.configuration.Data, 'publishDbsUrl')):
+                return False, "Crab configuration problem: if publication is selected publishDataName and publishDbsUrl are both required"
         if getattr(self.configuration, 'Site', None) is None:
             return False, "Crab configuration problem: Site section is missing. "
         elif getattr(self.configuration.Site, "storageSite", None) is None:
