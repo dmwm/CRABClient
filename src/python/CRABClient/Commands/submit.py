@@ -6,7 +6,6 @@ from CRABClient.client_utilities import getJobTypes, createCache, createWorkArea
 import json, os
 from string import upper
 from CRABClient.Commands.SubCommand import SubCommand, ConfigCommand
-from CRABClient.Commands.reg_user import reg_user
 from WMCore.Configuration import loadConfigurationFile, Configuration
 from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient import SpellChecker
