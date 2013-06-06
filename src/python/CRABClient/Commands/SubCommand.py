@@ -84,6 +84,7 @@ class SubCommand(object):
                     delegateProxy(serverdn, 'myproxy.cern.ch', proxyobj, self.logger, nokey=False)
         else:
             self.proxyfilename = self.options.skipProxy
+            os.environ['X509_USER_PROXY'] = self.options.skipProxy
             self.logger.debug('Skipping proxy creation')
 
 
