@@ -26,6 +26,9 @@ class report(SubCommand):
         if status != 200:
             msg = "Problem retrieving report:\ninput:%s\noutput:%s\nreason:%s" % (str(self.cachedinfo['RequestName']), str(dictresult), str(reason))
             raise RESTCommunicationException(msg)
+        if not dictresult['result'][0]['runsAndLumis'] :
+            self.logger.info('No jobs finished yet. Report is available when jobs complete')
+            return
 
         runlumiLists = map(lambda x: literal_eval(x['runlumi']), dictresult['result'][0]['runsAndLumis'].values())
         #convert lumi lists from strings to integers
