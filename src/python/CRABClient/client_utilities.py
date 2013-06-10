@@ -14,11 +14,11 @@ import sys
 import cPickle
 
 from string import upper
+from optparse import OptionValueError
 
 from CRABClient.CredentialInteractions import CredentialInteractions
 from CRABClient.client_exceptions import TaskNotFoundException, CachefileNotFoundException
 
-from optparse import OptionValueError
 
 
 #if certificates in myproxy expires in less than RENEW_MYPROXY_THRESHOLD days renew them

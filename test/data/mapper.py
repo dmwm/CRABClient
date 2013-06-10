@@ -38,7 +38,6 @@ defaulturi = {
                 },
             'get-log' : {'uri': '/unittests/rest/log/'},
             'get-output' : {'uri': '/unittests/rest/data/'},
-            'reg_user' : {'uri': '/unittests/rest/user/'},
             'server_info' : {'uri': '/unittests/rest/info/'},
             'status' : {'uri': '/unittests/rest/task/'},
             'report' :    {'uri': '/unittests/rest/goodLumis/'},

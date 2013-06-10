@@ -6,10 +6,13 @@ import urllib
 import os
 from urlparse import urlunparse
 from httplib import HTTPException
+
 from WMCore.Services.Requests import JSONRequests
 from WMCore.Services.pycurl_manager import RequestHandler
+
 from CRABClient import __version__
 from CRABClient.client_exceptions import EnvironmentException
+
 
 class HTTPRequests(dict):
     """

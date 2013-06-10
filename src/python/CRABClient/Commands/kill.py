@@ -2,7 +2,9 @@ from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient.client_exceptions import RESTCommunicationException
 from WMCore.Credential.Proxy import Proxy
+
 import urllib
+
 
 class kill(SubCommand):
     """

@@ -11,10 +11,6 @@ to have the client doing a basic sanity check on
 the input data type.
 """
 
-import time
-import CRABClient.Commands as submitcmd
-
-
 instance = 'dev'
 mapping = {
     'submit' :  { 'uri': '/crabserver/%s/workflow' %instance,
@@ -28,6 +24,7 @@ mapping = {
                             #TODO
 #                            "DbsUrl"            : {"default": "http://cmsdbsprod.cern.ch/cms_dbs_prod_global/servlet/DBSServlet", "config": 'Data.dbsUrl', "type": "StringType",  "required": True },
                             "publishdbsurl"     : {"default": None,             "config": 'Data.publishDbsUrl',     "type": "StringType",  "required": False},
+                            "publication"       : {"default": False,            "config": 'Data.publication',       "type": "BooleanType", "required": False},
                             "sitewhitelist"     : {"default": None,             "config": 'Site.whitelist',         "type": "ListType",    "required": False},
                             "siteblacklist"     : {"default": None,             "config": 'Site.blacklist',         "type": "ListType",    "required": False},
                             "blockwhitelist"    : {"default": None,             "config": 'Data.blockWhitelist',    "type": "ListType",    "required": False},
@@ -54,7 +51,7 @@ mapping = {
     'getoutput'    : {'uri': '/crabserver/%s/workflow' % instance, 'requiresTaskOption' : True},
     'remote_copy'  : {'uri': None, 'requiresTaskOption' : False, 'initializeProxy' : False, 'requiresTaskOption': True},#proxy already inited by the calling command
     'status' : {'uri': '/crabserver/%s/workflow' % instance, 'requiresTaskOption' : True},
-#    'report': {'uri': '/crabserver/workflow', 'requiresTaskOption': True},
+    'report': {'uri': '/crabserver/%s/workflow' % instance, 'requiresTaskOption': True},
     'kill':   {'uri': '/crabserver/%s/workflow' % instance, 'requiresTaskOption' : True},
     'resubmit': {'uri': '/crabserver/%s/workflow' % instance, 'requiresTaskOption' : True},
     'request_type': {'uri': '/crabserver/%s/workflow' % instance, 'requiresTaskOption': True},

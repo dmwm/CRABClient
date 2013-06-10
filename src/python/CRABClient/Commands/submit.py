@@ -6,7 +6,6 @@ from CRABClient.client_utilities import getJobTypes, createCache, createWorkArea
 import json, os
 from string import upper
 from CRABClient.Commands.SubCommand import SubCommand, ConfigCommand
-from CRABClient.Commands.reg_user import reg_user
 from WMCore.Configuration import loadConfigurationFile, Configuration
 from WMCore.Services.SiteDB.SiteDB import SiteDBJSON
 from CRABClient.ServerInteractions import HTTPRequests
@@ -90,7 +89,6 @@ class submit(SubCommand, ConfigCommand):
         configreq = {}
         for param in self.requestmapper:
             mustbetype = getattr(types, self.requestmapper[param]['type'])
-
             if self.requestmapper[param]['config']:
                 attrs = self.requestmapper[param]['config'].split('.')
                 temp = self.configuration
@@ -116,6 +114,8 @@ class submit(SubCommand, ConfigCommand):
                     configreq["workflow"] = requestname
             elif param == "savelogsflag":
                 configreq["savelogsflag"] = 1 if temp else 0
+            elif param == "publication":
+                configreq["publication"] = 1 if temp else 0
             elif param == "blacklistT1":
                 blacklistT1 = self.voRole != 't1access'
                 #if the user choose to remove the automatic T1 blacklisting and has not the t1acces role
@@ -123,9 +123,6 @@ class submit(SubCommand, ConfigCommand):
                     self.logger.info("WARNING: You disabled the T1 automatic blacklisting without having the t1access role")
                     blacklistT1 = False
                 configreq["blacklistT1"] = 1 if blacklistT1 else 0
-            elif self.requestmapper[param]['required']:
-                if self.requestmapper[param]['default'] is not None:
-                    configreq[param] = self.requestmapper[param]['default']
 
         jobconfig = {}
         self.configuration.JobType.proxyfilename = self.proxyfilename
@@ -240,7 +237,6 @@ class submit(SubCommand, ConfigCommand):
 
         Checking if needed input parameters are there
         """
-
         if getattr(self.configuration, 'General', None) is None:
             return False, "Crab configuration problem: general section is missing. "
 
@@ -256,6 +252,8 @@ class submit(SubCommand, ConfigCommand):
                     float(self.configuration.Data.unitsPerJob)
                 except ValueError:
                     return False, "Crab configuration problem: unitsPerJob must be a valid number, not %s" % self.configuration.Data.unitsPerJob
+            if getattr(self.configuration.Data, 'publication', None) and not (hasattr(self.configuration.Data, 'publishDataName') and hasattr(self.configuration.Data, 'publishDbsUrl')):
+                return False, "Crab configuration problem: if publication is selected publishDataName and publishDbsUrl are both required"
         if getattr(self.configuration, 'Site', None) is None:
             return False, "Crab configuration problem: Site section is missing. "
         elif getattr(self.configuration.Site, "storageSite", None) is None:

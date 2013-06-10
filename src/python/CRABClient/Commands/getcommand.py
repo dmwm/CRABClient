@@ -3,7 +3,9 @@ from CRABClient.Commands.remote_copy import remote_copy
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient.client_exceptions import ConfigurationException
+
 import os
+import re
 
 class getcommand(SubCommand):
     """ Retrieve the output files of a number of jobs specified by the -q/--quantity option. The task
@@ -29,30 +31,30 @@ class getcommand(SubCommand):
         if not self.standalone:
             #Retrieving output files location from the server
             self.logger.debug('Retrieving locations for task %s' % self.cachedinfo['RequestName'] )
-            inputdict =  { 'workflow' : self.cachedinfo['RequestName'] }
-            inputdict.update(argv)
+            inputlist =  [ ('workflow', self.cachedinfo['RequestName']) ]
+            inputlist.extend(list(argv.iteritems()))
             if getattr(self.options, 'quantity', None):
                 self.logger.debug('Retrieving %s file locations' % self.options.quantity )
-                inputdict['limit'] = self.options.quantity
-            if getattr(self.options, 'pandaids', None):
-                self.logger.debug('Retrieving jobs %s' % self.options.pandaids )
-                inputdict['pandaids'] = self.options.pandaids
+                inputlist.append( ('limit',self.options.quantity) )
+            if getattr(self.options, 'jobids', None):
+                self.logger.debug('Retrieving jobs %s' % self.options.jobids )
+            inputlist.extend( self.options.jobids )
             server = HTTPRequests(self.serverurl, self.proxyfilename)
-            dictresult, status, reason = server.get(self.uri, data = inputdict)
+            dictresult, status, reason = server.get(self.uri, data = inputlist)
             self.logger.debug('Server result: %s' % dictresult )
             dictresult = self.processServerResult(dictresult)
 
             if status != 200:
-                msg = "Problem retrieving information from the server:\ninput:%s\noutput:%s\nreason:%s" % (str(inputdict), str(dictresult), str(reason))
+                msg = "Problem retrieving information from the server:\ninput:%s\noutput:%s\nreason:%s" % (str(inputlist), str(dictresult), str(reason))
                 raise ConfigurationException(msg)
-            workflow = dictresult['result']        #TODO assigning workflow to dictresult. for the moment we have only one wf
 
+            workflow = dictresult['result']        #TODO assigning workflow to dictresult. for the moment we have only one wf
         else:
             dag = __import__("CRABInterface.DagmanDataWorkflow").DagmanDataWorkflow.DagmanDataWorkflow()
             quantity = getattr(self.options, 'quantity', -1)
             workflow = dag.outputLocation(self.cachedinfo['RequestName'], self.options.quantity, [])['result']
 
-        totalfiles = len(workflow)
+        totalfiles = len( workflow )
         cpresults = []
 #        for workflow in dictresult['result']: TODO re-enable this when we will have resubmissions
         arglist = ['-d', self.dest, '-i', workflow, '-t', self.options.task]
@@ -62,7 +64,6 @@ class getcommand(SubCommand):
             self.logger.info("Retrieving %s files" % totalfiles )
             copyoutput = remote_copy( self.logger, arglist )
             copyoutput()
-
         if totalfiles == 0:
             self.logger.info("No files to retrieve")
 
@@ -83,8 +84,8 @@ class getcommand(SubCommand):
                                 help = 'Where the files retrieved will be stored in the local file system',
                                 metavar = 'DIRECTORY' )
 
-        self.parser.add_option( '-i', '--pandaids',
-                                dest = 'pandaids',
+        self.parser.add_option( '-i', '--jobids',
+                                dest = 'jobids',
                                 default = None,
                                 help = 'Ids of the jobs you want to retrieve. Comma separated list of intgers',
                                 metavar = 'JOBIDS' )
@@ -102,3 +103,10 @@ class getcommand(SubCommand):
         #convert all to -1
         if getattr(self.options, 'quantity', None) == 'all':
             self.options.quantity = -1
+
+        #check the format of jobids
+        if getattr(self.options, 'jobids', None):
+            if re.compile('^\d+(,\d+)*$').match(self.options.jobids):
+                self.options.jobids = [('jobids',jobid) for jobid in self.options.jobids.split(',')]
+            else:
+                raise ConfigurationException("The command line option jobids should be a comma separated list of integers")

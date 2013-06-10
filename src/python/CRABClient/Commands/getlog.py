@@ -4,6 +4,7 @@ from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.Commands.getcommand import getcommand
 from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient.client_exceptions import ConfigurationException
+
 import os
 
 class getlog(getcommand):
@@ -28,7 +29,7 @@ The task is identified by -t/--task option
         """
         self.parser.add_option( '-q', '--quantity',
                                 dest = 'quantity',
-                                help = 'A number which express the number of files you want to retrieve (or "all")' )
+                                help = 'The number of logs you want to retrieve (or "all"). Ignored if --jobids is used.' )
         getcommand.setOptions(self)
 
     """

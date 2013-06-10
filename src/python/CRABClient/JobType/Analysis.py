@@ -5,13 +5,14 @@ CMSSW job type plug-in
 import os
 import tempfile
 
+import PandaServerInterface as PandaInterface
+from FWCore.PythonUtilities.LumiList import LumiList
+
 from CRABClient.JobType.BasicJobType import BasicJobType
 from CRABClient.JobType.CMSSWConfig import CMSSWConfig
 from CRABClient.JobType.LumiMask import getLumiMask
 from CRABClient.JobType.UserTarball import UserTarball
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
-import PandaServerInterface as PandaInterface
-from FWCore.PythonUtilities.LumiList import LumiList
 
 class Analysis(BasicJobType):
     """
@@ -130,19 +131,3 @@ class Analysis(BasicJobType):
             reason += 'Crab configuration problem: missing or null CMSSW config file name. '
 
         return (valid, reason)
-
-    def report(self, inputdata):
-        """
-        Computes the processed lumis, merges if needed and returns the compacted list.
-        """
-        from FWCore.PythonUtilities.LumiList import LumiList
-        mergedlumis = LumiList()
-        doublelumis = LumiList()
-        for report in inputdata:
-            doublelumis = mergedlumis & LumiList(runsAndLumis=report)
-            mergedlumis = mergedlumis | LumiList(runsAndLumis=report)
-            if doublelumis:
-                self.logger.info("Warning: double run-lumis processed %s" % doublelumis)
-        compactlist = mergedlumis.getLumis()
-        self.logger.debug("Processed %d lumis" % len(compactlist))
-        return len(compactlist), compactlist

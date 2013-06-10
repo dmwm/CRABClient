@@ -9,10 +9,10 @@ import sys
 import hashlib
 import logging
 
-from CRABClient.ServerInteractions import HTTPRequests
 from PSetTweaks.WMTweak import makeTweak
+
+from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient.client_exceptions import ConfigException
-from WMCore.Cache.WMConfigCache import ConfigCache, ConfigCacheException
 
 class CMSSWConfig(object):
     """

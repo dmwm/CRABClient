@@ -1,10 +1,12 @@
 """
 Contains the logic and wraps calls to WMCore.Credential.Proxy
 """
+import logging
 
 from WMCore.Credential.Proxy import Proxy
+
 from CRABClient.client_exceptions import ProxyCreationException
-import logging
+
 
 class CredentialInteractions(object):
     '''
@@ -87,11 +89,9 @@ class CredentialInteractions(object):
         if myproxytimeleft < timeleftthreshold or self.proxyChanged:
             # creating the proxy
             self.logger.debug("Delegating a myproxy for %s hours" % self.defaultDelegation['myproxyValidity'] )
-            myproxy.delegate(serverRenewer = True, nokey=nokey)
-            myproxytimeleft = myproxy.getMyProxyTimeLeft(serverRenewer=True, nokey=nokey)
-
-            if myproxytimeleft > 0:
+            try:
+                myproxy.delegate(serverRenewer = True, nokey=nokey)
                 self.logger.debug("My-proxy delegated.")
-            else:
-                raise ProxyCreationException("Problems delegating My-proxy.")
+            except Exception, ex:
+                raise ProxyCreationException("Problems delegating My-proxy. Problem %s"%ex)
 

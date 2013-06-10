@@ -6,7 +6,8 @@ import json
 import urllib2
 import urlparse
 
-import WMCore
+from WMCore.Lexicon import jobrange
+
 from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient.client_exceptions import ConfigurationException
 
@@ -46,7 +47,7 @@ def _expandRange(myrange):
     if not myrange:
         return []
     try:
-        WMCore.Lexicon.jobrange(myrange)
+        jobrange(myrange)
     except AssertionError, ex:
         raise ConfigurationException("Invalid runRange: %s" % myrange)
 
