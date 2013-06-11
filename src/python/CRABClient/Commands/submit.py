@@ -43,16 +43,8 @@ class submit(SubCommand, ConfigCommand):
             self.serverurl = self.options.server
         elif getattr( self.configuration.General, 'serverUrl', None ) is not None:
             self.serverurl = self.configuration.General.serverUrl
-#TODO: For sure the server url should not be handled here. Find an intelligent way for this
         else:
             self.serverurl = 'http://cmsweb.cern.ch'
-        if not hasattr( self.configuration.General, 'ufccacheUrl' ):
-            self.configuration.General.ufccacheUrl = self.serverurl
-        if not hasattr( self.configuration.General, 'configcacheUrl' ):
-            #https is required because configcache does not use ServerInteractions
-            self.configuration.General.configcacheUrl = 'https://' + self.serverurl + '/couchdb'
-        if not hasattr( self.configuration.General, 'configcacheName' ):
-            self.configuration.General.configcacheName = 'analysis_reqmgr_config_cache'
 
         self.createCache( self.serverurl )
 
