@@ -3,9 +3,9 @@ Contains the logic and wraps calls to WMCore.Credential.Proxy
 """
 import logging
 
-from WMCore.Credential.Proxy import Proxy
+from WMCore.Credential.Proxy import Proxy, CredentialException
 
-from CRABClient.client_exceptions import ProxyCreationException
+from CRABClient.client_exceptions import ProxyCreationException, EnvironmentException
 
 
 class CredentialInteractions(object):
@@ -34,6 +34,16 @@ class CredentialInteractions(object):
                                   }
         self.proxyChanged = False
 
+    def getUserName(self):
+        """
+        Return user name form DN
+        """
+        try:
+            userproxy = Proxy( self.defaultDelegation )
+        except CredentialException, ex:
+            self.logger.debug(ex)
+            raise EnvironmentException('Problem with Grid environment. %s ' %ex._message)
+        return userproxy.getUserName()
 
     def createNewVomsProxy(self, timeleftthreshold=0):
         """
@@ -42,7 +52,11 @@ class CredentialInteractions(object):
            - performs the creation if it is expired
         """
         ## TODO add the change to have user-cert/key defined in the config.
-        userproxy = Proxy( self.defaultDelegation )
+        try:
+            userproxy = Proxy( self.defaultDelegation )
+        except CredentialException, ex:
+            self.logger.debug(ex)
+            raise EnvironmentException('Problem with Grid environment. %s ' %ex._message)
         userproxy.userDN = userproxy.getSubject()
 
         proxytimeleft = 0

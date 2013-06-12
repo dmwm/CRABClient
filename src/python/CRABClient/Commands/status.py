@@ -1,13 +1,11 @@
 from __future__ import division # I want floating points
 import urllib
+import sys
 
-from CRABClient.client_utilities import colors
+from CRABClient.client_utilities import colors, getUserName
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient.client_exceptions import MissingOptionException, RESTCommunicationException
-
-from WMCore.Credential.Proxy import Proxy
-
 
 class status(SubCommand):
     """
@@ -41,13 +39,12 @@ class status(SubCommand):
         if dictresult['taskFailureMsg']:
             self.logger.error("%sError during task injection:%s\t%s" % (colors.RED,colors.NORMAL,dictresult['taskFailureMsg']))
         elif dictresult['jobSetID']:
-            p = Proxy({'logger' : self.logger})
-            username = urllib.quote(p.getUserName())
+            username = urllib.quote(getUserName(self.logger))
             self.logger.info("Panda url:\t\t\thttp://panda.cern.ch/server/pandamon/query?job=*&jobsetID=%s&user=%s" % (dictresult['jobSetID'], username))
 
         if dictresult['jobdefErrors']:
-            self.logger.error("%sSubmission partially failed:%s\t%s jobgroup not submittet out of %s:" % (colors.RED, colors.NORMAL,\
-                                                            dictresult['failedJobdefs'], dictresult['totalJobdefs']))
+            self.logger.error("%sSubmission partially failed:%s\t%s jobgroup not submittet out of %s:" % (colors.RED,\
+                                                     colors.NORMAL, dictresult['failedJobdefs'], dictresult['totalJobdefs']))
             for error in dictresult['jobdefErrors']:
                 self.logger.info("\t%s" % error)
 
