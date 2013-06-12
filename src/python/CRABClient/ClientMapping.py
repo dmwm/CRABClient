@@ -38,11 +38,11 @@ mapping = {
                           },
 
                   'other-config-params' : [
-                                           "General.serverUrl", "General.ufccacheUrl", "General.requestName", "General.workArea",
+                                           "General.serverUrl", "General.requestName", "General.workArea",
                                            "JobType.pluginName", "JobType.externalPluginFile", "JobType.psetName",
                                            "JobType.inputFiles", "JobType.pyCfgParams",
                                            "Data.unitsPerJob", "Data.splitting", "Data.inputDataset", "Data.lumiMask", "Data.runRange",
-                                           "User.email", "Site.removeT1Blacklisting", "General.configcacheUrl" , "General.configcacheName"
+                                           "User.email", "Site.removeT1Blacklisting"
                                           ],
                   'requiresTaskOption' : False
                 },
