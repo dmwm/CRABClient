@@ -40,6 +40,7 @@ class submit(SubCommand, ConfigCommand):
                                                                  getattr(self.configuration.General, 'workArea', None),
                                                                  getattr(self.configuration.General, 'requestName', None)
                                                                )
+        self.requestarea = requestarea
 
         self.logger.debug("Started submission")
         #determine the serverurl
@@ -158,7 +159,7 @@ class submit(SubCommand, ConfigCommand):
         return uniquerequestname
 
     def doSubmitDagman(self, configreq):
-        dag = DagmanDataWorkflow.DagmanDataWorkflow(config = self.configuration)
+        dag = DagmanDataWorkflow.DagmanDataWorkflow(config = self.configuration, requestarea=self.requestarea)
         proxy = Proxy({'logger': self.logger})
         configreq.setdefault('siteblacklist', [])
         configreq.setdefault('sitewhitelist', [])
