@@ -86,7 +86,10 @@ class remote_copy(SubCommand):
                         self.logger.info("Cannot remove the file because of: %s" % ex)
             #if the file still exists skip it
             if os.path.isfile(localFilename):
-                self.logger.info("%sSkipping %s as %s already exists%s" % (colors.GREEN, fileid, localFilename, colors.NORMAL))
+                if not sys.stdout.isatty():
+                    self.logger.info("Skipping %s as %s already exists" % ( fileid, localFilename, ))
+                else:
+                    self.logger.info("%sSkipping %s as %s already exists%s" % (colors.GREEN, fileid, localFilename, colors.NORMAL))
                 continue
 
             ##### Creating the command
@@ -137,7 +140,12 @@ class remote_copy(SubCommand):
                     if 'timeout' in stdout or 'timeout' in stderr or 'timed out' in stdout or 'timed out' in stderr:
                         downspeed -= downspeed*0.5 #if fails for timeout, reducing download bandwidth of 50%
                     finalresults[fileid] = {'exit': False, 'output': checkout, 'error' : checkerr, 'dest': None}
-                self.logger.info(colors.RED + "Failed retrieving file %s" % fileid + colors.NORMAL)
+
+                if not sys.stdout.isatty():
+                    self.logger.info("Failed retrieving file %s" % fileid)
+                else:
+                    self.logger.info(colors.RED + "Failed retrieving file %s" % fileid + colors.NORMAL)
+
                 if len(finalresults[fileid]['output']) > 0:
                     self.logger.info("Output:")
                     [self.logger.info("\t %s" % x) for x in finalresults[fileid]['output']]
@@ -150,7 +158,10 @@ class remote_copy(SubCommand):
                 self.logger.info( msg )
             else:
                 finalresults[fileid] = {'exit': True, 'dest': os.path.join(dirpath, str(fileid)), 'error': None}
-                self.logger.info(colors.GREEN + "Successfully retrived file %s" % fileid + colors.NORMAL)
+                if not sys.stdout.isatty():
+                    self.logger.info("Successfully retrived file %s" % fileid)
+                else:
+                    self.logger.info(colors.GREEN + "Successfully retrived file %s" % fileid + colors.NORMAL)
                 tottime = endtime - starttime
                 downspeed = myfile['size']/tottime #calculating average of download bandwidth during last copy
                 self.logger.debug("Transfer took %.1f sec. and average speed of %.1f KB/s" % (tottime, downspeed/1024))

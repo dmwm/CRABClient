@@ -1,5 +1,6 @@
 from __future__ import division # I want floating points
 import urllib
+import sys
 
 from CRABClient.client_utilities import colors
 from CRABClient.Commands.SubCommand import SubCommand
@@ -19,6 +20,8 @@ class status(SubCommand):
     states = ['submitted', 'failure', 'queued', 'success']
 
     def _percentageString(self, value, total):
+        if not sys.stdout.isatty():
+            return "%.2f %% (%s/%s)" % ((value*100/total), value, total)
         return "%.2f %% %s(%s/%s)%s" % ((value*100/total), colors.GRAY, value, total, colors.NORMAL)
 
     def __call__(self):
@@ -39,15 +42,22 @@ class status(SubCommand):
 
         #Print the url of the panda monitor
         if dictresult['taskFailureMsg']:
-            self.logger.error("%sError during task injection:%s\t%s" % (colors.RED,colors.NORMAL,dictresult['taskFailureMsg']))
+            if not sys.stdout.isatty():
+                self.logger.error("Error during task injection:\t%s" % (dictresult['taskFailureMsg']))
+            else:
+                self.logger.error("%sError during task injection:%s\t%s" % (colors.RED,colors.NORMAL,dictresult['taskFailureMsg']))
         elif dictresult['jobSetID']:
             p = Proxy({'logger' : self.logger})
             username = urllib.quote(p.getUserName())
             self.logger.info("Panda url:\t\t\thttp://panda.cern.ch/server/pandamon/query?job=*&jobsetID=%s&user=%s" % (dictresult['jobSetID'], username))
 
         if dictresult['jobdefErrors']:
-            self.logger.error("%sSubmission partially failed:%s\t%s jobgroup not submittet out of %s:" % (colors.RED, colors.NORMAL,\
-                                                            dictresult['failedJobdefs'], dictresult['totalJobdefs']))
+            if not sys.stdout.isatty():
+                self.logger.error("Submission partially failed:\t%s jobgroup not submittet out of %s:" % (\
+                                                     dictresult['failedJobdefs'], dictresult['totalJobdefs']))
+            else:
+                self.logger.error("%sSubmission partially failed:%s\t%s jobgroup not submittet out of %s:" % (colors.RED,\
+                                                     colors.NORMAL, dictresult['failedJobdefs'], dictresult['totalJobdefs']))
             for error in dictresult['jobdefErrors']:
                 self.logger.info("\t%s" % error)
 
