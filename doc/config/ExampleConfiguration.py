@@ -11,6 +11,7 @@ config = Configuration()
 config.section_("General")
 config.General.requestName   = 'MyAnalysis_1'
 #config.General.serverUrl     = 'yourserver:0000'
+#config.General.instance = 'prod'
 
 ## Specific option of the job type
 ## these options are directly readable from the job type plugin

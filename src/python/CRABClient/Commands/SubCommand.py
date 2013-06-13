@@ -2,14 +2,19 @@ import os
 import imp
 from optparse import OptionParser, SUPPRESS_HELP
 
-from CRABClient.client_utilities import loadCache, getWorkArea, delegateProxy, initProxy, server_info
+from CRABClient.client_utilities import loadCache, getWorkArea, delegateProxy, initProxy, server_info, validServerURL
 from CRABClient.client_exceptions import ConfigurationException, MissingOptionException
 from CRABClient.ClientMapping import mapping
 
 from WMCore.Configuration import loadConfigurationFile, Configuration
 
+BASEURL = '/crabserver/'
+SERVICE_INSTANCES = {'prod': 'cmsweb.cern.ch',
+                     'preprod': 'cmsweb-testbed.cern.ch',
+                     'dev': 'cmsweb-dev.cern.ch',
+                     'private': None,}
 
-class SubCommand(object):
+class SubCommand(ConfigCommand):
 
     ####### These options can be overrhidden if needed ########
     ## setting visible = False doesn't allow the sub-command to be called from CLI
@@ -20,13 +25,20 @@ class SubCommand(object):
     #Default command name is the name of the command class, but it is also possible to set the name attribute in the subclass
     #if the command name does not correspond to the class name (getlog => get-log)
 
+    def getUrl(instance='prod', resource='workflow'):
+        """
+        Retrieve the url depending on the resource we are accessing and the instance.
+        """
+        if instance in SERVICE_INSTANCES:
+            return instance + '/' + resource
+        raise ConfigurationException('Error: only %s instances can be used.' %str(SERVICE_INSTANCES.keys()))
+
     def loadMapping(self):
         """
         Load the command mapping from ClientMapping
         """
         #XXX Isn't it better to just copy the mapping with self.mapping = mapping[self.name] instead of copying each parameter?
         if self.name in mapping:
-            self.uri = mapping[self.name]['uri']
             if 'map' in mapping[self.name]:
                 self.requestmapper = mapping[self.name]['map']
             self.requiresTaskOption = 'requiresTaskOption' in mapping[self.name] and mapping[self.name]['requiresTaskOption']
@@ -60,12 +72,37 @@ class SubCommand(object):
         ##Validate the command line parameters before initing the proxy
         self.validateOptions()
 
-        ##The submit command handles this stuff later because it needs to load the config
-        ##and to figure out which server to contact before.
-        if self.name != 'submit':
+        ##if we get an input configuration we load it
+        if hasattr(self.options, 'config') and self.options.config is not None:
+            self.loadConfig( self.options.config, self.args )
+
+        ##if we get an input task we load the cache and set the url from it
+        if hasattr(self.options, 'task') and self.options.task:
             self.createCache()
+            self.serverurl = self.cachedinfo['Server'] + port
+
+        if not self.serverurl:
+            instance, self.serverurl = serverInstance(instance)
+            self.uri = self.getUrl(instance, resource)
             self.handleProxy()
 
+    def serverInstance(self, instance = 'prod'):
+        """Deriving the correct instance to use and the server url"""
+        serverurl = None
+        if hasattr(self.options, 'instance') and self.options.instance is not None and self.options.instance in SERVICE_INSTANCES:
+            instance = self.options.instance
+        elif hasattr(self.configuration, 'instance') and self.configuration.instance is not None and self.configuration.instance in SERVICE_INSTANCES:
+            instance = self.configuration.instance
+        if SERVICE_INSTANCES[instance] is None:
+            if getattr(self.options, 'server', None) is not None:
+                serverurl = self.options.server
+            elif getattr(self.configuration, 'serverUrl') is not None:
+                serverurl = self.configuration.serverUrl
+        else: 
+            serverurl = SERVICE_INSTANCES[instance]
+        if instance is not None and serverurl is not None:
+            return instance, serverurl
+        raise ConfigurationException("No correct instance or no server specified")
 
     def handleProxy(self):
         """ Init the user proxy, and delegate it if necessary.
@@ -86,38 +123,27 @@ class SubCommand(object):
             self.proxyfilename = self.options.skipProxy
             self.logger.debug('Skipping proxy creation')
 
-
     def createCache(self, serverurl = None):
         """ Loads the client cache and set up the server url
         """
-        ## if the server name is an CLI option
-        if hasattr(self.options, 'server') and self.options.server is not None:
-            self.serverurl = self.options.server
-        ## but the server name can be cached in some cases
-        elif hasattr(self.options, 'task') and self.options.task:
-            self.requestarea, self.requestname = getWorkArea( self.options.task )
-            self.cachedinfo, self.logfile = loadCache(self.requestarea, self.logger)
-            port = ':' + self.cachedinfo['Port'] if self.cachedinfo['Port'] else ''
-            self.serverurl = self.cachedinfo['Server'] + port
-            #TODO Save them in the cache
-            self.voRole = self.cachedinfo['voRole'] if not self.options.voRole else self.options.voRole
-            self.voGroup = self.cachedinfo['voGroup'] if not self.options.voGroup else self.options.voGroup
-
+        self.requestarea, self.requestname = getWorkArea( self.options.task )
+        self.cachedinfo, self.logfile = loadCache(self.requestarea, self.logger)
+        port = ':' + self.cachedinfo['Port'] if self.cachedinfo['Port'] else ''
+        self.serverurl = self.cachedinfo['Server'] + port
+        self.voRole = self.cachedinfo['voRole'] if not self.options.voRole else self.options.voRole
+        self.voGroup = self.cachedinfo['voGroup'] if not self.options.voGroup else self.options.voGroup
 
     def __call__(self):
         self.logger.info("This is a 'nothing to do' command")
         raise NotImplementedError
-
 
     def terminate(self, exitcode):
         #We do not want to print logfile for each command...
         if exitcode < 2000:
             self.logger.info("Log file is %s" % os.path.abspath(self.logfile))
 
-
     def setOptions(self):
         raise NotImplementedError
-
 
     def setSuperOptions(self):
         try:
@@ -145,7 +171,21 @@ class SubCommand(object):
                                 dest = "voGroup",
                                 default = '' )
 
+        self.parser.add_option("-i", "--instance",
+                               dest = "instance",
+                               type = "string",
+                               help = "Running instance of CRAB service. Valid values are %s" %str(SERVICE_INSTANCES.keys()),
+                               default = "prod")
 
+        self.parser.add_option( "-s", "--server",
+                                 dest = "server",
+                                 action = "callback",
+                                 type   = 'str',
+                                 nargs  = 1,
+                                 callback = validServerURL,
+                                 metavar = "http://HOSTNAME:PORT",
+                                 default = None,
+                                 help = "Endpoint server url to use" )
 
     def validateOptions(self):
         """

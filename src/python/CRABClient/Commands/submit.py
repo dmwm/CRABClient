@@ -2,7 +2,7 @@
 This is simply taking care of job submission
 """
 
-from CRABClient.client_utilities import getJobTypes, createCache, createWorkArea, validServerURL, addPlugin
+from CRABClient.client_utilities import getJobTypes, createCache, createWorkArea, addPlugin
 import json, os
 from string import upper
 from CRABClient.Commands.SubCommand import SubCommand, ConfigCommand
@@ -14,6 +14,7 @@ from CRABClient.client_exceptions import MissingOptionException, ConfigurationEx
 import types
 import imp
 import urllib
+
 
 class submit(SubCommand, ConfigCommand):
     """ Perform the submission to the CRABServer
@@ -30,6 +31,7 @@ class submit(SubCommand, ConfigCommand):
 
         #store the configuration file in self.configuration
         self.loadConfig( self.options.config, self.args )
+        self.uri = self.getUrl(instance, resource)
 
         requestarea, requestname, self.logfile = createWorkArea( self.logger,
                                                                  getattr(self.configuration.General, 'workArea', None),
@@ -170,16 +172,6 @@ class submit(SubCommand, ConfigCommand):
                                  default = './crabConfig.py',
                                  help = "CRAB configuration file",
                                  metavar = "FILE" )
-
-        self.parser.add_option( "-s", "--server",
-                                 dest = "server",
-                                 action = "callback",
-                                 type   = 'str',
-                                 nargs  = 1,
-                                 callback = validServerURL,
-                                 metavar = "http://HOSTNAME:PORT",
-                                 help = "Endpoint server url to use" )
-
 
     def validateConfig(self):
         """
