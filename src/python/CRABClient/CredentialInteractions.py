@@ -106,5 +106,5 @@ class CredentialInteractions(object):
                 myproxy.delegate(serverRenewer = True, nokey=nokey)
                 self.logger.debug("My-proxy delegated.")
             except Exception, ex:
-                raise ProxyCreationException("Problems delegating My-proxy. Problem %s"%ex)
+                raise ProxyCreationException("Problems delegating My-proxy. %s"%ex._message)
 
