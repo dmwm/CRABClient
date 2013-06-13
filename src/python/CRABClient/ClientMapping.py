@@ -35,7 +35,7 @@ mapping = {
                                            "JobType.pluginName", "JobType.externalPluginFile", "JobType.psetName",
                                            "JobType.inputFiles", "JobType.pyCfgParams",
                                            "Data.unitsPerJob", "Data.splitting", "Data.inputDataset", "Data.lumiMask", "Data.runRange",
-                                           "User.email", "Site.removeT1Blacklisting"],
+                                           "User.email", "Site.removeT1Blacklisting", "General.instance"],
                   'requiresTaskOption' : False,
                 },
     'getlog': {'requiresTaskOption' : True},

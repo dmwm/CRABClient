@@ -1,22 +1,21 @@
 """
 This is simply taking care of job submission
 """
-
-from CRABClient.client_utilities import getJobTypes, createCache, createWorkArea, addPlugin
 import json, os
 from string import upper
-from CRABClient.Commands.SubCommand import SubCommand, ConfigCommand
-from WMCore.Configuration import loadConfigurationFile, Configuration
-from CRABClient.ServerInteractions import HTTPRequests
-from CRABClient import SpellChecker
-from CRABClient.ServerInteractions import HTTPRequests
-from CRABClient.client_exceptions import MissingOptionException, ConfigurationException, RESTCommunicationException
 import types
 import imp
 import urllib
 
+from CRABClient.Commands.SubCommand import SubCommand
+from CRABClient.ServerInteractions import HTTPRequests
+from CRABClient import SpellChecker
+from CRABClient.ServerInteractions import HTTPRequests
+from CRABClient.client_exceptions import MissingOptionException, ConfigurationException, RESTCommunicationException
+from CRABClient.client_utilities import getJobTypes, createCache, addPlugin
 
-class submit(SubCommand, ConfigCommand):
+
+class submit(SubCommand):
     """ Perform the submission to the CRABServer
     """
 
@@ -29,26 +28,7 @@ class submit(SubCommand, ConfigCommand):
         if not os.path.isfile(self.options.config):
             raise MissingOptionException("Configuration file '%s' not found" % self.options.config)
 
-        #store the configuration file in self.configuration
-        self.loadConfig( self.options.config, self.args )
-        self.uri = self.getUrl(instance, resource)
-
-        requestarea, requestname, self.logfile = createWorkArea( self.logger,
-                                                                 getattr(self.configuration.General, 'workArea', None),
-                                                                 getattr(self.configuration.General, 'requestName', None)
-                                                               )
-
         self.logger.debug("Started submission")
-
-        #determine the serverurl
-        if self.options.server:
-            self.serverurl = self.options.server
-        elif getattr( self.configuration.General, 'serverUrl', None ) is not None:
-            self.serverurl = self.configuration.General.serverUrl
-        else:
-            self.serverurl = 'http://cmsweb.cern.ch'
-
-        self.createCache( self.serverurl )
 
         ######### Check if the user provided unexpected parameters ########
         #init the dictionary with all the known parameters
@@ -67,14 +47,9 @@ class submit(SubCommand, ConfigCommand):
         #usertarball and cmsswconfig use this parameter and we should set it up in a correct way
         self.configuration.General.serverUrl = self.serverurl
 
-        #delegating the proxy (creation done in SubCommand)
-        self.voRole = getattr(self.configuration.User, "voRole", "")
-        self.voGroup = getattr(self.configuration.User, "voGroup", "")
-        self.handleProxy()
-
         uniquerequestname = None
 
-        self.logger.debug("Working on %s" % str(requestarea))
+        self.logger.debug("Working on %s" % str(self.requestarea))
 
         configreq = {}
         for param in self.requestmapper:
@@ -100,8 +75,8 @@ class submit(SubCommand, ConfigCommand):
                     ## parameter not strictly required
                     pass
             if param == "workflow":
-                if mustbetype == type(requestname):
-                    configreq["workflow"] = requestname
+                if mustbetype == type(self.requestname):
+                    configreq["workflow"] = self.requestname
             elif param == "savelogsflag":
                 configreq["savelogsflag"] = 1 if temp else 0
             elif param == "publication":
@@ -117,7 +92,7 @@ class submit(SubCommand, ConfigCommand):
         jobconfig = {}
         self.configuration.JobType.proxyfilename = self.proxyfilename
         self.configuration.JobType.capath = HTTPRequests.getCACertPath()
-        pluginParams = [ self.configuration, self.logger, os.path.join(requestarea, 'inputs') ]
+        pluginParams = [ self.configuration, self.logger, os.path.join(self.requestarea, 'inputs') ]
         if getattr(self.configuration.JobType, 'pluginName', None) is not None:
             jobtypes    = getJobTypes()
             plugjobtype = jobtypes[upper(self.configuration.JobType.pluginName)](*pluginParams)
@@ -150,7 +125,8 @@ class submit(SubCommand, ConfigCommand):
             raise RESTCommunicationException(msg)
 
         tmpsplit = self.serverurl.split(':')
-        createCache( requestarea, tmpsplit[0], tmpsplit[1] if len(tmpsplit)>1 else '', uniquerequestname, voRole = self.voRole, voGroup = self.voGroup )
+        createCache(self.requestarea, tmpsplit[0], tmpsplit[1] if len(tmpsplit)>1 else '', uniquerequestname,
+                    voRole=self.voRole, voGroup=self.voGroup, instance=self.instance)
 
         self.logger.info("Submission completed")
         self.logger.debug("Request ID: %s " % uniquerequestname)
