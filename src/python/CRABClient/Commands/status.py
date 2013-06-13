@@ -57,15 +57,3 @@ class status(SubCommand):
         if frmt:
             self.logger.info('Details:\t\t\t%s' % frmt)
 
-
-    def setOptions(self):
-        """
-        __setOptions__
-
-        This allows to set specific command options
-        """
-        self.parser.add_option( "-i", "--site",
-                                 dest = "site",
-                                 action = "store_true",
-                                 default = False,
-                                 help = "Provide details about sites" )
