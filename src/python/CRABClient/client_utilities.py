@@ -209,14 +209,15 @@ def createWorkArea(logger, workingArea = '.', requestName = ''):
     return fullpath, requestName, logfile
 
 
-def createCache(requestarea, host, port, uniquerequestname, voRole, voGroup):
+def createCache(requestarea, host, port, uniquerequestname, voRole, voGroup, instance):
     touchfile = open(os.path.join(requestarea, '.requestcache'), 'w')
     neededhandlers = {
                       "Server" : host,
                       "Port" : port,
                       "RequestName" : uniquerequestname,
                       "voRole" : voRole,
-                      "voGroup" : voGroup
+                      "voGroup" : voGroup,
+                      "instance" : instance
                      }
     cPickle.dump(neededhandlers, touchfile)
     touchfile.close()
@@ -291,7 +292,7 @@ def validServerURL(option, opt_str, value, parser):
     else:
         setattr(parser.values, option.dest, option.default)
 
-def validURL(serverurl, attrtohave = ['scheme', 'netloc', 'hostname', 'port'], attrtonothave = ['path', 'params', 'query', 'fragment', 'username', 'password']):
+def validURL(serverurl, attrtohave = ['scheme', 'netloc', 'hostname'], attrtonothave = ['path', 'params', 'query', 'fragment', 'username', 'password']):
     """
     returning false if the format is different from https://host:port
     """
@@ -317,13 +318,13 @@ def validURL(serverurl, attrtohave = ['scheme', 'netloc', 'hostname', 'port'], a
 #If anyone has a better solution please go on, otherwise live with that one :) :)
 from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient.client_exceptions import RESTCommunicationException
-def server_info(subresource, server, proxyfilename):
+def server_info(subresource, server, proxyfilename, baseurl):
     """
     Get relevant information about the server
     """
 
     server = HTTPRequests(server, proxyfilename)
 
-    dictresult, status, reason = server.get('/crabserver/dev/info', {'subresource' : subresource})
+    dictresult, status, reason = server.get(baseurl, {'subresource' : subresource})
 
     return dictresult['result'][0]
