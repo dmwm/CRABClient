@@ -24,11 +24,16 @@ from CRABClient.client_exceptions import TaskNotFoundException, CachefileNotFoun
 RENEW_MYPROXY_THRESHOLD = 15
 
 class colors:
-    RED = '\033[91m'
-    GREEN = '\033[92m'
-    GRAY = '\033[90m'
-    NORMAL = '\033[0m'
-
+    if sys.stdout.isatty():
+        RED = '\033[91m'
+        GREEN = '\033[92m'
+        GRAY = '\033[90m'
+        NORMAL = '\033[0m'
+    else:
+        NORMAL = ''
+        RED = ''
+        GREEN = ''
+        GRAY = ''
 
 def getPlugins(namespace, plugins, skip):
     """
@@ -265,6 +270,9 @@ def initProxy(voRole, voGroup, logger):
     #same proxy instsance
     return userdn, proxyfilename, proxy
 
+def getUserName(logger, voRole='', voGroup=''):
+    _, _, proxy = initProxy(voRole, voGroup, logger) 
+    return proxy.getUserName()
 
 def delegateProxy(serverDN, myProxy, proxyobj, logger, nokey=False):
     proxyobj.defaultDelegation['serverDN'] = serverDN
