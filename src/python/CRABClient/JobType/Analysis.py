@@ -13,6 +13,7 @@ from CRABClient.JobType.CMSSWConfig import CMSSWConfig
 from CRABClient.JobType.LumiMask import getLumiMask
 from CRABClient.JobType.UserTarball import UserTarball
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
+from CRABClient.client_exceptions import EnvironmentException
 
 class Analysis(BasicJobType):
     """
@@ -38,7 +39,7 @@ class Analysis(BasicJobType):
 
         # Build tarball
         if self.workdir:
-            tarUUID =  PandaInterface.wrappedUuidGen( self.logger )
+            tarUUID =  PandaInterface.wrappedUuidGen()
             self.logger.debug('UNIQUE NAME: tarUUID %s ' % tarUUID)
             if len(tarUUID):
                 tarFilename   = os.path.join(self.workdir, tarUUID +'default.tgz')
