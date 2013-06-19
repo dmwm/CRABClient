@@ -24,7 +24,7 @@ class resubmit(SubCommand):
             msg = "Problem retrieving resubmitting the task to the server:\ninput:%s\noutput:%s\nreason:%s" % (str(inputdict), str(dictresult), str(reason))
             raise RESTCommunicationException(msg)
 
-        self.logger.info("Resubmission succesfully requested")
+        self.logger.info("Resubmit request succesfully sent")
 
     def setOptions(self):
         """
