@@ -35,18 +35,24 @@ class status(SubCommand):
         self.logger.info("Task name:\t\t\t%s" % self.cachedinfo['RequestName'])
         self.logger.info("Task status:\t\t\t%s" % dictresult['status'])
 
+        def logJDefErr(jdef):
+            """Printing job def failures if any"""
+            if jdef['jobdefErrors']:
+                self.logger.error("%sFailed to inject %s\t%s out of %s:" %(colors.RED, colors.NORMAL,\
+                                                                           jdef['failedJobdefs'], jdef['totalJobdefs']))
+                for error in jdef['jobdefErrors']:
+                    self.logger.info("\t%s" % error)
+
         #Print the url of the panda monitor
         if dictresult['taskFailureMsg']:
             self.logger.error("%sError during task injection:%s\t%s" % (colors.RED,colors.NORMAL,dictresult['taskFailureMsg']))
+            # We might also have more information in the job def errors 
+            logJDefErr(jdef=dictresult)
         elif dictresult['jobSetID']:
             username = urllib.quote(getUserName(self.logger))
             self.logger.info("Panda url:\t\t\thttp://panda.cern.ch/server/pandamon/query?job=*&jobsetID=%s&user=%s" % (dictresult['jobSetID'], username))
-
-        if dictresult['jobdefErrors']:
-            self.logger.error("%sSubmission partially failed:%s\t%s jobgroup not submittet out of %s:" % (colors.RED,\
-                                                     colors.NORMAL, dictresult['failedJobdefs'], dictresult['totalJobdefs']))
-            for error in dictresult['jobdefErrors']:
-                self.logger.info("\t%s" % error)
+            # We have cases where the job def errors are there but we have a job def id
+            logJDefErr(jdef=dictresult)
 
         #Print information about jobs
         states = dictresult['jobsPerStatus']

@@ -252,7 +252,7 @@ class SubCommand(ConfigCommand):
                                 dest = "voGroup",
                                 default = '' )
 
-        self.parser.add_option("-i", "--instance",
+        self.parser.add_option("--instance",
                                dest = "instance",
                                type = "string",
                                help = "Running instance of CRAB service. Valid values are %s" %str(SERVICE_INSTANCES.keys()))
