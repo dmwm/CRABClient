@@ -128,7 +128,7 @@ class CRABClient(object):
             """
             # This goes to the console
             logging.getLogger('CRAB3').error("ERROR: %s: %s" % (exc_type.__name__, exc_value))
-            logging.getLogger('CRAB3').error("\n\tPlease file a new issue at https://github.com/dmwm/CRABClient/issues/new including last lines of crab.log.")
+            logging.getLogger('CRAB3').error("\n\tPlease file a new issue at https://its.cern.ch/jira/browse/CAF including last lines of crab.log.")
             logging.getLogger('CRAB3').error("\tClient Version: %s" % client_version)
             # This goes to the log file
             tbLogger = logging.getLogger('CRAB3:traceback')
