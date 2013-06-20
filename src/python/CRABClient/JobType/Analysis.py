@@ -132,6 +132,10 @@ class Analysis(BasicJobType):
             valid = False
             reason += 'Crab configuration problem: missing Data section. '
 
+        if not getattr(config.Data, 'splitting', None):
+            valid = False
+            reason += 'Crab configuration problem: missing or null splitting algorithm. '
+
         if not getattr(config.JobType, 'psetName', None):
             valid = False
             reason += 'Crab configuration problem: missing or null CMSSW config file name. '
