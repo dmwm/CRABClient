@@ -104,7 +104,10 @@ class submit(SubCommand):
             pluginInst = plugin(*pluginParams)
             inputfiles, jobconfig, isbchecksum = pluginInst.run(configreq)
 
-        configreq['publishname'] = "%s-%s" %(configreq['publishname'], isbchecksum)
+        if not configreq['publishname']:
+            configreq['publishname'] =  isbchecksum
+        else:
+            configreq['publishname'] = "%s-%s" %(configreq['publishname'], isbchecksum)
         configreq.update(jobconfig)
 
         server = HTTPRequests(self.serverurl, self.proxyfilename)
