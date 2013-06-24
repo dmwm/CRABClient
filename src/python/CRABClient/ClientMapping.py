@@ -43,7 +43,9 @@ mapping = {
                                            "JobType.inputFiles", "JobType.pyCfgParams",
                                            "Data.unitsPerJob", "Data.splitting", "Data.inputDataset", "Data.lumiMask", "Data.runRange",
                                            "User.email", "Site.removeT1Blacklisting", "General.configcacheUrl" , "General.configcacheName",
-                                           "General.standalone", "General.condorPool", "General.condorScheddList", "General.enableGsissh", "BossAir.remoteUserHost"
+                                           "General.standalone", "General.condorPool", "General.condorScheddList", "General.enableGsissh", "BossAir.remoteUserHost",
+                                           "Debug.uploadJobSandboxToCache", "Debug.forceUserHN", "Debug.taskManagerRunTarballLocation",
+                                           "Debug.taskManagerCodeLocation"
                                           ],
                   'requiresTaskOption' : False
                 },

@@ -12,6 +12,7 @@ import tarfile
 import tempfile
 import hashlib
 import sys
+import shutil
 
 from WMCore.Configuration import loadConfigurationFile, Configuration
 import PandaServerInterface as PandaInterface
@@ -38,6 +39,10 @@ class UserTarball(object):
         self.logger.debug("Making tarball in %s" % name)
         self.tarfile = tarfile.open(name=name , mode=mode, dereference=True)
         self.checksum = None
+        if hasattr(config, 'Debug') and not getattr(config.Debug, 'uploadJobSandboxToCache', False):
+            self.uploadToServer = False
+        else:
+            self.uploadToServer = True
 
     def addFiles(self, userFiles=None, cfgOutputName=None):
         """
@@ -94,6 +99,12 @@ class UserTarball(object):
         """
         self.close()
         archiveName = self.tarfile.name
+        if not self.uploadToServer:
+            self.logger.debug("NOT uploading tarball to cache, keeping it local")
+            dummyTarget = tempfile.NamedTemporaryFile(delete = False)
+            shutil.copy(self.tarfile.name, dummyTarget.name)
+            return dummyTarget.name, archiveName, self.checksum
+
         serverUrl = ""
         self.logger.debug(" uploading archive to cache %s " % archiveName)
         status,out = PandaInterface.putFile(archiveName, verbose=False, useCacheSrv=True, reuseSandbox=True)

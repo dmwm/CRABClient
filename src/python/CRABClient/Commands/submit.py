@@ -15,6 +15,7 @@ from CRABClient.client_exceptions import MissingOptionException, ConfigurationEx
 import types
 import imp
 import urllib
+import subprocess
 
 import CRABInterface.DagmanDataWorkflow as DagmanDataWorkflow
 from WMCore.Credential.Proxy import Proxy
@@ -35,7 +36,10 @@ class submit(SubCommand, ConfigCommand):
         self.loadConfig( self.options.config, self.args )
 
         standalone = getattr(self.configuration.General, 'standalone', False)
-
+        taskManagerTarball = hasattr(self.configuration, 'Debug') and \
+                                getattr(self.configuration.Debug, 'taskManagerRunTarballLocation', None)
+        taskManagerCodeLocation = hasattr(self.configuration, 'Debug') and \
+                                    getattr(self.configuration.Debug, 'taskManagerCodeLocation')
         requestarea, requestname, self.logfile = createWorkArea( self.logger,
                                                                  getattr(self.configuration.General, 'workArea', None),
                                                                  getattr(self.configuration.General, 'requestName', None)
@@ -48,7 +52,7 @@ class submit(SubCommand, ConfigCommand):
             self.serverurl = self.options.server
         elif getattr( self.configuration.General, 'serverUrl', None ) is not None:
             self.serverurl = self.configuration.General.serverUrl
-#TODO: For sure the server url should not be handled here. Find an intelligent way for this
+        #TODO: For sure the server url should not be handled here. Find an intelligent way for this
         else:
             self.serverurl = 'http://cmsweb.cern.ch'
         if not hasattr( self.configuration.General, 'ufccacheUrl' ):
@@ -64,7 +68,7 @@ class submit(SubCommand, ConfigCommand):
         ######### Check if the user provided unexpected parameters ########
         #init the dictionary with all the known parameters
         SpellChecker.DICTIONARY = SpellChecker.train( [ val['config'] for _, val in self.requestmapper.iteritems() if val['config'] ] + \
-                                                      [ x for x in self.otherConfigParams ] )
+                [ x for x in self.otherConfigParams ] )
         #iterate on the parameters provided by the user
         for section in self.configuration.listSections_():
             for attr in getattr(self.configuration, section).listSections_():
@@ -124,7 +128,10 @@ class submit(SubCommand, ConfigCommand):
                     self.logger.info("WARNING: You disabled the T1 automatic blacklisting without having the t1access role")
                     blacklistT1 = False
                 configreq["blacklistT1"] = 1 if blacklistT1 else 0
-
+        
+        # Tells the submitter to ship along a custom tarball to run on the WN/schedd
+        configreq['taskManagerTarball'] = taskManagerTarball
+        configreq['taskManagerCodeLocation'] = taskManagerCodeLocation
         jobconfig = {}
         self.configuration.JobType.proxyfilename = self.proxyfilename
         self.configuration.JobType.capath = HTTPRequests.getCACertPath()
@@ -176,11 +183,15 @@ class submit(SubCommand, ConfigCommand):
         configreq.setdefault('vorole', 'cmsuser')
         configreq.setdefault('vogroup', '/cms')
         dn = proxy.getSubject(self.proxyfilename)
-        try:
-            userhn = SiteDBJSON().dnUserName(dn)
-        except Exception:
-            # TODO: Rethrow?
-            userhn = __import__("getpass").getuser() + ".nocern"
+        forcedHN = hasattr(self.configuration, 'Debug') and getattr(self.configuration.Debug, 'forceUserHN', False)
+        if forcedHN:
+            userhn = forcedHN
+        else:
+            try:
+                userhn = SiteDBJSON().dnUserName(dn)
+            except Exception:
+                # TODO: Rethrow?
+                userhn = __import__("getpass").getuser() + ".nocern"
         configreq.setdefault('userdn', dn)
         configreq.setdefault('userhn', userhn)
         configreq.setdefault('runs', [])
