@@ -51,7 +51,7 @@ class getcommand(SubCommand):
         cpresults = []
 #        for workflow in dictresult['result']: TODO re-enable this when we will have resubmissions
         workflow = dictresult['result']        #TODO assigning workflow to dictresult. for the moment we have only one wf
-        arglist = ['-d', self.dest, '-i', workflow]
+        arglist = ['-d', self.dest, '-i', workflow, '-t', self.options.task]
         if self.options.skipProxy:
             arglist.append('-p')
         if len(workflow) > 0:

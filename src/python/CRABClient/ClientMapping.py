@@ -41,7 +41,7 @@ mapping = {
                 },
     'getlog': {'requiresTaskOption' : True},
     'getoutput': {'requiresTaskOption' : True},
-    'remote_copy': {'requiresTaskOption' : False, 'initializeProxy' : False},#proxy already inited by the calling command
+    'remote_copy': {'requiresTaskOption' : True, 'initializeProxy' : False},#proxy already inited by the calling command
     'status': {'requiresTaskOption' : True},
     'report': {'requiresTaskOption': True},
     'kill': {'requiresTaskOption' : True},
