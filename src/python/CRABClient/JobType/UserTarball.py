@@ -96,7 +96,8 @@ class UserTarball(object):
         archiveName = self.tarfile.name
         serverUrl = ""
         self.logger.debug(" uploading archive to cache %s " % archiveName)
-        status,out = PandaInterface.putFile(archiveName, verbose=False, useCacheSrv=True, reuseSandbox=True)
+        #disabling reuseSandbox as checksum is different every time (the pset is written every time and the "last modified" date changes every time)
+        status,out = PandaInterface.putFile(self.config.JobType.filecacheurl, archiveName, self.checksum, verbose=False, reuseSandbox=False)
 
         if out.startswith('NewFileName:'):
             # found the same input sandbox to reuse
@@ -121,7 +122,6 @@ class UserTarball(object):
         Calculate a checksum that doesn't depend on the tgz
         creation data
         """
-
         lsl = [(x.name, int(x.size), int(x.mtime), x.uname) for x in self.tarfile.getmembers()]
         hasher = hashlib.md5(str(lsl))
         self.logger.debug('tgz contents: %s' % lsl)
