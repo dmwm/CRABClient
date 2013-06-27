@@ -45,7 +45,7 @@ mapping = {
                                            "User.email", "Site.removeT1Blacklisting", "General.configcacheUrl" , "General.configcacheName",
                                            "General.standalone", "General.condorPool", "General.condorScheddList", "General.enableGsissh", "BossAir.remoteUserHost",
                                            "Debug.uploadJobSandboxToCache", "Debug.forceUserHN", "Debug.taskManagerRunTarballLocation",
-                                           "Debug.taskManagerCodeLocation"
+                                           "Debug.taskManagerCodeLocation", "Debug.oneEventMode",
                                           ],
                   'requiresTaskOption' : False
                 },

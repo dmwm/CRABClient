@@ -39,7 +39,7 @@ class UserTarball(object):
         self.logger.debug("Making tarball in %s" % name)
         self.tarfile = tarfile.open(name=name , mode=mode, dereference=True)
         self.checksum = None
-        if hasattr(config, 'Debug') and not getattr(config.Debug, 'uploadJobSandboxToCache', False):
+        if hasattr(config, 'Debug') and getattr(config.Debug, 'uploadJobSandboxToCache', False):
             self.uploadToServer = False
         else:
             self.uploadToServer = True

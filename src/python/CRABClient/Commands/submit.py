@@ -279,7 +279,7 @@ class submit(SubCommand, ConfigCommand):
                 return False, "Crab configuration problem: one of JobType.pluginName or JobType.externalPlugin parameters is required. "
             if getattr(self.configuration.JobType, 'pluginName', None) is not None and\
                getattr(self.configuration.JobType, 'externalPluginFile', None) is not None:
-                return False, "Crab configuration problem: only one between JobType.pluginName or JobType.externalPlugin parameters is required. "
+                return False, "Crab configuration problem: only either  JobType.pluginName or JobType.externalPlugin parameters is required. "
 
             externalPlugin = getattr(self.configuration.JobType, 'externalPluginFile', None)
             if externalPlugin is not None:
