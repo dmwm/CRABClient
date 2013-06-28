@@ -51,9 +51,7 @@ class getcommand(SubCommand):
         cpresults = []
 #        for workflow in dictresult['result']: TODO re-enable this when we will have resubmissions
         workflow = dictresult['result']        #TODO assigning workflow to dictresult. for the moment we have only one wf
-        arglist = ['-d', self.dest, '-i', workflow, '-t', self.options.task]
-        if self.options.skipProxy:
-            arglist.append('-p')
+        arglist = ['-d', self.dest, '-i', workflow, '-t', self.options.task, '-p', self.proxyfilename]
         if len(workflow) > 0:
             self.logger.info("Retrieving %s files" % totalfiles )
             copyoutput = remote_copy( self.logger, arglist )
