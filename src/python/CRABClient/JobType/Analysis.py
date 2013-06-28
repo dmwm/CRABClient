@@ -13,6 +13,7 @@ from CRABClient.JobType.CMSSWConfig import CMSSWConfig
 from CRABClient.JobType.LumiMask import getLumiMask
 from CRABClient.JobType.UserTarball import UserTarball
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
+from CRABClient.client_exceptions import EnvironmentException
 
 class Analysis(BasicJobType):
     """
@@ -38,8 +39,13 @@ class Analysis(BasicJobType):
 
         # Build tarball
         if self.workdir:
-            tarFilename   = os.path.join(self.workdir, PandaInterface.wrappedUuidGen()+'default.tgz')
-            cfgOutputName = os.path.join(self.workdir, 'CMSSW_cfg.py')
+            tarUUID =  PandaInterface.wrappedUuidGen()
+            self.logger.debug('UNIQUE NAME: tarUUID %s ' % tarUUID)
+            if len(tarUUID):
+                tarFilename   = os.path.join(self.workdir, tarUUID +'default.tgz')
+                cfgOutputName = os.path.join(self.workdir, 'CMSSW_cfg.py')
+            else:
+                raise EnvironmentException('Problem with uuidgen while preparing for Sandbox upload.')
         else:
             _dummy, tarFilename   = tempfile.mkstemp(suffix='.tgz')
             _dummy, cfgOutputName = tempfile.mkstemp(suffix='_cfg.py')
@@ -125,6 +131,10 @@ class Analysis(BasicJobType):
         if not getattr(config, 'Data', None):
             valid = False
             reason += 'Crab configuration problem: missing Data section. '
+
+        if not getattr(config.Data, 'splitting', None):
+            valid = False
+            reason += 'Crab configuration problem: missing or null splitting algorithm. '
 
         if not getattr(config.JobType, 'psetName', None):
             valid = False

@@ -1,13 +1,16 @@
 """
 This is simply taking care of job submission
 """
-
-from CRABClient.client_utilities import getJobTypes, createCache, createWorkArea, validServerURL, addPlugin
 import json, os
 from string import upper
 from CRABClient.Commands.SubCommand import SubCommand, ConfigCommand
 from WMCore.Configuration import loadConfigurationFile, Configuration
 from WMCore.Services.SiteDB.SiteDB import SiteDBJSON
+import types
+import imp
+import urllib
+
+from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient import SpellChecker
 from CRABClient.ServerInteractions import HTTPRequests
@@ -19,7 +22,10 @@ import subprocess
 
 import CRABInterface.DagmanDataWorkflow as DagmanDataWorkflow
 from WMCore.Credential.Proxy import Proxy
-class submit(SubCommand, ConfigCommand):
+from CRABClient.client_utilities import getJobTypes, createCache, addPlugin, createWorkArea
+
+
+class submit(SubCommand):
     """ Perform the submission to the CRABServer
     """
 
@@ -34,36 +40,21 @@ class submit(SubCommand, ConfigCommand):
 
         #store the configuration file in self.configuration
         self.loadConfig( self.options.config, self.args )
-
+        print "got configuration %s" % self.configuration
         standalone = getattr(self.configuration.General, 'standalone', False)
+        print "got standalone %s" % standalone
         taskManagerTarball = hasattr(self.configuration, 'Debug') and \
                                 getattr(self.configuration.Debug, 'taskManagerRunTarballLocation', None)
         taskManagerCodeLocation = hasattr(self.configuration, 'Debug') and \
                                     getattr(self.configuration.Debug, 'taskManagerCodeLocation')
-        requestarea, requestname, self.logfile = createWorkArea( self.logger,
-                                                                 getattr(self.configuration.General, 'workArea', None),
-                                                                 getattr(self.configuration.General, 'requestName', None)
-                                                               )
-        self.requestarea = requestarea
+        #print "calling submit.__call__"
+        #requestarea, requestname, self.logfile = createWorkArea( self.logger,
+        #                                                         getattr(self.configuration.General, 'workArea', None),
+        #                                                         getattr(self.configuration.General, 'requestName', None)
+        #                                                       )
+        #self.requestarea = requestarea
 
-        self.logger.debug("Started submission")
-        #determine the serverurl
-        if self.options.server:
-            self.serverurl = self.options.server
-        elif getattr( self.configuration.General, 'serverUrl', None ) is not None:
-            self.serverurl = self.configuration.General.serverUrl
-        #TODO: For sure the server url should not be handled here. Find an intelligent way for this
-        else:
-            self.serverurl = 'http://cmsweb.cern.ch'
-        if not hasattr( self.configuration.General, 'ufccacheUrl' ):
-            self.configuration.General.ufccacheUrl = self.serverurl
-        if not hasattr( self.configuration.General, 'configcacheUrl' ):
-            #https is required because configcache does not use ServerInteractions
-            self.configuration.General.configcacheUrl = 'https://' + self.serverurl + '/couchdb'
-        if not hasattr( self.configuration.General, 'configcacheName' ):
-            self.configuration.General.configcacheName = 'analysis_reqmgr_config_cache'
-
-        self.createCache( self.serverurl )
+        #self.createCache( self.serverurl )
 
         ######### Check if the user provided unexpected parameters ########
         #init the dictionary with all the known parameters
@@ -82,15 +73,9 @@ class submit(SubCommand, ConfigCommand):
         #usertarball and cmsswconfig use this parameter and we should set it up in a correct way
         self.configuration.General.serverUrl = self.serverurl
 
-        #delegating the proxy (creation done in SubCommand)
-        self.voRole = getattr(self.configuration.User, "voRole", "")
-        self.voGroup = getattr(self.configuration.User, "voGroup", "")
-        self.handleProxy(standalone)
-
         uniquerequestname = None
 
-        self.logger.debug("Working on %s" % str(requestarea))
-
+        #self.logger.debug("Working on %s" % str(self.requestarea))
         configreq = {}
         for param in self.requestmapper:
             mustbetype = getattr(types, self.requestmapper[param]['type'])
@@ -115,8 +100,8 @@ class submit(SubCommand, ConfigCommand):
                     ## parameter not strictly required
                     pass
             if param == "workflow":
-                if mustbetype == type(requestname):
-                    configreq["workflow"] = requestname
+                if mustbetype == type(self.requestname):
+                    configreq["workflow"] = self.requestname
             elif param == "savelogsflag":
                 configreq["savelogsflag"] = 1 if temp else 0
             elif param == "publication":
@@ -128,14 +113,14 @@ class submit(SubCommand, ConfigCommand):
                     self.logger.info("WARNING: You disabled the T1 automatic blacklisting without having the t1access role")
                     blacklistT1 = False
                 configreq["blacklistT1"] = 1 if blacklistT1 else 0
-        
+
         # Tells the submitter to ship along a custom tarball to run on the WN/schedd
         configreq['taskManagerTarball'] = taskManagerTarball
         configreq['taskManagerCodeLocation'] = taskManagerCodeLocation
         jobconfig = {}
         self.configuration.JobType.proxyfilename = self.proxyfilename
         self.configuration.JobType.capath = HTTPRequests.getCACertPath()
-        pluginParams = [ self.configuration, self.logger, os.path.join(requestarea, 'inputs') ]
+        pluginParams = [ self.configuration, self.logger, os.path.join(self.requestarea, 'inputs') ]
         if getattr(self.configuration.JobType, 'pluginName', None) is not None:
             jobtypes    = getJobTypes()
             plugjobtype = jobtypes[upper(self.configuration.JobType.pluginName)](*pluginParams)
@@ -147,7 +132,10 @@ class submit(SubCommand, ConfigCommand):
             pluginInst = plugin(*pluginParams)
             inputfiles, jobconfig, isbchecksum = pluginInst.run(configreq)
 
-        configreq['publishname'] = "%s-%s" %(configreq['publishname'], isbchecksum)
+        if not configreq['publishname']:
+            configreq['publishname'] =  isbchecksum
+        else:
+            configreq['publishname'] = "%s-%s" %(configreq['publishname'], isbchecksum)
         configreq.update(jobconfig)
 
         if standalone:
@@ -156,7 +144,9 @@ class submit(SubCommand, ConfigCommand):
             uniquerequestname = self.doSubmit(configreq)
 
         tmpsplit = self.serverurl.split(':')
-        createCache( requestarea, tmpsplit[0], tmpsplit[1] if len(tmpsplit)>1 else '', uniquerequestname, voRole = self.voRole, voGroup = self.voGroup, originalConfig = self.configuration)
+        createCache(self.requestarea, tmpsplit[0], tmpsplit[1] if len(tmpsplit)>1 else '', uniquerequestname,
+                    voRole = self.voRole, voGroup = self.voGroup, originalConfig = self.configuration,
+                    instance=self.instance)
 
         self.logger.info("Submission completed")
         self.logger.debug("Request ID: %s " % uniquerequestname)
@@ -217,6 +207,15 @@ class submit(SubCommand, ConfigCommand):
                    % (str(configreq), str(dictresult), str(reason))
             raise RESTCommunicationException(msg)
 
+        tmpsplit = self.serverurl.split(':')
+        createCache(self.requestarea, tmpsplit[0], tmpsplit[1] if len(tmpsplit)>1 else '', uniquerequestname,
+                    voRole=self.voRole, voGroup=self.voGroup, instance=self.instance)
+
+        self.logger.info("Submission completed")
+        self.logger.debug("Request ID: %s " % uniquerequestname)
+
+        self.logger.debug("Ended submission")
+
         return uniquerequestname
 
 
@@ -232,16 +231,6 @@ class submit(SubCommand, ConfigCommand):
                                  default = './crabConfig.py',
                                  help = "CRAB configuration file",
                                  metavar = "FILE" )
-
-        self.parser.add_option( "-s", "--server",
-                                 dest = "server",
-                                 action = "callback",
-                                 type   = 'str',
-                                 nargs  = 1,
-                                 callback = validServerURL,
-                                 metavar = "http://HOSTNAME:PORT",
-                                 help = "Endpoint server url to use" )
-
 
     def validateConfig(self):
         """

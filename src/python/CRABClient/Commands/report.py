@@ -46,7 +46,7 @@ class report(SubCommand):
             jsonFileDir = os.path.join(self.requestarea, 'results')
         if analyzed:
             with open(os.path.join(jsonFileDir, 'analyzed.json'), 'w') as jsonFile:
-                json.dump(diff, os.path.join(jsonFile))
+                json.dump(analyzed, os.path.join(jsonFile))
                 jsonFile.write("\n")
                 self.logger.info("Analyzed lumi written to %s/analyzed.json" % jsonFileDir)
         if diff:

@@ -25,11 +25,16 @@ from CRABClient.client_exceptions import TaskNotFoundException, CachefileNotFoun
 RENEW_MYPROXY_THRESHOLD = 15
 
 class colors:
-    RED = '\033[91m'
-    GREEN = '\033[92m'
-    GRAY = '\033[90m'
-    NORMAL = '\033[0m'
-
+    if sys.stdout.isatty():
+        RED = '\033[91m'
+        GREEN = '\033[92m'
+        GRAY = '\033[90m'
+        NORMAL = '\033[0m'
+    else:
+        NORMAL = ''
+        RED = ''
+        GREEN = ''
+        GRAY = ''
 
 def getPlugins(namespace, plugins, skip):
     """
@@ -183,7 +188,6 @@ def createWorkArea(logger, workingArea = '.', requestName = ''):
     creates the working directory with the needed sub-folders
     in case it already exists it raises an exception
     """
-
     if workingArea is None or workingArea == '.' :
         workingArea = os.getenv('CRAB_WORKING_AREA', '.')
 
@@ -210,7 +214,7 @@ def createWorkArea(logger, workingArea = '.', requestName = ''):
     return fullpath, requestName, logfile
 
 
-def createCache(requestarea, host, port, uniquerequestname, voRole, voGroup, originalConfig={}):
+def createCache(requestarea, host, port, uniquerequestname, voRole, voGroup, instance, originalConfig={}):
     touchfile = open(os.path.join(requestarea, '.requestcache'), 'w')
     neededhandlers = {
                       "Server" : host,
@@ -219,6 +223,7 @@ def createCache(requestarea, host, port, uniquerequestname, voRole, voGroup, ori
                       "voRole" : voRole,
                       "voGroup" : voGroup,
                       "OriginalConfig" : originalConfig,
+                      "instance" : instance
                      }
     cPickle.dump(neededhandlers, touchfile)
     touchfile.close()
@@ -276,6 +281,9 @@ def initProxy(voRole, voGroup, logger):
     #same proxy instsance
     return userdn, proxyfilename, proxy
 
+def getUserName(logger, voRole='', voGroup=''):
+    _, _, proxy = initProxy(voRole, voGroup, logger) 
+    return proxy.getUserName()
 
 def delegateProxy(serverDN, myProxy, proxyobj, logger, nokey=False):
     proxyobj.defaultDelegation['serverDN'] = serverDN
@@ -295,7 +303,7 @@ def validServerURL(option, opt_str, value, parser):
     else:
         setattr(parser.values, option.dest, option.default)
 
-def validURL(serverurl, attrtohave = ['scheme', 'netloc', 'hostname', 'port'], attrtonothave = ['path', 'params', 'query', 'fragment', 'username', 'password']):
+def validURL(serverurl, attrtohave = ['scheme', 'netloc', 'hostname'], attrtonothave = ['path', 'params', 'query', 'fragment', 'username', 'password']):
     """
     returning false if the format is different from https://host:port
     """
@@ -321,13 +329,13 @@ def validURL(serverurl, attrtohave = ['scheme', 'netloc', 'hostname', 'port'], a
 #If anyone has a better solution please go on, otherwise live with that one :) :)
 from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient.client_exceptions import RESTCommunicationException
-def server_info(subresource, server, proxyfilename):
+def server_info(subresource, server, proxyfilename, baseurl):
     """
     Get relevant information about the server
     """
 
     server = HTTPRequests(server, proxyfilename)
 
-    dictresult, status, reason = server.get('/crabserver/dev/info', {'subresource' : subresource})
+    dictresult, status, reason = server.get(baseurl, {'subresource' : subresource})
 
     return dictresult['result'][0]
