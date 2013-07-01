@@ -33,7 +33,7 @@ class resubmit(SubCommand):
             userdn = proxy.getSubject(self.proxyfilename)
             dictresult = dag.resubmit(self.cachedinfo['RequestName'], self.sitewhitelist, self.siteblacklist, userdn=userdn)
 
-        self.logger.info("Resubmission succesfully requested")
+        self.logger.info("Resubmit request succesfully sent")
 
     def setOptions(self):
         """
