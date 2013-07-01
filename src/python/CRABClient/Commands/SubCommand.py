@@ -160,7 +160,7 @@ class SubCommand(ConfigCommand):
         if not hasattr(self, 'serverurl'):
             self.instance, self.serverurl = self.serverInstance()
 
-        self.handleProxy(self.getUrl(self.instance, resource='info'))
+        #self.handleProxy(self.getUrl(self.instance, resource='info'))
         self.uri = self.getUrl(self.instance)
         self.logger.debug("Instance is %s" %(self.instance))
         self.logger.debug("Server base url is %s" %(self.serverurl))
@@ -220,7 +220,7 @@ class SubCommand(ConfigCommand):
         self.requestarea, self.requestname = getWorkArea( self.options.task )
         self.cachedinfo, self.logfile = loadCache(self.requestarea, self.logger)
         port = ':' + self.cachedinfo['Port'] if self.cachedinfo['Port'] else ''
-        self.instance = self.cachedinfo['instance']
+        self.instance = self.cachedinfo.get('instance', 'prod')
         self.serverurl = self.cachedinfo['Server'] + port
         #TODO Save them in the cache
         self.voRole = self.cachedinfo['voRole'] if not self.options.voRole else self.options.voRole
