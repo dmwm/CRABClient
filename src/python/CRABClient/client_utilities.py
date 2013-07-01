@@ -266,7 +266,7 @@ def initProxy(voRole, voGroup, logger):
                                   )
 
     logger.debug("Checking credentials")
-    old_ld_library_path = os.environ['LD_LIBRARY_PATH']
+    old_ld_library_path = os.environ.get('LD_LIBRARY_PATH', '')
     #os.environ['LD_LIBRARY_PATH'] = ''
     try:
         userdn, proxyfilename = proxy.createNewVomsProxy( timeleftthreshold = 600 )
