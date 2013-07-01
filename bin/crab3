@@ -6,6 +6,12 @@ if [ -e $CRAB_BASE/CRAB3.zip ]; then
   PYTHONPATH=$CRAB_BASE/CRAB3.zip:$PYTHONPATH
 fi
 
+if [ "x$CONDOR_CONFIG" = "x" ] && [ ! -e /etc/condor/condor_config ] && [ ! -e $HOME/.condor/condor_config ];
+then
+  if [ ! -e $CRAB_BASE/fake_condor_config ]; then touch $CRAB_BASE/fake_condor_config; fi
+  export CONDOR_CONFIG=$CRAB_BASE/fake_condor_config
+fi
+
 #
 # Simple bootstrap script for unit tests.
 # Does mostly python environment munging so we can use the system python
@@ -24,6 +30,6 @@ if [ "X$CRAB_USE_SYSTEM_PYTHON" != "X" ]; then
   export PYTHONPATH=/cvmfs/cms.cern.ch/slc5_amd64_gcc462/cms/cmssw/CMSSW_5_3_7/python:$PYTHONPATH
   exec /usr/bin/python ~/projects/CRABClient/bin/crab "$@"
 else
-  python2.6 $CRAB_BASE/crab "$@"
+  exec python2.6 $CRAB_BASE/crab "$@"
 fi
 
