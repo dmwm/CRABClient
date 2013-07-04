@@ -117,6 +117,10 @@ class Analysis(BasicJobType):
             valid = False
             reason += 'Crab configuration problem: missing or null input dataset name. '
 
+        if self.splitAlgo == 'EventBased':  
+            valid = False
+            reason += 'Analysis JobType does not support EventBased Splitting.'
+
         return (valid, reason)
 
     def validateBasicConfig(self, config):
@@ -132,7 +136,8 @@ class Analysis(BasicJobType):
             valid = False
             reason += 'Crab configuration problem: missing Data section. '
 
-        if not getattr(config.Data, 'splitting', None):
+        self.splitAlgo = getattr(config.Data, 'splitting', None)
+        if not self.splitAlgo:
             valid = False
             reason += 'Crab configuration problem: missing or null splitting algorithm. '
 
