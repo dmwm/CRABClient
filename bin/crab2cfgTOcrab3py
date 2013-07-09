@@ -57,14 +57,16 @@ def _getSpacedList(configC2, sectionC2, parameterC2):
 paramsMap = [
     ('General'  , 'requestName'          , False, 'USER'   , 'ui_working_dir'           , RawConfigParser.get),
     ('JobType'  , 'psetName'             , True , 'CMSSW'  , 'pset'                     , RawConfigParser.get),
-    ('JobType'  , 'pyCfgParams'          , False, 'CMSSW'  , 'pycfg_params'             , _getSpacedList),
+#    ('JobType'  , 'pyCfgParams'          , False, 'CMSSW'  , 'pycfg_params'             , _getSpacedList),
     ('JobType'  , 'inputFiles'           , False, 'CMSSW'  , 'additional_input_file'    , _getlist),
+    ('JobType'  , 'outputFiles'          , False, 'CMSSW'  , 'output_file'              , _getlist),
     ('Data'     , 'inputDataset'         , True , 'CMSSW'  , 'datasetpath'              , RawConfigParser.get),
     ('Data'     , 'splitting'            , False, ''       , ''                         , _getsplitting),       #_getsplitting knows corresp. params
     ('Data'     , 'unitsPerJob'          , False, ''       , ''                         , _getunits),           #_getunits does the work
     ('Data'     , 'lumiMask'             , False, 'CMSSW'  , 'lumi_mask'                , RawConfigParser.get),
-    ('Data'     , 'runRange'             , False, 'CMSSW'  , 'runselection'             , RawConfigParser.get),
+#    ('Data'     , 'runRange'             , False, 'CMSSW'  , 'runselection'             , RawConfigParser.get),
     ('Data'     , 'dbsurl'               , False, 'CMSSW'  , 'dbs_url'                  , RawConfigParser.get),
+    ('Data'     , 'publication'          , False, 'USER'   , 'publish_data'             , RawConfigParser.getboolean),
     ('User'     , 'email'                , False, 'USER'   , 'email'                    , RawConfigParser.get),
     ('User'     , 'voRole'               , False, 'GRID'   , 'role'                     , RawConfigParser.get),
     ('User'     , 'voGroup'              , False, 'GRID'   , 'group'                    , RawConfigParser.get),
@@ -77,61 +79,67 @@ paramsMap = [
 ]
 
 #Not yet supported parameters. If they are present in the crab2cfg file we print a message saying they are not yet supported
-notYetSuppParams = [
-                    'first_run',
+notYetSuppParams = ['pyCfgParams',
+                    'runselection',
+                    'script_arguments',
+                    'outputdir',
+                    'logdir',
+                    'check_user_remote_dir',
                     'generator',
                     'skip_TFileService_output',
                     'get_edm_output',
                     'thresholdLevel',
-                    'virtual_organization',
-                    'additional_jdl_parameters',
                     'requirements',
                     'dont_check_proxy', #we actually have something from the command line
                     'script_exe',
+                    'use_parent',
+                    'executable',
+                    'max_cpu_time',
+                    'max_wall_clock_time',
+                    'max_rss',
+                    'ce_black_list', 
+                    'ce_white_list',
+                    'data_location_override',
+                    'allow_overflow',
+                    'increment_seeds',
+                    'preserve_seeds',
+                    'subscribed',
+                    'no_block_boundary',
                    ]
 
-#List of deprecated parameters. We don't print a warning message for them.
-deprecatedParams = ['publish_data', #publishing is on demand
+#List of deprecated parameters. We print a warning message saying they are obsolete
+deprecatedParams = [
+                    'server_name',
                     'use_server', #of course we use it
                     'scheduler',
                     'jobtype',
                     'return_data',
                     'copy_data',
                     'check_user_remote_dir',
-                    'output_file',
-                    'split_by_event',
                     'return_data',
-                    'logdir',
                     'skipwmsauth',
                     'tasktype',
                     'local_stage_out',
+                    'first_run',
+                    'additional_jdl_parameters',
+                    'virtual_organization',
+                    'wms_service',
+                    'ssh_control_persist',
+                    'thresholdLevel',
+                    'client',
+                    'storage_path',
+                    'storage_port',
+                    'xml_report',
+                    'usenamespace',
+                    'debug_wrapper',
+                    'deep_debug',
+                    'dontCheckSpaceLeft',
+                    'maxtarballsize',
+                    'skipwmsauth',
+                    'queue',
+                    'resource',
+                    'RB',     
                    ]
-
-#If a parameter is not deprecated, it is not "not yet supported", and it is not used for the conversion,
-#then it is not supporteed (and then we print a warning message)! FYI, This is a list I made:
-
-#globus_rsl,
-#batchsystem,
-#wms_service
-#skipwmsauth
-#max_wall_clock_time
-#max_cpu_time
-#rb
-#dontCheckSpaceLeft
-#debug_wrapper
-#usenamespace
-#xml_report
-#additional_input_files
-#storage_port
-#storage_path
-#user_remote_dir
-#caf_lfn
-#user_remote_dir
-#storage_element
-#outputdir
-#logdir
-#se_black_list
-#se_white_list
 
 def parseParameters():
     parser = OptionParser()
@@ -175,9 +183,8 @@ def getConfiguration(paramsMap, configC2, configNameC3):
     configC3.section_("Site")
 
     configC3.JobType.pluginName = 'Analysis'
-    configC3.Data.processingVersion = ''
-    configC3.General.requestName = os.path.splitext(os.path.basename(configNameC3))[0]
-    configC3.General.serverUrl = 'You need to set the server URL'
+    configC3.General.instance = 'You need to set the CRAB3 instance type: e.g. "private" '
+    configC3.General.serverUrl = 'You need to set the CRAB3 server URL'
     configC3.User.email = ''
 
     missingParams = []
@@ -203,17 +210,40 @@ def printUnsupporterParams(configC2):
     #Get supported parameters from theparamsMap list
     suppParams = [parameterC2 for _, _, _, _, parameterC2, _ in paramsMap]
     suppParams.extend(['lumis_per_job', 'total_number_of_lumis', 'number_of_jobs', 'events_per_job', 'total_number_of_events'])
-
+    unknown     = []
+    obsolete    = []
+    notyetready = []
+    
     for section in configC2.sections():
         for paramName, _ in configC2.items(section):
-            if paramName not in suppParams and paramName not in deprecatedParams:
-                print "The CRAB2 parameter \t" + paramName + "\t\t is not supported" + (" YET" if paramName in notYetSuppParams else "")
-
+            if paramName in deprecatedParams:
+                obsolete.append(paramName)
+            if paramName in notYetSuppParams:
+                notyetready.append(paramName)
+            if paramName not in suppParams + deprecatedParams + notYetSuppParams:
+                unknown.append(paramName)
+    report = ''
+    if notyetready:
+        report += "CRAB2 parameters not YET supported in CRAB3: \n\t" + ','.join(notyetready) 
+    if obsolete:
+        report += "\nCRAB2 parameters obsolete in CRAB3: \n\t" + ','.join(obsolete) 
+    if unknown:
+        report += "\nCRAB2 parameter uknown to this convertion utility: \n\t" + ','.join(unknown)  
+    if report:
+        print 'crab2cfgTOcrab3py report:'   
+        print report         
 
 if __name__ == "__main__":
     configNameC2, configNameC3 = parseParameters()
+    msg = "Usage: crab2cfgTOcrab3py crab2configName.cfg crab3configName.py\n"
+    msg += "Please specify at least the CRAB2 config file name, crab3configName.py default to 'crabConfig.py'"
     if not os.path.isfile(configNameC2):
-        print "Cannot find file " + configNameC2
+        errMsg =  "Error: Cannot find file %s \n" % configNameC2
+        print errMsg + msg
+        sys.exit(2)
+    if os.path.isfile(configNameC3):
+        errMsg =  "Error: File %s already exists\n" % configNameC3
+        print errMsg + msg
         sys.exit(2)
 
     configC2 = RawConfigParser()
@@ -226,6 +256,7 @@ if __name__ == "__main__":
 
     saveConfigurationFile(configC3, configNameC3)
 
+    print 'Convertion done!'
     printUnsupporterParams(configC2)
 
     if len(missingParams) > 0:

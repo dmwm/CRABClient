@@ -27,11 +27,13 @@ class PrivateMC(Analysis):
         # Put MC requirements here
         if not valid:
             return (valid, reason)
+
         if not getattr(config.Data, 'totalUnits', None):
             valid = False
             reason += 'Crab configuration problem: missing or null totalUnits. '
-        splitAlgo = getattr(config.Data, 'splitting', None)
-        if splitAlgo != 'EventBased':  
+
+        if self.splitAlgo != 'EventBased':  
             valid = False
             reason += 'MC production jobtype supports EventBased splitting only. '
+
         return (valid, reason)
