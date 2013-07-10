@@ -6,7 +6,7 @@ from ast import literal_eval
 from CRABClient.Commands.request_type import request_type
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ServerInteractions import HTTPRequests
-from CRABClient.client_utilities import getJobTypes
+from CRABClient.client_utilities import getJobTypes, colors
 from CRABClient.JobType.BasicJobType import BasicJobType
 
 class report(SubCommand):
@@ -35,7 +35,7 @@ class report(SubCommand):
         for runlumi in runlumiLists:
             for run in runlumi:
                 runlumi[run] = map(int, runlumi[run])
-        analyzed, diff = BasicJobType.mergeLumis(runlumiLists, dictresult['result'][0]['lumiMask'])
+        analyzed, diff, doublelumis = BasicJobType.mergeLumis(runlumiLists, dictresult['result'][0]['lumiMask'])
         numFiles = len(reduce(set().union, map(lambda x: literal_eval(x['parents']), dictresult['result'][0]['runsAndLumis'].values())))
         self.logger.info("%d files have been read" % numFiles)
         self.logger.info("%d events have been read" % sum(map(lambda x: x['events'], dictresult['result'][0]['runsAndLumis'].values())))
@@ -53,7 +53,12 @@ class report(SubCommand):
             with open(os.path.join(jsonFileDir, 'diff.json'), 'w') as jsonFile:
                 json.dump(diff, jsonFile)
                 jsonFile.write("\n")
-                self.logger.info("Not Analyzed lumi written to %s/diff.json" % jsonFileDir)
+                self.logger.info("%sNot Analyzed lumi written to %s/diff.json%s" % (colors.RED, jsonFileDir, colors.NORMAL))
+        if doublelumis:
+            with open(os.path.join(jsonFileDir, 'double.json'), 'w') as jsonFile:
+                json.dump(doublelumis, jsonFile)
+                jsonFile.write("\n")
+                self.logger.info("%sDouble lumis written to %s/double.json%s" % (colors.RED, jsonFileDir, colors.NORMAL))
 
     def setOptions(self):
         """

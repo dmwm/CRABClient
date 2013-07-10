@@ -57,6 +57,4 @@ class BasicJobType(object):
         for report in inputdata:
             doublelumis = mergedlumis & LumiList(runsAndLumis=report)
             mergedlumis = mergedlumis | LumiList(runsAndLumis=report)
-            if doublelumis:
-                self.logger.info("Warning: double run-lumis processed %s" % doublelumis)
-        return mergedlumis.getCompactList(), (LumiList(compactList=lumimask) - mergedlumis).getCompactList()
+        return mergedlumis.getCompactList(), (LumiList(compactList=lumimask) - mergedlumis).getCompactList(), doublelumis.getCompactList()
