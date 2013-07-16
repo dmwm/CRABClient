@@ -12,7 +12,7 @@ from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient import SpellChecker
 from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient.client_exceptions import MissingOptionException, ConfigurationException, RESTCommunicationException
-from CRABClient.client_utilities import getJobTypes, createCache, addPlugin
+from CRABClient.client_utilities import getJobTypes, createCache, addPlugin, server_info
 
 
 class submit(SubCommand):
@@ -92,6 +92,7 @@ class submit(SubCommand):
         jobconfig = {}
         self.configuration.JobType.proxyfilename = self.proxyfilename
         self.configuration.JobType.capath = HTTPRequests.getCACertPath()
+        self.configuration.JobType.filecacheurl = server_info('backendurls', self.serverurl, self.proxyfilename, self.getUrl(self.instance, resource='info'))['cacheSSL']
         pluginParams = [ self.configuration, self.logger, os.path.join(self.requestarea, 'inputs') ]
         if getattr(self.configuration.JobType, 'pluginName', None) is not None:
             jobtypes    = getJobTypes()
