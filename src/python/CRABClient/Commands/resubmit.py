@@ -11,20 +11,27 @@ class resubmit(SubCommand):
     -t/--task option
     """
     def __call__(self):
-        ## retrieving output files location from the server
-        server = HTTPRequests(self.serverurl, self.proxyfilename)
-
-        self.logger.debug('Requesting resubmission for failed jobs in task %s' % self.cachedinfo['RequestName'] )
-        #inputdict = { "TaskResubmit": "Analysis", "ForceResubmit" : force }
-        dictresult, status, reason = server.post(self.uri, data = urllib.urlencode({ 'workflow' : self.cachedinfo['RequestName']}) + \
-                                                    self.sitewhitelist + self.siteblacklist)
-        self.logger.debug("Result: %s" % dictresult)
-
-        if status != 200:
-            msg = "Problem retrieving resubmitting the task to the server:\ninput:%s\noutput:%s\nreason:%s" % (str(inputdict), str(dictresult), str(reason))
-            raise RESTCommunicationException(msg)
-
-        self.logger.info("Resubmit request succesfully sent")
+        if self.options.objects == 'jobs':
+            server = HTTPRequests(self.serverurl, self.proxyfilename)
+            self.logger.debug('Requesting resubmission for failed jobs in task %s' % self.cachedinfo['RequestName'] )
+            #inputdict = { "TaskResubmit": "Analysis", "ForceResubmit" : force }
+            dictresult, status, reason = server.post(self.uri, data = urllib.urlencode({ 'workflow' : self.cachedinfo['RequestName'], 'ASO':0 }) + \
+                                                     self.sitewhitelist + self.siteblacklist)
+            self.logger.debug("Result: %s" % dictresult)
+            if status != 200:
+                msg = "Problem retrieving resubmitting the task to the server:\ninput:%s\noutput:%s\nreason:%s" % (str(inputdict), str(dictresult), str(reason))
+                raise RESTCommunicationException(msg)
+            self.logger.info("Jobs resubmission succesfully requested")
+        if self.options.objects == 'files':
+            server = HTTPRequests(self.serverurl, self.proxyfilename)
+            self.logger.debug('Requesting resubmission for failed files in task %s' % self.cachedinfo['RequestName'])
+            dictresult, status, reason = server.post(self.uri, data = urllib.urlencode({ 'workflow' : self.cachedinfo['RequestName'], 'ASO':1 }))
+            self.logger.debug("Result: %s" % dictresult)
+            if status != 200:
+                msg = "Problem resubmitting task %s:\ninput:%s\noutput:%s\nreason:%s" % \
+                       (self.cachedinfo['RequestName'], str(self.cachedinfo['RequestName']), str(dictresult), str(reason))
+                raise RESTCommunicationException(msg)
+            self.logger.info("Files resubmission succesfully requested")
 
     def setOptions(self):
         """
@@ -43,6 +50,13 @@ class resubmit(SubCommand):
                                  default = None,
                                  help = "Set the sites you want to whitelist during the resubmission." + \
                                             "Comma separated list of cms sites (e.g.: T2_ES_CIEMAT,T2_IT_Rome[...])")
+
+        self.parser.add_option( "-o", "--objects",
+                                 dest = "objects",
+                                 type   = 'str',
+                                 default = 'jobs',
+                                 help = "-o files to kill transfering files. Default -o jobs"
+                                 )
 
     def validateOptions(self):
         """
