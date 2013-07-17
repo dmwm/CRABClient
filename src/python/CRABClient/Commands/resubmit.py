@@ -1,8 +1,9 @@
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient.client_exceptions import ConfigException, RESTCommunicationException
+from CRABClient.client_utilities import validateJobids
 
-import urllib
+from urllib import urlencode
 import re
 
 
@@ -16,8 +17,8 @@ class resubmit(SubCommand):
 
         self.logger.debug('Requesting resubmission for failed jobs in task %s' % self.cachedinfo['RequestName'] )
         #inputdict = { "TaskResubmit": "Analysis", "ForceResubmit" : force }
-        dictresult, status, reason = server.post(self.uri, data = urllib.urlencode({ 'workflow' : self.cachedinfo['RequestName']}) + \
-                                                    self.sitewhitelist + self.siteblacklist)
+        dictresult, status, reason = server.post(self.uri, data = urlencode({ 'workflow' : self.cachedinfo['RequestName']}) + \
+                                                    self.sitewhitelist + self.siteblacklist + '&' + urlencode(self.jobids))
         self.logger.debug("Result: %s" % dictresult)
 
         if status != 200:
@@ -25,6 +26,8 @@ class resubmit(SubCommand):
             raise RESTCommunicationException(msg)
 
         self.logger.info("Resubmit request succesfully sent")
+        if dictresult['result'][0]['result'] != 'ok':
+            self.logger.info(dictresult['result'][0]['result'])
 
     def setOptions(self):
         """
@@ -43,6 +46,12 @@ class resubmit(SubCommand):
                                  default = None,
                                  help = "Set the sites you want to whitelist during the resubmission." + \
                                             "Comma separated list of cms sites (e.g.: T2_ES_CIEMAT,T2_IT_Rome[...])")
+
+        self.parser.add_option( '-i', '--jobids',
+                                dest = 'jobids',
+                                default = None,
+                                help = 'Ids of the jobs you want to resubmit. Comma separated list of intgers',
+                                metavar = 'JOBIDS' )
 
     def validateOptions(self):
         """
@@ -73,3 +82,7 @@ class resubmit(SubCommand):
                     result += "&%s=%s" % (siteList, site)
             setattr(self, siteList, result)
 
+        #check the format of jobids
+        self.jobids = ''
+        if getattr(self.options, 'jobids', None):
+            self.jobids = validateJobids(self.options.jobids)

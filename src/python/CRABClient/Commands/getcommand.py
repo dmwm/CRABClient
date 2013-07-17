@@ -3,6 +3,7 @@ from CRABClient.Commands.remote_copy import remote_copy
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient.client_exceptions import ConfigurationException
+from CRABClient.client_utilities import validateJobids
 
 import os
 import re
@@ -99,7 +100,4 @@ class getcommand(SubCommand):
 
         #check the format of jobids
         if getattr(self.options, 'jobids', None):
-            if re.compile('^\d+(,\d+)*$').match(self.options.jobids):
-                self.options.jobids = [('jobids',jobid) for jobid in self.options.jobids.split(',')]
-            else:
-                raise ConfigurationException("The command line option jobids should be a comma separated list of integers")
+            self.options.jobids = validateJobids(self.options.jobids)
