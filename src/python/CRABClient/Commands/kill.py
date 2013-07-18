@@ -15,8 +15,8 @@ class kill(SubCommand):
     def __call__(self):
         server = HTTPRequests(self.serverurl, self.proxyfilename)
 
-        self.logger.debug('Killing task %s' % self.cachedinfo['RequestName'])
-        dictresult, status, reason = server.delete(self.uri, data = urlencode({ 'workflow' : self.cachedinfo['RequestName']}) + '&' + urlencode(self.jobids))
+        self.logger.debug('Killing objects %s of task %s' % (self.options.objects, self.cachedinfo['RequestName']))
+        dictresult, status, reason = server.delete(self.uri, data = urlencode({ 'workflow' : self.cachedinfo['RequestName'], 'objects': self.options.objects}) + '&' + urlencode(self.jobids))
         self.logger.debug("Result: %s" % dictresult)
 
         if status != 200:
@@ -40,6 +40,12 @@ class kill(SubCommand):
                                 default = None,
                                 help = 'Ids of the jobs you want to kill. Comma separated list of intgers',
                                 metavar = 'JOBIDS' )
+        self.parser.add_option( "-o", "--objects",
+                                 dest = "objects",
+                                 type   = 'str',
+                                 default = 'jobs',
+                                 help = "-o files to kill transfering files. Default -o jobs"
+                                 )
 
     def validateOptions(self):
         SubCommand.validateOptions(self)
