@@ -39,7 +39,11 @@ class Analysis(BasicJobType):
 
         # Build tarball
         if self.workdir:
+            old_ld_library_path = os.environ.get('LD_LIBRARY_PATH', None)
+            del os.environ['LD_LIBRARY_PATH']
             tarUUID =  PandaInterface.wrappedUuidGen()
+            if old_ld_library_path:
+                os.environ['LD_LIBRARY_PATH'] = old_ld_library_path
             self.logger.debug('UNIQUE NAME: tarUUID %s ' % tarUUID)
             if len(tarUUID):
                 tarFilename   = os.path.join(self.workdir, tarUUID +'default.tgz')

@@ -16,10 +16,23 @@ class report(SubCommand):
     shortnames = ['rep']
 
     def __call__(self):
-        server = HTTPRequests(self.serverurl, self.proxyfilename)
+        if getattr(self.cachedinfo['OriginalConfig'].General, 'standalone', False):
+            # Talk to HTCondor either directly or via gsissh
+            # NOTE: have to import here to keep from circular imports
+            import CRABInterface.DagmanDataWorkflow as DagmanModule
+            dag = DagmanModule.DagmanDataWorkflow(
+                                    config = self.cachedinfo['OriginalConfig'],
+                                    requestarea=self.requestarea
+                                        )
+            dictresult = {'result': [dag.report(self.cachedinfo['RequestName'], '', userproxy=self.proxyfilename).next()]}
+            status = 200 # Fake an HTTP code to match PanDA
 
-        self.logger.debug('Looking up report for task %s' % self.cachedinfo['RequestName'])
-        dictresult, status, reason = server.get(self.uri, data = {'workflow': self.cachedinfo['RequestName'], 'subresource': 'report'})
+        else:
+
+            server = HTTPRequests(self.serverurl, self.proxyfilename)
+
+            self.logger.debug('Looking up report for task %s' % self.cachedinfo['RequestName'])
+            dictresult, status, reason = server.get(self.uri, data = {'workflow': self.cachedinfo['RequestName'], 'subresource': 'report'})
 
         self.logger.debug("Result: %s" % dictresult)
 

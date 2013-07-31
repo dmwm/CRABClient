@@ -29,7 +29,7 @@ class status(SubCommand):
             dag = DagmanModule.DagmanDataWorkflow( 
                                     config = self.cachedinfo['OriginalConfig'], 
                                         )
-            dictresult = dag.status(data['workflow'], '')
+            dictresult = dag.status(data['workflow'], '', userproxy=self.proxyfilename)
             status = 200 # Fake an HTTP code to match PanDA
             monitorUrl = None
         else:

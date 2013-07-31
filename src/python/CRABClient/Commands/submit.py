@@ -166,7 +166,6 @@ class submit(SubCommand):
         configreq.setdefault('userisburl', configreq['cacheurl'])
         configreq.setdefault('adduserfiles', [])
         configreq.setdefault('publishname', '')
-        configreq.setdefault('campaign', '')
         configreq.setdefault('dbsurl', '')
         configreq.setdefault('publishdbsurl', '')
         # TODO: calculate these correctly:
@@ -186,6 +185,7 @@ class submit(SubCommand):
         configreq.setdefault('userhn', userhn)
         configreq.setdefault('runs', [])
         configreq.setdefault('lumis', [])
+        self.logger.debug("Submitting %s " % str( configreq ) )
         return dag.submit(**configreq)[0]['RequestName']
 
     def doSubmit(self, configreq):
