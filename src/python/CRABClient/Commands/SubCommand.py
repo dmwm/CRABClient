@@ -150,6 +150,7 @@ class SubCommand(ConfigCommand):
                                                                               getattr(self.configuration.General, 'requestName', None))
             self.voRole = self.options.voRole if not self.options.voRole else getattr(self.configuration.User, "voRole", "")
             self.voGroup = self.options.voGroup if not self.options.voGroup else getattr(self.configuration.User, "voGroup", "")
+            self.standalone = getattr(self.configuration.General, 'standalone', False)
 
         ##if we get an input task we load the cache and set the url from it
         if hasattr(self.options, 'task') and self.options.task:
