@@ -2,8 +2,9 @@ from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient.client_exceptions import RESTCommunicationException
 from WMCore.Credential.Proxy import Proxy
+from CRABClient.client_utilities import validateJobids
 
-import urllib
+from urllib import urlencode
 
 
 class kill(SubCommand):
@@ -42,3 +43,26 @@ class kill(SubCommand):
             raise RESTCommunicationException(msg)
 
         self.logger.info("Kill request succesfully sent")
+        if dictresult['result'][0]['result'] != 'ok':
+            self.logger.info(dictresult['result'][0]['result'])
+
+
+    def setOptions(self):
+        """
+        __setOptions__
+
+        This allows to set specific command options
+        """
+        self.parser.add_option( '-i', '--jobids',
+                                dest = 'jobids',
+                                default = None,
+                                help = 'Ids of the jobs you want to kill. Comma separated list of intgers',
+                                metavar = 'JOBIDS' )
+
+    def validateOptions(self):
+        SubCommand.validateOptions(self)
+
+        #check the format of jobids
+        self.jobids = ''
+        if getattr(self.options, 'jobids', None):
+            self.jobids = validateJobids(self.options.jobids)

@@ -17,7 +17,7 @@ from string import upper
 from optparse import OptionValueError
 
 from CRABClient.CredentialInteractions import CredentialInteractions
-from CRABClient.client_exceptions import TaskNotFoundException, CachefileNotFoundException
+from CRABClient.client_exceptions import TaskNotFoundException, CachefileNotFoundException, ConfigurationException
 
 
 
@@ -321,6 +321,13 @@ def validURL(serverurl, attrtohave = ['scheme', 'netloc', 'hostname'], attrtonot
         if not str( elemval ) == '' and elemval is not None:
             return False
     return True
+
+def validateJobids(jobids):
+    #check the format of jobids
+    if re.compile('^\d+(,\d+)*$').match(jobids):
+        return [('jobids',jobid) for jobid in jobids.split(',')]
+    else:
+        raise ConfigurationException("The command line option jobids should be a comma separated list of integers")
 
 
 #XXX Trying to do it as a Command causes a lot of headaches (and workaround code).

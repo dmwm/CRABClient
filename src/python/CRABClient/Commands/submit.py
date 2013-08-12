@@ -120,6 +120,7 @@ class submit(SubCommand):
         jobconfig = {}
         self.configuration.JobType.proxyfilename = self.proxyfilename
         self.configuration.JobType.capath = HTTPRequests.getCACertPath()
+        self.configuration.JobType.filecacheurl = server_info('backendurls', self.serverurl, self.proxyfilename, self.getUrl(self.instance, resource='info'))['cacheSSL']
         pluginParams = [ self.configuration, self.logger, os.path.join(self.requestarea, 'inputs') ]
         if getattr(self.configuration.JobType, 'pluginName', None) is not None:
             jobtypes    = getJobTypes()
