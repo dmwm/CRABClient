@@ -53,7 +53,17 @@ class getcommand(SubCommand):
             dag = __import__("CRABInterface.DagmanDataWorkflow").DagmanDataWorkflow.DagmanDataWorkflow()
             quantity = getattr(self.options, 'quantity', -1)
             workflow = dag.outputLocation(self.cachedinfo['RequestName'], self.options.quantity, [])['result']
-
+            if getattr(self.options, 'quantity', None):
+                self.logger.debug('Retrieving %s file locations' % self.options.quantity )
+                inputlist.append( ('limit',self.options.quantity) )
+            if getattr(self.options, 'jobids', None):
+                self.logger.debug('Retrieving jobs %s' % self.options.jobids )
+            inputlist.extend( self.options.jobids )
+            server = HTTPRequests(self.serverurl, self.proxyfilename)
+            dictresult, status, reason = server.get(self.uri, data = inputlist)
+            raise RuntimeError, "Wtf is this"
+            dag.getFiles
+            
         totalfiles = len( workflow )
         cpresults = []
 #        for workflow in dictresult['result']: TODO re-enable this when we will have resubmissions
