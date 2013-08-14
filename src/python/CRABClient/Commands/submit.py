@@ -65,12 +65,12 @@ class submit(SubCommand):
                     if mustbetype == type(temp):
                         configreq[param] = temp
                     else:
-                        raise ConfigurationException(1, "Invalid type " + str(type(temp)) + " for parameter " + self.requestmapper[param]['config'] \
+                        raise ConfigurationException("Invalid type " + str(type(temp)) + " for parameter " + self.requestmapper[param]['config'] \
                                    + ". It is needed a " + str(mustbetype) + ".")
                 elif self.requestmapper[param]['default'] is not None:
                     configreq[param] = self.requestmapper[param]['default']
                 elif self.requestmapper[param]['required']:
-                    raise ConfigurationException(1, "Missing parameter " + self.requestmapper[param]['config'] + " from the configuration.")
+                    raise ConfigurationException("Missing parameter " + self.requestmapper[param]['config'] + " from the configuration.")
                 else:
                     ## parameter not strictly required
                     pass
