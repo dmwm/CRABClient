@@ -92,7 +92,12 @@ class submit(SubCommand):
         jobconfig = {}
         self.configuration.JobType.proxyfilename = self.proxyfilename
         self.configuration.JobType.capath = HTTPRequests.getCACertPath()
-        self.configuration.JobType.filecacheurl = server_info('backendurls', self.serverurl, self.proxyfilename, self.getUrl(self.instance, resource='info'))['cacheSSL']
+        #get the backend URLs from the server external configuration
+        serverBackendURLs = server_info('backendurls', self.serverurl, self.proxyfilename, self.getUrl(self.instance, resource='info'))
+        #if cacheSSL is specified in the server external configuration we will use it to upload the sandbox (baseURL will be ignored)
+        self.configuration.JobType.filecacheurl = serverBackendURLs['cacheSSL'] if 'cacheSSL' in serverBackendURLs else None
+        #otherwise we will contact the baseurl to get the cache hostname
+        self.configuration.JobType.baseurl = serverBackendURLs['baseURL']
         pluginParams = [ self.configuration, self.logger, os.path.join(self.requestarea, 'inputs') ]
         if getattr(self.configuration.JobType, 'pluginName', None) is not None:
             jobtypes    = getJobTypes()
