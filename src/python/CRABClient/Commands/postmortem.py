@@ -3,8 +3,9 @@ import hashlib
 
 from CRABClient.Commands import CommandResult
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ServerInteractions import HTTPRequests
+from CRABClient import __version__
 
+from RESTInteractions import HTTPRequests
 
 class postmortem(SubCommand):
     """ Retrieve post mortem infromation of all the jobs in the task, or detailed

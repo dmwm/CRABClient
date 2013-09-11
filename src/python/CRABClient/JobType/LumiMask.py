@@ -8,7 +8,6 @@ import urlparse
 
 from WMCore.Lexicon import jobrange
 
-from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient.client_exceptions import ConfigurationException
 
 
