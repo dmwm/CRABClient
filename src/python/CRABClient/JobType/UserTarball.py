@@ -12,6 +12,7 @@ import tarfile
 import tempfile
 import hashlib
 import sys
+import logging
 
 from WMCore.Configuration import loadConfigurationFile, Configuration
 import PandaServerInterface as PandaInterface
@@ -38,6 +39,7 @@ class UserTarball(object):
         self.logger.debug("Making tarball in %s" % name)
         self.tarfile = tarfile.open(name=name , mode=mode, dereference=True)
         self.checksum = None
+        PandaInterface.LOGGER = logging.getLogger('CRAB3:traceback')
 
     def addFiles(self, userFiles=None, cfgOutputName=None):
         """
@@ -97,7 +99,7 @@ class UserTarball(object):
         serverUrl = ""
         self.logger.debug(" uploading archive to cache %s " % archiveName)
         #disabling reuseSandbox as checksum is different every time (the pset is written every time and the "last modified" date changes every time)
-        status,out = PandaInterface.putFile(self.config.JobType.filecacheurl, archiveName, self.checksum, verbose=False, reuseSandbox=False)
+        status,out = PandaInterface.putFile(self.config.JobType.baseurl, self.config.JobType.filecacheurl, archiveName, self.checksum, verbose=False, reuseSandbox=False)
 
         if out.startswith('NewFileName:'):
             # found the same input sandbox to reuse

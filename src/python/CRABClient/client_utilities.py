@@ -167,7 +167,7 @@ def addFileLogger(logger, workingpath, logname = 'crab.log'):
     logger.addHandler( handler )
 
     # Full tracebacks should only go to the file
-    # The traceback logger is also used to get messages from libraries (e.g. Proxy)
+    # The traceback logger is also used to get messages from libraries (e.g. Proxy, PandaServerInterface)
     traceback_log = logging.getLogger('CRAB3:traceback')
     traceback_log.propagate = False
     traceback_log.setLevel(logging.DEBUG) #Level to debug to get errors from Proxy library
