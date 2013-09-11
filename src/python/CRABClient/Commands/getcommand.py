@@ -1,9 +1,11 @@
 from CRABClient.Commands import CommandResult, mergeResults
 from CRABClient.Commands.remote_copy import remote_copy
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient.client_exceptions import ConfigurationException
 from CRABClient.client_utilities import validateJobids
+from CRABClient import __version__
+
+from RESTInteractions import HTTPRequests
 
 import os
 import re
@@ -39,7 +41,7 @@ class getcommand(SubCommand):
         if getattr(self.options, 'jobids', None):
             self.logger.debug('Retrieving jobs %s' % self.options.jobids )
             inputlist.extend( self.options.jobids )
-        server = HTTPRequests(self.serverurl, self.proxyfilename)
+        server = HTTPRequests(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
         dictresult, status, reason = server.get(self.uri, data = inputlist)
         self.logger.debug('Server result: %s' % dictresult )
         dictresult = self.processServerResult(dictresult)

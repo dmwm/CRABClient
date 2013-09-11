@@ -272,7 +272,7 @@ def initProxy(voRole, voGroup, logger):
     return userdn, proxyfilename, proxy
 
 def getUserName(logger, voRole='', voGroup=''):
-    _, _, proxy = initProxy(voRole, voGroup, logger) 
+    _, _, proxy = initProxy(voRole, voGroup, logger)
     return proxy.getUserName()
 
 def delegateProxy(serverDN, myProxy, proxyobj, logger, nokey=False):
@@ -324,14 +324,15 @@ def validateJobids(jobids):
 #Since server_info class needs SubCommand, and SubCommand needs server_info for
 #delegating the proxy then we are screwed
 #If anyone has a better solution please go on, otherwise live with that one :) :)
-from CRABClient.ServerInteractions import HTTPRequests
+from RESTInteractions import HTTPRequests
 from CRABClient.client_exceptions import RESTCommunicationException
+from CRABClient import __version__
+
 def server_info(subresource, server, proxyfilename, baseurl):
     """
     Get relevant information about the server
     """
-
-    server = HTTPRequests(server, proxyfilename)
+    server = HTTPRequests(server, proxyfilename, proxyfilename, version=__version__)
 
     dictresult, status, reason = server.get(baseurl, {'subresource' : subresource})
 

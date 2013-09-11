@@ -1,6 +1,7 @@
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ServerInteractions import HTTPRequests
+from CRABClient import __version__
 
+from RESTInteractions import HTTPRequests
 
 class request_type(SubCommand):
     """ Return the string of the workflow type identified by -t/--task option
@@ -9,7 +10,9 @@ class request_type(SubCommand):
 
     def __call__(self):
 
-        server = HTTPRequests(self.serverurl, self.options.proxyfile if self.options.proxyfile else self.proxyfilename)
+
+        proxyfile = self.options.proxyfile if self.options.proxyfile else self.proxyfilename
+        server = HTTPRequests(self.serverurl, proxyfile, proxyfile, version=__version__)
 
         self.logger.debug('Looking type for task %s' % self.cachedinfo['RequestName'])
         dictresult, status, reason = server.get(self.uri, data = {'workflow': self.cachedinfo['RequestName'], 'subresource': 'type'})

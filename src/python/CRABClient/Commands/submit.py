@@ -7,12 +7,13 @@ import types
 import imp
 import urllib
 
+from RESTInteractions import HTTPRequests
+
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient import SpellChecker
-from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient.client_exceptions import MissingOptionException, ConfigurationException, RESTCommunicationException
 from CRABClient.client_utilities import getJobTypes, createCache, addPlugin, server_info
+from CRABClient import __version__
 
 
 class submit(SubCommand):
@@ -116,7 +117,7 @@ class submit(SubCommand):
             configreq['publishname'] = "%s-%s" %(configreq['publishname'], isbchecksum)
         configreq.update(jobconfig)
 
-        server = HTTPRequests(self.serverurl, self.proxyfilename)
+        server = HTTPRequests(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
 
         self.logger.info("Sending the request to the server")
         self.logger.debug("Submitting %s " % str( configreq ) )
