@@ -1,10 +1,11 @@
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient.client_exceptions import RESTCommunicationException
 from CRABClient.client_utilities import validateJobids
+from CRABClient import __version__
+
+from RESTInteractions import HTTPRequests
 
 from urllib import urlencode
-
 
 class kill(SubCommand):
     """
@@ -13,7 +14,7 @@ class kill(SubCommand):
     visible = True
 
     def __call__(self):
-        server = HTTPRequests(self.serverurl, self.proxyfilename)
+        server = HTTPRequests(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
 
         self.logger.debug('Killing task %s' % self.cachedinfo['RequestName'])
         dictresult, status, reason = server.delete(self.uri, data = urlencode({ 'workflow' : self.cachedinfo['RequestName']}) + '&' + urlencode(self.jobids))

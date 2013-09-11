@@ -11,7 +11,6 @@ import logging
 
 from PSetTweaks.WMTweak import makeTweak
 
-from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient.client_exceptions import ConfigException
 
 class CMSSWConfig(object):

@@ -1,7 +1,9 @@
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient.client_exceptions import ConfigException, RESTCommunicationException
 from CRABClient.client_utilities import validateJobids
+from CRABClient import version
+
+from RESTInteractions import HTTPRequests
 
 from urllib import urlencode
 import re
@@ -13,7 +15,7 @@ class resubmit(SubCommand):
     """
     def __call__(self):
         ## retrieving output files location from the server
-        server = HTTPRequests(self.serverurl, self.proxyfilename)
+        server = HTTPRequests(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
 
         self.logger.debug('Requesting resubmission for failed jobs in task %s' % self.cachedinfo['RequestName'] )
         #inputdict = { "TaskResubmit": "Analysis", "ForceResubmit" : force }

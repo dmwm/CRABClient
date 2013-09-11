@@ -4,8 +4,9 @@ import sys
 
 from CRABClient.client_utilities import colors, getUserName
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient.client_exceptions import MissingOptionException, RESTCommunicationException
+from CRABClient import __version__
+from RESTInteractions import HTTPRequests
 
 class status(SubCommand):
     """
@@ -20,7 +21,7 @@ class status(SubCommand):
         return "%.2f %% %s(%s/%s)%s" % ((value*100/total), colors.GRAY, value, total, colors.NORMAL)
 
     def __call__(self):
-        server = HTTPRequests(self.serverurl, self.proxyfilename)
+        server = HTTPRequests(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
 
         self.logger.debug('Looking up detailed status of task %s' % self.cachedinfo['RequestName'])
         dictresult, status, reason = server.get(self.uri, data = { 'workflow' : self.cachedinfo['RequestName']})
