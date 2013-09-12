@@ -25,7 +25,7 @@ class kill(SubCommand):
                     (self.cachedinfo['RequestName'], str(self.cachedinfo['RequestName']), str(dictresult), str(reason))
             raise RESTCommunicationException(msg)
 
-        self.logger.info("Kill request succesfully sent")
+        self.logger.info("Kill request successfully sent")
         if dictresult['result'][0]['result'] != 'ok':
             self.logger.info(dictresult['result'][0]['result'])
 
