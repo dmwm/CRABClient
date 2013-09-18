@@ -148,12 +148,12 @@ class SubCommand(ConfigCommand):
             self.requestarea, self.requestname, self.logfile = createWorkArea(self.logger,
                                                                               getattr(self.configuration.General, 'workArea', None),
                                                                               getattr(self.configuration.General, 'requestName', None))
-            self.voRole = self.options.voRole if not self.options.voRole else getattr(self.configuration.User, "voRole", "")
-            self.voGroup = self.options.voGroup if not self.options.voGroup else getattr(self.configuration.User, "voGroup", "")
+            self.voRole = self.options.voRole if self.options.voRole else getattr(self.configuration.User, "voRole", "")
+            self.voGroup = self.options.voGroup if self.options.voGroup else getattr(self.configuration.User, "voGroup", "")
 
         ##if we get an input task we load the cache and set the url from it
         if hasattr(self.options, 'task') and self.options.task:
-            self.createCache()
+            self.loadLocalCache()
 
         ## if the server url isn't already set we check the args and then the config
         if not hasattr(self, 'serverurl'):
@@ -178,7 +178,7 @@ class SubCommand(ConfigCommand):
                 serverurl = self.options.server
             elif getattr(self.configuration.General, 'serverUrl') is not None:
                 serverurl = self.configuration.General.serverUrl
-        else: 
+        else:
             serverurl = SERVICE_INSTANCES[instance]
         if instance is not None and serverurl is not None:
             return instance, serverurl
@@ -204,7 +204,7 @@ class SubCommand(ConfigCommand):
             os.environ['X509_USER_PROXY'] = self.options.skipProxy
             self.logger.debug('Skipping proxy creation')
 
-    def createCache(self, serverurl = None):
+    def loadLocalCache(self, serverurl = None):
         """ Loads the client cache and set up the server url
         """
         self.requestarea, self.requestname = getWorkArea( self.options.task )
@@ -212,8 +212,8 @@ class SubCommand(ConfigCommand):
         port = ':' + self.cachedinfo['Port'] if self.cachedinfo['Port'] else ''
         self.instance = self.cachedinfo['instance']
         self.serverurl = self.cachedinfo['Server'] + port
-        self.voRole = self.cachedinfo['voRole'] if not self.options.voRole else self.options.voRole
-        self.voGroup = self.cachedinfo['voGroup'] if not self.options.voGroup else self.options.voGroup
+        self.voRole = self.cachedinfo['voRole'] #if not self.options.voRole else self.options.voRole
+        self.voGroup = self.cachedinfo['voGroup'] #if not self.options.voGroup else self.options.voGroup
 
     def __call__(self):
         self.logger.info("This is a 'nothing to do' command")
