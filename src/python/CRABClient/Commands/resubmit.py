@@ -1,7 +1,7 @@
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.client_exceptions import ConfigException, RESTCommunicationException
 from CRABClient.client_utilities import validateJobids
-from CRABClient import version
+from CRABClient import __version__
 
 from RESTInteractions import HTTPRequests
 
