@@ -23,8 +23,6 @@ mapping = {
                             "publication"       : {"default": False,            "config": 'Data.publication',       "type": "BooleanType", "required": False},
                             "sitewhitelist"     : {"default": None,             "config": 'Site.whitelist',         "type": "ListType",    "required": False},
                             "siteblacklist"     : {"default": None,             "config": 'Site.blacklist',         "type": "ListType",    "required": False},
-                            "blockwhitelist"    : {"default": None,             "config": 'Data.blockWhitelist',    "type": "ListType",    "required": False},
-                            "blockblacklist"    : {"default": None,             "config": 'Data.blockBlacklist',    "type": "ListType",    "required": False},
                             "splitalgo"         : {"default": None,             "config": 'Data.splitting',         "type": "StringType",  "required": False},
                             "algoargs"          : {"default": None,             "config": 'Data.unitsPerJob',       "type": "IntType",  "required": True},
                             "totalunits"        : {"default": 0,                "config": 'Data.totalUnits',        "type": "IntType",  "required": False},
