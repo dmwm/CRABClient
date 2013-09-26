@@ -50,7 +50,7 @@ class status(SubCommand):
             # We might also have more information in the job def errors
             logJDefErr(jdef=dictresult)
         elif dictresult['jobSetID']:
-            username = urllib.quote(getUserName(self.logger))
+            username = urllib.quote(getUserName(self.voRole, self.voGroup, self.logger))
             self.logger.info("Panda url:\t\t\thttp://pandamon-cms-dev.cern.ch/jobinfo?jobtype=*&jobsetID=%s&prodUserName=%s" % (dictresult['jobSetID'], username))
             # We have cases where the job def errors are there but we have a job def id
             logJDefErr(jdef=dictresult)

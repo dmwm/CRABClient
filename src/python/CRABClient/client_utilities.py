@@ -266,12 +266,12 @@ def initProxy(voRole, voGroup, logger):
                                   )
 
     logger.debug("Checking credentials")
-    userdn, proxyfilename = proxy.createNewVomsProxy( timeleftthreshold = 600 )
+    userdn, proxyfilename = proxy.createNewVomsProxy( timeleftthreshold = 720 )
     #return also the proxy because successive proxy delegations needs to use the
     #same proxy instsance
     return userdn, proxyfilename, proxy
 
-def getUserName(logger, voRole='', voGroup=''):
+def getUserName(logger, voRole, voGroup):
     _, _, proxy = initProxy(voRole, voGroup, logger)
     return proxy.getUserName()
 
