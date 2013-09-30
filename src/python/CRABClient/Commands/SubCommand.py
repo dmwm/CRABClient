@@ -191,14 +191,8 @@ class SubCommand(ConfigCommand):
             _, self.proxyfilename, proxyobj = initProxy( self.voRole, self.voGroup, self.logger )
             #get the dn of the agents from the server
             alldns = server_info('delegatedn', self.serverurl, self.proxyfilename, baseurl)
-            #for each agentDN received from the server, delegate it!
-            #XXX Temporary solution. Need to figure out how to delegate credential to the several WMAgent
-            #without forcing the user to insert the password several times
-            if 'rest' in alldns and alldns['rest']:
-                delegateProxy(alldns['rest'], 'myproxy.cern.ch', proxyobj, self.logger, nokey=True)
-            if 'services' in alldns:
-                for serverdn in alldns['services']:
-                    delegateProxy(serverdn, 'myproxy.cern.ch', proxyobj, self.logger, nokey=False)
+            for serverdn in alldns['services']:
+                delegateProxy(serverdn, 'myproxy.cern.ch', proxyobj, self.logger, nokey=True)
         else:
             self.proxyfilename = self.options.skipProxy
             os.environ['X509_USER_PROXY'] = self.options.skipProxy
