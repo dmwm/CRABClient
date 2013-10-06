@@ -271,7 +271,7 @@ def initProxy(voRole, voGroup, logger):
     #same proxy instsance
     return userdn, proxyfilename, proxy
 
-def getUserName(logger, voRole, voGroup):
+def getUserName(voRole, voGroup, logger):
     _, _, proxy = initProxy(voRole, voGroup, logger)
     return proxy.getUserName()
 
