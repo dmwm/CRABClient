@@ -334,13 +334,16 @@ def validateJobids(jobids):
 #Since server_info class needs SubCommand, and SubCommand needs server_info for
 #delegating the proxy then we are screwed
 #If anyone has a better solution please go on, otherwise live with that one :) :)
+
+# FIXME: Why is this server_info and not serverInfo?
+
 from CRABClient.ServerInteractions import HTTPRequests
 from CRABClient.client_exceptions import RESTCommunicationException
 def server_info(subresource, server, proxyfilename, baseurl):
     """
     Get relevant information about the server
     """
-
+    print "PROXY IS %s" % proxyfilename
     server = HTTPRequests(server, proxyfilename)
 
     dictresult, status, reason = server.get(baseurl, {'subresource' : subresource})

@@ -34,6 +34,8 @@ class kill(SubCommand):
         else:
             # Talk with a CRABServer
             dictresult, status, reason = server.delete(self.uri, data = urllib.urlencode({ 'workflow' : self.cachedinfo['RequestName']}))
+            if dictresult['result'][0]['result'] != 'ok':
+                self.logger.info(dictresult['result'][0]['result'])
 
         self.logger.debug("Result: %s" % dictresult)
 
@@ -42,11 +44,9 @@ class kill(SubCommand):
                     (self.cachedinfo['RequestName'], str(self.cachedinfo['RequestName']), str(dictresult), str(reason))
             raise RESTCommunicationException(msg)
 
+        
         self.logger.info("Kill request succesfully sent")
-        if dictresult['result'][0]['result'] != 'ok':
-            self.logger.info(dictresult['result'][0]['result'])
-
-
+        
     def setOptions(self):
         """
         __setOptions__

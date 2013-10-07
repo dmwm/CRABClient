@@ -15,6 +15,7 @@ class resubmit(SubCommand):
     def __call__(self):
         self.logger.debug('Requesting resubmission for failed jobs in task %s' % self.cachedinfo['RequestName'] )
         if not self.standalone:
+            self.logger.debug('Requesting remote/server resubmission of jobs')
             ## retrieving output files location from the server
             server = HTTPRequests(self.serverurl, self.proxyfilename)
 
@@ -26,18 +27,20 @@ class resubmit(SubCommand):
             if status != 200:
                 msg = "Problem retrieving resubmitting the task to the server:\ninput:%s\noutput:%s\nreason:%s" % (str(inputdict), str(dictresult), str(reason))
                 raise RESTCommunicationException(msg)
+            if dictresult['result'][0]['result'] != 'ok':
+                self.logger.info(dictresult['result'][0]['result'])
         else:
+            self.logger.debug('Requesting local htcondor submission for failed jobs')
             proxy = Proxy({'logger': self.logger})
-            dag = __import__("CRABInterface.DagmanDataWorkflow").DagmanDataWorkflow.DagmanDataWorkflow()
+            # TODO: make this into a function since everyone does it
+            from CRABInterface.DagmanDataWorkflow import DagmanDataWorkflow
+            dag = DagmanDataWorkflow(config = self.cachedinfo['OriginalConfig'])
             status = 200
             reason = 'OK'
             userdn = proxy.getSubject(self.proxyfilename)
             dictresult = dag.resubmit(self.cachedinfo['RequestName'], self.sitewhitelist, self.siteblacklist, userdn=userdn)
 
         self.logger.info("Resubmit request succesfully sent")
-        if dictresult['result'][0]['result'] != 'ok':
-            self.logger.info(dictresult['result'][0]['result'])
-
     def setOptions(self):
         """
         __setOptions__

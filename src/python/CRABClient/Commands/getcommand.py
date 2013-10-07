@@ -28,7 +28,9 @@ class getcommand(SubCommand):
             raise ConfigurationException('Destination directory is a file')
 
         self.logger.info("Setting the destination directory to %s " % self.dest )
-
+        print self.cachedinfo['OriginalConfig'].General
+        self.standalone = getattr(self.cachedinfo['OriginalConfig'].General, 'standalone', False)
+        print "Standalone is %s" % self.standalone
         if not self.standalone:
             #Retrieving output files location from the server
             self.logger.debug('Retrieving locations for task %s' % self.cachedinfo['RequestName'] )
@@ -54,16 +56,18 @@ class getcommand(SubCommand):
             dag = __import__("CRABInterface.DagmanDataWorkflow").DagmanDataWorkflow.DagmanDataWorkflow()
             quantity = getattr(self.options, 'quantity', -1)
             workflow = dag.outputLocation(self.cachedinfo['RequestName'], self.options.quantity, [])['result']
+            inputlist =  [ ('workflow', self.cachedinfo['RequestName']) ]
+            inputlist.extend(list(argv.iteritems()))
             if getattr(self.options, 'quantity', None):
                 self.logger.debug('Retrieving %s file locations' % self.options.quantity )
                 inputlist.append( ('limit',self.options.quantity) )
             if getattr(self.options, 'jobids', None):
                 self.logger.debug('Retrieving jobs %s' % self.options.jobids )
-            inputlist.extend( self.options.jobids )
-            server = HTTPRequests(self.serverurl, self.proxyfilename)
-            dictresult, status, reason = server.get(self.uri, data = inputlist)
-            raise RuntimeError, "Wtf is this"
-            dag.getFiles
+                inputlist.extend( self.options.jobids )
+            #server = HTTPRequests(self.serverurl, self.proxyfilename)
+            #dictresult, status, reason = server.get(self.uri, data = inputlist)
+            #raise RuntimeError, "Wtf is this"
+            #dag.getFiles
             
         totalfiles = len( workflow )
         cpresults = []

@@ -9,6 +9,7 @@ from WMCore.Services.SiteDB.SiteDB import SiteDBJSON
 import types
 import imp
 import urllib
+import pprint
 
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ServerInteractions import HTTPRequests
@@ -23,10 +24,10 @@ import subprocess
 import CRABInterface.DagmanDataWorkflow as DagmanDataWorkflow
 from WMCore.Credential.Proxy import Proxy
 from CRABClient.client_utilities import getJobTypes, createCache, addPlugin, createWorkArea
-
+from CRABClient.client_utilities import getJobTypes, createCache, addPlugin, server_info
 
 class submit(SubCommand):
-    """ Perform the submission to the CRABServer
+    """ Perform the submission to the CRABServer or locally
     """
 
     shortnames = ['sub']
@@ -40,13 +41,13 @@ class submit(SubCommand):
 
         #store the configuration file in self.configuration
         self.loadConfig( self.options.config, self.args )
-        print "got configuration %s" % self.configuration
         standalone = getattr(self.configuration.General, 'standalone', False)
-        print "got standalone %s" % standalone
         taskManagerTarball = hasattr(self.configuration, 'Debug') and \
                                 getattr(self.configuration.Debug, 'taskManagerRunTarballLocation', None)
         taskManagerCodeLocation = hasattr(self.configuration, 'Debug') and \
                                     getattr(self.configuration.Debug, 'taskManagerCodeLocation')
+        oneEventMode = hasattr(self.configuration, 'Debug') and \
+                                    getattr(self.configuration.Debug, 'oneEventMode')
         #print "calling submit.__call__"
         #requestarea, requestname, self.logfile = createWorkArea( self.logger,
         #                                                         getattr(self.configuration.General, 'workArea', None),
@@ -108,8 +109,8 @@ class submit(SubCommand):
                 configreq["publication"] = 1 if temp else 0
             elif param == "blacklistT1":
                 blacklistT1 = self.voRole != 't1access'
-                #if the user choose to remove the automatic T1 blacklisting and has not the t1acces role
-                if getattr (self.configuration.Site, 'removeT1Blacklisting', False) and blacklistT1:
+                #if the user chose to remove the automatic T1 blacklisting and has not the t1acces role
+                if getattr(self.configuration.Site, 'removeT1Blacklisting', False) and blacklistT1:
                     self.logger.info("WARNING: You disabled the T1 automatic blacklisting without having the t1access role")
                     blacklistT1 = False
                 configreq["blacklistT1"] = 1 if blacklistT1 else 0
@@ -117,10 +118,15 @@ class submit(SubCommand):
         # Tells the submitter to ship along a custom tarball to run on the WN/schedd
         configreq['taskManagerTarball'] = taskManagerTarball
         configreq['taskManagerCodeLocation'] = taskManagerCodeLocation
+        configreq['oneEventMode'] = oneEventMode
+        configreq['standalone'] = standalone
+
         jobconfig = {}
         self.configuration.JobType.proxyfilename = self.proxyfilename
         self.configuration.JobType.capath = HTTPRequests.getCACertPath()
-        self.configuration.JobType.filecacheurl = server_info('backendurls', self.serverurl, self.proxyfilename, self.getUrl(self.instance, resource='info'))['cacheSSL']
+        #self.configuration.JobType.filecacheurl = server_info('backendurls', self.serverurl, self.proxyfilename, self.getUrl(self.instance, resource='info'))['cacheSSL']
+        # FIXME
+        self.configuration.JobType.filecacheurl = 'https://voatlas294.cern.ch:25443/server/panda'
         pluginParams = [ self.configuration, self.logger, os.path.join(self.requestarea, 'inputs') ]
         if getattr(self.configuration.JobType, 'pluginName', None) is not None:
             jobtypes    = getJobTypes()
@@ -142,7 +148,7 @@ class submit(SubCommand):
         if standalone:
             uniquerequestname = self.doSubmitDagman(configreq)
         else:
-            uniquerequestname = self.doSubmit(configreq)
+            uniquerequestname = self.doSubmitREST(configreq)
 
         tmpsplit = self.serverurl.split(':')
         createCache(self.requestarea, tmpsplit[0], tmpsplit[1] if len(tmpsplit)>1 else '', uniquerequestname,
@@ -157,6 +163,7 @@ class submit(SubCommand):
         return uniquerequestname
 
     def doSubmitDagman(self, configreq):
+        self.logger.info("Proceeding to submit to Condor either directly or via gsissh")
         dag = DagmanDataWorkflow.DagmanDataWorkflow(config = self.configuration, requestarea=self.requestarea)
         proxy = Proxy({'logger': self.logger})
         configreq.setdefault('siteblacklist', [])
@@ -189,7 +196,7 @@ class submit(SubCommand):
         self.logger.debug("Submitting %s " % str( configreq ) )
         return dag.submit(**configreq)[0]['RequestName']
 
-    def doSubmit(self, configreq):
+    def doSubmitREST(self, configreq):
 
         server = HTTPRequests(self.serverurl, self.proxyfilename)
 

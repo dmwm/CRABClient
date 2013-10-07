@@ -78,17 +78,23 @@ class Analysis(BasicJobType):
 
         # Write out CMSSW config
         cmsswCfg.writeFile(cfgOutputName)
-
         with UserTarball(name=tarFilename, logger=self.logger, config=self.config) as tb:
             inputFiles = getattr(self.config.JobType, 'inputFiles', [])
             tb.addFiles(userFiles=inputFiles, cfgOutputName=cfgOutputName)
             configArguments['adduserfiles'] = [os.path.basename(f) for f in inputFiles]
-            uploadResults = tb.upload()
-
-        self.logger.debug("Result uploading input files: %s " % str(uploadResults))
-        configArguments['cachefilename'] = uploadResults[1]
-        configArguments['cacheurl'] = uploadResults[0]
-        isbchecksum = uploadResults[2]
+            if not requestConfig.get('standalone', False):
+                uploadResults = tb.upload()
+                self.logger.debug("Result uploading input files: %s " % str(uploadResults))
+                configArguments['cachefilename'] = uploadResults[1]
+                configArguments['cacheurl'] = uploadResults[0]
+                isbchecksum = uploadResults[2]
+            else:
+                tb.close()
+                isbchecksum = tb.getChecksum()
+                configArguments['cachefilename'] = os.path.basename(tb.getPath())
+                configArguments['cacheurl'] = 'LOCAL'
+                self.logger.debug("Stored input sandbox to: %s" % configArguments['cachefilename'])
+                self.logger.debug("Local path is: %s" % tb.getPath())
 
         # Upload lumi mask if it exists
         lumiMaskName = getattr(self.config.Data, 'lumiMask', None)

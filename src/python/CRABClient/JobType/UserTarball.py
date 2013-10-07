@@ -39,7 +39,8 @@ class UserTarball(object):
         self.logger.debug("Making tarball in %s" % name)
         self.tarfile = tarfile.open(name=name , mode=mode, dereference=True)
         self.checksum = None
-        if hasattr(config, 'Debug') and getattr(config.Debug, 'uploadJobSandboxToCache', False):
+        if hasattr(config, 'Debug') and \
+                not getattr(config.Debug, 'uploadJobSandboxToCache', True):
             self.uploadToServer = False
         else:
             self.uploadToServer = True
@@ -48,6 +49,8 @@ class UserTarball(object):
         """
         Add the necessary files to the tarball
         """
+        if hasattr(self, 'checksum'):
+            delattr(self, 'checksum')
         directories = ['lib', 'module']
         dataDirs    = ['data']
         userFiles = userFiles or []
@@ -93,6 +96,9 @@ class UserTarball(object):
         self.calculateChecksum()
         return self.tarfile.close()
 
+    def getPath(self):
+        return self.tarfile.name
+    
     def upload(self):
         """
         Upload the tarball to the Panda Cache
@@ -100,6 +106,8 @@ class UserTarball(object):
         self.close()
         archiveName = self.tarfile.name
         if not self.uploadToServer:
+            # FIXME: Need to tell the other side how to handle getting this file
+            # FIXME: Remove this option, we hook from further up to not use the cache
             self.logger.debug("NOT uploading tarball to cache, keeping it local")
             dummyTarget = tempfile.NamedTemporaryFile(delete = False)
             shutil.copy(self.tarfile.name, dummyTarget.name)
@@ -107,6 +115,7 @@ class UserTarball(object):
 
         serverUrl = ""
         self.logger.debug(" uploading archive to cache %s " % archiveName)
+        self.logger.debug(" using filecacheurl %s" % self.config.JobType.filecacheurl)
         #disabling reuseSandbox as checksum is different every time (the pset is written every time and the "last modified" date changes every time)
         status,out = PandaInterface.putFile(self.config.JobType.filecacheurl, archiveName, self.checksum, verbose=False, reuseSandbox=False)
 
@@ -149,6 +158,10 @@ class UserTarball(object):
                 #sha256sum.update(chunkdata)
         #sha256sum.hexdigest()
 
+    def getChecksum(self):
+        if not hasattr(self, 'checksum'):
+            self.calculateChecksum()
+        return self.checksum
 
     def __getattr__(self, *args):
         """
