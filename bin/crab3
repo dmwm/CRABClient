@@ -8,7 +8,9 @@ fi
 
 if [ "x$CONDOR_CONFIG" = "x" ] && [ ! -e /etc/condor/condor_config ] && [ ! -e $HOME/.condor/condor_config ];
 then
-  if [ ! -e $CRAB_BASE/fake_condor_config ]; then touch $CRAB_BASE/fake_condor_config; fi
+  if [ ! -e $CRAB_BASE/fake_condor_config ]; then
+    echo "# Empty condor config" > $CRAB_BASE/fake_condor_config;
+  fi
   export CONDOR_CONFIG=$CRAB_BASE/fake_condor_config
 fi
 
