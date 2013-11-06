@@ -17,9 +17,9 @@ class resubmit(SubCommand):
         ## retrieving output files location from the server
         server = HTTPRequests(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
 
-        self.logger.debug('Requesting resubmission for failed jobs in task %s' % self.cachedinfo['RequestName'] )
+        self.logger.debug('Requesting resubmission for failed %s in task %s' % (self.options.objects, self.cachedinfo['RequestName']) )
         #inputdict = { "TaskResubmit": "Analysis", "ForceResubmit" : force }
-        dictresult, status, reason = server.post(self.uri, data = urlencode({ 'workflow' : self.cachedinfo['RequestName']}) + \
+        dictresult, status, reason = server.post(self.uri, data = urlencode({ 'workflow' : self.cachedinfo['RequestName'], 'objects':self.options.objects}) + \
                                                     self.sitewhitelist + self.siteblacklist + '&' + urlencode(self.jobids))
         self.logger.debug("Result: %s" % dictresult)
 
@@ -54,6 +54,13 @@ class resubmit(SubCommand):
                                 default = None,
                                 help = 'Ids of the jobs you want to resubmit. Comma separated list of intgers',
                                 metavar = 'JOBIDS' )
+
+        self.parser.add_option( "-o", "--objects",
+                                 dest = "objects",
+                                 type   = 'str',
+                                 default = 'jobs',
+                                 help = "-o files to kill transfering files. Default -o jobs"
+                                 )
 
     def validateOptions(self):
         """
