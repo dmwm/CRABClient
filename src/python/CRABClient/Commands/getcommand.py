@@ -38,6 +38,9 @@ class getcommand(SubCommand):
         if getattr(self.options, 'quantity', None):
             self.logger.debug('Retrieving %s file locations' % self.options.quantity )
             inputlist.append( ('limit',self.options.quantity) )
+        else:
+            self.logger.debug('Retrieving all file locations')
+            inputlist.append( ('limit', -1) )
         if getattr(self.options, 'jobids', None):
             self.logger.debug('Retrieving jobs %s' % self.options.jobids )
             inputlist.extend( self.options.jobids )
