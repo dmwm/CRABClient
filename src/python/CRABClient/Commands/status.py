@@ -52,7 +52,7 @@ class status(SubCommand):
         elif self.cachedinfo['RequestName'] == dictresult['jobSetID']:
             # CRAB3-HTCondor
             taskname = urllib.quote(dictresult['jobSetID'])
-            self.logger.info("Monitoring URL:\t\t\thttp://glidemon.web.cern.ch/glidemon/jobs.php?taskname=%s" % taskname
+            self.logger.info("Monitoring URL:\t\t\thttp://glidemon.web.cern.ch/glidemon/jobs.php?taskname=%s" % taskname)
         elif dictresult['jobSetID']:
             username = urllib.quote(getUserName(self.voRole, self.voGroup, self.logger))
             self.logger.info("Panda url:\t\t\thttp://pandamon-cms-dev.cern.ch/jobinfo?jobtype=*&jobsetID=%s&prodUserName=%s" % (dictresult['jobSetID'], username))
