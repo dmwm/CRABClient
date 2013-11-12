@@ -30,7 +30,9 @@ class submit(SubCommand):
             raise MissingOptionException("Configuration file '%s' not found" % self.options.config)
 
         self.logger.debug("Started submission")
-
+        # Get some debug parameters
+        oneEventMode = hasattr(self.configuration, 'Debug') and \
+                                getattr(self.configuration.Debug, 'oneEventMode')
         ######### Check if the user provided unexpected parameters ########
         #init the dictionary with all the known parameters
         SpellChecker.DICTIONARY = SpellChecker.train( [ val['config'] for _, val in self.requestmapper.iteritems() if val['config'] ] + \
@@ -90,6 +92,9 @@ class submit(SubCommand):
                     blacklistT1 = False
                 configreq["blacklistT1"] = 1 if blacklistT1 else 0
 
+        # Add debug parameters to the configreq dict
+        configreq['oneEventMode'] = oneEventMode
+
         jobconfig = {}
         self.configuration.JobType.proxyfilename = self.proxyfilename
         self.configuration.JobType.capath = HTTPRequests.getCACertPath()
@@ -136,7 +141,8 @@ class submit(SubCommand):
 
         tmpsplit = self.serverurl.split(':')
         createCache(self.requestarea, tmpsplit[0], tmpsplit[1] if len(tmpsplit)>1 else '', uniquerequestname,
-                    voRole=self.voRole, voGroup=self.voGroup, instance=self.instance)
+                    voRole=self.voRole, voGroup=self.voGroup, instance=self.instance, 
+                    originalConfig = self.configuration)
 
         self.logger.info("Submission completed")
         self.logger.debug("Request ID: %s " % uniquerequestname)
