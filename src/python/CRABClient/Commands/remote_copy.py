@@ -59,6 +59,7 @@ class remote_copy(SubCommand):
         srmtimeout = 900 #default transfer timeout in case the file size is unknown: 15min
         minsrmtimeout = 60 #timeout cannot be less then 1min
         downspeed = float(250*1024) #default speed assumes a download of 250KB/s
+        mindownspeed = 20*1024.
 
         finalresults = {}
 
@@ -66,6 +67,9 @@ class remote_copy(SubCommand):
         input, result, proc = self.startchildproc(processWorker)
 
         for myfile in dicttocopy:
+            if downspeed < mindownspeed:
+                downspeed = mindownspeed
+
             fileid = myfile['pfn'].split('/')[-1]
 
             dirpath = os.path.join(self.options.destination, myfile['suffix'] if 'suffix' in myfile else '')
@@ -152,7 +156,8 @@ class remote_copy(SubCommand):
                 finalresults[fileid] = {'exit': True, 'dest': os.path.join(dirpath, str(fileid)), 'error': None}
                 self.logger.info(colors.GREEN + "Successfully retrived file %s" % fileid + colors.NORMAL)
                 tottime = endtime - starttime
-                downspeed = myfile['size']/tottime #calculating average of download bandwidth during last copy
+                if myfile['size']:
+                    downspeed = myfile['size']/tottime #calculating average of download bandwidth during last copy
                 self.logger.debug("Transfer took %.1f sec. and average speed of %.1f KB/s" % (tottime, downspeed/1024))
 
         self.stopchildproc(input, proc)
