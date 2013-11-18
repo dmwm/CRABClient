@@ -93,7 +93,7 @@ class submit(SubCommand):
                 configreq["blacklistT1"] = 1 if blacklistT1 else 0
 
         # Add debug parameters to the configreq dict
-        configreq['oneEventMode'] = oneEventMode
+        configreq['oneEventMode'] = int(oneEventMode)
 
         jobconfig = {}
         self.configuration.JobType.proxyfilename = self.proxyfilename
