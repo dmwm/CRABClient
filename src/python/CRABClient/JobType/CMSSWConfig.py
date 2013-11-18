@@ -8,6 +8,7 @@ import os
 import sys
 import hashlib
 import logging
+import pickle
 
 from PSetTweaks.WMTweak import makeTweak
 
@@ -57,17 +58,15 @@ class CMSSWConfig(object):
 
         self.outputFile = filename
         self.logger.debug("Writing CMSSW config to %s" % self.outputFile)
-        outFile = open(filename, "wb")
-        outFile.write("import FWCore.ParameterSet.Config as cms\n")
-        outFile.write(self.fullConfig.process.dumpPython())
-        outFile.close()
 
         # Would like to store as a single pickle string rather than dumpPython
         #  which has been unreliable at times.
-        #outFile.write("import pickle\n")
-        #outFile.write('process = pickle.loads("""\n')
-        #outFile.write(pickle.dumps(self.fullConfig.process))
-        #outFile.write('\n"""')
+        outFile = open(filename, "wb")
+        outFile.write("import pickle\n")
+        outFile.write('process = pickle.loads("""')
+        outFile.write(pickle.dumps(self.fullConfig.process))
+        outFile.write('""")')
+        outFile.close()
 
         return
 
