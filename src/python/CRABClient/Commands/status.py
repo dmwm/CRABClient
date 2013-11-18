@@ -33,7 +33,7 @@ class status(SubCommand):
         server = HTTPRequests(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
 
         self.logger.debug('Looking up detailed status of task %s' % self.cachedinfo['RequestName'])
-        dictresult, status, reason = server.get(self.uri, data = { 'workflow' : self.cachedinfo['RequestName']})
+        dictresult, status, reason = server.get(self.uri, data = { 'workflow' : self.cachedinfo['RequestName'], 'verbose': int(self.summary or self.long or self.json)})
         dictresult = dictresult['result'][0] #take just the significant part
 
         if status != 200:
@@ -124,7 +124,10 @@ class status(SubCommand):
         self.logger.info("\nSite Summary Table (including retries)\n")
         self.logger.info("%-20s %10s %10s %10s %10s %10s %10s" % ("Site", "Runtime", "Waste", "Running", "Successful", "Stageout", "Failed"))
 
-        for site, info in sites.items():
+        sorted_sites = sites.keys()
+        sorted_sites.sort()
+        for site in sorted_sites:
+            info = sites[site]
             if site == 'Unknown': continue
             self.logger.info("%-20s %10s %10s %10s %10s %10s %10s" % (site, to_hms(info['Runtime']), to_hms(info['Waste']), str(info['Running']), str(info['Success']), str(info['Stageout']), str(info['Failed'])))
 
