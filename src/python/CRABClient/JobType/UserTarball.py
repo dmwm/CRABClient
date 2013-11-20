@@ -15,6 +15,7 @@ import sys
 import logging
 
 from WMCore.Configuration import loadConfigurationFile, Configuration
+from WMCore.Services.UserFileCache.UserFileCache import UserFileCache
 import PandaServerInterface as PandaInterface
 
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
@@ -98,6 +99,16 @@ class UserTarball(object):
         archiveName = self.tarfile.name
         serverUrl = ""
         self.logger.debug(" uploading archive to cache %s " % archiveName)
+
+        # Use UFC instead of PanDA:
+        if self.config.JobType.baseurl == 'https://cmsweb.cern.ch/crabcache/file':
+            result = ufc.upload(archiveName)
+            if 'hashkey' not in result:
+                self.logger.error("Failed to upload source files: %s" % str(result))
+                raise CachefileNotFoundException
+            serverUrl = self.config.JobType.baseurl + "/" + str(result['hashkey']) + ".tar.gz"
+            return serverUrl, archiveName, self.checksum
+
         #disabling reuseSandbox as checksum is different every time (the pset is written every time and the "last modified" date changes every time)
         status,out = PandaInterface.putFile(self.config.JobType.baseurl, self.config.JobType.filecacheurl, archiveName, self.checksum, verbose=False, reuseSandbox=False)
 
