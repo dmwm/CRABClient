@@ -6,6 +6,7 @@ from string import upper
 import types
 import imp
 import urllib
+import time
 
 from RESTInteractions import HTTPRequests
 
@@ -144,11 +145,60 @@ class submit(SubCommand):
                     voRole=self.voRole, voGroup=self.voGroup, instance=self.instance, 
                     originalConfig = self.configuration)
 
-        self.logger.info("Submission completed")
+        self.logger.info("Submission process completed")
         self.logger.debug("Request ID: %s " % uniquerequestname)
 
-        self.logger.debug("Ended submission")
+        self.logger.info("Updating submission status, please wait")
 
+        maxwaittime= 3600 #second change to one hour
+        starttime=currenttime=time.time()
+        endtime=currenttime+maxwaittime
+
+        startimestring=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(starttime))
+        endtimestring=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(endtime))
+
+        self.logger.info("Start time:%s" % startimestring )
+        self.logger.debug("Max wait time: %s s" % maxwaittime)
+
+        #self.logger.debug('Looking up detailed status of task %s' % uniquerequestname)
+
+        waitflag=True
+        while currenttime < endtime and waitflag:
+            currenttime=time.time()
+            querytimestring=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(currenttime))
+
+            self.logger.debug('Looking up detailed status of task %s' % uniquerequestname)
+
+            dictresult, status, reason = server.get(self.uri, data = { 'workflow' : uniquerequestname})
+            dictresult = dictresult['result'][0]
+
+            if status != 200:
+                msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(uniquerequestname), str(dictresult), str(reason))
+                raise RESTCommunicationException(msg)
+
+            self.logger.info("Query Time:%s Task status:%s" %(querytimestring, dictresult['status']))
+
+            def logJDefErr(jdef):
+                """Printing job def failures if any"""
+                if jdef['jobdefErrors']:
+                    self.logger.error("%sFailed to inject %s\t%s out of %s:" %(colors.RED, colors.NORMAL,\
+                                                                           jdef['failedJobdefs'], jdef['totalJobdefs']))
+                    for error in jdef['jobdefErrors']:
+                        self.logger.info("\t%s" % error)
+
+            #Print the url of the panda monitor
+            if dictresult['taskFailureMsg']:
+                self.logger.error("%sError during task injection:%s\t%s" % (colors.RED,colors.NORMAL,dictresult['taskFailureMsg']))
+                # We might also have more information in the job def errors
+                logJDefErr(jdef=dictresult)
+
+            if dictresult['status'] != 'NEW':
+                self.logger.info("Exiting submit update function")
+                break
+            else:
+                time.sleep(60) #second
+
+        self.logger.debug("Ended submission")
         return uniquerequestname
 
 
