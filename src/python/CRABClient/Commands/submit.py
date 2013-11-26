@@ -1,15 +1,10 @@
 """
 This is simply taking care of job submission
 """
-import json, os
+import json, os, types, urllib, imp, time
+
 from string import upper
-import types
-import imp
-import urllib
-import time
-
 from RESTInteractions import HTTPRequests
-
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient import SpellChecker
 from CRABClient.client_exceptions import MissingOptionException, ConfigurationException, RESTCommunicationException
