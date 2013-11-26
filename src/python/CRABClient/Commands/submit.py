@@ -1,10 +1,15 @@
 """
 This is simply taking care of job submission
 """
-import json, os, types, urllib, imp, time
-
+import json, os
 from string import upper
+import types
+import imp
+import urllib
+import time
+
 from RESTInteractions import HTTPRequests
+
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient import SpellChecker
 from CRABClient.client_exceptions import MissingOptionException, ConfigurationException, RESTCommunicationException
@@ -143,6 +148,7 @@ class submit(SubCommand):
         self.logger.info("Submission process completed")
         self.logger.debug("Request ID: %s " % uniquerequestname)
 
+
         self.logger.info("Updating submission status, please wait")
 
         maxwaittime= 3600 #second change to one hour
@@ -188,7 +194,7 @@ class submit(SubCommand):
                 logJDefErr(jdef=dictresult)
 
             if dictresult['status'] != 'NEW':
-                self.logger.info("Exiting submit update function")
+                self.logger.info("Submission has been submitted")
                 break
             else:
                 time.sleep(60) #second
