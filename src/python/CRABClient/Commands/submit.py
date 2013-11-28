@@ -142,14 +142,14 @@ class submit(SubCommand):
 
         tmpsplit = self.serverurl.split(':')
         createCache(self.requestarea, tmpsplit[0], tmpsplit[1] if len(tmpsplit)>1 else '', uniquerequestname,
-                    voRole=self.voRole, voGroup=self.voGroup, instance=self.instance, 
+                    voRole=self.voRole, voGroup=self.voGroup, instance=self.instance,
                     originalConfig = self.configuration)
 
         self.logger.info("Submission process completed")
         self.logger.debug("Request ID: %s " % uniquerequestname)
 
 
-        self.logger.info("Updating submission status, please wait")
+        self.logger.info("Waiting for task to be processed")
 
         maxwaittime= 3600 #second change to one hour
         starttime=currenttime=time.time()
@@ -158,48 +158,52 @@ class submit(SubCommand):
         startimestring=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(starttime))
         endtimestring=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(endtime))
 
-        self.logger.info("Start time:%s" % startimestring )
+        self.logger.debug("Start time:%s" % startimestring )
         self.logger.debug("Max wait time: %s s" % maxwaittime)
 
         #self.logger.debug('Looking up detailed status of task %s' % uniquerequestname)
 
-        waitflag=True
-        while currenttime < endtime and waitflag:
+
+        while currenttime < endtime:
             currenttime=time.time()
             querytimestring=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(currenttime))
 
+            self.logger.info("Checking task status")
             self.logger.debug('Looking up detailed status of task %s' % uniquerequestname)
 
             dictresult, status, reason = server.get(self.uri, data = { 'workflow' : uniquerequestname})
             dictresult = dictresult['result'][0]
 
             if status != 200:
+                self.logger.info("Submission has been submitted, please check again later by using: crab status -t  <Task Name>")
                 msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(uniquerequestname), str(dictresult), str(reason))
                 raise RESTCommunicationException(msg)
 
-            self.logger.info("Query Time:%s Task status:%s" %(querytimestring, dictresult['status']))
+            self.logger.debug("Query Time:%s Task status:%s" %(querytimestring, dictresult['status']))
+            self.logger.info("Task status:%s" % dictresult['status'])
 
-            def logJDefErr(jdef):
-                """Printing job def failures if any"""
-                if jdef['jobdefErrors']:
-                    self.logger.error("%sFailed to inject %s\t%s out of %s:" %(colors.RED, colors.NORMAL,\
-                                                                           jdef['failedJobdefs'], jdef['totalJobdefs']))
-                    for error in jdef['jobdefErrors']:
-                        self.logger.info("\t%s" % error)
-
-            #Print the url of the panda monitor
-            if dictresult['taskFailureMsg']:
-                self.logger.error("%sError during task injection:%s\t%s" % (colors.RED,colors.NORMAL,dictresult['taskFailureMsg']))
-                # We might also have more information in the job def errors
-                logJDefErr(jdef=dictresult)
-
-            if dictresult['status'] != 'NEW':
-                self.logger.info("Submission has been submitted")
+            if dictresult['status'] == 'FAILED':
+                self.logger.info("Submission jobs failed, Please check crab.log and config file ")
                 break
+            elif dictresult['status'] == 'SUBMITTED':
+                self.logger.info("Task has been processed and jobs have been submitted successfully")
+                break
+            elif dictresult['status'] in ['NEW','HOLDING','QUEUED']:
+                if(currenttime > endtime):
+                    self.logger.info("Wait time exceed maximum wait time, exiting wait function")
+                    waittime=currenttime-starttime
+                    self.logger.debug("Wait time:%s" % waittime)
+                    break
+                else:
+                    self.logger.info("Please wait...")
+                    time.sleep(60) #second
             else:
-                time.sleep(60) #second
+                self.logger.info("Please check crab.log ")
+                self.logger.debug("CRABS Status other than FAILED,SUBMITTED,NEW,HOLDING,QUEUED")
+                break
 
-        self.logger.debug("Ended submission")
+
+        self.logger.debug("Ended submission process")
         return uniquerequestname
 
 
@@ -278,3 +282,4 @@ class submit(SubCommand):
         encoded = urllib.urlencode(configreq) + encodedLists
         self.logger.debug('Encoded submit request: %s' % encoded)
         return encoded
+
