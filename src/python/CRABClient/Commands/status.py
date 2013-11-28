@@ -86,8 +86,9 @@ class status(SubCommand):
         states = dictresult['jobsPerStatus']
         total = sum( states[st] for st in states )
         frmt = ''
-        for status in states:
+        for status in sorted(states):
             frmt += status + ' %s\t' % self._percentageString(states[status], total)
+
         if frmt:
             self.logger.info('Details:\t\t\t%s' % frmt)
 
