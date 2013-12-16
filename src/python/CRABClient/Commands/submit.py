@@ -84,13 +84,6 @@ class submit(SubCommand):
                 configreq["savelogsflag"] = 1 if temp else 0
             elif param == "publication":
                 configreq["publication"] = 1 if temp else 0
-            elif param == "blacklistT1":
-                blacklistT1 = self.voRole != 't1access'
-                #if the user choose to remove the automatic T1 blacklisting and has not the t1acces role
-                if getattr (self.configuration.Site, 'removeT1Blacklisting', False) and blacklistT1:
-                    self.logger.info("WARNING: You disabled the T1 automatic blacklisting without having the t1access role")
-                    blacklistT1 = False
-                configreq["blacklistT1"] = 1 if blacklistT1 else 0
 
         # Add debug parameters to the configreq dict
         configreq['oneEventMode'] = int(oneEventMode)
