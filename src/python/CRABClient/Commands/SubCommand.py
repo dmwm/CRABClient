@@ -270,4 +270,8 @@ class SubCommand(ConfigCommand):
         Raise a ConfigurationException in case of error, does not do anything if ok
         """
         if self.requiresTaskOption and not self.options.task:
-            raise MissingOptionException('ERROR: Task option is required')
+            if len(self.args) == 1 and self.args[1]:
+                self.options.task = self.args[1]
+            else:
+                raise MissingOptionException('ERROR: Task option is required')
+
