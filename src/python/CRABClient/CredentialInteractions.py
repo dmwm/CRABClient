@@ -6,6 +6,7 @@ import logging
 from WMCore.Credential.Proxy import Proxy, CredentialException
 
 from CRABClient.client_exceptions import ProxyCreationException, EnvironmentException
+from CRABClient.client_utilities import colors
 
 
 class CredentialInteractions(object):
@@ -15,6 +16,7 @@ class CredentialInteractions(object):
     Takes care of wrapping Proxy interaction and defining common behaviour
     for all the client commands.
     '''
+    myproxyDesiredValidity = 30 #days
 
     def __init__(self, serverdn, myproxy, role, group, logger):
         '''
@@ -27,7 +29,7 @@ class CredentialInteractions(object):
                                   'vo':              'cms',
                                   'myProxySvr':      myproxy,
                                   'proxyValidity'  : '24:00',
-                                  'myproxyValidity': "720:00", #30 days
+                                  'myproxyValidity': "%i:00" % (self.myproxyDesiredValidity*24), #30 days
                                   'serverDN' :       serverdn,
                                   'group' :          group,
                                   'role':            role if role != '' else 'NULL'
@@ -61,7 +63,7 @@ class CredentialInteractions(object):
 
         proxytimeleft = 0
         self.logger.debug("Getting proxy life time left")
-        # does it return an integer that indicates?
+        # returns an integer that indicates the number of seconds to the expiration of the proxy
         proxytimeleft = userproxy.getTimeLeft()
         self.logger.debug("Proxy is valid: %i" % proxytimeleft)
 
@@ -89,17 +91,49 @@ class CredentialInteractions(object):
     def createNewMyProxy(self, timeleftthreshold=0, nokey=False):
         """
         Handles the MyProxy creation
+
+        Let the following variables be
+
+        timeleftthreshold: the proxy in myproxy should be delegated for at least this time (14 days)
+        myproxytimeleft: current validity of your proxy in myproxy
+        usercertDaysLeft: the number of days left before your user certificate expire
+        myproxyDesiredValidity: delegate the proxy in myproxy for that time (30 days)
+
+        If we need to renew the proxy in myproxy because its atributes has changed or because it is valid for
+        less time than timeleftthreshold then we do it.
+
+        Before doing that, we check when the user certificate is expiring. If it's within the timeleftthreshold (myproxytimeleft < timeleftthreshold)
+        we delegate the proxy just for the time we need (checking first if we did not already do it since at some point
+        usercertDaysLeft ~= myproxytimeleft and we don't need to delegate it at every command even though myproxytimeleft < timeleftthreshold).
+
+        Note that a warning message is printed at every command it usercertDaysLeft < timeleftthreshold
         """
         myproxy = Proxy ( self.defaultDelegation )
         myproxy.userDN = myproxy.getSubject()
 
         myproxytimeleft = 0
         self.logger.debug("Getting myproxy life time left for %s" % self.defaultDelegation["myProxySvr"])
-        # does it return an integer that indicates?
+        # return an integer that indicates the number of seconds to the expiration of the proxy in myproxy
         myproxytimeleft = myproxy.getMyProxyTimeLeft(serverRenewer=True, nokey=nokey)
         self.logger.debug("Myproxy is valid: %i" % myproxytimeleft)
 
         if myproxytimeleft < timeleftthreshold or self.proxyChanged:
+            # checking the enddate of the user certificate
+            usercertDaysLeft = myproxy.getUserCertEnddate()
+
+            #if the certificate is going to expire print a warning. This is going to bre printed at avery command if
+            #the myproxytimeleft is inferior to the timeleftthreshold
+            if usercertDaysLeft < self.myproxyDesiredValidity:
+                self.logger.info("%sYour user certificate is going to expire in %s days. Please renew it! %s"\
+                                 % (colors.RED, usercertDaysLeft, colors.NORMAL) )
+                #check if usercertDaysLeft ~= myproxytimeleft which means we already delegated the proxy for as long as we could
+                if abs(usercertDaysLeft*60*60*24 - myproxytimeleft) < 60*60*24: #less than one day between usercertDaysLeft and myproxytimeleft
+                    return
+                #adjust the myproxy delegation time accordingly to the user cert validity
+                self.logger.info("%sDelegating your proxy for %s days instead of %s %s"\
+                                 % (colors.RED, usercertDaysLeft, self.myproxyDesiredValidity, colors.NORMAL) )
+                myproxy.myproxyValidity = "%i:00" % (usercertDaysLeft*24)
+
             # creating the proxy
             self.logger.debug("Delegating a myproxy for %s hours" % self.defaultDelegation['myproxyValidity'] )
             try:

@@ -16,13 +16,9 @@ import cPickle
 from string import upper
 from optparse import OptionValueError
 
-from CRABClient.CredentialInteractions import CredentialInteractions
 from CRABClient.client_exceptions import TaskNotFoundException, CachefileNotFoundException, ConfigurationException
 
 
-
-#if certificates in myproxy expires in less than RENEW_MYPROXY_THRESHOLD days renew them
-RENEW_MYPROXY_THRESHOLD = 15
 
 class colors:
     if sys.stdout.isatty():
@@ -256,32 +252,9 @@ def loadCache( task, logger ):
     logfile = addFileLogger( logger, workingpath = requestarea )
     return cPickle.load(loadfile), logfile
 
-#TODO delete initProxy (and delegate proxy) and just use CredentialInteractions in commands
-def initProxy(voRole, voGroup, logger):
-    proxy = CredentialInteractions(
-                                    '',
-                                    '',
-                                    voRole,
-                                    voGroup,
-                                    logger
-                                  )
-
-    logger.debug("Checking credentials")
-    userdn, proxyfilename = proxy.createNewVomsProxy( timeleftthreshold = 720 )
-    #return also the proxy because successive proxy delegations needs to use the
-    #same proxy instsance
-    return userdn, proxyfilename, proxy
-
 def getUserName(voRole, voGroup, logger):
     _, _, proxy = initProxy(voRole, voGroup, logger)
     return proxy.getUserName()
-
-def delegateProxy(serverDN, myProxy, proxyobj, logger, nokey=False):
-    proxyobj.defaultDelegation['serverDN'] = serverDN
-    proxyobj.defaultDelegation['myProxySvr'] = myProxy
-
-    logger.debug("Registering user credentials for server %s" % serverDN)
-    proxyobj.createNewMyProxy( timeleftthreshold = 60 * 60 * 24 * RENEW_MYPROXY_THRESHOLD, nokey=nokey)
 
 def validServerURL(option, opt_str, value, parser):
     """

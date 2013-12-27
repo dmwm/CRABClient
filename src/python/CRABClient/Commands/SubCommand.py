@@ -2,9 +2,10 @@ import os
 import imp
 from optparse import OptionParser, SUPPRESS_HELP
 
-from CRABClient.client_utilities import loadCache, getWorkArea, delegateProxy, initProxy, server_info, validServerURL, createWorkArea
+from CRABClient.client_utilities import loadCache, getWorkArea, server_info, validServerURL, createWorkArea
 from CRABClient.client_exceptions import ConfigurationException, MissingOptionException
 from CRABClient.ClientMapping import mapping
+from CRABClient.CredentialInteractions import CredentialInteractions
 
 from WMCore.Configuration import loadConfigurationFile, Configuration
 
@@ -13,6 +14,8 @@ SERVICE_INSTANCES = {'prod': 'cmsweb.cern.ch',
                      'preprod': 'cmsweb-testbed.cern.ch',
                      'dev': 'cmsweb-dev.cern.ch',
                      'private': None,}
+#if certificates in myproxy expires in less than RENEW_MYPROXY_THRESHOLD days renew them
+RENEW_MYPROXY_THRESHOLD = 15
 
 class ConfigCommand:
     """ Commands which needs to load the configuration file (e.g.: submit, publish) must subclass ConfigCommand
@@ -188,11 +191,19 @@ class SubCommand(ConfigCommand):
         """ Init the user proxy, and delegate it if necessary.
         """
         if not self.options.skipProxy and self.initializeProxy:
-            _, self.proxyfilename, proxyobj = initProxy( self.voRole, self.voGroup, self.logger )
+            proxy = CredentialInteractions('', '', self.voRole, self.voGroup, self.logger)
+
+            self.logger.debug("Checking credentials")
+            _, self.proxyfilename = proxy.createNewVomsProxy( timeleftthreshold = 720 )
+
             #get the dn of the agents from the server
             alldns = server_info('delegatedn', self.serverurl, self.proxyfilename, baseurl)
             for serverdn in alldns['services']:
-                delegateProxy(serverdn, 'myproxy.cern.ch', proxyobj, self.logger, nokey=True)
+                proxy.defaultDelegation['serverDN'] = serverdn
+                proxy.defaultDelegation['myProxySvr'] = 'myproxy.cern.ch'
+
+                self.logger.debug("Registering user credentials for server %s" % serverdn)
+                proxy.createNewMyProxy( timeleftthreshold = 60 * 60 * 24 * RENEW_MYPROXY_THRESHOLD, nokey=True)
         else:
             self.proxyfilename = self.options.skipProxy
             os.environ['X509_USER_PROXY'] = self.options.skipProxy

@@ -2,7 +2,7 @@ from __future__ import division # I want floating points
 import urllib
 import sys
 
-from CRABClient.client_utilities import colors, getUserName
+from CRABClient.client_utilities import colors
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.client_exceptions import MissingOptionException, RESTCommunicationException
 from CRABClient import __version__
