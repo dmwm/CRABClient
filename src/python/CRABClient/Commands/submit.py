@@ -258,7 +258,7 @@ class submit(SubCommand):
             self.logger.info("Task status:%s" % dictresult['status'])
 
             if dictresult['status'] == 'FAILED':
-                self.logger.info("Submission jobs failed, Please check crab.log and config file ")
+                self.logger.info("Submission jobs failed, Please check crab.log and config file. You might find more information about the failure with crab status -t  <Task Name>")
                 break
             elif dictresult['status'] == 'SUBMITTED':
                 self.logger.info("Task has been processed and jobs have been submitted successfully")
