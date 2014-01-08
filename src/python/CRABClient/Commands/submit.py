@@ -81,10 +81,12 @@ class submit(SubCommand):
             if param == "workflow":
                 if mustbetype == type(self.requestname):
                     configreq["workflow"] = self.requestname
-            elif param == "savelogsflag":
+            elif param == "savelogsflag":#TODO use clientmappig to do this
                 configreq["savelogsflag"] = 1 if temp else 0
             elif param == "publication":
                 configreq["publication"] = 1 if temp else 0
+            elif param == "nonprodsw":
+                configreq["nonprodsw"] = 1 if temp else 0
 
         # Add debug parameters to the configreq dict
         configreq['oneEventMode'] = int(oneEventMode)
