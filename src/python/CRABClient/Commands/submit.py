@@ -81,10 +81,12 @@ class submit(SubCommand):
             if param == "workflow":
                 if mustbetype == type(self.requestname):
                     configreq["workflow"] = self.requestname
-            elif param == "savelogsflag":
+            elif param == "savelogsflag":#TODO use clientmappig to do this
                 configreq["savelogsflag"] = 1 if temp else 0
             elif param == "publication":
                 configreq["publication"] = 1 if temp else 0
+            elif param == "nonprodsw":
+                configreq["nonprodsw"] = 1 if temp else 0
 
         # Add debug parameters to the configreq dict
         configreq['oneEventMode'] = int(oneEventMode)
@@ -258,7 +260,7 @@ class submit(SubCommand):
             self.logger.info("Task status:%s" % dictresult['status'])
 
             if dictresult['status'] == 'FAILED':
-                self.logger.info("Submission jobs failed, Please check crab.log and config file ")
+                self.logger.info("Submission jobs failed, Please check crab.log and config file. You might find more information about the failure with crab status -t  <Task Name>")
                 break
             elif dictresult['status'] == 'SUBMITTED':
                 self.logger.info("Task has been processed and jobs have been submitted successfully")

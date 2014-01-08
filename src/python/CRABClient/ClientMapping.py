@@ -12,8 +12,8 @@ the input data type.
 """
 
 mapping = {
-    'submit' :  { 'map': {  "jobtype"       : {"default": "Analysis",       "config": None,                     "type": "StringType",  "required": True },
-                            "workflow"       : {"default": None,             "config": None,                     "type": "StringType",  "required": True },
+    'submit' :  { 'map': {  "jobtype"           : {"default": "Analysis",       "config": None,                     "type": "StringType",  "required": True },
+                            "workflow"          : {"default": None,             "config": None,                     "type": "StringType",  "required": True },
                             "savelogsflag"      : {"default": False,            "config": 'General.saveLogs',       "type": "BooleanType", "required": True },
                             "asyncdest"         : {"default": None,             "config": 'Site.storageSite',       "type": "StringType",  "required": True },
                             "publishname"       : {"default": '', "config": 'Data.publishDataName',   "type": "StringType",  "required": True },
@@ -33,6 +33,7 @@ mapping = {
                             "numcores"          : {"default": None,             "config": "JobType.numcores",       "type": "IntType",     "required": False},
                             "maxmemory"         : {"default": None,             "config": "JobType.maxmemory",      "type": "IntType",     "required": False},
                             "priority"          : {"default": None,             "config": "JobType.priority",       "type": "IntType",     "required": False},
+                            "nonprodsw"         : {"default": False,            "config": "JobType.allowNonProductionCMSSW", "type": "BooleanType", "required": False},
                          },
                   'other-config-params' : ["General.serverUrl", "General.requestName", "General.workArea",
                                            "JobType.pluginName", "JobType.externalPluginFile", "JobType.psetName",
