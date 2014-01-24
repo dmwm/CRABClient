@@ -1,6 +1,7 @@
 from __future__ import division # I want floating points
 import urllib
 import sys
+import math
 
 from CRABClient.client_utilities import colors
 from CRABClient.Commands.SubCommand import SubCommand
@@ -26,8 +27,23 @@ class status(SubCommand):
     shortnames = ['st']
     states = ['submitted', 'failure', 'queued', 'success']
 
-    def _percentageString(self, value, total):
-        return "%.2f %% %s(%s/%s)%s" % ((value*100/total), colors.GRAY, value, total, colors.NORMAL)
+    def _stateColor(self, state):
+        if state == 'failed':
+            return colors.RED
+        elif state == 'running':
+            return colors.GREEN
+        elif state == 'idle' or state == 'unsubmitted':
+            return colors.GRAY
+        else:
+            return colors.NORMAL
+
+    def _percentageString(self, state, value, total):
+        digit_count = int(math.ceil(math.log(max(value, total)+1, 10))) 
+        format_str = "%5.1f%% (%s%" + str(digit_count) + "d%s/%" + str(digit_count) + "d)"
+        return format_str % ((value*100/total), self._stateColor(state), value, colors.NORMAL, total)
+
+    def _printState(self, state, ljust):
+        return ('{0}{1:<' + str(ljust) + '}{2}').format(self._stateColor(state), state, colors.NORMAL)
 
     def __call__(self):
         server = HTTPRequests(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
@@ -84,13 +100,12 @@ class status(SubCommand):
 
         #Print information about jobs
         states = dictresult['jobsPerStatus']
-        total = sum( states[st] for st in states )
-        frmt = ''
-        for status in sorted(states):
-            frmt += status + ' %s\t' % self._percentageString(states[status], total)
-
-        if frmt:
-            self.logger.info('Details:\t\t\t%s' % frmt)
+        if states:
+            total = sum( states[st] for st in states )
+            state_list = sorted(states)
+            self.logger.info("Details:\t\t\t{0} {1}".format(self._printState(state_list[0], 13), self._percentageString(state_list[0], states[state_list[0]], total)))
+            for status in state_list[1:]:
+                self.logger.info("\t\t\t\t{0} {1}".format(self._printState(status, 13), self._percentageString(status, states[status], total)))
 
     def printSummary(self, dictresult):
 
