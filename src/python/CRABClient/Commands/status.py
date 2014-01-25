@@ -3,9 +3,9 @@ import urllib
 import sys
 import math
 
-from CRABClient.client_utilities import colors
+from CRABClient.client_utilities import colors, getUserName
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.client_exceptions import MissingOptionException, RESTCommunicationException
+from CRABClient.client_exceptions import MissingOptionException, RESTCommunicationException, ConfigurationException
 from CRABClient import __version__
 from RESTInteractions import HTTPRequests
 
@@ -49,7 +49,11 @@ class status(SubCommand):
         server = HTTPRequests(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
 
         self.logger.debug('Looking up detailed status of task %s' % self.cachedinfo['RequestName'])
-        dictresult, status, reason = server.get(self.uri, data = { 'workflow' : self.cachedinfo['RequestName'], 'verbose': int(self.summary or self.long or self.json)})
+        user = self.cachedinfo['RequestName'].split("_")[2].split(":")[-1]
+        verbose = int(self.summary or self.long or self.json)
+        if self.idle:
+            verbose = 2
+        dictresult, status, reason = server.get(self.uri, data = { 'workflow' : self.cachedinfo['RequestName'], 'verbose': verbose })
         dictresult = dictresult['result'][0] #take just the significant part
 
         if status != 200:
@@ -61,10 +65,13 @@ class status(SubCommand):
         if 'jobs' not in dictresult:
             self.logger.info("\nNo jobs created yet!")
         else:
+            # Note several options could be combined
             if self.summary:
                 self.printSummary(dictresult)
             if self.long:
                self.printLong(dictresult)
+            if self.idle:
+               self.printIdle(dictresult, user)
             if self.json:
                self.logger.info(dictresult['jobs'])
 
@@ -215,6 +222,109 @@ class status(SubCommand):
             self.logger.info(" * Waste: %s (%.0f%% of total)" % (to_hms(waste), (waste / float(wall_sum))*100))
         self.logger.info("")
 
+    def printIdle(self, dictresult, task_user):
+        sites = {}
+        found_idle = False
+        for i in range(1, len(dictresult['jobs'])+1):
+            info = dictresult['jobs'][str(i)]
+            state = info['State']
+            if state != 'idle':
+                continue
+            found_idle = True
+            job_site_list = info.get("AvailableSites", [])
+            for orig_site in job_site_list:
+                site = orig_site.replace("_Buffer", "").replace("_Disk", "").replace("_Tape", "")
+                if site != orig_site and site in job_site_list and orig_site in job_site_list:
+                    continue
+                site_info = sites.setdefault(site, {'Pending': 0})
+                site_info['Pending'] += 1
+        if not found_idle:
+            self.logger.info("\nNo idle jobs to analyze.\n")
+            return
+
+        if 'pool' in dictresult:
+            for site in sites:
+                if site not in dictresult['pool']:
+                    continue
+                site_info = dictresult['pool'][site]
+                if 'IdleGlideins' in site_info:
+                    sites[site]['IdleGlideins'] = site_info["IdleGlideins"]
+                tot_prio = 0
+                tot_resources = 0
+                user_running = 0
+                equal_prio = 0
+                higher_prio = 0
+                user_prio = 0
+                for user, user_info in site_info.items():
+                    if user == "IdleGlideins":
+                        continue
+                    if 'Priority' in user_info:
+                        tot_prio += 1.0 / user_info['Priority']
+                        if user == task_user:
+                            user_prio = 1.0 / user_info['Priority']
+                    tot_resources += user_info.get("Resources", 0)
+                    if task_user != user:
+                        continue
+                    user_running += user_info.get("Resources", 0)
+                    task_prio = 0
+                    for task, task_info in user_info.get("tasks", {}).items():
+                        if 'Priority' not in task_info:
+                            continue
+                        if task != self.cachedinfo['RequestName']:
+                            continue
+                        task_prio = task_info['Priority']
+                        break
+                    for task, task_info in user_info.get("tasks", {}).items():
+                        if 'Priority' not in task_info:
+                            continue
+                        if task_info['Priority'] == task_prio:
+                            equal_prio += 1
+                        elif task_info['Priority'] > task_prio:
+                            higher_prio += 1
+                if not tot_prio:
+                    continue
+                sites[site]['UserShare'] = int(round(user_prio / float(tot_prio) * tot_resources))
+                sites[site]['TotalShare'] = tot_resources
+                sites[site]['CurUserShare'] = user_running
+                sites[site]['HigherPrio'] = higher_prio
+                sites[site]['EqualPrio'] = equal_prio
+
+        self.logger.info("\nIdle Job Summary Table\n")
+        self.logger.info("%-20s  %8s  %14s  %16s  %13s" % ("Possible Site", "Matching", "Your Current /", "Your Higher /", "Running /"))
+        self.logger.info("%-20s  %8s  %14s  %16s  %13s" % ("", "Jobs", "Entitled Slots", "Equal Prio Tasks", "Queued Pilots"))
+        not_in_pool = []
+        max_share = 0
+        max_tasks = 0
+        max_glideins = 0
+        for site in sorted(sites):
+            site_info = sites[site]
+            if site not in dictresult.get("pool", {}) or 'UserShare' not in site_info:
+                continue
+            max_share = max(site_info['CurUserShare'], site_info['UserShare'], max_share)
+            max_tasks = max(site_info["HigherPrio"], site_info['EqualPrio'], max_tasks)
+            max_glideins = max(site_info['TotalShare'], site_info.get("IdleGlideins", 0))
+        share_digit_count = int(math.ceil(math.log(max_share+1, 10)))
+        tasks_digit_count = int(math.ceil(math.log(max_tasks+1, 10)))
+        glideins_digit_count = int(math.ceil(math.log(max_glideins+1, 10)))
+        for site in sorted(sites):
+            site_info = sites[site]
+            if site not in dictresult.get("pool", {}) or 'UserShare' not in site_info:
+                not_in_pool.append(site)
+                continue
+            pending_count = site_info['Pending']
+            share = ("%" + str(share_digit_count) + "d / %" + str(share_digit_count) + "d") % (site_info['CurUserShare'], site_info['UserShare'])
+            prio = ("%" + str(tasks_digit_count) + "d / %" + str(tasks_digit_count) + "d") % (site_info["HigherPrio"], site_info['EqualPrio'])
+            glideins = ("%" + str(glideins_digit_count) + "d / %" + str(glideins_digit_count) + "s") % (site_info['TotalShare'], site_info.get("IdleGlideins", "?"))
+            self.logger.info("%-20s  %8s  %14s  %16s  %13s" % (site, pending_count, share, prio, glideins))
+        self.logger.info("")
+
+        if not_in_pool:
+            self.logger.info("The following sites could run jobs but currently have no running or pending pilots:\n")
+            self.logger.info("%-20s %13s" % ("Possible Site", "Matching Jobs"))
+            for site in sorted(not_in_pool):
+                self.logger.info("%-20s %13s" % (site, sites[site]['Pending']))
+            self.logger.info("")
+
     def setOptions(self):
         """
         __setOptions__
@@ -236,11 +346,19 @@ class status(SubCommand):
                                 default = False,
                                 action = "store_true",
                                 help = "Print site summary")
+        self.parser.add_option( "-i", "--idle",
+                                dest = "idle",
+                                default = False,
+                                action = "store_true",
+                                help = "Print idle job summary")
     
     def validateOptions(self):
         SubCommand.validateOptions(self)
-        
+
+        if self.options.idle and (self.options.long or self.options.summary):
+            raise ConfigurationException("Idle option (-i) conflicts with -u and -l")
         self.long = self.options.long
         self.json = self.options.json
         self.summary = self.options.summary
+        self.idle = self.options.idle
 
