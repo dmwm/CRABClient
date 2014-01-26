@@ -17,10 +17,10 @@ mapping = {
                             "savelogsflag"      : {"default": False,            "config": 'General.saveLogs',       "type": "BooleanType", "required": True },
                             "asyncdest"         : {"default": None,             "config": 'Site.storageSite',       "type": "StringType",  "required": True },
                             "publishname"       : {"default": '', "config": 'Data.publishDataName',   "type": "StringType",  "required": True },
-                            #TODO
-                            "dbsurl"            : {"default": "http://cmsdbsprod.cern.ch/cms_dbs_prod_global/servlet/DBSServlet", "config": 'Data.dbsUrl', "type": "StringType",  "required": True },
+                            "dbsurl"            : {"default": "https://cmsweb.cern.ch/dbs/prod/global/DBSReader", "config": 'Data.dbsUrl', "type": "StringType",  "required": True },
                             "publishdbsurl"     : {"default": None,             "config": 'Data.publishDbsUrl',     "type": "StringType",  "required": False},
                             "publication"       : {"default": False,            "config": 'Data.publication',       "type": "BooleanType", "required": False},
+                            "lfnprefix"         : {"default": None,             "config": 'Data.prefix',            "type": "StringType",  "required": False},
                             "sitewhitelist"     : {"default": None,             "config": 'Site.whitelist',         "type": "ListType",    "required": False},
                             "siteblacklist"     : {"default": None,             "config": 'Site.blacklist',         "type": "ListType",    "required": False},
                             "splitalgo"         : {"default": None,             "config": 'Data.splitting',         "type": "StringType",  "required": False},
