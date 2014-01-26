@@ -17,11 +17,16 @@ class getcommand(SubCommand):
 
     visible = False
 
+
     def __call__(self, **argv):
         #Setting default destination if -o is not provided
         if not self.dest:
             self.dest = os.path.join(self.requestarea, 'results')
 
+        # Destination is a URL.
+        if re.match("^[a-z]+://", self.dest): 
+            if not self.dest.endswith("/"):
+                self.dest += "/"
         #Creating the destination directory if necessary
         if not os.path.exists( self.dest ):
             self.logger.debug("Creating directory %s " % self.dest)
@@ -29,7 +34,7 @@ class getcommand(SubCommand):
         elif not os.path.isdir( self.dest ):
             raise ConfigurationException('Destination directory is a file')
 
-        self.logger.info("Setting the destination directory to %s " % self.dest )
+        self.logger.info("Setting the destination to %s " % self.dest )
 
         #Retrieving output files location from the server
         self.logger.debug('Retrieving locations for task %s' % self.cachedinfo['RequestName'] )
@@ -59,12 +64,17 @@ class getcommand(SubCommand):
         workflow = dictresult['result']        #TODO assigning workflow to dictresult. for the moment we have only one wf
         arglist = ['-d', self.dest, '-i', workflow, '-t', self.options.task, '-p', self.proxyfilename]
         if len(workflow) > 0:
-            self.logger.info("Retrieving %s files" % totalfiles )
-            copyoutput = remote_copy( self.logger, arglist )
-            copyoutput()
+            if self.dump:
+                for fileInfo in workflow:
+                    self.logger.info(fileInfo['pfn'])
+            else:
+                self.logger.info("Retrieving %s files" % totalfiles )
+                copyoutput = remote_copy( self.logger, arglist )
+                copyoutput()
 
         if totalfiles == 0:
             self.logger.info("No files to retrieve")
+
 
     def processServerResult(self, result):
         #no modifications by default
@@ -80,14 +90,21 @@ class getcommand(SubCommand):
         self.parser.add_option( '-o', '--outputpath',
                                 dest = 'outputpath',
                                 default = None,
-                                help = 'Where the files retrieved will be stored in the local file system',
-                                metavar = 'DIRECTORY' )
+                                help = 'Where the files retrieved will be stored.  Defaults to the results/ directory',
+                                metavar = 'URL' )
+
+        self.parser.add_option( '-d', '--dump',
+                                dest = 'dump',
+                                default = False,
+                                action = 'store_true',
+                                help = 'Instead of performing the transfer, dump the source URLs.' )
 
         self.parser.add_option( '-i', '--jobids',
                                 dest = 'jobids',
                                 default = None,
                                 help = 'Ids of the jobs you want to retrieve. Comma separated list of intgers',
                                 metavar = 'JOBIDS' )
+
 
     def validateOptions(self):
         #Figuring out the destination directory
@@ -106,3 +123,6 @@ class getcommand(SubCommand):
         #check the format of jobids
         if getattr(self.options, 'jobids', None):
             self.options.jobids = validateJobids(self.options.jobids)
+
+        self.dump = self.options.dump
+

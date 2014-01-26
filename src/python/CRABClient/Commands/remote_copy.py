@@ -73,12 +73,13 @@ class remote_copy(SubCommand):
             fileid = myfile['pfn'].split('/')[-1]
 
             dirpath = os.path.join(self.options.destination, myfile['suffix'] if 'suffix' in myfile else '')
-            if not os.path.isdir(dirpath):
+            url_input = bool(re.match("^[a-z]+://", dirpath))
+            if not url_input and not os.path.isdir(dirpath):
                 os.makedirs(dirpath)
             localFilename = os.path.join(dirpath,  str(fileid))
 
             ##### Handling the "already existing file" use case
-            if os.path.isfile(localFilename):
+            if not url_input and os.path.isfile(localFilename):
                 size = os.path.getsize(localFilename)
                 #delete the file if its size is zero or its size is not the expected size
                 if size==0 or ('size' in myfile and myfile['size']!=size):
@@ -89,14 +90,18 @@ class remote_copy(SubCommand):
                     except Exception, ex:
                         self.logger.info("Cannot remove the file because of: %s" % ex)
             #if the file still exists skip it
-            if os.path.isfile(localFilename):
+            if not url_input and os.path.isfile(localFilename):
                 self.logger.info("%sSkipping %s as %s already exists%s" % (colors.GREEN, fileid, localFilename, colors.NORMAL))
                 continue
 
             ##### Creating the command
             maxtime = srmtimeout if not 'size' in myfile or myfile['size']==0 else int(ceil(2*myfile['size']/downspeed)) #timeout based on file size and download speed * 2
             localsrmtimeout = minsrmtimeout if maxtime < minsrmtimeout else maxtime #do not want a too short timeout
-            cmd = '%s %s %s file://%s' % (lcgCmd, ' --srm-timeout ' + str(localsrmtimeout) + ' ', myfile['pfn'], localFilename)
+            cmd = '%s %s %s %%s' % (lcgCmd, ' --srm-timeout ' + str(localsrmtimeout) + ' ', myfile['pfn'])
+            if url_input:
+                cmd = cmd % localFilename
+            else:
+                cmd = cmd % ("file://%s" % localFilename)
 
             self.logger.info("Retrieving file '%s' " % fileid)
             self.logger.debug("Executing '%s' " % cmd)
@@ -124,7 +129,7 @@ class remote_copy(SubCommand):
             checkout = simpleOutputCheck(stdout)
             checkerr = simpleOutputCheck(stderr)
             checksumOK = False
-            if hasattr(myfile, 'checksum'):
+            if not url_input and hasattr(myfile, 'checksum'):
                 self.logger.debug("Checksum '%s'" %str(myfile['checksum']))
                 checksumOK = checksumChecker(localFilename, myfile['checksum'])
             else:
