@@ -26,6 +26,7 @@ mapping = {
                             "splitalgo"         : {"default": None,             "config": 'Data.splitting',         "type": "StringType",  "required": False},
                             "algoargs"          : {"default": None,             "config": 'Data.unitsPerJob',       "type": "IntType",     "required": True},
                             "totalunits"        : {"default": 0,                "config": 'Data.totalUnits',        "type": "IntType",     "required": False},
+                            "ignorelocality"    : {"default": None,             "config": 'Data.ignoreLocality',    "type": "BooleanType", "required": False},
                             "addoutputfiles"    : {"default": [],               "config": 'JobType.outputFiles',    "type": "ListType",    "required": False},
                             "vorole"            : {"default": None,             "config": 'User.voRole',            "type": "StringType",  "required": False},
                             "vogroup"           : {"default": None,             "config": 'User.voGroup',           "type": "StringType",  "required": False},
