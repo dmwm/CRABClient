@@ -54,28 +54,28 @@ class resubmit(SubCommand):
                                  help = "Set the sites you want to whitelist during the resubmission." + \
                                             " Comma separated list of cms sites (e.g.: T2_ES_CIEMAT,T2_IT_Rome[...])")
 
-        self.parser.add_option( None, "--memory",
+        self.parser.add_option( "--memory",
                                  dest = 'maxmemory',
                                  default = None,
                                  type = "int",
                                  help = "Set the maximum memory used per job in this task." + \
                                             " This is in units of MB (e.g.: 2000 for 2GB of RAM)")
 
-        self.parser.add_option( None, "--cores",
+        self.parser.add_option( "--cores",
                                  dest = 'numcores',
                                  default = None,
                                  type = "int",
                                  help = "Set the number of cores used per job in this task." + \
                                             " (e.g.: 1 for single-threaded applications)")
 
-        self.parser.add_option( "-p", "--priority",
+        self.parser.add_option( "--priority",
                                  dest = 'priority',
                                  default = None,
                                  type = "int",
                                  help = "Set the priority of this task compared to other tasks you own; tasks default to 10." + \
                                             " This does not improve your share compared to other users")
 
-        self.parser.add_option( None, "--wall",
+        self.parser.add_option( "--wall",
                                  dest = 'maxjobruntime',
                                  default = None,
                                  type = "int",

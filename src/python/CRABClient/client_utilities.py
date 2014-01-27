@@ -19,7 +19,6 @@ from optparse import OptionValueError
 from CRABClient.client_exceptions import TaskNotFoundException, CachefileNotFoundException, ConfigurationException
 
 
-
 class colors:
     if sys.stdout.isatty():
         RED = '\033[91m'
@@ -31,6 +30,7 @@ class colors:
         RED = ''
         GREEN = ''
         GRAY = ''
+
 
 def getPlugins(namespace, plugins, skip):
     """
