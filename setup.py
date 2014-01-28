@@ -139,7 +139,7 @@ def main():
     package_dir  = \
         {"CRABClient": "src/python/CRABClient"}
     packages     = find_packages('src/python')
-    data_files   = [] # list of tuples whose entries are (dir, [data_files])
+    data_files   = [('/etc', ['doc/FullConfiguration.py', 'doc/ExampleConfiguration.py'])] # list of tuples whose entries are (dir, [data_files])
     cms_license  = "CMS experiment software"
     classifiers  = [
         "Development Status :: 3 - Production/Beta",
