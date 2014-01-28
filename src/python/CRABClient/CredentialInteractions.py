@@ -18,7 +18,7 @@ class CredentialInteractions(object):
     '''
     myproxyDesiredValidity = 30 #days
 
-    def __init__(self, serverdn, myproxy, role, group, logger):
+    def __init__(self, serverdn, myproxy, role, group, logger, myproxyAccount):
         '''
         Constructor
         '''
@@ -32,7 +32,8 @@ class CredentialInteractions(object):
                                   'myproxyValidity': "%i:00" % (self.myproxyDesiredValidity*24), #30 days
                                   'serverDN' :       serverdn,
                                   'group' :          group,
-                                  'role':            role if role != '' else 'NULL'
+                                  'role':            role if role != '' else 'NULL',
+                                  'myproxyAccount' : myproxyAccount
                                   }
         self.proxyChanged = False
 
@@ -129,7 +130,7 @@ class CredentialInteractions(object):
         myproxytimeleft = myproxy.getMyProxyTimeLeft(serverRenewer=True, nokey=nokey)
         self.logger.debug("Myproxy is valid: %i" % myproxytimeleft)
 
-        if myproxytimeleft < timeleftthreshold or self.proxyChanged:
+        if myproxytimeleft < timeleftthreshold or self.proxyChanged or myproxy.trustedRetrievers!=self.defaultDelegation['serverDN']:
             # checking the enddate of the user certificate
             usercertDaysLeft = myproxy.getUserCertEnddate()
 
