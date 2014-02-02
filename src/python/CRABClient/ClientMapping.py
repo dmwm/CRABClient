@@ -39,7 +39,7 @@ mapping = {
                          },
                   'other-config-params' : ["General.serverUrl", "General.requestName", "General.workArea",
                                            "JobType.pluginName", "JobType.externalPluginFile", "JobType.psetName",
-                                           "JobType.inputFiles", "JobType.pyCfgParams",
+                                           "JobType.inputFiles", "JobType.pyCfgParams", "Data.primaryDataset"
                                            "Data.unitsPerJob", "Data.splitting", "Data.inputDataset", "Data.lumiMask", "Data.runRange",
                                            "User.email", "General.instance", "Debug.oneEventMode"],
                   'requiresTaskOption' : False,

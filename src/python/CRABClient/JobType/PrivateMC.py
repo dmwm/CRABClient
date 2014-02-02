@@ -2,8 +2,10 @@
 PrivateMC job type plug-in
 """
 
-from CRABClient.JobType.Analysis import Analysis
+import re
 
+from CRABClient.JobType.Analysis import Analysis
+import WMCore.Lexicon
 
 class PrivateMC(Analysis):
     """
@@ -16,6 +18,18 @@ class PrivateMC(Analysis):
         """
         tarFilename, configArguments, isbchecksum = super(PrivateMC, self).run(requestConfig)
         configArguments['jobtype'] = 'PrivateMC'
+        primDS = getattr(self.config.Data, 'primaryDataset', None)
+        if primDS:
+            # Normalizes "foo/bar" and "/foo/bar" to "/foo/bar"
+            primDS = "/" + os.path.join(*primDS.split("/"))
+            if not re.match("/%(primDS)s.*" % WMCore.Lexicon.lfnParts, primDS):
+                self.logger.warning("Invalid primary dataset name %s for private MC; publishing may fail" % primDS)
+            configArguments['inputdata'] = primDS
+        elif getattr(self.config.Data, 'inputDataset', None):
+            configArguments['inputdata'] = self.config.Data.inputDataset
+        else:
+            configArguments['inputdata'] = "/CRAB_PrivateMC"
+
         return tarFilename, configArguments, isbchecksum
 
     def validateConfig(self, config):
