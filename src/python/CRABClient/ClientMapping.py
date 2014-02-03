@@ -35,6 +35,7 @@ mapping = {
                             "numcores"          : {"default": None,             "config": "JobType.numcores",       "type": "IntType",     "required": False},
                             "maxmemory"         : {"default": None,             "config": "JobType.maxmemory",      "type": "IntType",     "required": False},
                             "priority"          : {"default": None,             "config": "JobType.priority",       "type": "IntType",     "required": False},
+                            "faillimit"         : {"default": None,               "config": "General.failureLimit",   "type": "IntType",     "required": False},
                             "nonprodsw"         : {"default": False,            "config": "JobType.allowNonProductionCMSSW", "type": "BooleanType", "required": False},
                          },
                   'other-config-params' : ["General.serverUrl", "General.requestName", "General.workArea",
