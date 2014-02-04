@@ -191,7 +191,7 @@ class SubCommand(ConfigCommand):
         """ Init the user proxy, and delegate it if necessary.
         """
         if not self.options.skipProxy and self.initializeProxy:
-            proxy = CredentialInteractions('', '', self.voRole, self.voGroup, self.logger)
+            proxy = CredentialInteractions('', '', self.voRole, self.voGroup, self.logger, myproxyAccount=self.serverurl)
 
             self.logger.debug("Checking credentials")
             _, self.proxyfilename = proxy.createNewVomsProxy( timeleftthreshold = 720 )

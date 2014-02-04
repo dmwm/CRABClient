@@ -18,7 +18,7 @@ class CredentialInteractions(object):
     '''
     myproxyDesiredValidity = 30 #days
 
-    def __init__(self, serverdn, myproxy, role, group, logger):
+    def __init__(self, serverdn, myproxy, role, group, logger, myproxyAccount):
         '''
         Constructor
         '''
@@ -32,7 +32,8 @@ class CredentialInteractions(object):
                                   'myproxyValidity': "%i:00" % (self.myproxyDesiredValidity*24), #30 days
                                   'serverDN' :       serverdn,
                                   'group' :          group,
-                                  'role':            role if role != '' else 'NULL'
+                                  'role':            role if role != '' else 'NULL',
+                                  'myproxyAccount' : myproxyAccount
                                   }
         self.proxyChanged = False
 
@@ -68,10 +69,22 @@ class CredentialInteractions(object):
         self.logger.debug("Proxy is valid: %i" % proxytimeleft)
 
         #if it is not expired I check if role and/or group are changed
-        if not proxytimeleft < timeleftthreshold and self.defaultDelegation['role']!=None and  self.defaultDelegation['group']!=None:
-            group , role = userproxy.getUserGroupAndRoleFromProxy( userproxy.getProxyFilename())
+        if not proxytimeleft < timeleftthreshold and self.defaultDelegation['role']!=None and self.defaultDelegation['group']!=None:
+            group, role = userproxy.getUserGroupAndRoleFromProxy( userproxy.getProxyFilename())
             if group != self.defaultDelegation['group'] or role != self.defaultDelegation['role']:
-                self.proxyChanged = True
+                #ask the user what he wants to do. Keep it or leave it?
+                while True:
+                    self.logger.info(("An existing proxy file has group=%s and role=%s, but in the configuration file you specified group=%s role=%s.\n" +
+                                     "Do you want to overwrite it (Y/N)?") %
+                                     (group, role, self.defaultDelegation['group'], self.defaultDelegation['role']))
+                    res=raw_input()
+                    if res in ['y','Y','n','N']: break
+                #If he wants to overwrite the proxy then we do it, otherwise we exit asking to modify the config
+                if res.upper() == 'Y':
+                    self.proxyChanged = True
+                else:
+                    raise ProxyCreationException("Plase modify the config.User.voRole and config.User.voGroup parameters in your configuration file"+
+                                                 "to match the existing proxy'")
 
         #if the proxy is expired, or we changed role and/or group, we need to create a new one
         if proxytimeleft < timeleftthreshold or self.proxyChanged:
@@ -117,11 +130,11 @@ class CredentialInteractions(object):
         myproxytimeleft = myproxy.getMyProxyTimeLeft(serverRenewer=True, nokey=nokey)
         self.logger.debug("Myproxy is valid: %i" % myproxytimeleft)
 
-        if myproxytimeleft < timeleftthreshold or self.proxyChanged:
+        if myproxytimeleft < timeleftthreshold or self.proxyChanged or myproxy.trustedRetrievers!=self.defaultDelegation['serverDN']:
             # checking the enddate of the user certificate
             usercertDaysLeft = myproxy.getUserCertEnddate()
 
-            #if the certificate is going to expire print a warning. This is going to bre printed at avery command if
+            #if the certificate is going to expire print a warning. This is going to bre printed at every command if
             #the myproxytimeleft is inferior to the timeleftthreshold
             if usercertDaysLeft < self.myproxyDesiredValidity:
                 self.logger.info("%sYour user certificate is going to expire in %s days. Please renew it! %s"\
