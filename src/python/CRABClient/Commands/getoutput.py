@@ -25,4 +25,7 @@ class getoutput(getcommand):
         self.parser.add_option( '-q', '--quantity',
                                 dest = 'quantity',
                                 help = 'The number of output files you want to retrieve (or "all"). Ignored if --jobids is used.' )
+        self.parser.add_option( '-l', '--parallel',
+                                dest = 'nparallel',
+                                help = 'Number of parallel download, default is 10 parallel download',)
         getcommand.setOptions(self)
