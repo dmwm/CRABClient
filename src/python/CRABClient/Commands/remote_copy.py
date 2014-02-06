@@ -5,6 +5,7 @@ import subprocess
 import threading
 import multiprocessing, Queue
 import time
+import re
 from math import ceil
 
 from WMCore.FwkJobReport.FileInfo import readAdler32, readCksum
