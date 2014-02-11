@@ -32,6 +32,9 @@ The task is identified by -t/--task option
         self.parser.add_option( '-l', '--parallel',
                                 dest = 'nparallel',
                                 help = 'Number of parallel download, default is 10 parallel download',)
+        self.parser.add_option( '-w', '--wait',
+                                dest = 'waittime',
+                                help = 'Increase the sendreceive-timeout in second',)
         getcommand.setOptions(self)
 
     """

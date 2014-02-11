@@ -42,16 +42,15 @@ class remote_copy(SubCommand):
         self.parser.add_option("-l", "--parallel",
                                 dest = "nparallel")
 
+        self.parser.add_option("-w", "--wait",
+                                dest = "waittime")
+
     def __call__(self):
         """
         Copying locally files staged remotely.
          *Using a subprocess to encapsulate the copy command.
-         *Using a timeout to avoid wiating too long
-           - srm timeout based on file size
-           - first transfer assumes a relatively slow bandiwth `downspeed`
-           - next transfers depends on previous speed
-           - srm timeout cannot be less then `minsrmtimeout`
-           - if size is unknown default srm timeout is `srmtimeout`
+         * maximum parallel download is 10, line 61
+         * default --sendreceive-timeout is 1800 s, line 75 and 77
         """
 
         globalExitcode = -1
@@ -59,7 +58,6 @@ class remote_copy(SubCommand):
         dicttocopy = self.options.inputdict
 
         #taking number of parallel download to create from user, default is 10
-
         if self.options.nparallel==None:
             nsubprocess=10
         else:
@@ -69,8 +67,17 @@ class remote_copy(SubCommand):
             self.logger.info("Inappropriate number of parallel download, must between 0 to 20 ")
             return -1
 
-        lcgCmd = 'lcg-cp --connect-timeout 20 --sendreceive-timeout 240 --verbose -b -D srmv2'
-        lcgtimeout = 20 + 240 + 60 #giving 1 extra minute: 5min20"
+        #lcgCmd = 'lcg-cp --connect-timeout 20 --sendreceive-timeout 240 --verbose -b -D srmv2'
+        lcgCmd = 'lcg-cp --connect-timeout 20 --verbose -b -D srmv2'
+
+       #Increase the client timeout
+        if self.options.waittime==None:
+            lcgCmd=lcgCmd+" --sendreceive-timeout 1800"
+        else:
+            sendrecievetimeadd=1800+int(self.options.waittime)
+            lcgCmd=lcgCmd+" --sendreceive-timeout " + str(sendrecievetimeadd)
+
+        #lcgtimeout = 20 + 240 + 60 #giving 1 extra minute: 5min20"
         srmtimeout = 900 #default transfer timeout in case the file size is unknown: 15min
         minsrmtimeout = 60 #timeout cannot be less then 1min
         downspeed = float(250*1024) #default speed assumes a download of 250KB/s
@@ -138,10 +145,10 @@ class remote_copy(SubCommand):
         elif len(failedfiles) != 0:
             self.logger.info(colors.GREEN+"Number of file successfully retrieve: %s" % len(successfiles)+colors.NORMAL)
             self.logger.info(colors.RED+"Number of file failed retrieve: %s" % len(failedfiles)+colors.NORMAL)
-            self.logger.debug("List of failed file and reason: %s" % failedfiles)
+            #self.logger.debug("List of failed file and reason: %s" % failedfiles)
             globalExitcode= -1
         else:
-            self.logger.info(colors.GREEN+"All fails successfully retrieve ")
+            self.logger.info(colors.GREEN+"All fails successfully retrieve "+colors.NORMAL)
             globalExitcode=0
 
 
@@ -212,23 +219,33 @@ class remote_copy(SubCommand):
                 localFilename = os.path.join(dirpath,  str(fileid))
                 command = work
 
-
+            self.logger.info("Retrieving %s " % fileid)
+            self.logger.debug("Executing %s" % command)
             pipe = subprocess.Popen(command, stdout = subprocess.PIPE,
                                      stderr = subprocess.PIPE, shell = True)
             stdout, stderr = pipe.communicate()
+            error=simpleOutputCheck(stderr)
 
-            if pipe.returncode != 0:
+            self.logger.debug("Finish executing for file %s" % fileid)
+
+            if pipe.returncode != 0 or len(error) > 0:
                 self.logger.info(colors.RED + "Failed retrieving %s" % fileid + colors.NORMAL)
-                error=simpleOutputCheck(stderr)
+                #self.logger.debug(colors.RED +"Stderr: %s " %stderr+ colors.NORMAL)
+                [self.logger.debug(colors.RED +"\t %s" % x + colors.NORMAL) for x in error]
                 failedfiles[fileid]=str(error)
+
+                if "timed out" in stderr or "timed out" in stdout:
+                    self.logger.info(colors.RED + "Failed due to connection timeout"+ colors.NORMAL )
+                    self.logger.info("Please use the '-w' option to increase the connection timeout")
+
                 if os.path.isfile(localFilename) and os.path.getsize(localFilename)!=myfile['size']:
                     self.logger.debug("File %s has the wrong size, deleting it" % fileid)
                     try:
-                        os.remove(localFilename)
+                       os.remove(localFilename)
                     except Exception, ex:
                         self.logger.debug("Cannot remove the file because of: %s" % ex)
                 time.sleep(60)
-                return 0
+                return
             else:
                 self.logger.info(colors.GREEN + "Success in retrieving %s " %fileid + colors.NORMAL)
             if not url_input and hasattr(myfile, 'checksum'):
@@ -241,7 +258,7 @@ class remote_copy(SubCommand):
                 failedfiles[fileid]="Checksum failed"
             else:
                 successfiles[fileid]=' Successfully retrieve'
-        return 0
+        return
 
 
 def simpleOutputCheck(outlines):
