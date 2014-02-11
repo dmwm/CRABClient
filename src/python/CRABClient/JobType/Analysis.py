@@ -86,6 +86,28 @@ class Analysis(BasicJobType):
         configArguments['cacheurl'] = uploadResults[0]
         isbchecksum = uploadResults[2]
 
+        # Upload list of user-defined input files to process as the primary input
+        userFileName = getattr(self.config.Data, 'userInputFile', None)
+        if userFileName:
+            self.logger.debug("Attaching a list of user-specified primary input files from %s." % userFileName)
+            fnames = []
+            for fname in open(userFileName).readlines():
+                fnames.append(fname.strip())
+            configArguments['userfiles'] = fnames
+            print fnames
+
+            primDS = getattr(self.config.Data, 'primaryDataset', None)
+            if primDS:
+                # Normalizes "foo/bar" and "/foo/bar" to "/foo/bar"
+                primDS = "/" + os.path.join(*primDS.split("/"))
+                if not re.match("/%(primDS)s.*" % WMCore.Lexicon.lfnParts, primDS):
+                    self.logger.warning("Invalid primary dataset name %s for private MC; publishing may fail" % primDS)
+                configArguments['inputdata'] = primDS
+            elif getattr(self.config.Data, 'inputDataset', None):
+                configArguments['inputdata'] = self.config.Data.inputDataset
+            else:
+                configArguments['inputdata'] = "/CRAB_UserFiles"
+
         # Upload lumi mask if it exists
         lumiMaskName = getattr(self.config.Data, 'lumiMask', None)
         if lumiMaskName:
@@ -113,7 +135,7 @@ class Analysis(BasicJobType):
         if not valid:
             return (valid, reason)
 
-        if not getattr(config.Data, 'inputDataset', None):
+        if not getattr(config.Data, 'inputDataset', None) and not getattr(config.Data, 'userInputFile', None):
             valid = False
             reason += 'Crab configuration problem: missing or null input dataset name. '
 

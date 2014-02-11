@@ -2,6 +2,7 @@
 PrivateMC job type plug-in
 """
 
+import os
 import re
 
 from CRABClient.JobType.Analysis import Analysis

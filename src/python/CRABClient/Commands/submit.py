@@ -213,7 +213,7 @@ class submit(SubCommand):
             cmsweb, e.g.:   adduserfiles = ['file1','file2']  ===>  [...]adduserfiles=file1&adduserfiles=file2[...]
         """
         listParams = ['adduserfiles', 'addoutputfiles', 'sitewhitelist', 'siteblacklist', 'blockwhitelist', 'blockblacklist',
-                      'tfileoutfiles', 'edmoutfiles', 'runs', 'lumis'] #TODO automate this using ClientMapping
+                      'tfileoutfiles', 'edmoutfiles', 'runs', 'lumis', 'userfiles']
         encodedLists = ''
         for lparam in listParams:
             if lparam in configreq:
