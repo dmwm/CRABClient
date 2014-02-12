@@ -24,7 +24,7 @@ class getcommand(SubCommand):
             self.dest = os.path.join(self.requestarea, 'results')
 
         # Destination is a URL.
-        if re.match("^[a-z]+://", self.dest): 
+        if re.match("^[a-z]+://", self.dest):
             if not self.dest.endswith("/"):
                 self.dest += "/"
         #Creating the destination directory if necessary
@@ -62,7 +62,7 @@ class getcommand(SubCommand):
         cpresults = []
 #        for workflow in dictresult['result']: TODO re-enable this when we will have resubmissions
         workflow = dictresult['result']        #TODO assigning workflow to dictresult. for the moment we have only one wf
-        arglist = ['-d', self.dest, '-i', workflow, '-t', self.options.task, '-p', self.proxyfilename]
+        arglist = ['-d', self.dest, '-i', workflow, '-t', self.options.task, '-p', self.proxyfilename, '-l',self.options.nparallel, '-w',self.options.waittime]
         if len(workflow) > 0:
             if self.dump:
                 for fileInfo in workflow:
