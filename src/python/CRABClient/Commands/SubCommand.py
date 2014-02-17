@@ -6,6 +6,8 @@ from CRABClient.client_utilities import loadCache, getWorkArea, server_info, val
 from CRABClient.client_exceptions import ConfigurationException, MissingOptionException
 from CRABClient.ClientMapping import mapping
 from CRABClient.CredentialInteractions import CredentialInteractions
+from CRABClient.__init__ import __version__
+from CRABClient.client_utilities import colors
 
 from WMCore.Configuration import loadConfigurationFile, Configuration
 
@@ -130,6 +132,7 @@ class SubCommand(ConfigCommand):
         self.logfile = ''
         self.logger.debug("Executing command: '%s'" % str(self.name))
 
+
         ##Get the mapping
         self.loadMapping()
 
@@ -162,7 +165,9 @@ class SubCommand(ConfigCommand):
         if not hasattr(self, 'serverurl'):
             self.instance, self.serverurl = self.serverInstance()
 
+
         self.handleProxy(self.getUrl(self.instance, resource='info'))
+        self.checkversion(self.getUrl(self.instance, resource='info'))
         self.uri = self.getUrl(self.instance)
         self.logger.debug("Instance is %s" %(self.instance))
         self.logger.debug("Server base url is %s" %(self.serverurl))
@@ -187,6 +192,15 @@ class SubCommand(ConfigCommand):
             return instance, serverurl
         raise ConfigurationException("No correct instance or no server specified")
 
+    def checkversion(self, baseurl=None):
+       
+        compatibleversion = server_info('version', self.serverurl, self.proxyfilename, baseurl)
+
+        if __version__ in compatibleversion:
+            self.logger.debug("CRABClient version : %s Compatible"  % __version__ )
+        else:
+            self.logger.info(colors.RED+"WARNING : INCOMPATIBLE CRABClient VERSION : %s " % __version__ +colors.NORMAL)
+
     def handleProxy(self, baseurl=None):
         """ Init the user proxy, and delegate it if necessary.
         """
@@ -198,6 +212,8 @@ class SubCommand(ConfigCommand):
 
             #get the dn of the agents from the server
             alldns = server_info('delegatedn', self.serverurl, self.proxyfilename, baseurl)
+
+
             for serverdn in alldns['services']:
                 proxy.defaultDelegation['serverDN'] = serverdn
                 proxy.defaultDelegation['myProxySvr'] = 'myproxy.cern.ch'
