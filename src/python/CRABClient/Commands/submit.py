@@ -143,6 +143,8 @@ class submit(SubCommand):
         self.logger.info("Submission process completed")
         self.logger.debug("Request ID: %s " % uniquerequestname)
 
+        self.updatecrab3file()
+
         self.checkStatusLoop(server,uniquerequestname)
 
         return uniquerequestname
@@ -280,3 +282,17 @@ class submit(SubCommand):
                 break
 
         self.logger.debug("Ended submission process")
+
+    def updatecrab3file(self):
+
+        crab3f=open(str(os.path.expanduser('~'))+"/.crab3",'r')
+        data=json.load(crab3f,)
+        crab3f.close()
+
+        data["submit"]["taskname"]=self.requestname
+        data["submit"]["time"]=time.time()
+
+        crab3f=open(str(os.path.expanduser('~'))+"/.crab3",'w')
+        json.dump(data,crab3f)
+
+        self.logger.debug("Finish updating .crab3 file")

@@ -1,5 +1,6 @@
 import os
 import imp
+import json
 from optparse import OptionParser, SUPPRESS_HELP
 
 from CRABClient.client_utilities import loadCache, getWorkArea, server_info, validServerURL, createWorkArea
@@ -130,6 +131,9 @@ class SubCommand(ConfigCommand):
         self.logfile = ''
         self.logger.debug("Executing command: '%s'" % str(self.name))
 
+        self.crab3dic=self.giveconfidict()
+
+
         ##Get the mapping
         self.loadMapping()
 
@@ -220,6 +224,36 @@ class SubCommand(ConfigCommand):
         self.voRole = self.cachedinfo['voRole'] #if not self.options.voRole else self.options.voRole
         self.voGroup = self.cachedinfo['voGroup'] #if not self.options.voGroup else self.options.voGroup
 
+    def giveconfidict(self):
+
+            self.logger.debug("Checking .crab3 file")
+
+            homedir= str(os.path.expanduser('~'))
+            crab3fdir= homedir + '/.crab3'
+            if not os.path.isfile(crab3fdir):
+                self.logger.debug("Could not find %s creating a new one" % crab3fdir)
+                crab3f=open(crab3fdir,'w')
+
+                #creating a user dict, do add for future use
+
+                configdict={
+                        "homedir"        :homedir,
+                        "submit"  :{"taskname": None, "time": None},
+                        "status"   :{"taskname": None, "time": None},
+                }
+
+                json.dump(configdict,crab3f)
+                crab3f.close()
+
+                return configdict
+            else:
+                self.logger.debug("Found %s file" % crab3fdir)
+                crab3f=open(crab3fdir,'r')
+                configdict=json.load(crab3f)
+                crab3f.close()
+
+                return configdict
+
     def __call__(self):
         self.logger.info("This is a 'nothing to do' command")
         raise NotImplementedError
@@ -280,9 +314,21 @@ class SubCommand(ConfigCommand):
         Validate the command line options of the command
         Raise a ConfigurationException in case of error, does not do anything if ok
         """
+
         if self.requiresTaskOption and not self.options.task:
             if len(self.args) == 1 and self.args[0]:
                 self.options.task = self.args[0]
+
+            elif self.name == "status" and self.crab3dic["status"]["taskname"] != None :
+                self.logger.info("Last task queried:\t\t%s" % str(self.crab3dic["status"]["taskname"]))
+                self.options.task = str(self.crab3dic["status"]["taskname"])
+
+            elif self.name == "status" and self.crab3dic["submit"]["taskname"] != None :
+                self.logger.info("Last task submitted:\t\t%s" % str(self.crab3dic["submit"]["taskname"]))
+                self.options.task = str(self.crab3dic["submit"]["taskname"])
+
+            elif self.name == "status":
+                self.logger.info("Please provide a task name to check status")
             else:
                 raise MissingOptionException('ERROR: Task option is required')
 

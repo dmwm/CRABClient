@@ -2,6 +2,9 @@ from __future__ import division # I want floating points
 import urllib
 import sys
 import math
+import json
+from os import path
+import time
 
 from CRABClient.client_utilities import colors, getUserName
 from CRABClient.Commands.SubCommand import SubCommand
@@ -38,7 +41,7 @@ class status(SubCommand):
             return colors.NORMAL
 
     def _percentageString(self, state, value, total):
-        digit_count = int(math.ceil(math.log(max(value, total)+1, 10))) 
+        digit_count = int(math.ceil(math.log(max(value, total)+1, 10)))
         format_str = "%5.1f%% (%s%" + str(digit_count) + "d%s/%" + str(digit_count) + "d)"
         return format_str % ((value*100/total), self._stateColor(state), value, colors.NORMAL, total)
 
@@ -46,6 +49,9 @@ class status(SubCommand):
         return ('{0}{1:<' + str(ljust) + '}{2}').format(self._stateColor(state), state, colors.NORMAL)
 
     def __call__(self):
+
+        self.updatecrab3()
+
         server = HTTPRequests(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
 
         self.logger.debug('Looking up detailed status of task %s' % self.cachedinfo['RequestName'])
@@ -325,6 +331,20 @@ class status(SubCommand):
                 self.logger.info("%-20s %13s" % (site, sites[site]['Pending']))
             self.logger.info("")
 
+    def updatecrab3(self):
+
+        crab3f=open(str(path.expanduser('~'))+"/.crab3",'r')
+        data=json.load(crab3f,)
+        crab3f.close()
+
+        data["status"]["taskname"]=self.requestname
+        data["status"]["time"]=time.time()
+
+        crab3f=open(str(path.expanduser('~'))+"/.crab3",'w')
+        json.dump(data,crab3f)
+
+        self.logger.debug("Finish updating .crab3 file")
+
     def setOptions(self):
         """
         __setOptions__
@@ -351,7 +371,7 @@ class status(SubCommand):
                                 default = False,
                                 action = "store_true",
                                 help = "Print idle job summary")
-    
+
     def validateOptions(self):
         SubCommand.validateOptions(self)
 
