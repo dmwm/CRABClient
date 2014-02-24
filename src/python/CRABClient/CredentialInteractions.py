@@ -133,6 +133,10 @@ class CredentialInteractions(object):
         if myproxytimeleft < timeleftthreshold or self.proxyChanged or myproxy.trustedRetrievers!=self.defaultDelegation['serverDN']:
             # checking the enddate of the user certificate
             usercertDaysLeft = myproxy.getUserCertEnddate()
+            if usercertDaysLeft == 0:
+                msg = "%sYOUR USER CERTIFICATE IS EXPIRED (OR WILL EXPIRE TODAY). CANNOT SUBMIT%s"\
+                                        % (colors.RED, colors.NORMAL)
+                raise ProxyCreationException(msg)
 
             #if the certificate is going to expire print a warning. This is going to bre printed at every command if
             #the myproxytimeleft is inferior to the timeleftthreshold
