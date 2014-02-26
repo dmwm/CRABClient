@@ -1,5 +1,6 @@
 import os
 import imp
+import json 
 from optparse import OptionParser, SUPPRESS_HELP
 
 from CRABClient.client_utilities import loadCache, getWorkArea, server_info, validServerURL, createWorkArea
@@ -132,6 +133,7 @@ class SubCommand(ConfigCommand):
         self.logfile = ''
         self.logger.debug("Executing command: '%s'" % str(self.name))
 
+        self.crab3dic=self.getConfiDict()
 
         ##Get the mapping
         self.loadMapping()
@@ -165,6 +167,7 @@ class SubCommand(ConfigCommand):
         if not hasattr(self, 'serverurl'):
             self.instance, self.serverurl = self.serverInstance()
 
+        self.updateCrab3()
 
         self.handleProxy(self.getUrl(self.instance, resource='info'))
         self.checkversion(self.getUrl(self.instance, resource='info'))
@@ -193,7 +196,7 @@ class SubCommand(ConfigCommand):
         raise ConfigurationException("No correct instance or no server specified")
 
     def checkversion(self, baseurl=None):
-       
+
         compatibleversion = server_info('version', self.serverurl, self.proxyfilename, baseurl)
 
         if __version__ in compatibleversion:
@@ -235,6 +238,44 @@ class SubCommand(ConfigCommand):
         self.serverurl = self.cachedinfo['Server'] + port
         self.voRole = self.cachedinfo['voRole'] #if not self.options.voRole else self.options.voRole
         self.voGroup = self.cachedinfo['voGroup'] #if not self.options.voGroup else self.options.voGroup
+
+    def getConfiDict(self):
+
+            self.logger.debug("Checking .crab3 file")
+
+            homedir= str(os.path.expanduser('~'))
+            crab3fdir= homedir + '/.crab3'
+            if not os.path.isfile(crab3fdir):
+                self.logger.debug("Could not find %s creating a new one" % crab3fdir)
+                crab3f=open(crab3fdir,'w')
+
+                #creating a user dict, do add for future use
+
+                configdict={ "taskname" : None }
+
+                json.dump(configdict,crab3f)
+                crab3f.close()
+
+                return configdict
+            else:
+                self.logger.debug("Found %s file" % crab3fdir)
+                crab3f=open(crab3fdir,'r')
+                configdict=json.load(crab3f)
+                crab3f.close()
+
+                return configdict
+
+
+    def updateCrab3(self):
+
+        crab3fdir=str(os.path.expanduser('~')) + "/.crab3"
+        crab3f=open(crab3fdir, 'w')
+
+        self.crab3dic['taskname']= self.requestname
+
+        json.dump(self.crab3dic, crab3f)
+
+        crab3f.close()
 
     def __call__(self):
         self.logger.info("This is a 'nothing to do' command")
@@ -299,6 +340,10 @@ class SubCommand(ConfigCommand):
         if self.requiresTaskOption and not self.options.task:
             if len(self.args) == 1 and self.args[0]:
                 self.options.task = self.args[0]
+                
+            elif self.name != "kill" and self.crab3dic["taskname"] != None:
+                self.options.task = self.crab3dic["taskname"]
+
             else:
                 raise MissingOptionException('ERROR: Task option is required')
 
