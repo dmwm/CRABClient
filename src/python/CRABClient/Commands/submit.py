@@ -13,7 +13,7 @@ from RESTInteractions import HTTPRequests
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient import SpellChecker
 from CRABClient.client_exceptions import MissingOptionException, ConfigurationException, RESTCommunicationException
-from CRABClient.client_utilities import getJobTypes, createCache, addPlugin, server_info
+from CRABClient.client_utilities import getJobTypes, createCache, addPlugin, server_info, colors
 from CRABClient import __version__
 
 
@@ -143,7 +143,8 @@ class submit(SubCommand):
         self.logger.info("Submission process completed")
         self.logger.debug("Request ID: %s " % uniquerequestname)
 
-        self.checkStatusLoop(server,uniquerequestname)
+        if not self.options.bypasscheck:
+            self.checkStatusLoop(server,uniquerequestname)
 
         return uniquerequestname
 
@@ -160,6 +161,13 @@ class submit(SubCommand):
                                  default = './crabConfig.py',
                                  help = "CRAB configuration file",
                                  metavar = "FILE" )
+
+        self.parser.add_option( "-b","--bypass,",
+                                action="store_true",
+                                dest="bypasscheck",
+                                help="bypass the checking task status after submit",
+                                default=False )
+
 
     def validateConfig(self):
         """
@@ -228,7 +236,7 @@ class submit(SubCommand):
 
         self.logger.info("Waiting for task to be processed")
 
-        maxwaittime= 3600 #second change to one hour
+        maxwaittime= 900 #in second, changed to 15 minute max wait time, the original 1 hour is too long 
         starttime=currenttime=time.time()
         endtime=currenttime+maxwaittime
 
@@ -236,7 +244,7 @@ class submit(SubCommand):
         endtimestring=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(endtime))
 
         self.logger.debug("Start time:%s" % startimestring )
-        self.logger.debug("Max wait time: %s s" % maxwaittime)
+        self.logger.debug("Max wait time: %s s until : %s" % (maxwaittime,endtimestring))
 
         #self.logger.debug('Looking up detailed status of task %s' % uniquerequestname)
 
@@ -260,23 +268,24 @@ class submit(SubCommand):
             self.logger.info("Task status:%s" % dictresult['status'])
 
             if dictresult['status'] == 'FAILED':
-                self.logger.info("Submission jobs failed, Please check crab.log and config file. You might find more information about the failure with crab status -t  <Task Name>")
+                self.logger.info(self.logger.info(colors.RED+"Submission jobs failed, Please check crab.log and config file " + colors.NORMAL))
                 break
             elif dictresult['status'] == 'SUBMITTED':
-                self.logger.info("Task has been processed and jobs have been submitted successfully")
+                self.logger.info(colors.GREEN+"Task has been processed and jobs have been submitted successfully"+colors.NORMAL)
                 break
             elif dictresult['status'] in ['NEW','HOLDING','QUEUED']:
                 if(currenttime > endtime):
-                    self.logger.info("Wait time exceed maximum wait time, exiting wait function")
+                    self.logger.info("Exceed max query time \n Please check again later by using: crab status -t  <Task Name>")
                     waittime=currenttime-starttime
                     self.logger.debug("Wait time:%s" % waittime)
                     break
                 else:
                     self.logger.info("Please wait...")
-                    time.sleep(60) #second
+                    time.sleep(30) #the original 60 second query time is too long 
             else:
                 self.logger.info("Please check crab.log ")
                 self.logger.debug("CRABS Status other than FAILED,SUBMITTED,NEW,HOLDING,QUEUED")
                 break
 
         self.logger.debug("Ended submission process")
+
