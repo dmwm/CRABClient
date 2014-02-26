@@ -148,7 +148,7 @@ class remote_copy(SubCommand):
             #self.logger.debug("List of failed file and reason: %s" % failedfiles)
             globalExitcode= -1
         else:
-            self.logger.info(colors.GREEN+"All fails successfully retrieve "+colors.NORMAL)
+            self.logger.info(colors.GREEN+"All files successfully retrieve "+colors.NORMAL)
             globalExitcode=0
 
 
