@@ -2,4 +2,7 @@
 """
 CRAB Client modules
 """
-__version__ = "3.3.0"
+__version__ = "development"
+
+
+#the __version__ value will be overwritten by the RPM builder for the production version 
