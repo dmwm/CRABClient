@@ -1,6 +1,6 @@
 import os
 import imp
-import json 
+import json
 from optparse import OptionParser, SUPPRESS_HELP
 
 from CRABClient.client_utilities import loadCache, getWorkArea, server_info, validServerURL, createWorkArea
@@ -197,12 +197,16 @@ class SubCommand(ConfigCommand):
 
     def checkversion(self, baseurl=None):
 
-        compatibleversion = server_info('version', self.serverurl, self.proxyfilename, baseurl)
+        if __version__ == "development":
+            self.logger.debug("CRABClient version : %s" % __version__)
 
-        if __version__ in compatibleversion:
-            self.logger.debug("CRABClient version : %s Compatible"  % __version__ )
         else:
-            self.logger.info(colors.RED+"WARNING : INCOMPATIBLE CRABClient VERSION : %s " % __version__ +colors.NORMAL)
+            compatibleversion = server_info('version', self.serverurl, self.proxyfilename, baseurl)
+
+            if __version__ in compatibleversion:
+                self.logger.debug("CRABClient version : %s Compatible"  % __version__ )
+            else:
+                self.logger.info(colors.RED+"WARNING : INCOMPATIBLE CRABClient VERSION : %s " % __version__ +colors.NORMAL)
 
     def handleProxy(self, baseurl=None):
         """ Init the user proxy, and delegate it if necessary.
@@ -340,7 +344,7 @@ class SubCommand(ConfigCommand):
         if self.requiresTaskOption and not self.options.task:
             if len(self.args) == 1 and self.args[0]:
                 self.options.task = self.args[0]
-                
+
             elif self.name != "kill" and self.crab3dic["taskname"] != None:
                 self.options.task = self.crab3dic["taskname"]
 
