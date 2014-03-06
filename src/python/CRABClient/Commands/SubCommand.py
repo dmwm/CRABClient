@@ -1,6 +1,6 @@
 import os
 import imp
-import json 
+import json
 from optparse import OptionParser, SUPPRESS_HELP
 
 from CRABClient.client_utilities import loadCache, getWorkArea, server_info, validServerURL, createWorkArea
@@ -158,6 +158,7 @@ class SubCommand(ConfigCommand):
                                                                               getattr(self.configuration.General, 'requestName', None))
             self.voRole = self.options.voRole if self.options.voRole else getattr(self.configuration.User, "voRole", "")
             self.voGroup = self.options.voGroup if self.options.voGroup else getattr(self.configuration.User, "voGroup", "")
+
 
         ##if we get an input task we load the cache and set the url from it
         if hasattr(self.options, 'task') and self.options.task:
@@ -337,10 +338,15 @@ class SubCommand(ConfigCommand):
         Validate the command line options of the command
         Raise a ConfigurationException in case of error, does not do anything if ok
         """
+
+        if self.name == 'submit' and len(self.args) == 1 and self.args[0]:
+            self.options.config = self.args[0]
+            del self.args[:]
+
         if self.requiresTaskOption and not self.options.task:
             if len(self.args) == 1 and self.args[0]:
                 self.options.task = self.args[0]
-                
+
             elif self.name != "kill" and self.crab3dic["taskname"] != None:
                 self.options.task = self.crab3dic["taskname"]
 
