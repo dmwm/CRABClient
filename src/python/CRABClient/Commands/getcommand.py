@@ -34,7 +34,10 @@ class getcommand(SubCommand):
         elif not os.path.isdir( self.dest ):
             raise ConfigurationException('Destination directory is a file')
 
-        self.logger.info("Setting the destination to %s " % self.dest )
+        if self.options.dump:
+            self.logger.debug("Setting the destination to %s " % self.dest )
+        else:
+            self.logger.info("Setting the destination to %s " % self.dest )
 
         #Retrieving output files location from the server
         self.logger.debug('Retrieving locations for task %s' % self.cachedinfo['RequestName'] )
