@@ -28,9 +28,9 @@ class getcommand(SubCommand):
             if not self.dest.endswith("/"):
                 self.dest += "/"
         #Creating the destination directory if necessary
-        if not os.path.exists( self.dest ):
+        elif not os.path.exists( self.dest ):
             self.logger.debug("Creating directory %s " % self.dest)
-            os.makedirs( self.dest )
+            os.makedirs( self.dest)
         elif not os.path.isdir( self.dest ):
             raise ConfigurationException('Destination directory is a file')
 
@@ -111,7 +111,9 @@ class getcommand(SubCommand):
         SubCommand.validateOptions(self)
         self.dest = None
         if self.options.outputpath is not None:
-            if not os.path.isabs( self.options.outputpath ):
+            if re.match("^[a-z]+://", self.options.outputpath):
+                self.dest=self.options.outputpath
+            elif not os.path.isabs( self.options.outputpath ):
                 self.dest = os.path.abspath( self.options.outputpath )
             else:
                 self.dest = self.options.outputpath
