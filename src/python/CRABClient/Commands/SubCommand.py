@@ -285,7 +285,7 @@ class SubCommand(ConfigCommand):
     def terminate(self, exitcode):
         #We do not want to print logfile for each command...
         if exitcode < 2000:
-            if self.options.dump:
+            if getattr(self.options, 'dump', False):
                 self.logger.debug("Log file is %s" % os.path.abspath(self.logfile))
             else:
                 self.logger.info("Log file is %s" % os.path.abspath(self.logfile))
