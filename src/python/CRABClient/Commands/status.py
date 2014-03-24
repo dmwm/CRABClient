@@ -18,6 +18,13 @@ def to_hms(val):
     h = val / 60
     return "%d:%02d:%02d" % (h, m, s)
 
+PUBLICATION_STATES = {
+    'not_published': 'idle',
+    'publication_failed': 'failed',
+    'published': 'finished',
+    'publishing': 'running',
+}
+
 class status(SubCommand):
     """
     Query the status of your tasks, or detailed information of one or more tasks
@@ -38,11 +45,13 @@ class status(SubCommand):
             return colors.NORMAL
 
     def _percentageString(self, state, value, total):
+        state = PUBLICATION_STATES.get(state, state)
         digit_count = int(math.ceil(math.log(max(value, total)+1, 10))) 
         format_str = "%5.1f%% (%s%" + str(digit_count) + "d%s/%" + str(digit_count) + "d)"
         return format_str % ((value*100/total), self._stateColor(state), value, colors.NORMAL, total)
 
     def _printState(self, state, ljust):
+        state = PUBLICATION_STATES.get(state, state)
         return ('{0}{1:<' + str(ljust) + '}{2}').format(self._stateColor(state), state, colors.NORMAL)
 
     def __call__(self):
@@ -53,6 +62,8 @@ class status(SubCommand):
         verbose = int(self.summary or self.long or self.json)
         if self.idle:
             verbose = 2
+        if self.publication:
+            verbose = 3
         dictresult, status, reason = server.get(self.uri, data = { 'workflow' : self.cachedinfo['RequestName'], 'verbose': verbose })
         dictresult = dictresult['result'][0] #take just the significant part
 
@@ -72,6 +83,8 @@ class status(SubCommand):
                self.printLong(dictresult)
             if self.idle:
                self.printIdle(dictresult, user)
+            if self.publication:
+               self.printPublication(dictresult)
             if self.json:
                self.logger.info(dictresult['jobs'])
 
@@ -113,6 +126,24 @@ class status(SubCommand):
             self.logger.info("Details:\t\t\t{0} {1}".format(self._printState(state_list[0], 13), self._percentageString(state_list[0], states[state_list[0]], total)))
             for status in state_list[1:]:
                 self.logger.info("\t\t\t\t{0} {1}".format(self._printState(status, 13), self._percentageString(status, states[status], total)))
+
+
+    def printPublication(self, dictresult):
+
+        self.logger.info("")
+        if 'publication' not in dictresult or not dictresult['publication'] or not dictresult['jobsPerStatus']:
+            self.logger.error("%sNo publication information available%s" % (colors.RED, colors.NORMAL))
+
+        states = dictresult['publication']
+        if states:
+            total = sum(states.values())
+            states['unsubmitted'] = sum(dictresult['jobsPerStatus'].values()) - total
+            state_list=sorted(states)
+            self.logger.info("Publication status:\t\t{0} {1}".format(self._printState(state_list[0], 13), self._percentageString(state_list[0], states[state_list[0]], total)))
+            for status in  state_list[1:]:
+                if states[status]:
+                    self.logger.info("\t\t\t\t{0} {1}".format(self._printState(status, 13), self._percentageString(status, states[status], total)))
+
 
     def printSummary(self, dictresult):
 
@@ -356,14 +387,22 @@ class status(SubCommand):
                                 default = False,
                                 action = "store_true",
                                 help = "Print idle job summary")
+        self.parser.add_option( "--publication",
+                                dest = "publication",
+                                default = False,
+                                action = "store_true",
+                                help = "Print publication summary")
     
     def validateOptions(self):
         SubCommand.validateOptions(self)
 
-        if self.options.idle and (self.options.long or self.options.summary):
-            raise ConfigurationException("Idle option (-i) conflicts with -u and -l")
+        if self.options.idle and (self.options.long or self.options.summary or self.options.publication):
+            raise ConfigurationException("Idle option (-i) conflicts with -u, -l, and -p")
+        if self.options.publication and (self.options.long or self.options.summary or self.options.idle):
+            raise ConfigurationException("Publication option (-p) conflicts with -u, -l, and -i")
         self.long = self.options.long
         self.json = self.options.json
         self.summary = self.options.summary
         self.idle = self.options.idle
+        self.publication = self.options.publication
 
