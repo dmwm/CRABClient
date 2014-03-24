@@ -200,7 +200,12 @@ class status(SubCommand):
                 mem_sum += mem
                 mem = '%d' % mem
             cpu = 'Unknown'
-            if (state in ['cooloff', 'failed', 'finished']) and ('TotalSysCpuTimeHistory' in info) and info['TotalSysCpuTimeHistory']:
+            if (state in ['cooloff', 'failed', 'finished']) and not wall:
+                cpu = 0
+                if (cpu_min == -1) or cpu < cpu_min: cpu_min = cpu
+                if cpu > cpu_max: cpu_max = cpu
+                cpu = "%.0f" % cpu
+            elif wall and ('TotalSysCpuTimeHistory' in info) and ('TotalUserCpuTimeHistory' in info):
                 cpu = info['TotalSysCpuTimeHistory'][-1] + info['TotalUserCpuTimeHistory'][-1]
                 cpu_sum += cpu
                 if not wall: cpu = 0
