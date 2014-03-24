@@ -16,7 +16,7 @@ import cPickle
 from string import upper
 from optparse import OptionValueError
 
-from CRABClient.client_exceptions import TaskNotFoundException, CachefileNotFoundException, ConfigurationException
+from CRABClient.client_exceptions import TaskNotFoundException, CachefileNotFoundException, ConfigurationException ,ConfigException
 
 
 class colors:
@@ -193,7 +193,7 @@ def createWorkArea(logger, workingArea = '.', requestName = ''):
 
     ## checking if there is no a duplicate
     if os.path.exists(fullpath):
-        raise OSError("Working area '%s' already exists" % fullpath)
+        raise ConfigException("Working area '%s' already exists \nPlease change the requestName in the config file" % fullpath)
 
     ## creating the work area
     os.mkdir(fullpath)
