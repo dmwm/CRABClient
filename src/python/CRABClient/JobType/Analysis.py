@@ -94,7 +94,6 @@ class Analysis(BasicJobType):
             for fname in open(userFileName).readlines():
                 fnames.append(fname.strip())
             configArguments['userfiles'] = fnames
-            print fnames
 
             primDS = getattr(self.config.Data, 'primaryDataset', None)
             if primDS:
