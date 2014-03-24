@@ -248,12 +248,14 @@ class submit(SubCommand):
 
         #self.logger.debug('Looking up detailed status of task %s' % uniquerequestname)
 
+        continuecheck=True
+        tmpresult=None
+        self.logger.info("Checking task status")
 
-        while currenttime < endtime:
+        while continuecheck:
             currenttime=time.time()
             querytimestring=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(currenttime))
 
-            self.logger.info("Checking task status")
             self.logger.debug('Looking up detailed status of task %s' % uniquerequestname)
 
             dictresult, status, reason = server.get(self.uri, data = { 'workflow' : uniquerequestname})
@@ -265,26 +267,31 @@ class submit(SubCommand):
                 raise RESTCommunicationException(msg)
 
             self.logger.debug("Query Time:%s Task status:%s" %(querytimestring, dictresult['status']))
-            self.logger.info("Task status:%s" % dictresult['status'])
 
-            if dictresult['status'] == 'FAILED':
-                self.logger.info(self.logger.info(colors.RED+"Submission jobs failed, Please check crab.log and config file " + colors.NORMAL))
-                break
-            elif dictresult['status'] == 'SUBMITTED':
-                self.logger.info(colors.GREEN+"Task has been processed and jobs have been submitted successfully"+colors.NORMAL)
-                break
-            elif dictresult['status'] in ['NEW','HOLDING','QUEUED']:
-                if(currenttime > endtime):
-                    self.logger.info("Exceed max query time \n Please check again later by using: crab status -t  <Task Name>")
-                    waittime=currenttime-starttime
-                    self.logger.debug("Wait time:%s" % waittime)
-                    break
-                else:
+            if  dictresult['status'] != tmpresult:
+                self.logger.info("Task status:%s" % dictresult['status'])
+                tmpresult = dictresult['status']
+
+                if dictresult['status'] == 'FAILED':
+                    continuecheck = False
+                    self.logger.info(self.logger.info(colors.RED+"Submission jobs failed, Please check crab.log and config file " + colors.NORMAL))
+                elif dictresult['status'] == 'SUBMITTED':
+                    continuecheck = False
+                    self.logger.info(colors.GREEN+"Task has been processed and jobs have been submitted successfully"+colors.NORMAL)
+                elif dictresult['status'] in ['NEW','HOLDING','QUEUED']:
                     self.logger.info("Please wait...")
-                    time.sleep(30) #the original 60 second query time is too long 
-            else:
-                self.logger.info("Please check crab.log ")
-                self.logger.debug("CRABS Status other than FAILED,SUBMITTED,NEW,HOLDING,QUEUED")
+                    time.sleep(30) #the original 60 second query time is too long
+                else:
+                    continuecheck = False
+                    self.logger.info("Please check crab.log ")
+                    self.logger.debug("CRABS Status other than FAILED,SUBMITTED,NEW,HOLDING,QUEUED")
+
+
+            if currenttime > endtime:
+                continuecheck = False
+                self.logger.info("Exceed max query time \n Please check again later by using: crab status -t  <Task Name>")
+                waittime=currenttime-starttime
+                self.logger.debug("Wait time:%s" % waittime)
                 break
 
         self.logger.debug("Ended submission process")
