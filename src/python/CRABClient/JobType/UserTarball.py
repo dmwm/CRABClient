@@ -93,42 +93,20 @@ class UserTarball(object):
 
     def upload(self):
         """
-        Upload the tarball to the Panda Cache
+        Upload the tarball to the File Cache
         """
         self.close()
         archiveName = self.tarfile.name
         serverUrl = ""
         self.logger.debug(" uploading archive to cache %s " % archiveName)
 
-        # Use UFC instead of PanDA:
-        if self.config.JobType.baseurl == 'https://cmsweb.cern.ch/crabcache/file':
-            ufc = UserFileCache()
-            result = ufc.upload(archiveName)
-            if 'hashkey' not in result:
-                self.logger.error("Failed to upload source files: %s" % str(result))
-                raise CachefileNotFoundException
-            return self.config.JobType.baseurl, str(result['hashkey']) + '.tar.gz', self.checksum
-
-        #disabling reuseSandbox as checksum is different every time (the pset is written every time and the "last modified" date changes every time)
-        status,out = PandaInterface.putFile(self.config.JobType.baseurl, self.config.JobType.filecacheurl, archiveName, self.checksum, verbose=False, reuseSandbox=False)
-
-        if out.startswith('NewFileName:'):
-            # found the same input sandbox to reuse
-            self.logger.debug("out: %s" % out)
-            self.logger.debug("status: %s" % status)
-            self.logger.debug("found the same input sandbox to reuse")
-            archiveName = out.split(':')[-1]
-            serverUrl = "https://%s:%s" % (out.split(':')[-2], '25443')
-            self.logger.debug("archiveName: %s" %archiveName)
-        elif out.startswith('True'):
-            archiveName = out.split(':')[-1]
-            serverUrl = "%s:%s:%s" % (out.split(':')[-4], out.split(':')[-3], out.split(':')[-2])
-        else:
-            self.logger.error( str(out) )
-            self.logger.error("failed to upload source files with %s" % status)
+        ufc = UserFileCache()
+        result = ufc.upload(archiveName)
+        if 'hashkey' not in result:
+            self.logger.error("Failed to upload source files: %s" % str(result))
             raise CachefileNotFoundException
+        return self.config.JobType.baseurl, str(result['hashkey']) + '.tar.gz', self.checksum
 
-        return serverUrl, archiveName, self.checksum
 
     def calculateChecksum(self):
         """
