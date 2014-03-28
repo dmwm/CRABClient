@@ -130,7 +130,8 @@ class CredentialInteractions(object):
         myproxytimeleft = myproxy.getMyProxyTimeLeft(serverRenewer=True, nokey=nokey)
         self.logger.debug("Myproxy is valid: %i" % myproxytimeleft)
 
-        if myproxytimeleft < timeleftthreshold or self.proxyChanged or myproxy.trustedRetrievers!=self.defaultDelegation['serverDN']:
+        trustRetrListChanged = myproxy.trustedRetrievers!=self.defaultDelegation['serverDN'] #list on the REST and on myproxy are different
+        if myproxytimeleft < timeleftthreshold or self.proxyChanged or trustRetrListChanged:
             # checking the enddate of the user certificate
             usercertDaysLeft = myproxy.getUserCertEnddate()
             if usercertDaysLeft == 0:
@@ -144,7 +145,7 @@ class CredentialInteractions(object):
                 self.logger.info("%sYour user certificate is going to expire in %s days. Please renew it! %s"\
                                  % (colors.RED, usercertDaysLeft, colors.NORMAL) )
                 #check if usercertDaysLeft ~= myproxytimeleft which means we already delegated the proxy for as long as we could
-                if abs(usercertDaysLeft*60*60*24 - myproxytimeleft) < 60*60*24: #less than one day between usercertDaysLeft and myproxytimeleft
+                if abs(usercertDaysLeft*60*60*24 - myproxytimeleft) < 60*60*24 and not trustRetrListChanged: #less than one day between usercertDaysLeft and myproxytimeleft
                     return
                 #adjust the myproxy delegation time accordingly to the user cert validity
                 self.logger.info("%sDelegating your proxy for %s days instead of %s %s"\
