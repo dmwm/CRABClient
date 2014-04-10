@@ -184,9 +184,17 @@ class SubCommand(ConfigCommand):
 
 
         #Will be use to print available instances
-	
-	availableinstace=str(SERVICE_INSTANCES.keys()).strip('[').strip(']')
-	
+        availableinstace=''
+        count=0
+        for options in SERVICE_INSTANCES:
+            availableinstace+="'"+str(options)+"', "
+            if count == len(SERVICE_INSTANCES)-2:
+                availableinstace+='and '
+            count+=1
+
+        availableinstace=availableinstace[:-2]
+
+
         #if client use the --instance options
         if hasattr(self.options,'instance') and self.options.instance is not None :
             instance = self.options.instance
