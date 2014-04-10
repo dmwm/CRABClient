@@ -15,6 +15,7 @@ from ConfigParser import RawConfigParser
 from optparse import OptionParser
 
 from WMCore.Configuration import Configuration, saveConfigurationFile
+from CRABClient.client_utilities import colors
 
 DEFAULT_UNITS_PER_JOBS = 50
 
@@ -54,10 +55,13 @@ def _getSpacedList(configC2, sectionC2, parameterC2):
 
 
 #For each Crab3 parameter give the corresponding crab2 parameter
+
 paramsMap = [
+
+    #sectionC3,    parameterC3,         mandatory,sectionC2,   parameterC2,                      getter
     ('General'  , 'requestName'          , False, 'USER'   , 'ui_working_dir'           , RawConfigParser.get),
     ('JobType'  , 'psetName'             , True , 'CMSSW'  , 'pset'                     , RawConfigParser.get),
-#    ('JobType'  , 'pyCfgParams'          , False, 'CMSSW'  , 'pycfg_params'             , _getSpacedList),
+    ('JobType'  , 'pyCfgParams'          , False, 'CMSSW'  , 'pycfg_params'             , _getSpacedList),
     ('JobType'  , 'inputFiles'           , False, 'CMSSW'  , 'additional_input_file'    , _getlist),
     ('JobType'  , 'outputFiles'          , False, 'CMSSW'  , 'output_file'              , _getlist),
     ('Data'     , 'inputDataset'         , True , 'CMSSW'  , 'datasetpath'              , RawConfigParser.get),
@@ -71,44 +75,26 @@ paramsMap = [
     ('User'     , 'voRole'               , False, 'GRID'   , 'role'                     , RawConfigParser.get),
     ('User'     , 'voGroup'              , False, 'GRID'   , 'group'                    , RawConfigParser.get),
     ('Site'     , 'storageSite'          , True , 'USER'   , 'storage_element'          , RawConfigParser.get),
-    ('Site'     , 'blacklist'            , False, 'GRID'   , 'se_black_list'            , _getlist),
-    ('Site'     , 'whitelist'            , False, 'GRID'   , 'se_white_list'            , _getlist),
     ('Site'     , 'removeT1Blacklisting' , False, 'GRID'   , 'remove_default_blacklist' , RawConfigParser.getboolean),
-    ('Data'     , 'publishDbsUrl'        , False, 'USER'   , 'dbs_url_for_publication'  , RawConfigParser.get),
     ('Data'     , 'publishDataName'      , False, 'USER'   , 'publish_data_name'        , RawConfigParser.get),
+
 ]
 
 #Not yet supported parameters. If they are present in the crab2cfg file we print a message saying they are not yet supported
-notYetSuppParams = ['pyCfgParams',
-                    'runselection',
-                    'script_arguments',
-                    'outputdir',
-                    'logdir',
-                    'check_user_remote_dir',
-                    'generator',
-                    'skip_TFileService_output',
-                    'get_edm_output',
-                    'thresholdLevel',
-                    'requirements',
-                    'dont_check_proxy', #we actually have something from the command line
-                    'script_exe',
-                    'use_parent',
-                    'executable',
-                    'max_cpu_time',
-                    'max_wall_clock_time',
-                    'max_rss',
-                    'ce_black_list', 
-                    'ce_white_list',
-                    'data_location_override',
-                    'allow_overflow',
-                    'increment_seeds',
-                    'preserve_seeds',
-                    'subscribed',
-                    'no_block_boundary',
+notYetSuppParams = [
+                    'script_arguments', #cmssw
+                    'generator',        #cmssw
+                    'skip_TFileService_output', #cmssw
+                    'get_edm_output', #cmssw
+                    'script_exe', #user
+                    'max_cpu_time', #grid
+                    'max_wall_clock_time', #grid
+                    'max_rss', #grid
                    ]
 
 #List of deprecated parameters. We print a warning message saying they are obsolete
 deprecatedParams = [
+                    'runselection',
                     'server_name',
                     'use_server', #of course we use it
                     'scheduler',
@@ -138,7 +124,25 @@ deprecatedParams = [
                     'skipwmsauth',
                     'queue',
                     'resource',
-                    'RB',     
+                    'RB',
+                    'ce_black_list',
+                    'ce_white_list',
+                    'data_location_override',
+                    'allow_overflow',
+                    'increment_seeds',
+                    'preserve_seeds',
+                    'subscribed',
+                    'no_block_boundary',
+                    'use_parent',
+                    'executable',
+                    'thresholdLevel',
+                    'requirements',
+                    'dont_check_proxy',
+                    'outputdir',
+                    'logdir',
+                    'check_user_remote_dir',
+                    'se_black_list',
+                    'se_white_list',
                    ]
 
 def parseParameters():
@@ -213,7 +217,8 @@ def printUnsupporterParams(configC2):
     unknown     = []
     obsolete    = []
     notyetready = []
-    
+
+
     for section in configC2.sections():
         for paramName, _ in configC2.items(section):
             if paramName in deprecatedParams:
@@ -224,14 +229,14 @@ def printUnsupporterParams(configC2):
                 unknown.append(paramName)
     report = ''
     if notyetready:
-        report += "CRAB2 parameters not YET supported in CRAB3: \n\t" + ','.join(notyetready) 
+        report += "CRAB2 parameters not YET supported in CRAB3: \n\t" + ','.join(notyetready)
     if obsolete:
-        report += "\nCRAB2 parameters obsolete in CRAB3: \n\t" + ','.join(obsolete) 
+        report += "\nCRAB2 parameters obsolete in CRAB3: \n\t" + ','.join(obsolete)
     if unknown:
-        report += "\nCRAB2 parameter uknown to this convertion utility: \n\t" + ','.join(unknown)  
+        report += "\nCRAB2 parameter uknown to this convertion utility: \n\t" + ','.join(unknown)
     if report:
-        print 'crab2cfgTOcrab3py report:'   
-        print report         
+        print 'crab2cfgTOcrab3py report:'
+        print report
 
 if __name__ == "__main__":
     configNameC2, configNameC3 = parseParameters()
@@ -260,5 +265,5 @@ if __name__ == "__main__":
     printUnsupporterParams(configC2)
 
     if len(missingParams) > 0:
-        print "WARNING: Not all the mandatory parameters were found in the crab2 configuration file. Open the crab3 generated config file to know which"
+        print colors.RED+"WARNING: Not all the mandatory parameters were found in the crab2 configuration file. Open the crab3 generated config file to know which"+colors.NORMAL
 
