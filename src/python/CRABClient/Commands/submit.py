@@ -262,7 +262,7 @@ class submit(SubCommand):
             dictresult = dictresult['result'][0]
 
             if status != 200:
-                self.logger.info("Task has been submitted, \nImpossible to check task status now. \nPlease check again later by using: crab status -t  <Task Name>")
+                self.logger.info("The task has been submitted, \nImpossible to check task status now. \nPlease check again later by using: crab status -t  <Task Name>")
                 msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(uniquerequestname), str(dictresult), str(reason))
                 raise RESTCommunicationException(msg)
 
@@ -274,10 +274,10 @@ class submit(SubCommand):
 
                 if dictresult['status'] == 'FAILED':
                     continuecheck = False
-                    self.logger.info(self.logger.info(colors.RED+"Submission jobs failed, Please check crab.log and config file " + colors.NORMAL))
-                elif dictresult['status'] == 'SUBMITTED':
+                    self.logger.info(self.logger.info(colors.RED+"The submission of your task failed. Please use 'crab status -t <Task Name>' to get the error message" + colors.NORMAL))
+                elif dictresult['status'] == 'SUBMITTED' or dictresult['status'] == 'UNKNOWN': #untile the node_state file is available status is unknown
                     continuecheck = False
-                    self.logger.info(colors.GREEN+"Task has been processed and jobs have been submitted successfully"+colors.NORMAL)
+                    self.logger.info(colors.GREEN+"Your task has been processed and your jobs have been submitted successfully"+colors.NORMAL)
                 elif dictresult['status'] in ['NEW','HOLDING','QUEUED']:
                     self.logger.info("Please wait...")
                     time.sleep(30) #the original 60 second query time is too long
