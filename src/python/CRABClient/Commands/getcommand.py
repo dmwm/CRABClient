@@ -1,3 +1,4 @@
+
 from CRABClient.Commands import CommandResult, mergeResults
 from CRABClient.Commands.remote_copy import remote_copy
 from CRABClient.Commands.SubCommand import SubCommand
@@ -34,8 +35,8 @@ class getcommand(SubCommand):
         elif not os.path.isdir( self.dest ):
             raise ConfigurationException('Destination directory is a file')
 
-        if self.options.dump:
-            self.logger.debug("Setting the destination to %s " % self.dest )
+        if self.options.dump or self.options.xroot:
+            self.logger.debug("Getting url info")
         else:
             self.logger.info("Setting the destination to %s " % self.dest )
 
@@ -67,7 +68,11 @@ class getcommand(SubCommand):
         workflow = dictresult['result']        #TODO assigning workflow to dictresult. for the moment we have only one wf
         arglist = ['-d', self.dest, '-i', workflow, '-t', self.options.task, '-p', self.proxyfilename, '-l',self.options.nparallel, '-w',self.options.waittime]
         if len(workflow) > 0:
-            if self.dump:
+            if self.options.xroot:
+                self.logger.debug("XRootD url is requested")
+                for fileinfo in workflow:
+                    self.logger.info("root://cms-xrd-global.cern.ch/%s" % fileinfo['lfn'])
+            elif self.dump:
                 for fileInfo in workflow:
                     self.logger.info(fileInfo['pfn'])
             else:
@@ -102,6 +107,12 @@ class getcommand(SubCommand):
                                 action = 'store_true',
                                 help = 'Instead of performing the transfer, dump the source URLs.' )
 
+        self.parser.add_option( '-x', '--xrootd',
+                                dest = 'xroot',
+                                default = False,
+                                action = 'store_true',
+                                help = 'Give XrootD url for the file' )
+
         self.parser.add_option( '-i', '--jobids',
                                 dest = 'jobids',
                                 default = None,
@@ -130,4 +141,5 @@ class getcommand(SubCommand):
             self.options.jobids = validateJobids(self.options.jobids)
 
         self.dump = self.options.dump
+
 
