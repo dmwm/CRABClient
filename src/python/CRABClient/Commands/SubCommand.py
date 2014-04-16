@@ -178,23 +178,89 @@ class SubCommand(ConfigCommand):
         self.logger.debug("Command url %s" %(self.uri))
 
     def serverInstance(self):
-        """Deriving the correct instance to use and the server url"""
+        """Deriving the correct instance to use and the server url. Client is allow to propegate the instance name and coresponding url 
+	   via crabconfig.py or crab option --intance and --serverurl. The variable pass via crab option will always be use over the varible
+	   in crabconfig.py. Instance name must be same as the one in SERVICE_INSTANCES or exception will be raise."""
+
         serverurl = None
-        instance = 'prod'
-        if hasattr(self.options, 'instance') and self.options.instance is not None and self.options.instance in SERVICE_INSTANCES:
+
+
+        #Will be use to print available instances
+	
+	availableinstace=' , '.join(SERVICE_INSTANCES.keys())
+
+        #if client use the --instance options
+        if hasattr(self.options,'instance') and self.options.instance is not None :
             instance = self.options.instance
-        elif hasattr(self.configuration.General, 'instance') and self.configuration.General.instance is not None and self.configuration.General.instance in SERVICE_INSTANCES:
-            instance = self.configuration.General.instance
-        if SERVICE_INSTANCES[instance] is None:
-            if getattr(self.options, 'server', None) is not None:
-                serverurl = self.options.server
-            elif getattr(self.configuration.General, 'serverUrl') is not None:
-                serverurl = self.configuration.General.serverUrl
+            #checking validity of the instance
+
+            #for instances other than private
+            if instance in SERVICE_INSTANCES and SERVICE_INSTANCES[instance] is not None:
+                #giving message for user for use instance other than private but still supply a url
+                if hasattr(self.options,'server') and self.options.server is not None:
+                    self.logger.info("Please use 'private' instance to specify custom server url")
+                    raise ConfigurationException("Custom url is given for instance other than 'private'")
+                else:
+                    serverurl=SERVICE_INSTANCES[instance]
+
+            #for private instance
+            elif instance in SERVICE_INSTANCES and SERVICE_INSTANCES[instance] == None:
+                #checking if url is given from option
+                if hasattr(self.options, 'server') and self.options.server is not None:
+                    serverurl=self.options.server
+                #checking if url is given from configuration
+                elif hasattr(self.configuration.General, 'serverUrl'):
+                    serverurl=self.configuration.General.serverUrl
+                else:
+                    raise MissingOptionException("Custom url is not given for private instance")
+
+            elif instance not in SERVICE_INSTANCES:
+                self.logger.info ("Error: Wrong instance is given, available instance : %s" % availableinstace)
+                raise ConfigurationException("Wrong instance is given in option")
+            else:
+                self.logger.info("Error: Unknown instance option or configuration states")
+                raise Exception
+
+        #for client that uses the --server option but no --instance option
+        elif hasattr(self.options, 'server') and self.options.server is not None:
+            if hasattr(self.configuration.General, 'instance') and self.configuration.General.instance == 'private':
+                serverurl=self.options.server
+                instance='private'
+
+            elif hasattr(self.configuration.General, 'instance') and self.configuration.General.instance != 'private':
+                self.logger.info("Error: Custom server url is given for instance other that 'private'")
+                raise ConfigurationException("Wrong instance is given")
+            else:
+                self.logger.info("Error: Unknown instance option or configuration states")
+                raise Exception
+
+        #for client that does not use --server option or --instance option
+        elif hasattr(self.configuration.General, 'instance'):
+            instance=self.configuration.General.instance
+
+            #checking if instance given is vaild
+            if instance not in SERVICE_INSTANCES:
+                self.logger.info ("Error: Wrong instance is given, available instance : %s" % availableinstace)
+                raise ConfigurationException("Wrong instance is given in configuration file")
+
+            #for instance 'private'
+            elif SERVICE_INSTANCES[instance]== None:
+                if hasattr(self.configuration.General, 'serverUrl'):
+                    serverurl=self.configuration.General.serverUrl
+                else:
+                    raise ConfigurationException("Error: Private instance require server url in the configuration file")
+            #for instance other than 'private'
+            else:
+                serverurl=SERVICE_INSTANCES[instance]
+        #for client who does not give any instance option or configuration
         else:
-            serverurl = SERVICE_INSTANCES[instance]
-        if instance is not None and serverurl is not None:
-            return instance, serverurl
-        raise ConfigurationException("No correct instance or no server specified")
+            raise ConfigurationException("Not instance was indicated in the configuration file")
+
+        #last check if the instance or serverurl is None
+        if instance == None or serverurl == None:
+            raise ConfigurationException("A 'None' instance or serverurl is detected")
+
+        return instance, serverurl
 
     def checkversion(self, baseurl=None):
 
