@@ -99,13 +99,13 @@ class UserTarball(object):
         archiveName = self.tarfile.name
         serverUrl = ""
         self.logger.debug(" uploading archive to cache %s " % archiveName)
-
-        ufc = UserFileCache()
+        import pdb;pdb.set_trace()
+        ufc = UserFileCache({'endpoint' : self.config.JobType.filecacheurl})
         result = ufc.upload(archiveName)
         if 'hashkey' not in result:
             self.logger.error("Failed to upload source files: %s" % str(result))
             raise CachefileNotFoundException
-        return self.config.JobType.baseurl, str(result['hashkey']) + '.tar.gz', self.checksum
+        return self.config.JobType.filecacheurl, str(result['hashkey']) + '.tar.gz', self.checksum
 
 
     def calculateChecksum(self):

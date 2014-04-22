@@ -98,8 +98,6 @@ class submit(SubCommand):
         serverBackendURLs = server_info('backendurls', self.serverurl, self.proxyfilename, self.getUrl(self.instance, resource='info'))
         #if cacheSSL is specified in the server external configuration we will use it to upload the sandbox (baseURL will be ignored)
         self.configuration.JobType.filecacheurl = serverBackendURLs['cacheSSL'] if 'cacheSSL' in serverBackendURLs else None
-        #otherwise we will contact the baseurl to get the cache hostname
-        self.configuration.JobType.baseurl = serverBackendURLs['baseURL']
         pluginParams = [ self.configuration, self.logger, os.path.join(self.requestarea, 'inputs') ]
         if getattr(self.configuration.JobType, 'pluginName', None) is not None:
             jobtypes    = getJobTypes()
