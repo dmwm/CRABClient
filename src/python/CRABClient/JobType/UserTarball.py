@@ -99,7 +99,6 @@ class UserTarball(object):
         archiveName = self.tarfile.name
         serverUrl = ""
         self.logger.debug(" uploading archive to cache %s " % archiveName)
-        import pdb;pdb.set_trace()
         ufc = UserFileCache({'endpoint' : self.config.JobType.filecacheurl})
         result = ufc.upload(archiveName)
         if 'hashkey' not in result:
