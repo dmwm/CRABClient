@@ -46,7 +46,7 @@ class status(SubCommand):
 
     def _percentageString(self, state, value, total):
         state = PUBLICATION_STATES.get(state, state)
-        digit_count = int(math.ceil(math.log(max(value, total)+1, 10))) 
+        digit_count = int(math.ceil(math.log(max(value, total)+1, 10)))
         format_str = "%5.1f%% (%s%" + str(digit_count) + "d%s/%" + str(digit_count) + "d)"
         return format_str % ((value*100/total), self._stateColor(state), value, colors.NORMAL, total)
 
@@ -62,8 +62,6 @@ class status(SubCommand):
         verbose = int(self.summary or self.long or self.json)
         if self.idle:
             verbose = 2
-        if self.publication:
-            verbose = 3
         dictresult, status, reason = server.get(self.uri, data = { 'workflow' : self.cachedinfo['RequestName'], 'verbose': verbose })
         dictresult = dictresult['result'][0] #take just the significant part
 
@@ -72,6 +70,7 @@ class status(SubCommand):
             raise RESTCommunicationException(msg)
 
         self.printShort(dictresult)
+        self.printPublication(dictresult)
 
         if 'jobs' not in dictresult:
             self.logger.info("\nNo jobs created yet!")
@@ -83,8 +82,6 @@ class status(SubCommand):
                self.printLong(dictresult)
             if self.idle:
                self.printIdle(dictresult, user)
-            if self.publication:
-               self.printPublication(dictresult)
             if self.json:
                self.logger.info(dictresult['jobs'])
 
@@ -132,7 +129,7 @@ class status(SubCommand):
 
         self.logger.info("")
         if 'publication' not in dictresult or not dictresult['publication'] or not dictresult['jobsPerStatus']:
-            self.logger.error("%sNo publication information available%s" % (colors.RED, colors.NORMAL))
+            self.logger.error("No publication information available yet")
 
         states = dictresult['publication']
         if states:
@@ -387,22 +384,16 @@ class status(SubCommand):
                                 default = False,
                                 action = "store_true",
                                 help = "Print idle job summary")
-        self.parser.add_option( "--publication",
-                                dest = "publication",
-                                default = False,
-                                action = "store_true",
-                                help = "Print publication summary")
-    
+
     def validateOptions(self):
         SubCommand.validateOptions(self)
 
-        if self.options.idle and (self.options.long or self.options.summary or self.options.publication):
-            raise ConfigurationException("Idle option (-i) conflicts with -u, -l, and -p")
-        if self.options.publication and (self.options.long or self.options.summary or self.options.idle):
-            raise ConfigurationException("Publication option (-p) conflicts with -u, -l, and -i")
+        if self.options.idle and (self.options.long or self.options.summary ):
+            raise ConfigurationException("Idle option (-i) conflicts with -u, and -l")
         self.long = self.options.long
         self.json = self.options.json
         self.summary = self.options.summary
         self.idle = self.options.idle
-        self.publication = self.options.publication
+
+
 
