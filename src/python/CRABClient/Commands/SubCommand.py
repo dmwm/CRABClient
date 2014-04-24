@@ -186,7 +186,7 @@ class SubCommand(ConfigCommand):
 
 
         #Will be use to print available instances
-        availableinstace=' , '.join(SERVICE_INSTANCES)
+        availableinstace=', '.join(SERVICE_INSTANCES)
 
         #if client use the --instance options
         if hasattr(self.options,'instance') and self.options.instance is not None :
@@ -263,9 +263,10 @@ class SubCommand(ConfigCommand):
         compatibleversion = server_info('version', self.serverurl, self.proxyfilename, baseurl)
 
         if __version__ in compatibleversion:
-            self.logger.debug("CRABClient version : %s Compatible"  % __version__ )
+            self.logger.debug("CRABClient version: %s Compatible"  % __version__)
         else:
-            self.logger.info(colors.RED+"WARNING : INCOMPATIBLE CRABClient VERSION : %s " % __version__ +colors.NORMAL)
+            self.logger.info(colors.RED+"WARNING: Incompatible CRABClient version \"%s\" " % __version__ +colors.NORMAL)
+            self.logger.info("Server is saying that compatible versions are: %s"  % compatibleversion)
 
     def handleProxy(self, baseurl=None):
         """ Init the user proxy, and delegate it if necessary.
