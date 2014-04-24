@@ -392,7 +392,7 @@ class status(SubCommand):
                                 default = False,
                                 action = "store_true",
                                 help = "Print publication summary")
-    
+
     def validateOptions(self):
         SubCommand.validateOptions(self)
 

@@ -186,8 +186,7 @@ class SubCommand(ConfigCommand):
 
 
         #Will be use to print available instances
-	
-	availableinstace=' , '.join(SERVICE_INSTANCES.keys())
+        availableinstace=' , '.join(SERVICE_INSTANCES)
 
         #if client use the --instance options
         if hasattr(self.options,'instance') and self.options.instance is not None :
@@ -254,11 +253,8 @@ class SubCommand(ConfigCommand):
                 serverurl=SERVICE_INSTANCES[instance]
         #for client who does not give any instance option or configuration
         else:
-            raise ConfigurationException("Not instance was indicated in the configuration file")
-
-        #last check if the instance or serverurl is None
-        if instance == None or serverurl == None:
-            raise ConfigurationException("A 'None' instance or serverurl is detected")
+            instance = 'prod'
+            serverurl = SERVICE_INSTANCES[instance]
 
         return instance, serverurl
 
