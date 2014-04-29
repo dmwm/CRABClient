@@ -4,7 +4,7 @@ Contains the logic and wraps calls to WMCore.Credential.Proxy
 import logging
 
 from WMCore.Credential.Proxy import Proxy, CredentialException
-
+from WMCore.Services.SiteDB.SiteDB import SiteDBJSON
 from CRABClient.client_exceptions import ProxyCreationException, EnvironmentException
 from CRABClient.client_utilities import colors
 
@@ -36,6 +36,19 @@ class CredentialInteractions(object):
                                   'myproxyAccount' : myproxyAccount
                                   }
         self.proxyChanged = False
+
+    def getHyperNewsName(self):
+        """
+        Return a the client hypernews name
+        """
+        try:
+            proxy=Proxy( self.defaultDelegation )
+        except CredentialException, ex:
+            raise EnvironmentException('Problem with Grid environment. %s ' %ex._message)
+
+        userdn=proxy.getSubject()
+        sdb = SiteDBJSON({"key":proxy.getProxyFilename(), "cert":proxy.getProxyFilename()})
+        return  sdb.dnUserName(userdn)
 
     def getUserName(self):
         """

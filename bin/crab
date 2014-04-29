@@ -88,6 +88,7 @@ class CRABClient(object):
 
 
     def __call__(self):
+
         (options, args) = self.parser.parse_args()
 
         # Set up the logger and exception handling

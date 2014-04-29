@@ -9,6 +9,7 @@ from CRABClient.ClientMapping import mapping
 from CRABClient.CredentialInteractions import CredentialInteractions
 from CRABClient.__init__ import __version__
 from CRABClient.client_utilities import colors
+from WMCore.Credential.Proxy import Proxy
 
 from WMCore.Configuration import loadConfigurationFile, Configuration
 
@@ -119,6 +120,7 @@ class SubCommand(ConfigCommand):
                 self.requestmapper = mapping[self.name]['map']
             self.requiresTaskOption = 'requiresTaskOption' in mapping[self.name] and mapping[self.name]['requiresTaskOption']
             self.initializeProxy = True if 'initializeProxy' not in mapping[self.name] else mapping[self.name]['initializeProxy']
+            self.requiresREST = True if 'requiresREST' not in mapping[self.name] else mapping[self.name]['requiresREST']
             if 'other-config-params' in mapping[self.name]:
                 self.otherConfigParams = mapping[self.name]['other-config-params']
 
@@ -132,11 +134,11 @@ class SubCommand(ConfigCommand):
         self.logger = logger
         self.logfile = ''
         self.logger.debug("Executing command: '%s'" % str(self.name))
-
-        self.crab3dic=self.getConfiDict()
+        self.proxy = None
 
         ##Get the mapping
         self.loadMapping()
+        self.crab3dic=self.getConfiDict()
 
         self.parser = OptionParser(description = self.__doc__, usage = self.usage, add_help_option = True)
         ## TODO: check on self.name should be removed (creating another abstraction in between or refactoring this)
@@ -150,6 +152,10 @@ class SubCommand(ConfigCommand):
         ##Validate the command line parameters before initing the proxy
         self.validateOptions()
 
+        if not self.requiresREST:
+            self.voRole = self.options.voRole
+            self.voGroup = self.options.voGroup
+
         ##if we get an input configuration we load it
         if hasattr(self.options, 'config') and self.options.config is not None:
             self.loadConfig( self.options.config, self.args )
@@ -161,29 +167,32 @@ class SubCommand(ConfigCommand):
 
 
         ##if we get an input task we load the cache and set the url from it
+
         if hasattr(self.options, 'task') and self.options.task:
             self.loadLocalCache()
 
         ## if the server url isn't already set we check the args and then the config
-        if not hasattr(self, 'serverurl'):
+        if not hasattr(self, 'serverurl') and self.requiresREST:
             self.instance, self.serverurl = self.serverInstance()
+        elif not self.requiresREST:
+            self.instance, self.serverurl = None, None
 
         self.updateCrab3()
+        self.handleProxy()
 
-        self.handleProxy(self.getUrl(self.instance, resource='info'))
-        self.checkversion(self.getUrl(self.instance, resource='info'))
-        self.uri = self.getUrl(self.instance)
+        if self.requiresREST:
+            self.checkversion(self.getUrl(self.instance, resource='info'))
+            self.uri = self.getUrl(self.instance)
         self.logger.debug("Instance is %s" %(self.instance))
         self.logger.debug("Server base url is %s" %(self.serverurl))
-        self.logger.debug("Command url %s" %(self.uri))
+        if self.requiresREST:
+            self.logger.debug("Command url %s" %(self.uri))
 
     def serverInstance(self):
-        """Deriving the correct instance to use and the server url. Client is allow to propegate the instance name and coresponding url 
+        """Deriving the correct instance to use and the server url. Client is allow to propegate the instance name and coresponding url
 	   via crabconfig.py or crab option --intance and --serverurl. The variable pass via crab option will always be use over the varible
 	   in crabconfig.py. Instance name must be same as the one in SERVICE_INSTANCES or exception will be raise."""
-
         serverurl = None
-
 
         #Will be use to print available instances
         availableinstace=', '.join(SERVICE_INSTANCES)
@@ -268,25 +277,30 @@ class SubCommand(ConfigCommand):
             self.logger.info(colors.RED+"WARNING: Incompatible CRABClient version \"%s\" " % __version__ +colors.NORMAL)
             self.logger.info("Server is saying that compatible versions are: %s"  % compatibleversion)
 
-    def handleProxy(self, baseurl=None):
+    def handleProxy(self ):
         """ Init the user proxy, and delegate it if necessary.
         """
+
         if not self.options.skipProxy and self.initializeProxy:
             proxy = CredentialInteractions('', '', self.voRole, self.voGroup, self.logger, myproxyAccount=self.serverurl)
+
+            self.proxy = proxy
 
             self.logger.debug("Checking credentials")
             _, self.proxyfilename = proxy.createNewVomsProxy( timeleftthreshold = 720 )
 
-            #get the dn of the agents from the server
-            alldns = server_info('delegatedn', self.serverurl, self.proxyfilename, baseurl)
+            if self.requiresREST: #if the command does not contact the REST we can't delegate the proxy
+                proxy.myproxyAccount = self.serverurl
+                baseurl = self.getUrl(self.instance, resource='info')
+                #get the dn of the task workers from the server
+                alldns = server_info('delegatedn', self.serverurl, self.proxyfilename, baseurl)
 
+                for serverdn in alldns['services']:
+                    proxy.defaultDelegation['serverDN'] = serverdn
+                    proxy.defaultDelegation['myProxySvr'] = 'myproxy.cern.ch'
 
-            for serverdn in alldns['services']:
-                proxy.defaultDelegation['serverDN'] = serverdn
-                proxy.defaultDelegation['myProxySvr'] = 'myproxy.cern.ch'
-
-                self.logger.debug("Registering user credentials for server %s" % serverdn)
-                proxy.createNewMyProxy( timeleftthreshold = 60 * 60 * 24 * RENEW_MYPROXY_THRESHOLD, nokey=True)
+                    self.logger.debug("Registering user credentials for server %s" % serverdn)
+                    proxy.createNewMyProxy( timeleftthreshold = 60 * 60 * 24 * RENEW_MYPROXY_THRESHOLD, nokey=True)
         else:
             self.proxyfilename = self.options.skipProxy
             os.environ['X509_USER_PROXY'] = self.options.skipProxy
@@ -304,42 +318,36 @@ class SubCommand(ConfigCommand):
         self.voGroup = self.cachedinfo['voGroup'] #if not self.options.voGroup else self.options.voGroup
 
     def getConfiDict(self):
+        self.logger.debug("Checking .crab3 file")
+        homedir= str(os.path.expanduser('~'))
+        crab3fdir= homedir + '/.crab3'
+        if not os.path.isfile(crab3fdir):
+            self.logger.debug("Could not find %s creating a new one" % crab3fdir)
+            crab3f=open(crab3fdir,'w')
+            #creating a user dict, do add for future use
+            configdict={ "taskname" : None }
+            json.dump(configdict,crab3f)
+            crab3f.close()
+            return configdict
 
-            self.logger.debug("Checking .crab3 file")
-
-            homedir= str(os.path.expanduser('~'))
-            crab3fdir= homedir + '/.crab3'
-            if not os.path.isfile(crab3fdir):
-                self.logger.debug("Could not find %s creating a new one" % crab3fdir)
-                crab3f=open(crab3fdir,'w')
-
-                #creating a user dict, do add for future use
-
-                configdict={ "taskname" : None }
-
-                json.dump(configdict,crab3f)
-                crab3f.close()
-
-                return configdict
-            else:
-                self.logger.debug("Found %s file" % crab3fdir)
-                crab3f=open(crab3fdir,'r')
-                configdict=json.load(crab3f)
-                crab3f.close()
-
-                return configdict
+        else:
+            self.logger.debug("Found %s file" % crab3fdir)
+            crab3f=open(crab3fdir,'r')
+            configdict=json.load(crab3f)
+            crab3f.close()
+            return configdict
 
 
     def updateCrab3(self):
+        if self.requiresTaskOption:
+            crab3fdir=str(os.path.expanduser('~')) + "/.crab3"
+            crab3f=open(crab3fdir, 'w')
 
-        crab3fdir=str(os.path.expanduser('~')) + "/.crab3"
-        crab3f=open(crab3fdir, 'w')
+            self.crab3dic['taskname']= self.requestname
 
-        self.crab3dic['taskname']= self.requestname
+            json.dump(self.crab3dic, crab3f)
 
-        json.dump(self.crab3dic, crab3f)
-
-        crab3f.close()
+            crab3f.close()
 
     def __call__(self):
         self.logger.info("This is a 'nothing to do' command")
@@ -347,7 +355,7 @@ class SubCommand(ConfigCommand):
 
     def terminate(self, exitcode):
         #We do not want to print logfile for each command...
-        if exitcode < 2000:
+        if exitcode < 2000 and not self.name == 'checkwrite' :
             if getattr(self.options, 'dump', False) or getattr(self.options, 'xroot', False):
                 self.logger.debug("Log file is %s" % os.path.abspath(self.logfile))
             else:
@@ -381,21 +389,22 @@ class SubCommand(ConfigCommand):
         self.parser.add_option( "-g", "--voGroup",
                                 dest = "voGroup",
                                 default = '' )
+        if self.requiresREST:
 
-        self.parser.add_option("--instance",
-                               dest = "instance",
-                               type = "string",
-                               help = "Running instance of CRAB service. Valid values are %s" %str(SERVICE_INSTANCES.keys()))
+            self.parser.add_option("--instance",
+                                   dest = "instance",
+                                   type = "string",
+                                   help = "Running instance of CRAB service. Valid values are %s" %str(SERVICE_INSTANCES.keys()))
 
-        self.parser.add_option( "-s", "--server",
-                                 dest = "server",
-                                 action = "callback",
-                                 type   = 'str',
-                                 nargs  = 1,
-                                 callback = validServerURL,
-                                 metavar = "http://HOSTNAME:PORT",
-                                 default = None,
-                                 help = "Endpoint server url to use" )
+            self.parser.add_option( "-s", "--server",
+                                     dest = "server",
+                                     action = "callback",
+                                     type   = 'str',
+                                     nargs  = 1,
+                                     callback = validServerURL,
+                                     metavar = "http://HOSTNAME:PORT",
+                                     default = None,
+                                     help = "Endpoint server url to use" )
 
     def validateOptions(self):
         """
