@@ -141,7 +141,7 @@ class submit(SubCommand):
         self.logger.info("Submission process completed")
         self.logger.debug("Request ID: %s " % uniquerequestname)
 
-        if not self.options.bypasscheck:
+        if self.options.wait:
             self.checkStatusLoop(server,uniquerequestname)
 
         return uniquerequestname
@@ -160,10 +160,10 @@ class submit(SubCommand):
                                  help = "CRAB configuration file",
                                  metavar = "FILE" )
 
-        self.parser.add_option( "-b","--bypass,",
+        self.parser.add_option( "-w","--wait,",
                                 action="store_true",
-                                dest="bypasscheck",
-                                help="bypass the checking task status after submit",
+                                dest="wait",
+                                help="continuously checking for job status after submitting",
                                 default=False )
 
 
