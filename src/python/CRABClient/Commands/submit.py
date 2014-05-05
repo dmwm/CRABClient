@@ -87,6 +87,8 @@ class submit(SubCommand):
                 configreq["publication"] = 1 if temp else 0
             elif param == "nonprodsw":
                 configreq["nonprodsw"] = 1 if temp else 0
+            elif param == "ignorelocality":
+                configreq["ignorelocality"] = 1 if temp else 0
 
         # Add debug parameters to the configreq dict
         configreq['oneEventMode'] = int(oneEventMode)
