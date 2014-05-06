@@ -53,4 +53,5 @@ mapping = {
     'kill': {'requiresTaskOption' : True},
     'resubmit': {'requiresTaskOption' : True},
     'request_type': {'requiresTaskOption': True},
+    'uploadlog' : {'requiresTaskOption' : True},
 }
