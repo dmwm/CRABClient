@@ -140,7 +140,7 @@ class submit(SubCommand):
                     voRole=self.voRole, voGroup=self.voGroup, instance=self.instance,
                     originalConfig = self.configuration)
 
-        self.logger.info("Submission process completed")
+        self.logger.info("Your task has been delivered to the CRAB3 server. Please use 'crab status' to check how the submission process proceed")
         self.logger.debug("Request ID: %s " % uniquerequestname)
 
         if self.options.wait:
