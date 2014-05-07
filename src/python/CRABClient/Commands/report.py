@@ -47,15 +47,15 @@ class report(SubCommand):
         else:
             jsonFileDir = os.path.join(self.requestarea, 'results')
         if analyzed:
-            with open(os.path.join(jsonFileDir, 'analyzed.json'), 'w') as jsonFile:
+            with open(os.path.join(jsonFileDir, 'lumiSummary.json'), 'w') as jsonFile:
                 json.dump(analyzed, os.path.join(jsonFile))
                 jsonFile.write("\n")
-                self.logger.info("Analyzed lumi written to %s/analyzed.json" % jsonFileDir)
+                self.logger.info("Analyzed lumi written to %s/lumiSummary.json" % jsonFileDir)
         if diff:
-            with open(os.path.join(jsonFileDir, 'diff.json'), 'w') as jsonFile:
+            with open(os.path.join(jsonFileDir, 'missingLumiSummary.json'), 'w') as jsonFile:
                 json.dump(diff, jsonFile)
                 jsonFile.write("\n")
-                self.logger.info("%sNot Analyzed lumi written to %s/diff.json%s" % (colors.RED, jsonFileDir, colors.NORMAL))
+                self.logger.info("%sNot Analyzed lumi written to %s/missingLumiSummary.json%s" % (colors.RED, jsonFileDir, colors.NORMAL))
         if doublelumis:
             with open(os.path.join(jsonFileDir, 'double.json'), 'w') as jsonFile:
                 json.dump(doublelumis, jsonFile)
