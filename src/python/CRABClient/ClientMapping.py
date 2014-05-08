@@ -54,4 +54,5 @@ mapping = {
     'resubmit': {'requiresTaskOption' : True},
     'request_type': {'requiresTaskOption': True},
     'uploadlog' : {'requiresTaskOption' : True},
+    'checkwrite': {'requiresTaskOption': False, 'requiresREST': False},
 }
