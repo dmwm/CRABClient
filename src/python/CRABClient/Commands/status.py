@@ -130,6 +130,7 @@ class status(SubCommand):
         self.logger.info("")
         if 'publication' not in dictresult or not dictresult['publication'] or not dictresult['jobsPerStatus']:
             self.logger.error("No publication information available yet")
+            return
 
         states = dictresult['publication']
         if states:
