@@ -339,7 +339,7 @@ class SubCommand(ConfigCommand):
 
 
     def updateCrab3(self):
-        if self.requiresTaskOption:
+        if self.requiresTaskOption or hasattr(self,'requestname') and self.requestname != None:
             crab3fdir=str(os.path.expanduser('~')) + "/.crab3"
             crab3f=open(crab3fdir, 'w')
 
