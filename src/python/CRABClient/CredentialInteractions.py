@@ -46,7 +46,7 @@ class CredentialInteractions(object):
         except CredentialException, ex:
             raise EnvironmentException('Problem with Grid environment. %s ' %ex._message)
 
-        userdn=proxy.getSubject()
+        userdn=proxy.getSubjectFromCert()
         sdb = SiteDBJSON({"key":proxy.getProxyFilename(), "cert":proxy.getProxyFilename()})
         return  sdb.dnUserName(userdn)
 
@@ -73,7 +73,7 @@ class CredentialInteractions(object):
         except CredentialException, ex:
             self.logger.debug(ex)
             raise EnvironmentException('Problem with Grid environment. %s ' %ex._message)
-        userproxy.userDN = userproxy.getSubject()
+        userproxy.userDN = userproxy.getSubjectFromCert()
 
         proxytimeleft = 0
         self.logger.debug("Getting proxy life time left")
@@ -112,7 +112,7 @@ class CredentialInteractions(object):
             else:
                 raise ProxyCreationException("Problems creating proxy.")
 
-        return userproxy.getSubject( ), userproxy.getProxyFilename()
+        return userproxy.userDN, userproxy.getProxyFilename()
 
     def createNewMyProxy(self, timeleftthreshold=0, nokey=False):
         """
@@ -135,7 +135,7 @@ class CredentialInteractions(object):
         Note that a warning message is printed at every command it usercertDaysLeft < timeleftthreshold
         """
         myproxy = Proxy ( self.defaultDelegation )
-        myproxy.userDN = myproxy.getSubject()
+        myproxy.userDN = myproxy.getSubjectFromCert()
 
         myproxytimeleft = 0
         self.logger.debug("Getting myproxy life time left for %s" % self.defaultDelegation["myProxySvr"])
