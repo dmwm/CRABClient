@@ -47,6 +47,8 @@ class CredentialInteractions(object):
             raise EnvironmentException('Problem with Grid environment. %s ' %ex._message)
 
         userdn=proxy.getSubjectFromCert()
+        username =self.getUserName()
+        userdn = userdn [:userdn.find(username)+len(username)]
         sdb = SiteDBJSON({"key":proxy.getProxyFilename(), "cert":proxy.getProxyFilename()})
         return  sdb.dnUserName(userdn)
 
