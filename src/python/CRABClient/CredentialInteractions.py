@@ -2,6 +2,7 @@
 Contains the logic and wraps calls to WMCore.Credential.Proxy
 """
 import logging
+import os
 
 from WMCore.Credential.Proxy import Proxy, CredentialException
 from WMCore.Services.SiteDB.SiteDB import SiteDBJSON
@@ -36,6 +37,7 @@ class CredentialInteractions(object):
                                   'myproxyAccount' : myproxyAccount
                                   }
         self.proxyChanged = False
+        self.certLocation = '~/.globus/usercert.pem' if 'X509_USER_CERT' not in os.environ else os.environ['X509_USER_CERT']
 
     def getHyperNewsName(self):
         """
@@ -45,8 +47,7 @@ class CredentialInteractions(object):
             proxy=Proxy( self.defaultDelegation )
         except CredentialException, ex:
             raise EnvironmentException('Problem with Grid environment. %s ' %ex._message)
-
-        userdn=proxy.getSubjectFromCert()
+        userdn=proxy.getSubjectFromCert(self.certLocation)
         sdb = SiteDBJSON({"key":proxy.getProxyFilename(), "cert":proxy.getProxyFilename()})
         return  sdb.dnUserName(userdn)
 
@@ -73,7 +74,7 @@ class CredentialInteractions(object):
         except CredentialException, ex:
             self.logger.debug(ex)
             raise EnvironmentException('Problem with Grid environment. %s ' %ex._message)
-        userproxy.userDN = userproxy.getSubjectFromCert()
+        userproxy.userDN = userproxy.getSubjectFromCert(self.certLocation)
 
         proxytimeleft = 0
         self.logger.debug("Getting proxy life time left")
@@ -135,7 +136,7 @@ class CredentialInteractions(object):
         Note that a warning message is printed at every command it usercertDaysLeft < timeleftthreshold
         """
         myproxy = Proxy ( self.defaultDelegation )
-        myproxy.userDN = myproxy.getSubjectFromCert()
+        myproxy.userDN = myproxy.getSubjectFromCert(self.certLocation)
 
         myproxytimeleft = 0
         self.logger.debug("Getting myproxy life time left for %s" % self.defaultDelegation["myProxySvr"])
