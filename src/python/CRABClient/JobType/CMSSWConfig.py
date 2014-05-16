@@ -38,15 +38,15 @@ class CMSSWConfig(object):
             modPath = imp.find_module(cfgBaseName, [cfgDirName])
 
             pyCfgParams = getattr(self.config.JobType, 'pyCfgParams', [])
+            originalArgv = sys.argv
+            sys.argv = [userConfig]
             if pyCfgParams:
-                originalArgv = sys.argv
-                sys.argv = [userConfig]
                 sys.argv.extend(pyCfgParams)
+                self.logger.debug("Extended parameters are %s" % pyCfgParams)
 
             self.fullConfig = imp.load_module(cfgBaseName, modPath[0],
                                               modPath[1],  modPath[2])
-            if pyCfgParams: # Restore original sys.argv
-                sys.argv = originalArgv
+            sys.argv = originalArgv
 
             self.tweakJson = makeTweak(self.fullConfig.process).jsonise()
 
