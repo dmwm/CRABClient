@@ -16,7 +16,12 @@ from optparse import OptionParser
 
 from WMCore.Configuration import Configuration, saveConfigurationFile
 
-DEFAULT_UNITS_PER_JOBS = 50
+DEFAULT_UNITS_PER_JOB = 50
+
+def usage():
+    msg = "Usage: crab2cfgTOcrab3py [<crab2configName>.cfg] [<crab3configName>.py]\n"
+    msg += "crab2configName.cfg defaults to 'crab.cfg'; crab3configName.py defaults to 'crabConfig.py'"
+    return msg
 
 def _getsplitting(configC2, sectionC2, parameterC2):
     if configC2.has_option('CMSSW', 'lumis_per_job') or \
@@ -25,8 +30,7 @@ def _getsplitting(configC2, sectionC2, parameterC2):
     if configC2.has_option('CMSSW', 'events_per_job') or \
         configC2.has_option('CMSSW', 'total_number_of_events') and configC2.has_option('CMSSW', 'number_of_jobs'):
         return 'EventBased'
-    return None
-
+    return 'Please define here the splitting mode as either LumiBased, EventBased or FileBased.'
 
 def _getunits(configC2, sectionC2, parameterC2):
     #either lumis_per_job is set, or both total_number_of_lumis and number_of_jobs.
@@ -41,8 +45,7 @@ def _getunits(configC2, sectionC2, parameterC2):
             return configC2.getint('CMSSW', 'events_per_job')
         else:
             return configC2.getint('CMSSW', 'total_number_of_events') / configC2.getint('CMSSW', 'number_of_jobs')
-    return  None
-
+    return DEFAULT_UNITS_PER_JOB
 
 def _getlist(configC2, sectionC2, parameterC2):
     strlist = RawConfigParser.get(configC2, sectionC2, parameterC2)
@@ -52,45 +55,43 @@ def _getSpacedList(configC2, sectionC2, parameterC2):
     strlist = RawConfigParser.get(configC2, sectionC2, parameterC2)
     return strlist.split()
 
-
 #For each Crab3 parameter give the corresponding crab2 parameter
 paramsMap = [
     ('General'  , 'requestName'          , False, 'USER'   , 'ui_working_dir'           , RawConfigParser.get),
     ('JobType'  , 'psetName'             , True , 'CMSSW'  , 'pset'                     , RawConfigParser.get),
-#    ('JobType'  , 'pyCfgParams'          , False, 'CMSSW'  , 'pycfg_params'             , _getSpacedList),
-    ('JobType'  , 'inputFiles'           , False, 'CMSSW'  , 'additional_input_file'    , _getlist),
+    ('JobType'  , 'pyCfgParams'          , False, 'CMSSW'  , 'pycfg_params'             , _getSpacedList),
+    ('JobType'  , 'inputFiles'           , False, 'CMSSW'  , 'additional_input_files'   , _getlist),
     ('JobType'  , 'outputFiles'          , False, 'CMSSW'  , 'output_file'              , _getlist),
     ('Data'     , 'inputDataset'         , True , 'CMSSW'  , 'datasetpath'              , RawConfigParser.get),
+    ('Data'     , 'dbsUrl'               , False, 'CMSSW'  , 'dbs_url'                  , RawConfigParser.get),
     ('Data'     , 'splitting'            , False, ''       , ''                         , _getsplitting),       #_getsplitting knows corresp. params
     ('Data'     , 'unitsPerJob'          , False, ''       , ''                         , _getunits),           #_getunits does the work
     ('Data'     , 'lumiMask'             , False, 'CMSSW'  , 'lumi_mask'                , RawConfigParser.get),
-#    ('Data'     , 'runRange'             , False, 'CMSSW'  , 'runselection'             , RawConfigParser.get),
-    ('Data'     , 'dbsurl'               , False, 'CMSSW'  , 'dbs_url'                  , RawConfigParser.get),
     ('Data'     , 'publication'          , False, 'USER'   , 'publish_data'             , RawConfigParser.getboolean),
-    ('User'     , 'email'                , False, 'USER'   , 'email'                    , RawConfigParser.get),
+    ('Data'     , 'publishDataName'      , False, 'USER'   , 'publish_data_name'        , RawConfigParser.get),
+    ('Data'     , 'publishDbsUrl'        , False, 'USER'   , 'dbs_url_for_publication'  , RawConfigParser.get),
+    ('User'     , 'email'                , False, 'USER'   , 'eMail'                    , RawConfigParser.get),
     ('User'     , 'voRole'               , False, 'GRID'   , 'role'                     , RawConfigParser.get),
     ('User'     , 'voGroup'              , False, 'GRID'   , 'group'                    , RawConfigParser.get),
     ('Site'     , 'storageSite'          , True , 'USER'   , 'storage_element'          , RawConfigParser.get),
     ('Site'     , 'blacklist'            , False, 'GRID'   , 'se_black_list'            , _getlist),
     ('Site'     , 'whitelist'            , False, 'GRID'   , 'se_white_list'            , _getlist),
-    ('Site'     , 'removeT1Blacklisting' , False, 'GRID'   , 'remove_default_blacklist' , RawConfigParser.getboolean),
-    ('Data'     , 'publishDbsUrl'        , False, 'USER'   , 'dbs_url_for_publication'  , RawConfigParser.get),
-    ('Data'     , 'publishDataName'      , False, 'USER'   , 'publish_data_name'        , RawConfigParser.get),
 ]
 
 #Not yet supported parameters. If they are present in the crab2cfg file we print a message saying they are not yet supported
-notYetSuppParams = ['pyCfgParams',
-                    'runselection',
+notYetSuppParams = ['runselection',
                     'script_arguments',
                     'outputdir',
                     'logdir',
                     'check_user_remote_dir',
+                    'user_remote_dir',
                     'generator',
                     'skip_TFileService_output',
                     'get_edm_output',
                     'thresholdLevel',
                     'requirements',
                     'dont_check_proxy', #we actually have something from the command line
+                    'dont_check_myproxy',
                     'script_exe',
                     'use_parent',
                     'executable',
@@ -105,6 +106,7 @@ notYetSuppParams = ['pyCfgParams',
                     'preserve_seeds',
                     'subscribed',
                     'no_block_boundary',
+                    'remove_default_blacklist',
                    ]
 
 #List of deprecated parameters. We print a warning message saying they are obsolete
@@ -115,11 +117,10 @@ deprecatedParams = [
                     'jobtype',
                     'return_data',
                     'copy_data',
-                    'check_user_remote_dir',
-                    'return_data',
                     'skipwmsauth',
                     'tasktype',
                     'local_stage_out',
+                    'split_by_run',
                     'first_run',
                     'additional_jdl_parameters',
                     'virtual_organization',
@@ -138,22 +139,26 @@ deprecatedParams = [
                     'skipwmsauth',
                     'queue',
                     'resource',
-                    'RB',     
+                    'RB',
+                    'verify_dbs23',
+                    'use_dbs3',
+                    'first_lumi',
                    ]
 
 def parseParameters():
     parser = OptionParser()
     (options, args) = parser.parse_args()
-    if len(args) != 2:
-        if len(args) == 1 :
+    if len(args) == 0:
+        return 'crab.cfg', 'crabConfig.py'
+    elif len(args) == 1:
+        if args[0][-4:] == '.cfg':
             return args[0], 'crabConfig.py'
-        else:
-            msg = "Usage: crab2cfgTOcrab3py crab2configName.cfg crab3configName.py\n"
-            msg += "Please specify at least the CRAB2 config file name, crab3configName.py default to 'crabConfig.py'"
-            print msg
-            sys.exit(1)
-
-    return args[0], args[1]
+        elif args[0][-3:] == '.py':
+            return 'crab.cfg', args[0]
+    elif len(args) == 2:
+        return args[0], args[1]
+    print usage()
+    sys.exit(1)
 
 def checkMonteCarlo(configC3, configC2):
     """
@@ -162,31 +167,35 @@ def checkMonteCarlo(configC3, configC2):
     monteCarlo = False
     if configC2.has_option('CMSSW', 'generator'):
         monteCarlo = True
-
     if configC2.has_option('CMSSW', 'datasetpath') and configC2.get('CMSSW', 'datasetpath') == 'None':
         monteCarlo = True
-
     if monteCarlo:
-        print 'This appears to be a Monte Carlo job, setting type to PrivateMC'
-        configC3.JobType.pluginName = 'PrivateMC'
+        print 'This appears to be a Monte Carlo job, setting type to privateMC'
+        configC3.JobType.pluginName = 'privateMC'
         configC3.Data.totalUnits = configC2.getint('CMSSW', 'total_number_of_events')
-
     return monteCarlo
 
-def getConfiguration(paramsMap, configC2, configNameC3):
-    configC3 = Configuration()
+def checkDBSURL(configC3):
+    if configC3.Data.publishDbsUrl == 'phys03':
+        configC3.Data.publishDbsUrl = 'https://cmsweb.cern.ch/dbs/prod/phys03/DBSWriter/'
+    if configC3.Data.dbsUrl == 'phys03':
+        configC3.Data.dbsUrl = 'https://cmsweb.cern.ch/dbs/prod/phys03/DBSReader/'
+    elif configC3.Data.dbsUrl == 'phys02':
+        configC3.Data.dbsUrl = 'https://cmsweb.cern.ch/dbs/prod/phys02/DBSReader/'
+    elif configC3.Data.dbsUrl == 'phys01':
+        configC3.Data.dbsUrl = 'https://cmsweb.cern.ch/dbs/prod/phys01/DBSReader/'
+    elif configC3.Data.dbsUrl == 'global':
+        configC3.Data.dbsUrl = 'https://cmsweb.cern.ch/dbs/prod/global/DBSReader/'
 
+def getConfiguration(paramsMap, configC2):
+    configC3 = Configuration()
     configC3.section_("General")
     configC3.section_("JobType")
     configC3.section_("Data")
     configC3.section_("User")
     configC3.section_("Site")
-
     configC3.JobType.pluginName = 'Analysis'
-    configC3.General.instance = 'You need to set the CRAB3 instance type: e.g. "private" '
-    configC3.General.serverUrl = 'You need to set the CRAB3 server URL'
     configC3.User.email = ''
-
     missingParams = []
     for sectionC3, parameterC3, mandatory, sectionC2, parameterC2, getter in paramsMap:
         try:
@@ -200,20 +209,18 @@ def getConfiguration(paramsMap, configC2, configNameC3):
         if crab2paramValue != None:
             section = getattr(configC3, sectionC3)
             setattr(section, parameterC3, crab2paramValue)
-
     # Is this CRAB2 config a MC config?
     checkMonteCarlo(configC3, configC2)
-
+    checkDBSURL(configC3)
     return configC3, missingParams
 
 def printUnsupporterParams(configC2):
-    #Get supported parameters from theparamsMap list
+    #Get supported parameters from the paramsMap list
     suppParams = [parameterC2 for _, _, _, _, parameterC2, _ in paramsMap]
     suppParams.extend(['lumis_per_job', 'total_number_of_lumis', 'number_of_jobs', 'events_per_job', 'total_number_of_events'])
     unknown     = []
     obsolete    = []
-    notyetready = []
-    
+    notyetready = []    
     for section in configC2.sections():
         for paramName, _ in configC2.items(section):
             if paramName in deprecatedParams:
@@ -228,37 +235,30 @@ def printUnsupporterParams(configC2):
     if obsolete:
         report += "\nCRAB2 parameters obsolete in CRAB3: \n\t" + ','.join(obsolete) 
     if unknown:
-        report += "\nCRAB2 parameter uknown to this convertion utility: \n\t" + ','.join(unknown)  
+        report += "\nCRAB2 parameters unknown to this convertion utility: \n\t" + ','.join(unknown)  
     if report:
         print 'crab2cfgTOcrab3py report:'   
         print report         
 
+
 if __name__ == "__main__":
     configNameC2, configNameC3 = parseParameters()
-    msg = "Usage: crab2cfgTOcrab3py crab2configName.cfg crab3configName.py\n"
-    msg += "Please specify at least the CRAB2 config file name, crab3configName.py default to 'crabConfig.py'"
     if not os.path.isfile(configNameC2):
         errMsg =  "Error: Cannot find file %s \n" % configNameC2
-        print errMsg + msg
+        print errMsg + usage()
         sys.exit(2)
     if os.path.isfile(configNameC3):
         errMsg =  "Error: File %s already exists\n" % configNameC3
-        print errMsg + msg
+        print errMsg + usage()
         sys.exit(2)
-
     configC2 = RawConfigParser()
     configC2.read(configNameC2)
-
-    configC3, missingParams = getConfiguration(paramsMap, configC2, configNameC3)
+    configC3, missingParams = getConfiguration(paramsMap, configC2)
     if configC3.Data.unitsPerJob < 0:
-        configC3.Data.unitsPerJob = DEFAULT_UNITS_PER_JOBS
-
-
+        configC3.Data.unitsPerJob = DEFAULT_UNITS_PER_JOB
     saveConfigurationFile(configC3, configNameC3)
-
     print 'Convertion done!'
     printUnsupporterParams(configC2)
-
     if len(missingParams) > 0:
         print "WARNING: Not all the mandatory parameters were found in the crab2 configuration file. Open the crab3 generated config file to know which"
 
