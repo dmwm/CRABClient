@@ -141,6 +141,7 @@ class status(SubCommand):
         if states:
             total = sum(states.values())
             states['unsubmitted'] = sum(dictresult['jobsPerStatus'].values()) - total
+            total = sum(dictresult['jobsPerStatus'].values())
             state_list=sorted(states)
             self.logger.info("Publication status:\t\t{0} {1}".format(self._printState(state_list[0], 13), self._percentageString(state_list[0], states[state_list[0]], total)))
             for status in  state_list[1:]:
