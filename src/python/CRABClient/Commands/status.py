@@ -108,11 +108,11 @@ class status(SubCommand):
         elif self.cachedinfo['RequestName'] == dictresult['jobSetID']:
             # CRAB3-HTCondor
             taskname = urllib.quote(dictresult['jobSetID'])
-            self.logger.info("Glidemon monitoring URL:\t\thttp://glidemon.web.cern.ch/glidemon/jobs.php?taskname=%s" % taskname)
+            self.logger.info("Glidemon monitoring URL:\thttp://glidemon.web.cern.ch/glidemon/jobs.php?taskname=%s" % taskname)
             self.username = self.proxy.getHyperNewsName()
             dashurl = 'http://dashb-cms-job.cern.ch/dashboard/templates/task-analysis/#user=' \
                       + self.username + '&refresh=0&table=Jobs&p=1&records=25&activemenu=2&status=&site=&tid='+taskname
-            self.logger.info("Dashboard monitoring URL:\t\t%s" % dashurl)
+            self.logger.info("Dashboard monitoring URL:\t%s" % dashurl)
 
         elif dictresult['jobSetID']:
             username = urllib.quote(getUserName(self.voRole, self.voGroup, self.logger))
@@ -147,6 +147,9 @@ class status(SubCommand):
             for status in  state_list[1:]:
                 if states[status]:
                     self.logger.info("\t\t\t\t{0} {1}".format(self._printState(status, 13), self._percentageString(status, states[status], total)))
+            if 'outdatasets' in dictresult and dictresult['outdatasets']:
+                self.logger.info("Output datasets:\t\t %s" % '\n\t\t\t\t'.join([out + ('\t https://cmsweb.cern.ch/das/request?input=%s&instance=prod%%2Fphys03'\
+                                                       % urllib.quote(out, '')) for out in dictresult['outdatasets']]))
 
 
     def printSummary(self, dictresult):
