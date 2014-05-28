@@ -288,10 +288,19 @@ def validURL(serverurl, attrtohave = ['scheme', 'netloc', 'hostname'], attrtonot
 
 def validateJobids(jobids):
     #check the format of jobids
-    if re.compile('^\d+(,\d+)*$').match(jobids):
-        return [('jobids',jobid) for jobid in jobids.split(',')]
+    if re.match('^\d+((?!(-\d+-))(\,|\-)\d+)*$',jobids):
+        jobid=[]
+        element=jobids.split(',')
+        for number in element:
+            if '-' in number:
+                sub=number.split('-')
+                jobid.extend(range(int(sub[0]),int(sub[1])+1))
+            else:
+                jobid.append(int(number))
+        #removing duplicate and sort the list
+        return list(set(jobid))
     else:
-        raise ConfigurationException("The command line option jobids should be a comma separated list of integers")
+        raise ConfigurationException("The command line option jobids should be a comma separated list of integers or range, no whitespace")
 
 
 #XXX Trying to do it as a Command causes a lot of headaches (and workaround code).
