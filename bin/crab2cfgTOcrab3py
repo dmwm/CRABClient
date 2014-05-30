@@ -55,13 +55,19 @@ def _getSpacedList(configC2, sectionC2, parameterC2):
     strlist = RawConfigParser.get(configC2, sectionC2, parameterC2)
     return strlist.split()
 
+def getInteger(configC2, sectionC2, parameterC2):
+    return configC2.getint(sectionC2, parameterC2)
+
 #For each Crab3 parameter give the corresponding crab2 parameter
 paramsMap = [
     ('General'  , 'requestName'          , False, 'USER'   , 'ui_working_dir'           , RawConfigParser.get),
+    ('General'  , 'transferOutput'       , False, 'USER'   , 'copy_data'                , RawConfigParser.getboolean),
     ('JobType'  , 'psetName'             , True , 'CMSSW'  , 'pset'                     , RawConfigParser.get),
     ('JobType'  , 'pyCfgParams'          , False, 'CMSSW'  , 'pycfg_params'             , _getSpacedList),
     ('JobType'  , 'inputFiles'           , False, 'CMSSW'  , 'additional_input_files'   , _getlist),
     ('JobType'  , 'outputFiles'          , False, 'CMSSW'  , 'output_file'              , _getlist),
+    ('JobType'  , 'maxjobruntime'        , False, 'GRID'   , 'max_wall_clock_time'      , getInteger),
+    ('JobType'  , 'maxmemory'            , False, 'GRID'   , 'max_rss'                  , getInteger),
     ('Data'     , 'inputDataset'         , True , 'CMSSW'  , 'datasetpath'              , RawConfigParser.get),
     ('Data'     , 'dbsUrl'               , False, 'CMSSW'  , 'dbs_url'                  , RawConfigParser.get),
     ('Data'     , 'splitting'            , False, ''       , ''                         , _getsplitting),       #_getsplitting knows corresp. params
@@ -70,6 +76,7 @@ paramsMap = [
     ('Data'     , 'publication'          , False, 'USER'   , 'publish_data'             , RawConfigParser.getboolean),
     ('Data'     , 'publishDataName'      , False, 'USER'   , 'publish_data_name'        , RawConfigParser.get),
     ('Data'     , 'publishDbsUrl'        , False, 'USER'   , 'dbs_url_for_publication'  , RawConfigParser.get),
+    ('Data'     , 'runRange'             , False, 'CMSSW'  , 'runselection'             , RawConfigParser.get),
     ('User'     , 'email'                , False, 'USER'   , 'eMail'                    , RawConfigParser.get),
     ('User'     , 'voRole'               , False, 'GRID'   , 'role'                     , RawConfigParser.get),
     ('User'     , 'voGroup'              , False, 'GRID'   , 'group'                    , RawConfigParser.get),
@@ -79,15 +86,12 @@ paramsMap = [
 ]
 
 #Not yet supported parameters. If they are present in the crab2cfg file we print a message saying they are not yet supported
-notYetSuppParams = ['runselection',
-                    'script_arguments',
+notYetSuppParams = ['script_arguments',
                     'outputdir',
                     'logdir',
                     'check_user_remote_dir',
                     'user_remote_dir',
                     'generator',
-                    'skip_TFileService_output',
-                    'get_edm_output',
                     'thresholdLevel',
                     'requirements',
                     'dont_check_proxy', #we actually have something from the command line
@@ -95,15 +99,11 @@ notYetSuppParams = ['runselection',
                     'script_exe',
                     'use_parent',
                     'executable',
-                    'max_cpu_time',
-                    'max_wall_clock_time',
-                    'max_rss',
-                    'ce_black_list', 
-                    'ce_white_list',
                     'data_location_override',
                     'allow_overflow',
                     'increment_seeds',
                     'preserve_seeds',
+                    'first_run',
                     'subscribed',
                     'no_block_boundary',
                     'remove_default_blacklist',
@@ -116,12 +116,12 @@ deprecatedParams = [
                     'scheduler',
                     'jobtype',
                     'return_data',
-                    'copy_data',
+                    'skip_TFileService_output',
+                    'get_edm_output',
                     'skipwmsauth',
                     'tasktype',
                     'local_stage_out',
                     'split_by_run',
-                    'first_run',
                     'additional_jdl_parameters',
                     'virtual_organization',
                     'wms_service',
@@ -143,6 +143,9 @@ deprecatedParams = [
                     'verify_dbs23',
                     'use_dbs3',
                     'first_lumi',
+                    'ce_black_list', 
+                    'ce_white_list',
+                    'max_cpu_time',
                    ]
 
 def parseParameters():
@@ -156,7 +159,10 @@ def parseParameters():
         elif args[0][-3:] == '.py':
             return 'crab.cfg', args[0]
     elif len(args) == 2:
-        return args[0], args[1]
+        if args[0][-4:] == '.cfg' and args[1][-3:] == '.py':
+            return args[0], args[1]
+        if args[1][-4:] == '.cfg' and args[0][-3:] == '.py':
+            return args[1], args[0]
     print usage()
     sys.exit(1)
 
@@ -260,5 +266,5 @@ if __name__ == "__main__":
     print 'Convertion done!'
     printUnsupporterParams(configC2)
     if len(missingParams) > 0:
-        print "WARNING: Not all the mandatory parameters were found in the crab2 configuration file. Open the crab3 generated config file to know which"
+        print "WARNING: Not all the mandatory parameters were found in the crab2 configuration file. Open the crab3 generated config file to know which."
 
