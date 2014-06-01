@@ -342,11 +342,8 @@ class SubCommand(ConfigCommand):
         if self.requiresTaskOption or hasattr(self,'requestname') and self.requestname != None:
             crab3fdir=str(os.path.expanduser('~')) + "/.crab3"
             crab3f=open(crab3fdir, 'w')
-
-            self.crab3dic['taskname']= self.requestname
-
+            self.crab3dic['taskname'] = self.requestarea
             json.dump(self.crab3dic, crab3f)
-
             crab3f.close()
 
     def __call__(self):
