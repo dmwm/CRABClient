@@ -26,8 +26,6 @@ class PrivateMC(Analysis):
             if not re.match("/%(primDS)s.*" % WMCore.Lexicon.lfnParts, primDS):
                 self.logger.warning("Invalid primary dataset name %s for private MC; publishing may fail" % primDS)
             configArguments['inputdata'] = primDS
-        elif getattr(self.config.Data, 'inputDataset', None):
-            configArguments['inputdata'] = self.config.Data.inputDataset
         else:
             configArguments['inputdata'] = "/CRAB_PrivateMC"
 
