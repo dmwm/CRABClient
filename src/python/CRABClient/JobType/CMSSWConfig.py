@@ -92,7 +92,12 @@ class CMSSWConfig(object):
 
         for outputModName in outputModuleNames:
             outputModule = getattr(self.fullConfig.process, outputModName)
-            poolFiles.append(outputModule.fileName.value())
+            if not outputModule:
+                continue
+            fileName = getattr(outputModule, 'fileName')
+            if not fileName:
+                continue
+            poolFiles.append(fileName.value())
 
         # If there are multiple output files, make sure they have filterNames set
         if len(outputModuleNames) > 1:
