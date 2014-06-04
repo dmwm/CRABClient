@@ -5,6 +5,7 @@ from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.client_utilities import colors
 from WMCore.Services.PhEDEx.PhEDEx import PhEDEx
 from CRABClient.client_exceptions import MissingOptionException,ConfigurationException
+from httplib import HTTPException
 
 class checkwrite(SubCommand):
     """
@@ -21,9 +22,16 @@ class checkwrite(SubCommand):
         phedex= PhEDEx({"cert":self.proxyfilename, "key":self.proxyfilename})
         lfnsadd='/store/user/'+self.username+'/'+self.filename
 
-        #Getting pfn address from phedex
-        pfndict=phedex.getPFN(nodes=[self.options.sitename], lfns=[lfnsadd])
-        pfn=pfndict[(self.options.sitename,lfnsadd)]
+        try:
+            pfndict=phedex.getPFN(nodes=[self.options.sitename], lfns=[lfnsadd])
+            pfn=pfndict[(self.options.sitename,lfnsadd)]
+            if pfn == None:
+                self.logger.info('%sError %s:Failed to get pfn from the site, Please check site status' % (colors.RED, colors.NORMAL) )
+                raise ConfigurationException
+        except HTTPException, errormsg :
+            self.logger.info('%sError :%sFailed to contact PhEDEx or wrong PhEDEx node name is use' %(colors.RED, colors.NORMAL))
+            self.logger.info('Result :%s\nStatus :%s\nurl :%s' % (errormsg.result, errormsg.status, errormsg.url))
+            raise HTTPException, errormsg
 
         cpout, cperr, cpexitcode=self.lcgcp(pfn)
 
@@ -67,7 +75,7 @@ class checkwrite(SubCommand):
 
         abspath=path.abspath(self.filename)
 
-        cpcmd="lcg-cp --connect-timeout 180 " + abspath +' '+ pfn
+        cpcmd="lcg-cp -v -b -D srmv2 --connect-timeout 180 " + abspath +' '+ pfn
         self.logger.info("Attempting to write on site: %s \nExecuting the command: %s\nPlease wait" %(self.options.sitename, cpcmd))
         cpprocess=subprocess.Popen(cpcmd, stdout= subprocess.PIPE, stderr= subprocess.PIPE, shell= True)
         cpout , cperr = cpprocess.communicate()
@@ -112,7 +120,7 @@ class checkwrite(SubCommand):
         """
         self.parser.add_option( '-n', '--site',
                                 dest = 'sitename',
-                                help = 'The name of site to be check')
+                                help = 'The PhEDEx node name of site to be check')
 
     def validateOptions(self):
         SubCommand.validateOptions(self)
