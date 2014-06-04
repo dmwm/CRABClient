@@ -194,11 +194,12 @@ class submit(SubCommand):
                     float(self.configuration.Data.unitsPerJob)
                 except ValueError:
                     return False, "Crab configuration problem: unitsPerJob must be a valid number, not %s" % self.configuration.Data.unitsPerJob
-            if getattr(self.configuration.Data, 'publication', None) and not (hasattr(self.configuration.Data, 'publishDataName') and hasattr(self.configuration.Data, 'publishDbsUrl')):
+            if getattr(self.configuration.Data, 'publication', False) and not (hasattr(self.configuration.Data, 'publishDataName') and hasattr(self.configuration.Data, 'publishDbsUrl')):
                 return False, "Crab configuration problem: if publication is selected publishDataName and publishDbsUrl are both required"
         if getattr(self.configuration, 'Site', None) is None:
             return False, "Crab configuration problem: Site section is missing. "
-        elif getattr(self.configuration.Site, "storageSite", None) is None:
+        elif getattr(self.configuration.Site, "storageSite", None) is None and\
+             (getattr(self.configuration.General, 'transferOutput', True) or getattr(self.configuration.General, 'saveLogs', False)):
             return False, "Crab configuration problem: Site.storageSite parameter is missing. "
 
         if getattr(self.configuration, 'JobType', None) is None:
