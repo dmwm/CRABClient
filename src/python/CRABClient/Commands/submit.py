@@ -89,6 +89,8 @@ class submit(SubCommand):
                 configreq["nonprodsw"] = 1 if temp else 0
             elif param == "ignorelocality":
                 configreq["ignorelocality"] = 1 if temp else 0
+        if (configreq['saveoutput'] or configreq['savelogsflag']) and 'asyncdest' not in configreq:
+            raise ConfigurationException("Missing parameter " + self.requestmapper['asyncdest']['config'] + " from the configuration.")
 
         # Add debug parameters to the configreq dict
         configreq['oneEventMode'] = int(oneEventMode)
