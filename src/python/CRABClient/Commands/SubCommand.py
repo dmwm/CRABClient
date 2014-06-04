@@ -419,7 +419,7 @@ class SubCommand(ConfigCommand):
             if len(self.args) == 1 and self.args[0]:
                 self.options.task = self.args[0]
 
-            elif self.name != "kill" and self.crab3dic["taskname"] != None:
+            elif self.name != "kill" and self.name != 'purge' and self.crab3dic["taskname"] != None:
                 self.options.task = self.crab3dic["taskname"]
 
             else:

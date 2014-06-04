@@ -302,12 +302,13 @@ from RESTInteractions import HTTPRequests
 from CRABClient.client_exceptions import RESTCommunicationException
 from CRABClient import __version__
 
-def server_info(subresource, server, proxyfilename, baseurl):
+def server_info(subresource, server, proxyfilename, baseurl, **kwargs):
     """
     Get relevant information about the server
     """
     server = HTTPRequests(server, proxyfilename, proxyfilename, version=__version__)
-
-    dictresult, status, reason = server.get(baseurl, {'subresource' : subresource})
+    requestdict= {'subresource' : subresource}
+    requestdict.update(**kwargs)
+    dictresult, status, reason = server.get(baseurl, requestdict)
 
     return dictresult['result'][0]
