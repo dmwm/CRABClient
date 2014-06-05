@@ -16,6 +16,12 @@ from CRABClient.client_exceptions import MissingOptionException, ConfigurationEx
 from CRABClient.client_utilities import getJobTypes, createCache, addPlugin, server_info, colors
 from CRABClient import __version__
 
+DBSURLS = {'reader': {'global': 'https://cmsweb.cern.ch/dbs/prod/global/DBSReader',
+                      'phys01': 'https://cmsweb.cern.ch/dbs/prod/phys01/DBSReader',
+                      'phys02': 'https://cmsweb.cern.ch/dbs/prod/phys02/DBSReader',
+                      'phys03': 'https://cmsweb.cern.ch/dbs/prod/phys03/DBSReader',
+                      'caf01' : 'https://cmsweb.cern.ch/dbs/prod/caf/DBSReader'},
+           'writer': {'phys03': 'https://cmsweb.cern.ch/dbs/prod/phys03/DBSWriter'}}
 
 class submit(SubCommand):
     """ Perform the submission to the CRABServer
@@ -82,16 +88,22 @@ class submit(SubCommand):
             if param == "workflow":
                 if mustbetype == type(self.requestname):
                     configreq["workflow"] = self.requestname
-            elif param == "savelogsflag":#TODO use clientmappig to do this
-                configreq["savelogsflag"] = 1 if temp else 0
-            elif param == "publication":
-                configreq["publication"] = 1 if temp else 0
-            elif param == "nonprodsw":
-                configreq["nonprodsw"] = 1 if temp else 0
-            elif param == "ignorelocality":
-                configreq["ignorelocality"] = 1 if temp else 0
-            elif param == 'saveoutput':
-                configreq['saveoutput'] = 1 if temp else 0
+            elif param in ['savelogsflag','publication','nonprodsw','ignorelocality','saveoutput']:#TODO use clientmappig to do this
+                configreq[param] = 1 if temp else 0
+            elif param in ['dbsurl','publishdbsurl']:
+                if param == 'dbsurl':
+                    dbstype = 'reader'
+                elif param == 'publishdbsurl':
+                    dbstype = 'writer'
+                alloweddbsurls = DBSURLS[dbstype].values()
+                alloweddbsurlsaliases = DBSURLS[dbstype].keys()
+                if configreq[param] in alloweddbsurlsaliases:
+                    configreq[param] = DBSURLS[dbstype][configreq[param]]
+                else:
+                    if configreq[param].rstrip('/') in alloweddbsurls:
+                        configreq[param] = configreq[param].rstrip('/')
+                    else:
+                        raise ConfigurationException("Invalid argument " + configreq[param] + " for parameter " + self.requestmapper[param]['config'] + " in the configuration.")
         if (configreq['saveoutput'] or configreq['savelogsflag']) and 'asyncdest' not in configreq:
             raise ConfigurationException("Missing parameter " + self.requestmapper['asyncdest']['config'] + " from the configuration.")
 
@@ -197,6 +209,7 @@ class submit(SubCommand):
                     float(self.configuration.Data.unitsPerJob)
                 except ValueError:
                     return False, "Crab configuration problem: unitsPerJob must be a valid number, not %s" % self.configuration.Data.unitsPerJob
+
         if getattr(self.configuration, 'Site', None) is None:
             return False, "Crab configuration problem: Site section is missing. "
         elif getattr(self.configuration.Site, "storageSite", None) is None and\
