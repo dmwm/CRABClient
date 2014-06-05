@@ -65,7 +65,7 @@ class submit(SubCommand):
                     temp = getattr(temp, attr, None)
                     if temp is None:
                         break
-                if temp:
+                if temp is not None:
                     if mustbetype == type(temp):
                         configreq[param] = temp
                     else:
@@ -73,6 +73,7 @@ class submit(SubCommand):
                                    + ". It is needed a " + str(mustbetype) + ".")
                 elif self.requestmapper[param]['default'] is not None:
                     configreq[param] = self.requestmapper[param]['default']
+                    temp = self.requestmapper[param]['default']
                 elif self.requestmapper[param]['required']:
                     raise ConfigurationException("Missing parameter " + self.requestmapper[param]['config'] + " from the configuration.")
                 else:
