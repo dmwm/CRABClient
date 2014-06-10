@@ -2,8 +2,10 @@ from WMCore.Services.UserFileCache.UserFileCache  import UserFileCache
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.client_utilities import colors
 from CRABClient.client_utilities import server_info
-from CRABClient.client_exceptions import ConfigurationException, MissingOptionException
+from CRABClient.client_exceptions import ConfigurationException, MissingOptionException, RESTCommunicationException
 from httplib import HTTPException
+from RESTInteractions import HTTPRequests
+from CRABClient import __version__
 
 import glob
 import subprocess
@@ -24,6 +26,24 @@ class purge(SubCommand):
             self.logger.info('%sError %s:Could not found tarball or there is more than one tarball'% (colors.RED, colors.NORMAL))
             raise ConfigurationException
         tarballdir=tarballdir[0]
+
+        #checking task status
+
+        self.logger.info('Checking task status')
+        server = HTTPRequests(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
+        dictresult, status, _ = server.get(self.uri, data = { 'workflow' : self.cachedinfo['RequestName'], 'verbose': 0 })
+
+        dictresult = dictresult['result'][0] #take just the significant part
+
+        if status != 200:
+            msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(self.cachedinfo['RequestName']), str(dictresult), str(reason))
+            raise RESTCommunicationException(msg)
+
+        self.logger.info('Task status: %s' % dictresult['status'])
+        accepstate = ['KILLED','FINISHED','FAILED','KILLFAILED']
+        if dictresult['status'] not in accepstate:
+            msg = ('%sERROR %s: Only task with this status can be purge: {0}'.format(accepstate) % (colors.RED, colors.NORMAL))
+            raise ConfigurationException(msg)
 
         #getting the cache url
 
