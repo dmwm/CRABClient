@@ -187,6 +187,8 @@ if __name__ == "__main__":
         exitcode = 3
     except HTTPException, he:
         client.logger.info("Error contacting the server.")
+        if he.status==503 and he.result.find("CMSWEB Error: Service unavailable")!=-1:
+            client.logger.info("It seems the CMSWEB frontend is not responding. Please check: https://twiki.cern.ch/twiki/bin/viewauth/CMS/ScheduledInterventions")
         if he.headers.has_key('X-Error-Detail'):
             client.logger.info('Server answered with: %s' % he.headers['X-Error-Detail'])
         if he.headers.has_key('X-Error-Info'):
