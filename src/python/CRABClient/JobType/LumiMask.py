@@ -33,7 +33,7 @@ def getLumiMask(config, logger=None):
 
     runRange = _expandRange( getattr(config.Data, 'runRange', ''))
 
-    return dict((run, lumi) for run, lumi in lumiMask.iteritems() if not runRange or run in runRange)
+    return dict((run, lumi) for run, lumi in lumiMask.iteritems() if not runRange or int(run) in runRange)
 
 
 
