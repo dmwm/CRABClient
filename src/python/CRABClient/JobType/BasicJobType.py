@@ -50,14 +50,14 @@ class BasicJobType(object):
     @staticmethod
     def mergeLumis(inputdata, lumimask):
         """
-        Computes the processed lumis, merges if needed and returns the compacted list.
+        Computes the processed lumis, merges if needed and returns the compacted list (called when usedbs=no).
         """
         doubleLumis = set()
         mergedLumis = set()
 
         #merge the lumis from single files
         for report in inputdata:
-            for run,lumis in report.items():
+            for run,lumis in report.iteritems():
                 for lumi in lumis:
                     if (run,lumi) in mergedLumis:
                         doubleLumis.add((run,lumi))
@@ -76,3 +76,25 @@ class BasicJobType(object):
 
         #get the compact list using CMSSW framework
         return mergedLumis.getCompactList(), (LumiList(compactList=lumimask) - mergedLumis).getCompactList(), doubleLumis.getCompactList()
+
+    @staticmethod
+    def subtractLumis(input, output):
+        """
+        Computes the processed lumis, merges from the DBS reuslts (called when usedbs=yes).
+        """
+        out = LumiList(runsAndLumis=output)
+        in_ = LumiList(runsAndLumis=input)
+        diff = in_ - out
+
+        #calculate lumis counted twice
+        doubleLumis = set()
+        for run,lumis in output.iteritems():
+            for lumi in lumis:
+                if output[run].count(lumi) > 1:
+                    doubleLumis.add((run,lumi))
+        dLumisDict = {}
+        for k, v in doubleLumis:
+            dLumisDict.setdefault(k, []).append(v)
+        double = LumiList(runsAndLumis=dLumisDict)
+
+        return out.getCompactList(), diff.getCompactList(), double.getCompactList()
