@@ -52,9 +52,27 @@ class BasicJobType(object):
         """
         Computes the processed lumis, merges if needed and returns the compacted list.
         """
-        mergedlumis = LumiList()
-        doublelumis = LumiList()
+        doubleLumis = set()
+        mergedLumis = set()
+
+        #merge the lumis from single files
         for report in inputdata:
-            doublelumis = mergedlumis & LumiList(runsAndLumis=report)
-            mergedlumis = mergedlumis | LumiList(runsAndLumis=report)
-        return mergedlumis.getCompactList(), (LumiList(compactList=lumimask) - mergedlumis).getCompactList(), doublelumis.getCompactList()
+            for run,lumis in report.items():
+                for lumi in lumis:
+                    if (run,lumi) in mergedLumis:
+                        doubleLumis.add((run,lumi))
+                    mergedLumis.add((run,lumi))
+
+        #convert the runlumis from list of pairs to dict: [(123,3), (123,4), (123,5), (123,7), (234,6)] => {123 : [3,4,5,7], 234 : [6]}
+        dLumisDict = {}
+        mLumisDict = {}
+        for k, v in doubleLumis:
+            dLumisDict.setdefault(k, []).append(v)
+        for k, v in mergedLumis:
+            mLumisDict.setdefault(k, []).append(v)
+
+        doubleLumis = LumiList(runsAndLumis=dLumisDict)
+        mergedLumis = LumiList(runsAndLumis=mLumisDict)
+
+        #get the compact list using CMSSW framework
+        return mergedLumis.getCompactList(), (LumiList(compactList=lumimask) - mergedLumis).getCompactList(), doubleLumis.getCompactList()
