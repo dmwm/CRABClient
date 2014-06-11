@@ -17,10 +17,10 @@ import logging
 from WMCore.Configuration import loadConfigurationFile, Configuration
 from WMCore.Services.UserFileCache.UserFileCache import UserFileCache
 import PandaServerInterface as PandaInterface
-
+from CRABClient.client_exceptions import EnvironmentException
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
 from CRABClient.client_exceptions import InputFileNotFoundException, CachefileNotFoundException
-
+from CRABClient.client_utilities import colors
 
 class UserTarball(object):
     """
@@ -56,6 +56,7 @@ class UserTarball(object):
             self.logger.debug(" checking directory %s" % fullPath)
             if os.path.exists(fullPath):
                 self.logger.debug(" adding directory %s to tarball" % fullPath)
+                self.checkdirectory(fullPath)
                 self.tarfile.add(fullPath, directory, recursive=True)
 
         # Search for and tar up "data" directories in src/
@@ -64,6 +65,7 @@ class UserTarball(object):
             if os.path.basename(root) in dataDirs:
                 directory = root.replace(srcPath,'src')
                 self.logger.debug(" adding data directory %s to tarball" % root)
+                self.checkdirectory(root)
                 self.tarfile.add(root, directory, recursive=True)
 
         # Tar up extra files the user needs
@@ -73,6 +75,7 @@ class UserTarball(object):
                 raise InputFileNotFoundException('The input file "%s" taken from parameter config.JobType.inputFiles cannot be found' % globName)
             for filename in fileNames:
                 self.logger.debug(" adding file %s to tarball" % filename)
+                self.checkdirectory(filename)
                 self.tarfile.add(filename, os.path.basename(filename), recursive=True)
 
         # Adding the pset file to the tarfile
@@ -128,6 +131,18 @@ class UserTarball(object):
                 #sha256sum.update(chunkdata)
         #sha256sum.hexdigest()
 
+    def checkdirectory(self,dir):
+
+        #checking for infinite symbolic link loop
+        try :
+            for root , _ , files in os.walk(dir, followlinks = True ):
+                for file in files:
+                    os.stat(os.path.join(root, file ))
+
+        except OSError , msg :
+            err = '%sError %s:Infinite directory loop found in: %s \nStderr: %s' % \
+                    (colors.RED, colors.NORMAL, dir , msg)
+            raise EnvironmentException(err)
 
     def __getattr__(self, *args):
         """
