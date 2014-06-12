@@ -4,7 +4,7 @@ import json
 from optparse import OptionParser, SUPPRESS_HELP
 
 from CRABClient.client_utilities import loadCache, getWorkArea, server_info, validServerURL, createWorkArea
-from CRABClient.client_exceptions import ConfigurationException, MissingOptionException ,EnvironmentException
+from CRABClient.client_exceptions import ConfigurationException, MissingOptionException
 from CRABClient.ClientMapping import mapping
 from CRABClient.CredentialInteractions import CredentialInteractions
 from CRABClient.__init__ import __version__
@@ -155,7 +155,6 @@ class SubCommand(ConfigCommand):
         if not self.requiresREST:
             self.voRole = self.options.voRole
             self.voGroup = self.options.voGroup
-
         ##if we get an input configuration we load it
         if hasattr(self.options, 'config') and self.options.config is not None:
             self.loadConfig( self.options.config, self.args )
@@ -209,16 +208,16 @@ class SubCommand(ConfigCommand):
                     self.logger.info("Please use 'private' instance to specify custom server url")
                     raise ConfigurationException("Custom url is given for instance other than 'private'")
                 else:
-                    serverurl=SERVICE_INSTANCES[instance]
+                    serverurl = SERVICE_INSTANCES[instance]
 
             #for private instance
             elif instance in SERVICE_INSTANCES and SERVICE_INSTANCES[instance] == None:
                 #checking if url is given from option
                 if hasattr(self.options, 'server') and self.options.server is not None:
-                    serverurl=self.options.server
+                    serverurl = self.options.server
                 #checking if url is given from configuration
                 elif hasattr(self.configuration.General, 'serverUrl'):
-                    serverurl=self.configuration.General.serverUrl
+                    serverurl = self.configuration.General.serverUrl
                 else:
                     raise MissingOptionException("Custom url is not given for private instance")
 
@@ -232,8 +231,8 @@ class SubCommand(ConfigCommand):
         #for client that uses the --server option but no --instance option
         elif hasattr(self.options, 'server') and self.options.server is not None:
             if hasattr(self.configuration.General, 'instance') and self.configuration.General.instance == 'private':
-                serverurl=self.options.server
-                instance='private'
+                serverurl = self.options.server
+                instance = 'private'
 
             elif hasattr(self.configuration.General, 'instance') and self.configuration.General.instance != 'private':
                 self.logger.info("Error: Custom server url is given for instance other that 'private'")
@@ -244,7 +243,7 @@ class SubCommand(ConfigCommand):
 
         #for client that does not use --server option or --instance option
         elif hasattr(self.configuration.General, 'instance'):
-            instance=self.configuration.General.instance
+            instance = self.configuration.General.instance
 
             #checking if instance given is vaild
             if instance not in SERVICE_INSTANCES:
@@ -252,14 +251,14 @@ class SubCommand(ConfigCommand):
                 raise ConfigurationException("Wrong instance is given in configuration file")
 
             #for instance 'private'
-            elif SERVICE_INSTANCES[instance]== None:
+            elif SERVICE_INSTANCES[instance] == None:
                 if hasattr(self.configuration.General, 'serverUrl'):
-                    serverurl=self.configuration.General.serverUrl
+                    serverurl = self.configuration.General.serverUrl
                 else:
                     raise ConfigurationException("Error: Private instance require server url in the configuration file")
             #for instance other than 'private'
             else:
-                serverurl=SERVICE_INSTANCES[instance]
+                serverurl = SERVICE_INSTANCES[instance]
         #for client who does not give any instance option or configuration
         else:
             instance = 'prod'
@@ -267,7 +266,7 @@ class SubCommand(ConfigCommand):
 
         return instance, serverurl
 
-    def checkversion(self, baseurl=None):
+    def checkversion(self, baseurl = None):
 
         compatibleversion = server_info('version', self.serverurl, self.proxyfilename, baseurl)
 
@@ -318,8 +317,9 @@ class SubCommand(ConfigCommand):
         self.voGroup = self.cachedinfo['voGroup'] #if not self.options.voGroup else self.options.voGroup
 
     def getConfiDict(self):
-
-        crab3fdir=self.crabcachepath()
+        self.logger.debug("Checking .crab3 file")
+        homedir = str(os.path.expanduser('~'))
+        crab3fdir = homedir + '/.crab3'
         if not os.path.isfile(crab3fdir):
             self.logger.debug("Could not find %s creating a new one" % crab3fdir)
             crab3f = open(crab3fdir,'w')
@@ -330,27 +330,21 @@ class SubCommand(ConfigCommand):
             return configdict
 
         else:
-            self.logger.debug("Found %s file" % crab3fdir)
-            crab3f = open(crab3fdir,'r')
-            configdict = json.load(crab3f)
-            crab3f.close()
+            try :
+                self.logger.debug("Found %s file" % crab3fdir)
+                crab3f = open(crab3fdir,'r')
+                configdict = json.load(crab3f)
+                crab3f.close()
+            except ValueError:
+                self.logger.info('%sError %s:Error in reading json file, try to do "rm -rf ~/.crab3", and do the crab comment again'\
+                    % (colors.RED, colors.NORMAL))
+                raise ConfigurationException
             return configdict
-
-    def crabcachepath(self):
-
-        if 'CRAB3_CACHE_FILE' in os.environ and os.path.isabs(os.environ['CRAB3_CACHE_FILE']):
-            return os.environ['CRAB3_CACHE_FILE']
-        elif 'CRAB3_CACHE_FILE' in os.environ and not os.path.isabs(os.environ['CRAB3_CACHE_FILE']):
-            self.logger.info('%sError %s:An invalid path is use for CRAB3_CACHE_FILE, please export a valid full path' % (colors.RED, colors.NORMAL))
-            raise EnvironmentException
-        else:
-            return str(os.path.expanduser('~')) + '/.crab3'
 
 
     def updateCrab3(self):
-
         if self.requiresTaskOption or hasattr(self,'requestname') and self.requestname != None:
-            crab3fdir=self.crabcachepath()
+            crab3fdir = str(os.path.expanduser('~')) + "/.crab3"
             crab3f = open(crab3fdir, 'w')
             self.crab3dic['taskname'] = self.requestarea
             json.dump(self.crab3dic, crab3f)
@@ -434,4 +428,3 @@ class SubCommand(ConfigCommand):
 
             else:
                 raise MissingOptionException('ERROR: Task option is required')
-
