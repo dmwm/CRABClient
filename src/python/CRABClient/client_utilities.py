@@ -141,7 +141,12 @@ def getRequestName(requestName = None):
     prefix  = 'crab_'
     postfix = str(datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
 
-    if requestName is None or len(requestName) == 0:
+    if '/' in requestName :
+        msg = '%sError %s: The "/" character is not accepted in the requestName parameter.\
+         If your intention was to specity the location of your task, please use the config.General.workArea parameter' \
+              % (colors.RED, colors.NORMAL)
+        raise ConfigurationException(msg)
+    elif requestName is None or len(requestName) == 0:
         return prefix + postfix
     else:
         return prefix + requestName # + '_' + postfix
@@ -182,10 +187,12 @@ def createWorkArea(logger, workingArea = '.', requestName = ''):
 
     if workingArea is None or workingArea == '.' :
         workingArea = os.getenv('CRAB_WORKING_AREA', '.')
+    elif not os.path.isabs(workingArea):
+        workingArea = os.path.abspath(workingArea)
 
     ## create the working area if it is not there
     if not os.path.exists(workingArea):
-        os.mkdir( workingArea )
+        os.makedirs(workingArea)
 
     requestName = getRequestName(requestName)
 
