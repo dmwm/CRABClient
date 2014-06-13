@@ -1,6 +1,7 @@
 import os
 import imp
 import json
+import re
 from optparse import OptionParser, SUPPRESS_HELP
 
 from CRABClient.client_utilities import loadCache, getWorkArea, server_info, validServerURL, createWorkArea
@@ -148,10 +149,13 @@ class SubCommand(ConfigCommand):
 
         ##Parse the command line parameters
         (self.options, self.args) = self.parser.parse_args( cmdargs )
-
+        if hasattr(self.options, 'uniquetaskname') and self.options.uniquetaskname != None :
+            self.requiresTaskOption = False
+            self.voRole =  'NULL'
+            self.voGroup = ''
+            self.uniquetaskname = self.options.uniquetaskname
         ##Validate the command line parameters before initing the proxy
         self.validateOptions()
-
         if not self.requiresREST:
             self.voRole = self.options.voRole
             self.voGroup = self.options.voGroup
@@ -167,16 +171,19 @@ class SubCommand(ConfigCommand):
 
         ##if we get an input task we load the cache and set the url from it
 
-        if hasattr(self.options, 'task') and self.options.task:
-            self.loadLocalCache()
+        if hasattr(self.options, 'task') and self.options.task: self.loadLocalCache()
+        if self.name != 'submit':
+            if not hasattr(self.options, 'uniquetaskname') or self.options.uniquetaskname == None:
+                self.uniquetaskname = self.cachedinfo['RequestName']
 
         ## if the server url isn't already set we check the args and then the config
         if not hasattr(self, 'serverurl') and self.requiresREST:
             self.instance, self.serverurl = self.serverInstance()
-        elif not self.requiresREST:
-            self.instance, self.serverurl = None, None
 
-        self.updateCrab3()
+        elif not self.requiresREST: self.instance, self.serverurl = None, None
+
+        if self.requiresTaskOption or self.name == 'submit' : self.updateCrab3()
+
         self.handleProxy()
 
         if self.requiresREST:
@@ -242,7 +249,7 @@ class SubCommand(ConfigCommand):
                 raise Exception
 
         #for client that does not use --server option or --instance option
-        elif hasattr(self.configuration.General, 'instance'):
+        elif hasattr(self, 'configuration') and hasattr(self.configuration.General, 'instance'):
             instance = self.configuration.General.instance
 
             #checking if instance given is vaild
@@ -381,7 +388,12 @@ class SubCommand(ConfigCommand):
             self.parser.add_option( "-t", "--task",
                                      dest = "task",
                                      default = None,
-                                     help = "Same as -c/-continue" )
+                                     help = "specify task folder" )
+            if self.name != 'purge':
+                self.parser.add_option( "--uniquetaskname",
+                                        dest = "uniquetaskname",
+                                        default = None,
+                                        help = "Specify the unique task name" )
 
         self.parser.add_option( "-r", "--voRole",
                                 dest = "voRole",
@@ -397,7 +409,7 @@ class SubCommand(ConfigCommand):
                                    type = "string",
                                    help = "Running instance of CRAB service. Valid values are %s" %str(SERVICE_INSTANCES.keys()))
 
-            self.parser.add_option( "-s", "--server",
+            self.parser.add_option( "--server",
                                      dest = "server",
                                      action = "callback",
                                      type   = 'str',
@@ -428,3 +440,28 @@ class SubCommand(ConfigCommand):
 
             else:
                 raise MissingOptionException('ERROR: Task option is required')
+
+        if hasattr(self.options ,'uniquetaskname') and self.options.uniquetaskname != None :
+
+            if not re.match('^\d{6}_\d{6}_.+:.+', self.options.uniquetaskname ):
+                msg = '%sError %s:Uniqe task name give did not match regular expersion, please check the unique task is given'\
+                %(colors.RED, colors.NORMAL)
+                raise ConfigurationException(msg)
+
+            if self.name == 'report':
+                if not hasattr(self.options, 'outdir') or self.options.outdir == None :
+                    msg = '%sError %s:Please use the --outputdir option to specify in which directory to write the report json'\
+                    %(colors.RED, colors.NORMAL)
+                    raise ConfigurationException(msg)
+
+            if self.name == 'getlog' or self.name == 'getoutput':
+                if hasattr(self.options, 'dump') and self.options.dump:
+                    pass
+                if hasattr(self.options, 'xroot') and self.options.xroot:
+                   pass
+                elif not hasattr(self.options, 'outputpath') or self.options.outputpath == None :
+                    msg = '%sError %s:Please use the --outputpath option to specify in which directory to put the downloaded file'\
+                    %(colors.RED, colors.NORMAL)
+                    raise ConfigurationException(msg)
+
+

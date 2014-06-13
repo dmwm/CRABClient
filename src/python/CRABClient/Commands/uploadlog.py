@@ -29,7 +29,7 @@ class uploadlog(SubCommand):
         cacheurldict={'endpoint' : cacheurl}
 
         ufc=UserFileCache(cacheurldict)
-        logfilename=str(self.cachedinfo['RequestName'])+".log"
+        logfilename=str(self.uniquetaskname)+".log"
 
         self.logger.debug("cacheURL: %s\nLog file name: %s" % (cacheurl, logfilename))
         self.logger.info("Uploading log file")

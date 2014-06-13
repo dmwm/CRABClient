@@ -14,8 +14,8 @@ class request_type(SubCommand):
         proxyfile = self.options.proxyfile if self.options.proxyfile else self.proxyfilename
         server = HTTPRequests(self.serverurl, proxyfile, proxyfile, version=__version__)
 
-        self.logger.debug('Looking type for task %s' % self.cachedinfo['RequestName'])
-        dictresult, status, reason = server.get(self.uri, data = {'workflow': self.cachedinfo['RequestName'], 'subresource': 'type'})
+        self.logger.debug('Looking type for task %s' % self.uniquetaskname)
+        dictresult, status, reason = server.get(self.uri, data = {'workflow': self.uniquetaskname, 'subresource': 'type'})
         self.logger.debug('Task type %s' % dictresult['result'][0])
         return dictresult['result'][0]
 

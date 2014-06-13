@@ -22,11 +22,11 @@ class postmortem(SubCommand):
 
         server = HTTPRequests(self.cachedinfo['Server'] + ':' + str(self.cachedinfo['Port']))
 
-        self.logger.debug('Looking up detailed postmortem of task %s' % self.cachedinfo['RequestName'])
-        dictresult, postmortem, reason = server.get(self.uri + self.cachedinfo['RequestName'])
+        self.logger.debug('Looking up detailed postmortem of task %s' % self.uniquetaskname)
+        dictresult, postmortem, reason = server.get(self.uri + self.uniquetaskname)
 
         if postmortem != 200:
-            msg = "Problem retrieving postmortem:\ninput:%s\noutput:%s\nreason:%s" % (str(self.cachedinfo['RequestName']), str(dictresult), str(reason))
+            msg = "Problem retrieving postmortem:\ninput:%s\noutput:%s\nreason:%s" % (str(self.uniquetaskname), str(dictresult), str(reason))
             return CommandResult(1, msg)
 
         for workflow in dictresult['errors']:
