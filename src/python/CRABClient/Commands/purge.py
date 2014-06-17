@@ -31,12 +31,12 @@ class purge(SubCommand):
 
         self.logger.info('Checking task status')
         server = HTTPRequests(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
-        dictresult, status, _ = server.get(self.uri, data = { 'workflow' : self.cachedinfo['RequestName'], 'verbose': 0 })
+        dictresult, status, reason = server.get(self.uri, data = { 'workflow' : self.uniquetaskname, 'verbose': 0 })
 
         dictresult = dictresult['result'][0] #take just the significant part
 
         if status != 200:
-            msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(self.cachedinfo['RequestName']), str(dictresult), str(reason))
+            msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(self.uniquetaskname), str(dictresult), str(reason))
             raise RESTCommunicationException(msg)
 
         self.logger.info('Task status: %s' % dictresult['status'])
@@ -67,7 +67,7 @@ class purge(SubCommand):
             self.logger.info('Getting the schedd address')
             baseurl=self.getUrl(self.instance, resource='info')
             try:
-                sceddaddress = server_info('scheddaddress', self.serverurl, self.proxyfilename, baseurl, workflow = self.cachedinfo['RequestName'] )
+                sceddaddress = server_info('scheddaddress', self.serverurl, self.proxyfilename, baseurl, workflow = self.uniquetaskname )
             except HTTPException, he:
                 self.logger.info('%sError %s:Failed to get the schedd address' % (colors.RED, colors.NORMAL))
                 raise HTTPException,he
@@ -75,7 +75,7 @@ class purge(SubCommand):
             self.logger.debug('Schedd address: %s' % sceddaddress)
             self.logger.info('Attempting to clean user file schedd')
 
-            gssishrm = 'gsissh -o ConnectTimeout=60 -o PasswordAuthentication=no ' + sceddaddress + ' rm -rf ' + self.cachedinfo['RequestName']
+            gssishrm = 'gsissh -o ConnectTimeout=60 -o PasswordAuthentication=no ' + sceddaddress + ' rm -rf ' + self.uniquetaskname
             self.logger.debug('gsissh command: %s' % gssishrm)
 
             delprocess=subprocess.Popen(gssishrm, stdout= subprocess.PIPE, stderr= subprocess.PIPE, shell=True)

@@ -8,7 +8,7 @@ from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.client_utilities import getJobTypes, colors
 from CRABClient.JobType.BasicJobType import BasicJobType
 from CRABClient import __version__
-
+from CRABClient.client_exceptions import RESTCommunicationException
 from RESTInteractions import HTTPRequests
 
 class report(SubCommand):
@@ -20,13 +20,13 @@ class report(SubCommand):
     def __call__(self):
         server = HTTPRequests(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
 
-        self.logger.debug('Looking up report for task %s' % self.cachedinfo['RequestName'])
-        dictresult, status, reason = server.get(self.uri, data = {'workflow': self.cachedinfo['RequestName'], 'subresource': 'report'})
+        self.logger.debug('Looking up report for task %s' % self.uniquetaskname)
+        dictresult, status, reason = server.get(self.uri, data = {'workflow': self.uniquetaskname, 'subresource': 'report'})
 
         self.logger.debug("Result: %s" % dictresult)
 
         if status != 200:
-            msg = "Problem retrieving report:\ninput:%s\noutput:%s\nreason:%s" % (str(self.cachedinfo['RequestName']), str(dictresult), str(reason))
+            msg = "Problem retrieving report:\ninput:%s\noutput:%s\nreason:%s" % (str(self.uniquetaskname), str(dictresult), str(reason))
             raise RESTCommunicationException(msg)
         if not dictresult['result'][0]['runsAndLumis'] :
             self.logger.info('No jobs finished yet. Report is available when jobs complete')
@@ -71,7 +71,7 @@ class report(SubCommand):
         self.parser.add_option( "-o", "--outputdir",
                                  dest = "outdir",
                                  default = None,
-                                 help = "Filename to write JSON summary to" )
+                                 help = "Directory to write JSON summary to" )
 
     def validateOptions(self):
         """

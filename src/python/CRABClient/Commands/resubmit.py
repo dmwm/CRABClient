@@ -16,15 +16,15 @@ class resubmit(SubCommand):
     def __call__(self):
         server = HTTPRequests(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
 
-        self.logger.debug('Requesting resubmission for failed jobs in task %s' % self.cachedinfo['RequestName'] )
-        configreq = { 'workflow' : self.cachedinfo['RequestName']}
+        self.logger.debug('Requesting resubmission for failed jobs in task %s' % self.uniquetaskname )
+        configreq = { 'workflow' : self.uniquetaskname}
 
         for attr in ['maxmemory', 'maxjobruntime', 'numcores', 'priority']:
             val = getattr(self, attr, None)
             if val:
                 configreq[attr] = val
 
-        dictresult, status, reason = server.post(self.uri, data = urlencode({ 'workflow' : self.cachedinfo['RequestName']}) + \
+        dictresult, status, reason = server.post(self.uri, data = urlencode({ 'workflow' : self.uniquetaskname}) + \
                                                     self.sitewhitelist + self.siteblacklist + '&' + urlencode(self.jobids))
         self.logger.debug("Result: %s" % dictresult)
 

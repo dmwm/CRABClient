@@ -1,4 +1,3 @@
-
 from CRABClient.Commands import CommandResult, mergeResults
 from CRABClient.Commands.remote_copy import remote_copy
 from CRABClient.Commands.SubCommand import SubCommand
@@ -21,19 +20,21 @@ class getcommand(SubCommand):
 
     def __call__(self, **argv):
         #Setting default destination if -o is not provided
-        if not self.dest:
-            self.dest = os.path.join(self.requestarea, 'results')
+        if not hasattr(self.options, 'dump') and not self.optins.dump:
 
-        # Destination is a URL.
-        if re.match("^[a-z]+://", self.dest):
-            if not self.dest.endswith("/"):
-                self.dest += "/"
-        #Creating the destination directory if necessary
-        elif not os.path.exists( self.dest ):
-            self.logger.debug("Creating directory %s " % self.dest)
-            os.makedirs( self.dest)
-        elif not os.path.isdir( self.dest ):
-            raise ConfigurationException('Destination directory is a file')
+            if not self.dest:
+                self.dest = os.path.join(self.requestarea, 'results')
+
+            # Destination is a URL.
+            if re.match("^[a-z]+://", self.dest):
+                if not self.dest.endswith("/"):
+                    self.dest += "/"
+            #Creating the destination directory if necessary
+            elif not os.path.exists( self.dest ):
+                self.logger.debug("Creating directory %s " % self.dest)
+                os.makedirs( self.dest)
+            elif not os.path.isdir( self.dest ):
+                raise ConfigurationException('Destination directory is a file')
 
         if self.options.dump or self.options.xroot:
             self.logger.debug("Getting url info")
@@ -41,8 +42,8 @@ class getcommand(SubCommand):
             self.logger.info("Setting the destination to %s " % self.dest )
 
         #Retrieving output files location from the server
-        self.logger.debug('Retrieving locations for task %s' % self.cachedinfo['RequestName'] )
-        inputlist =  [ ('workflow', self.cachedinfo['RequestName']) ]
+        self.logger.debug('Retrieving locations for task %s' % self.uniquetaskname )
+        inputlist =  [ ('workflow', self.uniquetaskname) ]
         inputlist.extend(list(argv.iteritems()))
         if getattr(self.options, 'quantity', None):
             self.logger.debug('Retrieving %s file locations' % self.options.quantity )
@@ -66,7 +67,8 @@ class getcommand(SubCommand):
         cpresults = []
 #        for workflow in dictresult['result']: TODO re-enable this when we will have resubmissions
         workflow = dictresult['result']        #TODO assigning workflow to dictresult. for the moment we have only one wf
-        arglist = ['-d', self.dest, '-i', workflow, '-t', self.options.task, '-p', self.proxyfilename, '-l',self.options.nparallel, '-w',self.options.waittime]
+        if not hasattr(self.options, 'dump') and not self.optins.dump:
+            arglist = ['-d', self.dest, '-i', workflow, '-t', self.options.task, '-p', self.proxyfilename, '-l',self.options.nparallel, '-w',self.options.waittime]
         if len(workflow) > 0:
             if self.options.xroot:
                 self.logger.debug("XRootD url is requested")

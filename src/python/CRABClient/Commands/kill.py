@@ -16,13 +16,13 @@ class kill(SubCommand):
     def __call__(self):
         server = HTTPRequests(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
 
-        self.logger.debug('Killing task %s' % self.cachedinfo['RequestName'])
-        dictresult, status, reason = server.delete(self.uri, data = urlencode({ 'workflow' : self.cachedinfo['RequestName']}) + '&' + urlencode(self.jobids))
+        self.logger.debug('Killing task %s' % self.uniquetaskname)
+        dictresult, status, reason = server.delete(self.uri, data = urlencode({ 'workflow' : self.uniquetaskname}) + '&' + urlencode(self.jobids))
         self.logger.debug("Result: %s" % dictresult)
 
         if status != 200:
             msg = "Problem killing task %s:\ninput:%s\noutput:%s\nreason:%s" % \
-                    (self.cachedinfo['RequestName'], str(self.cachedinfo['RequestName']), str(dictresult), str(reason))
+                    (self.uniquetaskname, str(self.uniquetaskname), str(dictresult), str(reason))
             raise RESTCommunicationException(msg)
 
         self.logger.info("Kill request successfully sent")
