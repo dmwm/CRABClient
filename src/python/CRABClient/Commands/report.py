@@ -32,17 +32,17 @@ class report(SubCommand):
             raise RESTCommunicationException(msg)
 
         # check if we got the desired results
-        if not dictresult['result'][0]['runsAndLumis'] and self.usedbs=='no':
-            self.logger.info('Cannot get the information we need from the CRAB server. Did the jobs finish with transfer performed?')
+        if not self.usedbs and not dictresult['result'][0]['runsAndLumis']:
+            self.logger.info('Cannot get the information we need from the CRAB server. Did the jobs finish? Has the outputs transfer been performed?')
             return dictresult
-        elif not dictresult['result'][0]['dbsInLumilist'] and not dictresult['result'][0]['dbsOutLumilist'] and self.usedbs=='yes':
+        elif self.usedbs and not dictresult['result'][0]['dbsInLumilist'] and not dictresult['result'][0]['dbsOutLumilist']:
             self.logger.info('Cannot get the information we need from DBS. Maybe the output (or input) dataset are empty? Are the jobs finished and the publication'+\
                              ' has been performed?')
             return dictresult
 
         #get the runlumi per each job. runsAndLumis contains the filematadata info per job
         runlumiLists = map(lambda x: literal_eval(x['runlumi']), dictresult['result'][0]['runsAndLumis'].values())
-        if self.usedbs=='no':
+        if not self.usedbs:
             analyzed, diff, doublelumis = BasicJobType.mergeLumis(runlumiLists, dictresult['result'][0]['lumiMask'])
             numFiles = len(reduce(set().union, map(lambda x: literal_eval(x['parents']), dictresult['result'][0]['runsAndLumis'].values())))
             self.logger.info("%d files have been read" % numFiles)
