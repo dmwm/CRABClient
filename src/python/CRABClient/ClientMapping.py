@@ -21,7 +21,7 @@ mapping = {
                             "dbsurl"            : {"default": 'https://cmsweb.cern.ch/dbs/prod/global/DBSReader', "config": 'Data.dbsUrl',        "type": "StringType", "required": False},
                             "publishdbsurl"     : {"default": 'https://cmsweb.cern.ch/dbs/prod/phys03/DBSWriter', "config": 'Data.publishDbsUrl', "type": "StringType", "required": False},
                             "publication"       : {"default": False,            "config": 'Data.publication',                "type": "BooleanType", "required": False},
-                            "lfnprefix"         : {"default": None,             "config": 'Data.prefix',                     "type": "StringType",  "required": False},
+                            "lfn"               : {"default": None,             "config": 'Data.outlfn',                     "type": "StringType",  "required": False},
                             "sitewhitelist"     : {"default": None,             "config": 'Site.whitelist',                  "type": "ListType",    "required": False},
                             "siteblacklist"     : {"default": None,             "config": 'Site.blacklist',                  "type": "ListType",    "required": False},
                             "splitalgo"         : {"default": None,             "config": 'Data.splitting',                  "type": "StringType",  "required": True },
