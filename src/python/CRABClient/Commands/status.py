@@ -69,7 +69,7 @@ class status(SubCommand):
             msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(self.cachedinfo['RequestName']), str(dictresult), str(reason))
             raise RESTCommunicationException(msg)
 
-        self.printShort(dictresult)
+        self.printShort(dictresult, user)
         self.printPublication(dictresult)
 
         if 'jobs' not in dictresult:
@@ -85,7 +85,7 @@ class status(SubCommand):
             if self.json:
                self.logger.info(dictresult['jobs'])
 
-    def printShort(self, dictresult):
+    def printShort(self, dictresult, username):
 
         self.logger.debug(dictresult) #should be something like {u'result': [[123, u'ciao'], [456, u'ciao']]}
 
@@ -109,9 +109,8 @@ class status(SubCommand):
             # CRAB3-HTCondor
             taskname = urllib.quote(dictresult['jobSetID'])
             self.logger.info("Glidemon monitoring URL:\thttp://glidemon.web.cern.ch/glidemon/jobs.php?taskname=%s" % taskname)
-            self.username = self.proxy.getHyperNewsName()
             dashurl = 'http://dashb-cms-job.cern.ch/dashboard/templates/task-analysis/#user=' \
-                      + self.username + '&refresh=0&table=Jobs&p=1&records=25&activemenu=2&status=&site=&tid='+taskname
+                      + username + '&refresh=0&table=Jobs&p=1&records=25&activemenu=2&status=&site=&tid='+taskname
             self.logger.info("Dashboard monitoring URL:\t%s" % dashurl)
 
         elif dictresult['jobSetID']:
@@ -138,7 +137,10 @@ class status(SubCommand):
             return
 
         states = dictresult['publication']
-        if states:
+
+        if 'error' in states:
+            self.logger.info("Publication status:\t\t%s" % states['error'])
+        elif states:
             total = sum(states.values())
             states['unsubmitted'] = sum(dictresult['jobsPerStatus'].values()) - total
             total = sum(dictresult['jobsPerStatus'].values())
