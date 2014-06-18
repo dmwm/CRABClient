@@ -77,7 +77,6 @@ paramsMap = [
     ('Data'     , 'publishDataName'      , False, 'USER'   , 'publish_data_name'        , RawConfigParser.get),
     ('Data'     , 'publishDbsUrl'        , False, 'USER'   , 'dbs_url_for_publication'  , RawConfigParser.get),
     ('Data'     , 'runRange'             , False, 'CMSSW'  , 'runselection'             , RawConfigParser.get),
-    ('User'     , 'email'                , False, 'USER'   , 'eMail'                    , RawConfigParser.get),
     ('User'     , 'voRole'               , False, 'GRID'   , 'role'                     , RawConfigParser.get),
     ('User'     , 'voGroup'              , False, 'GRID'   , 'group'                    , RawConfigParser.get),
     ('Site'     , 'storageSite'          , False, 'USER'   , 'storage_element'          , RawConfigParser.get),

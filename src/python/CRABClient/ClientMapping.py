@@ -42,7 +42,7 @@ mapping = {
                                            "JobType.pluginName", "JobType.externalPluginFile", "JobType.psetName",
                                            "JobType.inputFiles", "JobType.pyCfgParams", "Data.primaryDataset",
                                            "Data.inputDataset", "Data.lumiMask", "Data.runRange",
-                                           "User.email", "General.instance", "Debug.oneEventMode", "Data.userInputFile"],
+                                           "General.instance", "Debug.oneEventMode", "Data.userInputFile"],
                   'requiresTaskOption' : False,
                 },
     'getlog': {'requiresTaskOption' : True},
