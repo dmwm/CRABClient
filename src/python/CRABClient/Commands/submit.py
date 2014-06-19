@@ -197,9 +197,6 @@ class submit(SubCommand):
         if getattr(self.configuration, 'General', None) is None:
             return False, "Crab configuration problem: general section is missing. "
 
-        if getattr(self.configuration, 'User', None) is None:
-            return False, "Crab configuration problem: User section is missing ."
-
         if getattr(self.configuration, 'Data', None) is None:
             return False, "Crab configuration problem: Data section is missing. "
         else:
