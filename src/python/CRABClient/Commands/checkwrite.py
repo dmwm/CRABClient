@@ -26,11 +26,11 @@ class checkwrite(SubCommand):
             pfndict=phedex.getPFN(nodes=[self.options.sitename], lfns=[lfnsadd])
             pfn=pfndict[(self.options.sitename,lfnsadd)]
             if pfn == None:
-                self.logger.info('%sError %s:Failed to get pfn from the site, Please check site status' % (colors.RED, colors.NORMAL) )
+                self.logger.info('%sError%s: Failed to get pfn from the site, Please check site status' % (colors.RED, colors.NORMAL) )
                 raise ConfigurationException
         except HTTPException, errormsg :
-            self.logger.info('%sError :%sFailed to contact PhEDEx or wrong PhEDEx node name is use' %(colors.RED, colors.NORMAL))
-            self.logger.info('Result :%s\nStatus :%s\nurl :%s' % (errormsg.result, errormsg.status, errormsg.url))
+            self.logger.info('%sError:%s Failed to contact PhEDEx or wrong PhEDEx node name is use' %(colors.RED, colors.NORMAL))
+            self.logger.info('Result: %s\nStatus :%s\nurl :%s' % (errormsg.result, errormsg.status, errormsg.url))
             raise HTTPException, errormsg
 
         cpout, cperr, cpexitcode=self.lcgcp(pfn)
@@ -40,7 +40,7 @@ class checkwrite(SubCommand):
             exitcode = 0
 
         elif 'timeout' in cpout or 'timeout' in cperr:
-            self.logger.info("%sError : %sConnection time out, try again later" %(colors.RED, colors.NORMAL))
+            self.logger.info("%sError: %sConnection time out, try again later" %(colors.RED, colors.NORMAL))
             exitcode =1
         elif 'exist' in cpout or 'exist' in cperr:
             exitcode=1
@@ -57,9 +57,9 @@ class checkwrite(SubCommand):
             exitcode = 1
 
         if exitcode == 0:
-            self.logger.info("%sSuccess: %sSuccessfully write on site %s" %(colors.GREEN, colors.NORMAL, self.options.sitename))
+            self.logger.info("%sSuccess%s: Successfully write on site %s" %(colors.GREEN, colors.NORMAL, self.options.sitename))
         elif exitcode != 0:
-            self.logger.info("%sError: %sUnable to write on site %s" % (colors.RED, colors.NORMAL, self.options.sitename))
+            self.logger.info("%sError%s: Unable to write on site %s" % (colors.RED, colors.NORMAL, self.options.sitename))
 
 
 
@@ -70,7 +70,7 @@ class checkwrite(SubCommand):
             file = open(self.filename,'w')
             file.close()
         except IOError:
-            self.logger.info("%sError: %s failed to create local %s" % (colors.RED,colors.NORMAL,self.filename))
+            self.logger.info("%sError%s:  failed to create local %s" % (colors.RED,colors.NORMAL,self.filename))
             raise Exception
 
         abspath=path.abspath(self.filename)
@@ -82,14 +82,14 @@ class checkwrite(SubCommand):
         cpexitcode=cpprocess.returncode
 
         if cpexitcode != 0 :
-            self.logger.info("%sError : %sError in lcg-cp \nStdout: \n%s\nStderr: \n%s" %(colors.RED,colors.NORMAL,cpout,cperr))
+            self.logger.info("%sError%s: Error in lcg-cp \nStdout: \n%s\nStderr: \n%s" %(colors.RED,colors.NORMAL,cpout,cperr))
         elif cpexitcode ==0 :
-            self.logger.info("%sSuccess: %sSuccessfully run lcg-cp" %(colors.GREEN, colors.NORMAL))
+            self.logger.info("%sSuccess%s: Successfully run lcg-cp" %(colors.GREEN, colors.NORMAL))
 
         try:
             remove(abspath)
         except Exception:
-            self.logger.info("%sError: %sFailed in deleting local %s" % self.filename)
+            self.logger.info("%sError%s: Failed in deleting local %s" % self.filename)
             pass
 
         return cpout, cperr, cpexitcode
@@ -104,10 +104,10 @@ class checkwrite(SubCommand):
         delexitcode=delprocess.returncode
 
         if delexitcode != 0:
-            self.logger.info("%sError:%s Failed in running lcg-del\nStdout:\n%s\nStderr:\n%s" \
+            self.logger.info("%sError%s:  Failed in running lcg-del\nStdout:\n%s\nStderr:\n%s" \
                              % (colors.RED, colors.NORMAL, delout, delerr))
         elif delexitcode ==0 :
-            self.logger.info("%sSuccess: %sSuccessfully run lcg-del" %(colors.GREEN, colors.NORMAL))
+            self.logger.info("%sSuccess%s: Successfully run lcg-del" %(colors.GREEN, colors.NORMAL))
 
         return delexitcode
 #return exit code

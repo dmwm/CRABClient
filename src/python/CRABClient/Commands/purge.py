@@ -23,7 +23,7 @@ class purge(SubCommand):
 
         tarballdir=glob.glob(self.requestarea+'/inputs/*.tgz')
         if len(tarballdir) != 1 :
-            self.logger.info('%sError %s:Could not found tarball or there is more than one tarball'% (colors.RED, colors.NORMAL))
+            self.logger.info('%sError%s :Could not find tarball or there is more than one tarball'% (colors.RED, colors.NORMAL))
             raise ConfigurationException
         tarballdir=tarballdir[0]
 
@@ -59,9 +59,9 @@ class purge(SubCommand):
             self.logger.info('Attempting to clean user file cache')
             ufcresult = ufc.removeFile(hashkey)
             if ufcresult == '' :
-                self.logger.info('%sSuccess %s:Successfully remove file from cache' % (colors.GREEN, colors.NORMAL))
+                self.logger.info('%sSuccess%s: Successfully remove file from cache' % (colors.GREEN, colors.NORMAL))
             else:
-                self.logger.info('%sError %s:Failed to remove the file from cache' % (colors.RED, colors.NORMAL))
+                self.logger.info('%sError%s: Failed to remove the file from cache' % (colors.RED, colors.NORMAL))
 
         if not self.options.cacheonly:
             self.logger.info('Getting the schedd address')
@@ -69,9 +69,9 @@ class purge(SubCommand):
             try:
                 sceddaddress = server_info('scheddaddress', self.serverurl, self.proxyfilename, baseurl, workflow = self.cachedinfo['RequestName'] )
             except HTTPException, he:
-                self.logger.info('%sError %s:Failed to get the schedd address' % (colors.RED, colors.NORMAL))
+                self.logger.info('%sError%s: Failed to get the schedd address' % (colors.RED, colors.NORMAL))
                 raise HTTPException,he
-            self.logger.debug('%sSuccess %s:Successfully getting schedd address' % (colors.GREEN, colors.NORMAL))
+            self.logger.debug('%sSuccess%s: Successfully getting schedd address' % (colors.GREEN, colors.NORMAL))
             self.logger.debug('Schedd address: %s' % sceddaddress)
             self.logger.info('Attempting to clean user file schedd')
 
@@ -83,9 +83,9 @@ class purge(SubCommand):
             exitcode = delprocess.returncode
 
             if exitcode == 0 :
-                self.logger.info('%sSuccess %s:Successfully remove task from scehdd' % (colors.GREEN, colors.NORMAL))
+                self.logger.info('%sSuccess%s: Successfully remove task from scehdd' % (colors.GREEN, colors.NORMAL))
             else :
-                self.logger.info('%sError %s:Failed to remove task from schedd' % (colors.RED, colors.NORMAL))
+                self.logger.info('%sError%s: Failed to remove task from schedd' % (colors.RED, colors.NORMAL))
                 self.logger.debug('gsissh stdout: %s\ngsissh stderr: %s\ngsissh exitcode: %s' % (stdout,stderr,exitcode))
 
     def setOptions(self):
