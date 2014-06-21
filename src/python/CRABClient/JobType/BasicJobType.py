@@ -67,9 +67,9 @@ class BasicJobType(object):
         dLumisDict = {}
         mLumisDict = {}
         for k, v in doubleLumis:
-            dLumisDict.setdefault(k, []).append(v)
+            dLumisDict.setdefault(k, []).append(int(v))
         for k, v in mergedLumis:
-            mLumisDict.setdefault(k, []).append(v)
+            mLumisDict.setdefault(k, []).append(int(v))
 
         doubleLumis = LumiList(runsAndLumis=dLumisDict)
         mergedLumis = LumiList(runsAndLumis=mLumisDict)
