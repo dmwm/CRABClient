@@ -85,7 +85,7 @@ class report(SubCommand):
 
         self.parser.add_option( "--dbs",
                                  dest = "usedbs",
-                                 default = 'yes',
+                                 default = 'no',
                                  help = "Tell the server to use the information in DBS to build the input lumi lists and the output lumi lists."+\
                                         "Allowed values are yes/no. Default is yes." )
 
