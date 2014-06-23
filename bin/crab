@@ -12,10 +12,11 @@ if sys.version_info < (2, 6):
     print '\nError: using a version of python < 2.6. Exiting...\n'
     sys.exit()
 
+import os
 import json
+import pycurl
 import logging
 import logging.handlers
-import os
 
 from httplib import HTTPException
 from optparse import OptionParser, OptionGroup
@@ -216,6 +217,12 @@ if __name__ == "__main__":
         client.logger.debug('     Request headers: %s' % he.headers)
         logging.getLogger('CRAB3:traceback').exception('Caught exception')
         exitcode = he.status
+    except pycurl.error, pe:
+        client.logger.error(pe)
+        logging.getLogger('CRAB3:traceback').exception('Caught exception')
+        exitcode = pe.args[0]
+        if pe[1].find('(DNS server returned answer with no data)'):
+            client.logger.info("It seems the CMSWEB frontend is not responding. Please check: https://twiki.cern.ch/twiki/bin/viewauth/CMS/ScheduledInterventions")
     except ClientException, ce:
         client.logger.error(ce)
         logging.getLogger('CRAB3:traceback').exception('Caught exception')
