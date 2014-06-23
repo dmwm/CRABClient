@@ -152,18 +152,28 @@ class SubCommand(ConfigCommand):
         ##Validate the command line parameters before initing the proxy
         self.validateOptions()
 
-        if not self.requiresREST:
-            self.voRole = self.options.voRole
-            self.voGroup = self.options.voGroup
+        self.voRole  = self.options.voRole  if self.options.voRole  is not None else ''
+        self.voGroup = self.options.voGroup if self.options.voGroup is not None else ''
         ##if we get an input configuration we load it
         if hasattr(self.options, 'config') and self.options.config is not None:
             self.loadConfig( self.options.config, self.args )
             self.requestarea, self.requestname, self.logfile = createWorkArea(self.logger,
                                                                               getattr(self.configuration.General, 'workArea', None),
                                                                               getattr(self.configuration.General, 'requestName', None))
-            self.voRole = self.options.voRole if self.options.voRole else getattr(self.configuration.User, "voRole", "")
-            self.voGroup = self.options.voGroup if self.options.voGroup else getattr(self.configuration.User, "voGroup", "")
-
+            if self.options.voRole  is None and hasattr(self.configuration, 'User'):
+                self.voRole  = getattr(self.configuration.User, 'voRole',  '')
+            if self.options.voGroup is None and hasattr(self.configuration, 'User'):
+                self.voGroup = getattr(self.configuration.User, 'voGroup', '')
+            if (self.options.voRole  is not None) and (hasattr(self.configuration, 'User') and hasattr(self.configuration.User, 'voRole' )):
+                msg = "Ignoring VO role specified in configuration file. Using VO role \"%s\" "
+                if self.voRole == '': msg += "(i.e. no VO role) "
+                msg += "as specified in the command line."
+                self.logger.info(msg % self.voRole)
+            if (self.options.voGroup is not None) and (hasattr(self.configuration, 'User') and hasattr(self.configuration.User, 'voGroup')):
+                msg = "Ignoring VO group specified in configuration file. Using VO group \"%s\" "
+                if self.voGroup == '': msg += "(i.e. no VO group) "
+                msg += "as specified in the command line."
+                self.logger.info(msg % self.voGroup)
 
         ##if we get an input task we load the cache and set the url from it
 
@@ -385,11 +395,11 @@ class SubCommand(ConfigCommand):
 
         self.parser.add_option( "-r", "--voRole",
                                 dest = "voRole",
-                                default = '' )
+                                default = None )
 
         self.parser.add_option( "-g", "--voGroup",
                                 dest = "voGroup",
-                                default = '' )
+                                default = None )
         if self.requiresREST:
 
             self.parser.add_option("--instance",
