@@ -48,7 +48,7 @@ class ConfigCommand:
             valid, configmsg = self.validateConfig() #subclasses of SubCommand overrhide this if needed
         except RuntimeError, re:
             msg = self._extractReason(configname, re)
-            raise ConfigurationException("Configuration syntax error: \n %s.\nSee the crab.log file for more details" % msg)
+            raise ConfigurationException("Configuration syntax error: \n %s.\nSee the ./crab.log file for more details" % msg)
         else:
             ## file is there, check if it is ok
             if not valid:
@@ -60,6 +60,7 @@ class ConfigCommand:
         Get the reason of the failure without the stacktrace. Put the stacktrace in the crab.log file
         """
         #get only the error wihtout the stacktrace
+        msg = str(re)
         filename = os.path.abspath( configname )
         cfgBaseName = os.path.basename( filename ).replace(".py", "")
         cfgDirName = os.path.dirname( filename )
