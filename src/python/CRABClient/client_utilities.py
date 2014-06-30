@@ -305,7 +305,8 @@ def validateJobids(jobids):
             else:
                 jobid.append(int(number))
         #removing duplicate and sort the list
-        return list(set(jobid))
+        jobid = list(set(jobid))
+        return [('jobids',job) for job in jobid]
     else:
         raise ConfigurationException("The command line option jobids should be a comma separated list of integers or range, no whitespace")
 
