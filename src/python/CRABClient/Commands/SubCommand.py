@@ -4,7 +4,7 @@ import json
 from optparse import OptionParser, SUPPRESS_HELP
 
 from CRABClient.client_utilities import loadCache, getWorkArea, server_info, validServerURL, createWorkArea
-from CRABClient.client_exceptions import ConfigurationException, MissingOptionException
+from CRABClient.client_exceptions import ConfigurationException, MissingOptionException , EnvironmentException
 from CRABClient.ClientMapping import mapping
 from CRABClient.CredentialInteractions import CredentialInteractions
 from CRABClient.__init__ import __version__
@@ -327,9 +327,8 @@ class SubCommand(ConfigCommand):
         self.voGroup = self.cachedinfo['voGroup'] #if not self.options.voGroup else self.options.voGroup
 
     def getConfiDict(self):
-        self.logger.debug("Checking .crab3 file")
-        homedir = str(os.path.expanduser('~'))
-        crab3fdir = homedir + '/.crab3'
+
+        crab3fdir=self.crabcachepath()
         if not os.path.isfile(crab3fdir):
             self.logger.debug("Could not find %s creating a new one" % crab3fdir)
             crab3f = open(crab3fdir,'w')
@@ -352,9 +351,20 @@ class SubCommand(ConfigCommand):
             return configdict
 
 
+
+    def crabcachepath(self):
+
+         if 'CRAB3_CACHE_FILE' in os.environ and os.path.isabs(os.environ['CRAB3_CACHE_FILE']):
+             return os.environ['CRAB3_CACHE_FILE']
+         elif 'CRAB3_CACHE_FILE' in os.environ and not os.path.isabs(os.environ['CRAB3_CACHE_FILE']):
+             msg = '%sError%s: An invalid path is use for CRAB3_CACHE_FILE, please export a valid full path' % (colors.RED, colors.NORMAL)
+             raise EnvironmentException(msg)
+         else:
+             return str(os.path.expanduser('~')) + '/.crab3'
+
     def updateCrab3(self):
         if self.requiresTaskOption or hasattr(self,'requestname') and self.requestname != None:
-            crab3fdir = str(os.path.expanduser('~')) + "/.crab3"
+            crab3fdir=self.crabcachepath()
             crab3f = open(crab3fdir, 'w')
             self.crab3dic['taskname'] = self.requestarea
             json.dump(self.crab3dic, crab3f)
