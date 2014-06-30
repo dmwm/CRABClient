@@ -177,7 +177,7 @@ class submit(SubCommand):
 
         self.parser.add_option( "-c", "--config",
                                  dest = "config",
-                                 default = './crabConfig.py',
+                                 default = None,
                                  help = "CRAB configuration file",
                                  metavar = "FILE" )
 
