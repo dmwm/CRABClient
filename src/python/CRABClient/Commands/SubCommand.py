@@ -434,9 +434,12 @@ class SubCommand(ConfigCommand):
         Raise a ConfigurationException in case of error, does not do anything if ok
         """
 
-        if self.name == 'submit' and len(self.args) == 1 and self.args[0]:
-            self.options.config = self.args[0]
-            del self.args[:]
+        if self.name == 'submit' and self.options.config is None:
+            if len(self.args) and '=' not in self.args[0]:
+                self.options.config = self.args[0]
+                del self.args[0]
+            else:
+                self.options.config = 'crabConfig.py'
 
         if self.requiresTaskOption and not self.options.task:
             if len(self.args) == 1 and self.args[0]:
