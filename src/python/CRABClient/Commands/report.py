@@ -33,11 +33,11 @@ class report(SubCommand):
 
         # check if we got the desired results
         if not self.usedbs and not dictresult['result'][0]['runsAndLumis']:
-            self.logger.info('Cannot get the information we need from the CRAB server. Did the jobs finish? Has the outputs transfer been performed?')
+            self.logger.info('%sError%s: Fail in getting the information we need from the CRAB server. Only job that in FINISH state and the ouput has been transfered can be use' % (colors.RED,colors.NORMAL))
             return dictresult
         elif self.usedbs and not dictresult['result'][0]['dbsInLumilist'] and not dictresult['result'][0]['dbsOutLumilist']:
-            self.logger.info('Cannot get the information we need from DBS. Maybe the output (or input) dataset are empty? Are the jobs finished and the publication'+\
-                             ' has been performed?')
+            self.logger.info('%sError%s: Fail in getting the information we need from DBS. Please check if the output (or input) dataset are not empty and the jobs is FINISH state and the publication'+\
+                             ' has been performed' % (colors.RED, colors.NORMAL))
             return dictresult
 
         #get the runlumi per each job. runsAndLumis contains the filematadata info per job
@@ -65,12 +65,12 @@ class report(SubCommand):
             with open(os.path.join(jsonFileDir, 'missingLumiSummary.json'), 'w') as jsonFile:
                 json.dump(diff, jsonFile)
                 jsonFile.write("\n")
-                self.logger.info("%sNot Analyzed lumi written to %s/missingLumiSummary.json%s" % (colors.RED, jsonFileDir, colors.NORMAL))
+                self.logger.info("%sWarning%: Not Analyzed lumi written to %s/missingLumiSummary.json" % (colors.RED, colors.NORMAL, jsonFileDir))
         if doublelumis:
             with open(os.path.join(jsonFileDir, 'double.json'), 'w') as jsonFile:
                 json.dump(doublelumis, jsonFile)
                 jsonFile.write("\n")
-                self.logger.info("%sDouble lumis written to %s/double.json%s" % (colors.RED, jsonFileDir, colors.NORMAL))
+                self.logger.info("%sWarning%s: Double lumis written to %s/double.json" % (colors.RED, colors.NORMAL, jsonFileDir))
 
     def setOptions(self):
         """

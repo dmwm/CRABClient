@@ -157,7 +157,7 @@ class submit(SubCommand):
                     voRole=self.voRole, voGroup=self.voGroup, instance=self.instance,
                     originalConfig = self.configuration)
 
-        self.logger.info(colors.GREEN+"Your task has been delivered to the CRAB3 server."+colors.NORMAL)
+        self.logger.info("%sSuccess%s: Your task has been delivered to the CRAB3 server." %(colors.GREEN, colors.NORMAL))
         if not self.options.wait:
             self.logger.info("Please use 'crab status' to check how the submission process proceed")
             self.logger.debug("Request ID: %s " % uniquerequestname)
@@ -290,10 +290,10 @@ class submit(SubCommand):
 
                 if dictresult['status'] == 'FAILED':
                     continuecheck = False
-                    self.logger.info(self.logger.info(colors.RED+"The submission of your task failed. Please use 'crab status -t <Task Name>' to get the error message" + colors.NORMAL))
+                    self.logger.info(self.logger.info("%sError%s: The submission of your task failed. Please use 'crab status -t <Task Name>' to get the error message" %(colors.RED, colors.NORMAL)))
                 elif dictresult['status'] == 'SUBMITTED' or dictresult['status'] == 'UNKNOWN': #untile the node_state file is available status is unknown
                     continuecheck = False
-                    self.logger.info(colors.GREEN+"Your task has been processed and your jobs have been submitted successfully"+colors.NORMAL)
+                    self.logger.info("%sSuccess %s:Your task has been processed and your jobs have been submitted successfully" % (colors.GREEN, colors.NORMAL))
                 elif dictresult['status'] in ['NEW','HOLDING','QUEUED']:
                     self.logger.info("Please wait...")
                     time.sleep(30) #the original 60 second query time is too long
@@ -301,7 +301,6 @@ class submit(SubCommand):
                     continuecheck = False
                     self.logger.info("Please check crab.log ")
                     self.logger.debug("CRABS Status other than FAILED,SUBMITTED,NEW,HOLDING,QUEUED")
-
 
             if currenttime > endtime:
                 continuecheck = False

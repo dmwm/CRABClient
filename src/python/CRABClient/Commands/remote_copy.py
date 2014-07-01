@@ -113,10 +113,10 @@ class remote_copy(SubCommand):
                                                                                 myfile['size'] if 'size' in myfile else 'unknown'))
                         os.remove(localFilename)
                     except Exception, ex:
-                        self.logger.info("Cannot remove the file because of: %s" % ex)
+                        self.logger.info("%sError%s: Cannot remove the file because of: %s" % (colors.RED, colors.NORMAL,ex))
             #if the file still exists skip it
             if not url_input and os.path.isfile(localFilename):
-                self.logger.info("%sSkipping %s as %s already exists%s" % (colors.GREEN, fileid, localFilename, colors.NORMAL))
+                self.logger.info("Skipping %s as %s already exists%s" % (fileid, localFilename))
                 continue
 
             ##### Creating the command
@@ -148,7 +148,7 @@ class remote_copy(SubCommand):
             #self.logger.debug("List of failed file and reason: %s" % failedfiles)
             globalExitcode= -1
         else:
-            self.logger.info(colors.GREEN+"All files successfully retrieve "+colors.NORMAL)
+            self.logger.info("%sSuccess%s: All files successfully retrieve " %s (colors.GREEN,colors.NORMAL))
             globalExitcode=0
 
 
@@ -229,13 +229,13 @@ class remote_copy(SubCommand):
             self.logger.debug("Finish executing for file %s" % fileid)
 
             if pipe.returncode != 0 or len(error) > 0:
-                self.logger.info(colors.RED + "Failed retrieving %s" % fileid + colors.NORMAL)
+                self.logger.info("%sWarning%s: Failed retrieving %s" % (colors.RED, colors.NORMAL, fileid))
                 #self.logger.debug(colors.RED +"Stderr: %s " %stderr+ colors.NORMAL)
                 [self.logger.debug(colors.RED +"\t %s" % x + colors.NORMAL) for x in error]
                 failedfiles[fileid]=str(error)
 
                 if "timed out" in stderr or "timed out" in stdout:
-                    self.logger.info(colors.RED + "Failed due to connection timeout"+ colors.NORMAL )
+                    self.logger.info("%sWarning%s: Failed due to connection timeout" % (colors.RED, colors.NORMAL ))
                     self.logger.info("Please use the '-w' option to increase the connection timeout")
 
                 if os.path.isfile(localFilename) and os.path.getsize(localFilename)!=myfile['size']:
@@ -243,11 +243,11 @@ class remote_copy(SubCommand):
                     try:
                        os.remove(localFilename)
                     except Exception, ex:
-                        self.logger.debug("Cannot remove the file because of: %s" % ex)
+                        self.logger.debug("%sWarning%s: Cannot remove the file because of: %s" % (colors.RED, colors.NORMAL, ex))
                 time.sleep(60)
                 return
             else:
-                self.logger.info(colors.GREEN + "Success in retrieving %s " %fileid + colors.NORMAL)
+                self.logger.info("%sSuccess%s: Success in retrieving %s " % (colors.GREEN, colors.NORMAL, fileid))
             if not url_input and hasattr(myfile, 'checksum'):
                 self.logger.debug("Checksum '%s'" %str(myfile['checksum']))
                 checksumOK = checksumChecker(localFilename, myfile['checksum'])

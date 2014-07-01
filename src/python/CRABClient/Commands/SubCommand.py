@@ -241,10 +241,10 @@ class SubCommand(ConfigCommand):
                     raise MissingOptionException("Custom url is not given for private instance")
 
             elif instance not in SERVICE_INSTANCES:
-                self.logger.info ("Error: Wrong instance is given, available instance : %s" % availableinstace)
+                self.logger.info("%sError%s: Wrong instance is given, available instance : %s"  %(colors.RED, colors.NORMAL , availableinstace))
                 raise ConfigurationException("Wrong instance is given in option")
             else:
-                self.logger.info("Error: Unknown instance option or configuration states")
+                self.logger.info("%sError%s: Unknown instance option or configuration states"  %(colors.RED, colors.NORMAL))
                 raise Exception
 
         #for client that uses the --server option but no --instance option
@@ -254,10 +254,10 @@ class SubCommand(ConfigCommand):
                 instance = 'private'
 
             elif hasattr(self.configuration.General, 'instance') and self.configuration.General.instance != 'private':
-                self.logger.info("Error: Custom server url is given for instance other that 'private'")
+                self.logger.info("%sError%s: Custom server url is given for instance other that 'private'" %(colors.RED, colors.NORMAL))
                 raise ConfigurationException("Wrong instance is given")
             else:
-                self.logger.info("Error: Unknown instance option or configuration states")
+                self.logger.info("%sError%s: Unknown instance option or configuration states" %(colors.RED, colors.NORMAL))
                 raise Exception
 
         #for client that does not use --server option or --instance option
@@ -266,7 +266,7 @@ class SubCommand(ConfigCommand):
 
             #checking if instance given is vaild
             if instance not in SERVICE_INSTANCES:
-                self.logger.info ("Error: Wrong instance is given, available instance : %s" % availableinstace)
+                self.logger.info ("%sError%s: Wrong instance is given, available instance : %s" %(colors.RED, colors.NORMAL, availableinstace))
                 raise ConfigurationException("Wrong instance is given in configuration file")
 
             #for instance 'private'
@@ -274,7 +274,7 @@ class SubCommand(ConfigCommand):
                 if hasattr(self.configuration.General, 'serverUrl'):
                     serverurl = self.configuration.General.serverUrl
                 else:
-                    raise ConfigurationException("Error: Private instance require server url in the configuration file")
+                    raise ConfigurationException("%sError%s: Private instance require server url in the configuration file" %(colors.RED, colors.NORMAL))
             #for instance other than 'private'
             else:
                 serverurl = SERVICE_INSTANCES[instance]
@@ -292,7 +292,7 @@ class SubCommand(ConfigCommand):
         if __version__ in compatibleversion:
             self.logger.debug("CRABClient version: %s Compatible"  % __version__)
         else:
-            self.logger.info(colors.RED+"WARNING: Incompatible CRABClient version \"%s\" " % __version__ +colors.NORMAL)
+            self.logger.info("%sWARNING%s: Incompatible CRABClient version \"%s\" " % (colors.RED, colors.NORMAL , __version__ ))
             self.logger.info("Server is saying that compatible versions are: %s"  % compatibleversion)
 
     def handleProxy(self ):
@@ -355,7 +355,7 @@ class SubCommand(ConfigCommand):
                 configdict = json.load(crab3f)
                 crab3f.close()
             except ValueError:
-                self.logger.info('%sError %s:Error in reading json file, try to do "rm -rf ~/.crab3", and do the crab comment again'\
+                self.logger.info('%sError%s: Error in reading json file, try to do "rm -rf ~/.crab3", and do the crab comment again'\
                     % (colors.RED, colors.NORMAL))
                 raise ConfigurationException
             return configdict
