@@ -195,7 +195,9 @@ class SubCommand(ConfigCommand):
 
         self.updateCrab3()
         self.handleProxy()
-
+        #logging user command and optin use for debuging purpose
+        self.logger.debug('Command use: %s' % self.name)
+        self.logger.debug('Options use: %s' % cmdargs)
         if self.requiresREST:
             self.checkversion(self.getUrl(self.instance, resource='info'))
             self.uri = self.getUrl(self.instance)
