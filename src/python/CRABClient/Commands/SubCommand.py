@@ -166,15 +166,21 @@ class SubCommand(ConfigCommand):
             if self.options.voGroup is None and hasattr(self.configuration, 'User'):
                 self.voGroup = getattr(self.configuration.User, 'voGroup', '')
             if (self.options.voRole  is not None) and (hasattr(self.configuration, 'User') and hasattr(self.configuration.User, 'voRole' )):
-                msg = "Ignoring VO role specified in configuration file. Using VO role \"%s\" "
+                msg = "Ignoring the VO role specified in the configuration file. Using VO role \"%s\" "
                 if self.voRole == '': msg += "(i.e. no VO role) "
                 msg += "as specified in the command line."
                 self.logger.info(msg % self.voRole)
             if (self.options.voGroup is not None) and (hasattr(self.configuration, 'User') and hasattr(self.configuration.User, 'voGroup')):
-                msg = "Ignoring VO group specified in configuration file. Using VO group \"%s\" "
+                msg = "Ignoring the VO group specified in the configuration file. Using VO group \"%s\" "
                 if self.voGroup == '': msg += "(i.e. no VO group) "
                 msg += "as specified in the command line."
                 self.logger.info(msg % self.voGroup)
+            if getattr(self.configuration.Data, 'publication', None) and \
+               not getattr(self.configuration.General, 'transferOutput', self.requestmapper['saveoutput']['default']):
+                msg = "Crab configuration problem: Data.publication is ON, but General.transferOutput is OFF.\n"
+                msg += "Publication can not be performed if the output files are not transferred to a permanent storage."
+                self.logger.info(msg)
+                raise ConfigurationException("Incompatible configuration options Data.publication and General.transferOutput")
 
         ##if we get an input task we load the cache and set the url from it
 
