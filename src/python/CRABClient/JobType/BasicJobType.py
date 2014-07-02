@@ -6,7 +6,7 @@ Conventions:
 """
 
 from WMCore.Configuration import Configuration
-from FWCore.PythonUtilities.LumiList import LumiList
+from WMCore.DataStructs.LumiList import LumiList
 
 class BasicJobType(object):
     """
