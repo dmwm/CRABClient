@@ -2,6 +2,7 @@ import os
 import imp
 import json
 from optparse import OptionParser, SUPPRESS_HELP
+from ast import literal_eval
 
 from CRABClient.client_utilities import loadCache, getWorkArea, server_info, validServerURL, createWorkArea
 from CRABClient.client_exceptions import ConfigurationException, MissingOptionException
@@ -36,15 +37,25 @@ class ConfigCommand:
 
         try:
             self.logger.debug('Loading configuration')
-            self.configuration = loadConfigurationFile( os.path.abspath(configname))
+            self.configuration = loadConfigurationFile(os.path.abspath(configname))
             if overrideargs:
                 for singlearg in overrideargs:
                     fullparname, parval = singlearg.split('=')
                     # now supporting just one sub params, eg: Data.inputFiles, User.email, ...
                     parnames = fullparname.split('.', 1)
+                    if len(parnames) != 2: continue
                     self.configuration.section_(parnames[0])
-                    setattr(getattr(self.configuration, parnames[0]), parnames[1], parval)
-                    self.logger.debug('Overriden parameter %s with %s' % (fullparname, parval))
+                    type = 'undefined'
+                    for k in self.requestmapper.keys():
+                        if self.requestmapper[k]['config'] == fullparname:
+                            type = self.requestmapper[k]['type']
+                            break
+                    if type in ['undefined','StringType']:
+                        setattr(getattr(self.configuration, parnames[0]), parnames[1], literal_eval("\'%s\'" % parval))
+                        self.logger.debug('Overriden parameter %s with \'%s\'' % (fullparname, parval))
+                    else:
+                        setattr(getattr(self.configuration, parnames[0]), parnames[1], literal_eval("%s" % parval))
+                        self.logger.debug('Overriden parameter %s with %s' % (fullparname, parval))
             valid, configmsg = self.validateConfig() #subclasses of SubCommand overrhide this if needed
         except RuntimeError, re:
             msg = self._extractReason(configname, re)
@@ -116,6 +127,7 @@ class SubCommand(ConfigCommand):
         Load the command mapping from ClientMapping
         """
         #XXX Isn't it better to just copy the mapping with self.mapping = mapping[self.name] instead of copying each parameter?
+        self.requestmapper = None
         if self.name in mapping:
             if 'map' in mapping[self.name]:
                 self.requestmapper = mapping[self.name]['map']
@@ -139,7 +151,7 @@ class SubCommand(ConfigCommand):
 
         ##Get the mapping
         self.loadMapping()
-        self.crab3dic=self.getConfiDict()
+        self.crab3dic = self.getConfiDict()
 
         self.parser = OptionParser(description = self.__doc__, usage = self.usage, add_help_option = True)
         ## TODO: check on self.name should be removed (creating another abstraction in between or refactoring this)
