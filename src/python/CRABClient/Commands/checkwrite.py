@@ -19,12 +19,16 @@ class checkwrite(SubCommand):
 
         self.filename ='crab3chkwrite.tmp'
         self.username = self.proxy.getHyperNewsName()
-        phedex= PhEDEx({"cert":self.proxyfilename, "key":self.proxyfilename})
-        lfnsadd='/store/user/'+self.username+'/'+self.filename
+        phedex = PhEDEx({"cert":self.proxyfilename, "key":self.proxyfilename})
+
+        if hasattr(self.options, 'userlfn') and self.options.userlfn != None:
+            lfnsadd = self.options.userlfn +'/'+ self.filename
+        else:
+            lfnsadd = '/store/user/'+self.username+'/'+self.filename
 
         try:
-            pfndict=phedex.getPFN(nodes=[self.options.sitename], lfns=[lfnsadd])
-            pfn=pfndict[(self.options.sitename,lfnsadd)]
+            pfndict=phedex.getPFN(nodes = [self.options.sitename], lfns = [lfnsadd])
+            pfn = pfndict[(self.options.sitename,lfnsadd)]
             if pfn == None:
                 self.logger.info('%sError%s: Failed to get pfn from the site, Please check site status' % (colors.RED, colors.NORMAL) )
                 raise ConfigurationException
@@ -33,7 +37,7 @@ class checkwrite(SubCommand):
             self.logger.info('Result: %s\nStatus :%s\nurl :%s' % (errormsg.result, errormsg.status, errormsg.url))
             raise HTTPException, errormsg
 
-        cpout, cperr, cpexitcode=self.lcgcp(pfn)
+        cpout, cperr, cpexitcode = self.lcgcp(pfn)
 
         if cpexitcode == 0:
             delexitcode=self.lcgdelete(pfn)
@@ -41,9 +45,9 @@ class checkwrite(SubCommand):
 
         elif 'timeout' in cpout or 'timeout' in cperr:
             self.logger.info("%sError: %sConnection time out, try again later" %(colors.RED, colors.NORMAL))
-            exitcode =1
+            exitcode = 1
         elif 'exist' in cpout or 'exist' in cperr:
-            exitcode=1
+            exitcode = 1
             self.logger.info('Attempting to delete %s on site' % self.filename)
             delexitcode=self.lcgdelete(pfn)
             if delexitcode == 0:
@@ -75,15 +79,15 @@ class checkwrite(SubCommand):
 
         abspath=path.abspath(self.filename)
 
-        cpcmd="lcg-cp -v -b -D srmv2 --connect-timeout 180 " + abspath +' '+ pfn
+        cpcmd ="lcg-cp -v -b -D srmv2 --connect-timeout 180 " + abspath +' '+ pfn
         self.logger.info("Attempting to write on site: %s \nExecuting the command: %s\nPlease wait" %(self.options.sitename, cpcmd))
-        cpprocess=subprocess.Popen(cpcmd, stdout= subprocess.PIPE, stderr= subprocess.PIPE, shell= True)
+        cpprocess = subprocess.Popen(cpcmd, stdout= subprocess.PIPE, stderr= subprocess.PIPE, shell= True)
         cpout , cperr = cpprocess.communicate()
-        cpexitcode=cpprocess.returncode
+        cpexitcode = cpprocess.returncode
 
         if cpexitcode != 0 :
             self.logger.info("%sError%s: Error in lcg-cp \nStdout: \n%s\nStderr: \n%s" %(colors.RED,colors.NORMAL,cpout,cperr))
-        elif cpexitcode ==0 :
+        elif cpexitcode == 0 :
             self.logger.info("%sSuccess%s: Successfully run lcg-cp" %(colors.GREEN, colors.NORMAL))
 
         try:
@@ -97,16 +101,16 @@ class checkwrite(SubCommand):
     def lcgdelete(self,pfn):
 
         self.logger.info("Deleting file: %s" %pfn)
-        rmcmd="lcg-del --connect-timeout 180 -b  -l -D srmv2 "+pfn
+        rmcmd ="lcg-del --connect-timeout 180 -b  -l -D srmv2 "+pfn
         self.logger.info("Executing command: %s" % rmcmd)
-        delprocess=subprocess.Popen(rmcmd, stdout= subprocess.PIPE, stderr= subprocess.PIPE, shell=True)
+        delprocess = subprocess.Popen(rmcmd, stdout= subprocess.PIPE, stderr= subprocess.PIPE, shell=True)
         delout, delerr = delprocess.communicate()
-        delexitcode=delprocess.returncode
+        delexitcode = delprocess.returncode
 
         if delexitcode != 0:
             self.logger.info("%sError%s:  Failed in running lcg-del\nStdout:\n%s\nStderr:\n%s" \
                              % (colors.RED, colors.NORMAL, delout, delerr))
-        elif delexitcode ==0 :
+        elif delexitcode == 0 :
             self.logger.info("%sSuccess%s: Successfully run lcg-del" %(colors.GREEN, colors.NORMAL))
 
         return delexitcode
@@ -118,9 +122,13 @@ class checkwrite(SubCommand):
 
         This allows to set specific command options
         """
-        self.parser.add_option( '-n', '--site',
+        self.parser.add_option( '--site',
                                 dest = 'sitename',
                                 help = 'The PhEDEx node name of site to be check')
+
+        self.parser.add_option( '--lfn',
+                                dest = 'userlfn',
+                                help = 'A user lfn address')
 
     def validateOptions(self):
         SubCommand.validateOptions(self)
