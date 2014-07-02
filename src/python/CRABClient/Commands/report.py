@@ -65,7 +65,7 @@ class report(SubCommand):
             with open(os.path.join(jsonFileDir, 'missingLumiSummary.json'), 'w') as jsonFile:
                 json.dump(diff, jsonFile)
                 jsonFile.write("\n")
-                self.logger.info("%sWarning%: Not Analyzed lumi written to %s/missingLumiSummary.json" % (colors.RED, colors.NORMAL, jsonFileDir))
+                self.logger.info("%sWarning%s: Not Analyzed lumi written to %s/missingLumiSummary.json" % (colors.RED, colors.NORMAL, jsonFileDir))
         if doublelumis:
             with open(os.path.join(jsonFileDir, 'double.json'), 'w') as jsonFile:
                 json.dump(doublelumis, jsonFile)
