@@ -141,13 +141,13 @@ def getRequestName(requestName = None):
     prefix  = 'crab_'
     postfix = str(datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
 
-    if '/' in requestName :
+    if requestName is None or not isinstance(requestName,str) or len(requestName) == 0:
+        return prefix + postfix
+    elif '/' in requestName:
         msg = '%sError %s: The "/" character is not accepted in the requestName parameter.\
          If your intention was to specity the location of your task, please use the config.General.workArea parameter' \
               % (colors.RED, colors.NORMAL)
         raise ConfigurationException(msg)
-    elif requestName is None or len(requestName) == 0:
-        return prefix + postfix
     else:
         return prefix + requestName # + '_' + postfix
 
