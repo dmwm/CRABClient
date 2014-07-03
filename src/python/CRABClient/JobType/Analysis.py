@@ -5,8 +5,9 @@ CMSSW job type plug-in
 import os
 import tempfile
 
+from WMCore.DataStructs.LumiList import LumiList
+
 import PandaServerInterface as PandaInterface
-from FWCore.PythonUtilities.LumiList import LumiList
 
 from CRABClient.JobType.BasicJobType import BasicJobType
 from CRABClient.JobType.CMSSWConfig import CMSSWConfig
