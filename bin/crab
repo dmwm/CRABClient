@@ -66,8 +66,8 @@ class CRABClient(object):
             epilog += '\n'
         epilog += "To get single command help run:\n  crab command --help|-h\n"
 
-        epilog += '\nFor more information on how to run CRAB-3 please follow this link: \n'
-        epilog += ' https://twiki.cern.ch/twiki/bin/view/CMS/RunningCRAB3\n'
+        epilog += '\nFor more information on how to run CRAB-3 please follow this link:\n'
+        epilog += 'https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookCRAB3Tutorial\n'
 
         self.parser = MyParser( usage   = usage,
                                 epilog  = epilog,
