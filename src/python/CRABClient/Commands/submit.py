@@ -29,12 +29,12 @@ class submit(SubCommand):
 
     shortnames = ['sub']
 
+    def __init__(self, logger, cmdargs = []):
+        SubCommand.__init__(self, logger, cmdargs, disable_interspersed_args = True)
+
     def __call__(self):
         valid = False
         configmsg = 'Default'
-
-        if not os.path.isfile(self.options.config):
-            raise MissingOptionException("Configuration file '%s' not found" % self.options.config)
 
         self.logger.debug("Started submission")
         # Get some debug parameters
@@ -188,6 +188,38 @@ class submit(SubCommand):
                                 default=False )
 
 
+    def validateOptions(self):
+        """
+        After doing the general options validation from the parent SubCommand class, 
+        do the validation of options that are specific to the submit command.
+        """
+        ## First call validateOptions() from the SubCommand class.
+        SubCommand.validateOptions(self)
+        ## If no configuration file was passed as an option, try to extract it from the arguments.
+        ## Assume that the arguments can only be: 
+        ##     1) the configuration file name, and 
+        ##     2) parameters to override in the configuration file.
+        ## The last ones should all contain an '=' sign, so these are not candidates to be the 
+        ## configuration file argument. Also, the configuration file name should end with '.py'.
+        ## If can not find a configuration file candidate, use the default 'crabConfig.py'.
+        ## If find more than one candidate, raise ConfigurationException.
+        if self.options.config is None:
+            use_default = True
+            if len(self.args):
+                config_candidates = [(arg,i) for i,arg in enumerate(self.args) if '=' not in arg and arg[-3:] == '.py']
+                config_candidate_names = set([config_candidate_name for (config_candidate_name,_) in config_candidates])
+                if len(config_candidate_names) == 1:
+                    self.options.config = config_candidates[0][0]
+                    del self.args[config_candidates[0][1]]
+                    use_default = False
+                elif len(config_candidate_names) > 1:
+                    self.logger.info('Unable to unambiguously extract the configuration file from the command-line arguments.')
+                    self.logger.info('Possible candidates are: %s' % list(config_candidate_names))
+                    raise ConfigurationException('ERROR: Unable to extract configuration file from command-line arguments.')
+            if use_default:
+                self.options.config = 'crabConfig.py'
+
+
     def validateConfig(self):
         """
         __validateConfig__
@@ -222,7 +254,6 @@ class submit(SubCommand):
             if getattr(self.configuration.JobType, 'pluginName', None) is not None and\
                getattr(self.configuration.JobType, 'externalPluginFile', None) is not None:
                 return False, "Crab configuration problem: only one between JobType.pluginName or JobType.externalPlugin parameters is required. "
-
             externalPlugin = getattr(self.configuration.JobType, 'externalPluginFile', None)
             if externalPlugin is not None:
                 addPlugin(externalPlugin)
@@ -293,7 +324,7 @@ class submit(SubCommand):
                     self.logger.info(self.logger.info("%sError%s: The submission of your task failed. Please use 'crab status -t <Task Name>' to get the error message" %(colors.RED, colors.NORMAL)))
                 elif dictresult['status'] == 'SUBMITTED' or dictresult['status'] == 'UNKNOWN': #untile the node_state file is available status is unknown
                     continuecheck = False
-                    self.logger.info("%sSuccess %s:Your task has been processed and your jobs have been submitted successfully" % (colors.GREEN, colors.NORMAL))
+                    self.logger.info("%sSuccess%s: Your task has been processed and your jobs have been submitted successfully" % (colors.GREEN, colors.NORMAL))
                 elif dictresult['status'] in ['NEW','HOLDING','QUEUED']:
                     self.logger.info("Please wait...")
                     time.sleep(30) #the original 60 second query time is too long

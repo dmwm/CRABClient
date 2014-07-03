@@ -27,23 +27,32 @@ class ConfigCommand:
         Provides methods for loading the configuration file handling the errors
     """
 
-    def loadConfig(self, configname, overrideargs=None):
+    def loadConfig(self, configname, overrideargs = None):
         """
         Load the configuration file
         """
 
         if not os.path.isfile(configname):
             raise ConfigurationException("Configuration file '%s' not found" % configname)
-
+        self.logger.info('Will use configuration file %s' % configname)
         try:
             self.logger.debug('Loading configuration')
             self.configuration = loadConfigurationFile(os.path.abspath(configname))
             if overrideargs:
                 for singlearg in overrideargs:
-                    fullparname, parval = singlearg.split('=')
+                    if singlearg == configname: continue
+                    if len(singlearg.split('=',1)) == 1:
+                        self.logger.info('Wrong format in command-line argument \'%s\'. Expected format is <section-name>.<parameter-name>=<parameter-value>.' % singlearg)
+                        if len(singlearg) > 1 and singlearg[0] == '-':
+                            self.logger.info('If the argument \'%s\' is an option to the %s command, try \'crab %s %s [value for %s option (if required)] [arguments]\'.' \
+                                             % (singlearg, self.__class__.__name__, self.__class__.__name__, singlearg, singlearg))
+                        raise ConfigurationException('ERROR: Wrong command-line format.')
+                    fullparname, parval = singlearg.split('=',1)
                     # now supporting just one sub params, eg: Data.inputFiles, User.email, ...
                     parnames = fullparname.split('.', 1)
-                    if len(parnames) != 2: continue
+                    if len(parnames) == 1:
+                        self.logger.info('Wrong format in command-line argument \'%s\'. Expected format is <section-name>.<parameter-name>=<parameter-value>' % singlearg)
+                        raise ConfigurationException('ERROR: Wrong command-line format.')
                     self.configuration.section_(parnames[0])
                     type = 'undefined'
                     for k in self.requestmapper.keys():
@@ -137,7 +146,7 @@ class SubCommand(ConfigCommand):
             if 'other-config-params' in mapping[self.name]:
                 self.otherConfigParams = mapping[self.name]['other-config-params']
 
-    def __init__(self, logger, cmdargs = []):
+    def __init__(self, logger, cmdargs = [], disable_interspersed_args = False):
         """
         Initialize common client parameters
         """
@@ -155,7 +164,7 @@ class SubCommand(ConfigCommand):
 
         self.parser = OptionParser(description = self.__doc__, usage = self.usage, add_help_option = True)
         ## TODO: check on self.name should be removed (creating another abstraction in between or refactoring this)
-        if self.name == 'submit':
+        if disable_interspersed_args:
             self.parser.disable_interspersed_args()
         self.setSuperOptions()
 
@@ -452,23 +461,14 @@ class SubCommand(ConfigCommand):
         """
         __validateOptions__
 
-        Validate the command line options of the command
-        Raise a ConfigurationException in case of error, does not do anything if ok
+        Validate the command line options of the command.
+        Raise a ConfigurationException in case of error; don't do anything if ok.
         """
 
-        if self.name == 'submit' and self.options.config is None:
-            if len(self.args) and '=' not in self.args[0]:
-                self.options.config = self.args[0]
-                del self.args[0]
-            else:
-                self.options.config = 'crabConfig.py'
-
-        if self.requiresTaskOption and not self.options.task:
+        if self.requiresTaskOption and self.options.task is None:
             if len(self.args) == 1 and self.args[0]:
                 self.options.task = self.args[0]
-
             elif self.name != "kill" and self.name != 'purge' and self.crab3dic["taskname"] != None:
                 self.options.task = self.crab3dic["taskname"]
-
             else:
                 raise MissingOptionException('ERROR: Task option is required')
