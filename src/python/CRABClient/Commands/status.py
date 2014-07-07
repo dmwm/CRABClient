@@ -380,22 +380,22 @@ class status(SubCommand):
                                 dest = 'long',
                                 default = False,
                                 action = "store_true",
-                                help = 'Print one status line per running job')
+                                help = 'Print one status line per running job.')
         self.parser.add_option( "-j", "--json",
                                 dest = "json",
                                 default = False,
                                 action = "store_true",
-                                help = "Print status results in JSON")
+                                help = "Print status results in JSON.")
         self.parser.add_option( "-u", "--summary",
                                 dest = "summary",
                                 default = False,
                                 action = "store_true",
-                                help = "Print site summary")
+                                help = "Print site summary.")
         self.parser.add_option( "-i", "--idle",
                                 dest = "idle",
                                 default = False,
                                 action = "store_true",
-                                help = "Print idle job summary")
+                                help = "Print idle job summary.")
 
     def validateOptions(self):
         SubCommand.validateOptions(self)

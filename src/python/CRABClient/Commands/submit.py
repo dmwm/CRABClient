@@ -178,13 +178,13 @@ class submit(SubCommand):
         self.parser.add_option( "-c", "--config",
                                  dest = "config",
                                  default = None,
-                                 help = "CRAB configuration file",
+                                 help = "CRAB configuration file.",
                                  metavar = "FILE" )
 
         self.parser.add_option( "-w","--wait,",
                                 action="store_true",
                                 dest="wait",
-                                help="continuously checking for job status after submitting",
+                                help="Continuously checking for job status after submitting.",
                                 default=False )
 
 

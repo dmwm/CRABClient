@@ -262,7 +262,7 @@ class SubCommand(ConfigCommand):
                     raise MissingOptionException("Custom url is not given for private instance")
 
             elif instance not in SERVICE_INSTANCES:
-                self.logger.info("%sError%s: Wrong instance is given, available instance : %s"  %(colors.RED, colors.NORMAL , availableinstace))
+                self.logger.info("%sError%s: Wrong instance is given, available instance: %s"  %(colors.RED, colors.NORMAL , availableinstace))
                 raise ConfigurationException("Wrong instance is given in option")
             else:
                 self.logger.info("%sError%s: Unknown instance option or configuration states"  %(colors.RED, colors.NORMAL))
@@ -375,8 +375,7 @@ class SubCommand(ConfigCommand):
                 configdict = json.load(crab3f)
                 crab3f.close()
             except ValueError:
-                self.logger.info('%sError%s: Error in reading json file, try to do "rm -rf ~/.crab3", and do the crab comment again'\
-                    % (colors.RED, colors.NORMAL))
+                self.logger.info('%sError%s: Error in reading json file\nTry to do "rm -rf ~/.crab3", and do the crab comment again'% (colors.RED, colors.NORMAL))
                 raise ConfigurationException
             return configdict
 
@@ -424,14 +423,14 @@ class SubCommand(ConfigCommand):
         self.parser.add_option( "-p", "--skip-proxy",
                                  dest = "skipProxy",
                                  default = False,
-                                 help = "Skip Grid proxy creation and myproxy delegation",
+                                 help = "Skip Grid proxy creation and myproxy delegation.",
                                  metavar = "USERDN" )
 
         if self.requiresTaskOption:
             self.parser.add_option( "-t", "--task",
                                      dest = "task",
                                      default = None,
-                                     help = "Same as -c/-continue" )
+                                     help = "Same as -c/-continue." )
 
         self.parser.add_option( "-r", "--voRole",
                                 dest = "voRole",
@@ -445,7 +444,7 @@ class SubCommand(ConfigCommand):
             self.parser.add_option("--instance",
                                    dest = "instance",
                                    type = "string",
-                                   help = "Running instance of CRAB service. Valid values are %s" %str(SERVICE_INSTANCES.keys()))
+                                   help = "Running instance of CRAB service. Valid values are %s." %str(SERVICE_INSTANCES.keys()))
 
             self.parser.add_option( "-s", "--server",
                                      dest = "server",
@@ -455,7 +454,7 @@ class SubCommand(ConfigCommand):
                                      callback = validServerURL,
                                      metavar = "http://HOSTNAME:PORT",
                                      default = None,
-                                     help = "Endpoint server url to use" )
+                                     help = "Endpoint server url to use." )
 
     def validateOptions(self):
         """
@@ -471,4 +470,4 @@ class SubCommand(ConfigCommand):
             elif self.name != "kill" and self.name != 'purge' and self.crab3dic["taskname"] != None:
                 self.options.task = self.crab3dic["taskname"]
             else:
-                raise MissingOptionException('ERROR: Task option is required')
+                raise MissingOptionException('ERROR: Task option is required.')

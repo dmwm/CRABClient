@@ -23,7 +23,7 @@ class purge(SubCommand):
 
         tarballdir=glob.glob(self.requestarea+'/inputs/*.tgz')
         if len(tarballdir) != 1 :
-            self.logger.info('%sError%s :Could not find tarball or there is more than one tarball'% (colors.RED, colors.NORMAL))
+            self.logger.info('%sError%s: Could not find tarball or there is more than one tarball'% (colors.RED, colors.NORMAL))
             raise ConfigurationException
         tarballdir=tarballdir[0]
 
@@ -42,7 +42,7 @@ class purge(SubCommand):
         self.logger.info('Task status: %s' % dictresult['status'])
         accepstate = ['KILLED','FINISHED','FAILED','KILLFAILED', 'COMPLETED']
         if dictresult['status'] not in accepstate:
-            msg = ('%sERROR %s: Only task with this status can be purge: {0}'.format(accepstate) % (colors.RED, colors.NORMAL))
+            msg = ('%sError%s: Only task with this status can be purge: {0}'.format(accepstate) % (colors.RED, colors.NORMAL))
             raise ConfigurationException(msg)
 
         #getting the cache url
@@ -99,10 +99,10 @@ class purge(SubCommand):
                                dest = 'scheddonly',
                                action = 'store_true',
                                default = False,
-                               help = 'Only clean schedd for the given workflow')
+                               help = 'Only clean schedd for the given workflow.')
 
         self.parser.add_option('--cache',
                                dest = 'cacheonly',
                                action = 'store_true',
                                default = False,
-                               help = 'Only clearn cache for the given workflow')
+                               help = 'Only clean crab server cache for the given workflow.')

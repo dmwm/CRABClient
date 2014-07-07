@@ -116,7 +116,7 @@ class remote_copy(SubCommand):
                         self.logger.info("%sError%s: Cannot remove the file because of: %s" % (colors.RED, colors.NORMAL,ex))
             #if the file still exists skip it
             if not url_input and os.path.isfile(localFilename):
-                self.logger.info("Skipping %s as %s already exists%s" % (fileid, localFilename))
+                self.logger.info("Skipping %s as file already exists in %s" % (fileid, localFilename))
                 continue
 
             ##### Creating the command
@@ -148,7 +148,7 @@ class remote_copy(SubCommand):
             #self.logger.debug("List of failed file and reason: %s" % failedfiles)
             globalExitcode= -1
         else:
-            self.logger.info("%sSuccess%s: All files successfully retrieve " %s (colors.GREEN,colors.NORMAL))
+            self.logger.info("%sSuccess%s: All files successfully retrieve " % (colors.GREEN,colors.NORMAL))
             globalExitcode=0
 
 
@@ -257,7 +257,7 @@ class remote_copy(SubCommand):
             if not checksumOK:
                 failedfiles[fileid]="Checksum failed"
             else:
-                successfiles[fileid]=' Successfully retrieve'
+                successfiles[fileid]='Successfully retrieve'
         return
 
 
