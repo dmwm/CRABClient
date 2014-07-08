@@ -33,8 +33,8 @@ class checkwrite(SubCommand):
                 self.logger.info('%sError%s: Failed to get pfn from the site, Please check site status' % (colors.RED, colors.NORMAL) )
                 raise ConfigurationException
         except HTTPException, errormsg :
-            self.logger.info('%sError:%s Failed to contact PhEDEx or wrong PhEDEx node name is use' %(colors.RED, colors.NORMAL))
-            self.logger.info('Result: %s\nStatus :%s\nurl :%s' % (errormsg.result, errormsg.status, errormsg.url))
+            self.logger.info('%sError%s: Failed to contact PhEDEx or wrong PhEDEx node name is use' %(colors.RED, colors.NORMAL))
+            self.logger.info('Result: %s\nStatus: %s\nurl: %s' %(errormsg.result, errormsg.status, errormsg.url))
             raise HTTPException, errormsg
 
         cpout, cperr, cpexitcode = self.lcgcp(pfn)
@@ -44,7 +44,7 @@ class checkwrite(SubCommand):
             exitcode = 0
 
         elif 'timeout' in cpout or 'timeout' in cperr:
-            self.logger.info("%sError: %sConnection time out, try again later" %(colors.RED, colors.NORMAL))
+            self.logger.info("%sError%s: Connection time out, try again later" %(colors.RED, colors.NORMAL))
             exitcode = 1
         elif 'exist' in cpout or 'exist' in cperr:
             exitcode = 1
@@ -124,11 +124,11 @@ class checkwrite(SubCommand):
         """
         self.parser.add_option( '--site',
                                 dest = 'sitename',
-                                help = 'The PhEDEx node name of site to be check')
+                                help = 'The PhEDEx node name of site to be check.')
 
         self.parser.add_option( '--lfn',
                                 dest = 'userlfn',
-                                help = 'A user lfn address')
+                                help = 'A user lfn address.')
 
     def validateOptions(self):
         SubCommand.validateOptions(self)

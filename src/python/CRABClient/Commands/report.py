@@ -81,7 +81,7 @@ class report(SubCommand):
         self.parser.add_option( "-o", "--outputdir",
                                  dest = "outdir",
                                  default = None,
-                                 help = "Filename to write JSON summary to" )
+                                 help = "Filename to write JSON summary to." )
 
         self.parser.add_option( "--dbs",
                                  dest = "usedbs",

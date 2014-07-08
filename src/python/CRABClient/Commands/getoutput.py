@@ -27,7 +27,7 @@ class getoutput(getcommand):
                                 help = 'The number of output files you want to retrieve (or "all"). Ignored if --jobids is used.' )
         self.parser.add_option( '-l', '--parallel',
                                 dest = 'nparallel',
-                                help = 'Number of parallel download, default is 10 parallel download',)
+                                help = 'Number of parallel download, default is 10 parallel download.',)
         self.parser.add_option( '-w', '--wait',
                                 dest = 'waittime',
                                 help = 'Increase the sendreceive-timeout in second',)

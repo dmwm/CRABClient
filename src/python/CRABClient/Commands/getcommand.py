@@ -98,7 +98,7 @@ class getcommand(SubCommand):
         self.parser.add_option( '-o', '--outputpath',
                                 dest = 'outputpath',
                                 default = None,
-                                help = 'Where the files retrieved will be stored.  Defaults to the results/ directory',
+                                help = 'Where the files retrieved will be stored.  Defaults to the results/ directory.',
                                 metavar = 'URL' )
 
         self.parser.add_option( '-d', '--dump',
@@ -111,12 +111,12 @@ class getcommand(SubCommand):
                                 dest = 'xroot',
                                 default = False,
                                 action = 'store_true',
-                                help = 'Give XrootD url for the file' )
+                                help = 'Give XrootD url for the file.')
 
         self.parser.add_option( '-i', '--jobids',
                                 dest = 'jobids',
                                 default = None,
-                                help = 'Ids of the jobs you want to retrieve. Comma separated list of intgers',
+                                help = 'Ids of the jobs you want to retrieve. Comma separated list of integers.',
                                 metavar = 'JOBIDS' )
 
 

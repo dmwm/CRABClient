@@ -39,7 +39,7 @@ class kill(SubCommand):
         self.parser.add_option( '-i', '--jobids',
                                 dest = 'jobids',
                                 default = None,
-                                help = 'Ids of the jobs you want to kill. Comma separated list of intgers',
+                                help = 'Ids of the jobs you want to kill. Comma separated list of integers.',
                                 metavar = 'JOBIDS' )
 
     def validateOptions(self):
