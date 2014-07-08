@@ -130,7 +130,6 @@ class status(SubCommand):
 
 
     def printPublication(self, dictresult):
-
         self.logger.info("")
         if 'publication' not in dictresult or not dictresult['publication'] or not dictresult['jobsPerStatus']:
             self.logger.error("No publication information available yet")
@@ -141,6 +140,11 @@ class status(SubCommand):
         if 'error' in states:
             self.logger.info("Publication status:\t\t%s" % states['error'])
         elif states:
+            #removing states that has 0 value 
+            newstate = states.copy()
+            for status in states:
+                if states[status] == 0 : del newstate[status]
+            states = newstate.copy()
             total = sum(states.values())
             states['unsubmitted'] = sum(dictresult['jobsPerStatus'].values()) - total
             total = sum(dictresult['jobsPerStatus'].values())
