@@ -2,45 +2,36 @@
 Module to handle lumiMask.json file
 """
 
-import json
-import urllib2
 import urlparse
 
 from WMCore.Lexicon import jobrange
+from WMCore.DataStructs.LumiList import LumiList
 
 from CRABClient.client_exceptions import ConfigurationException
 
 
-def getLumiMask(config, logger=None):
+def getLumiList(lumi_mask_name, logger = None):
     """
-    Takes the lumiMask and runRange parameter and return the lumiMask dict.
-    lumiMask: either an http address or a json file on the disk
-    runRange: a string range like '1,2,5-8' containing the runs the user are
-             interested to. Runs in lumiMask are filtered according to runRange
-    returns: a dict in the json format
-             (e.g.: {'1':[[3,5],[7,9]],'4':[[1,1],[5,10]]})
+    Takes a lumi-mask and returns a LumiList object.
+    lumi-mask: either an http address or a json file on disk.
     """
-    # Parse Lumi list from file or URL
-    parts = urlparse.urlparse(config.Data.lumiMask)
+    lumi_list = None
+    parts = urlparse.urlparse(lumi_mask_name)
     if parts[0] in ['http', 'https']:
-        logger.debug('Downloading lumiMask from %s' % config.Data.lumiMask)
-        lumiFile = urllib2.urlopen(config.Data.lumiMask)
-        lumiMask = json.load(lumiFile)
+        if logger:
+            logger.debug('Downloading lumi-mask from %s' % lumi_mask_name)
+        lumi_list = LumiList(url = lumi_mask_name)
     else:
-        with open(config.Data.lumiMask, 'r') as lumiFile:
-            logger.debug('Reading lumiMask from %s' % config.Data.lumiMask)
-            lumiMask = json.load(lumiFile)
+        if logger:
+            logger.debug('Reading lumi-mask from %s' % lumi_mask_name)
+        lumi_list = LumiList(filename = lumi_mask_name)
 
-    runRange = _expandRange( getattr(config.Data, 'runRange', ''))
-
-    return dict((run, lumi) for run, lumi in lumiMask.iteritems() if not runRange or int(run) in runRange)
+    return lumi_list
 
 
-
-def _expandRange(myrange):
+def getRunList(myrange):
     """
-    Used to expand the runRange parameter
-    Take a string like '1,2,5-8' and return a list of integers [1,2,5,6,7,8]
+    Take a string like '1,2,5-8' and return a list of integers [1,2,5,6,7,8].
     """
     myrange = myrange.replace(' ','')
     if not myrange:
