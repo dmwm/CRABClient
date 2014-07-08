@@ -58,6 +58,6 @@ def _expandRange(myrange):
             subInterval = range( int(mySubRange[0]), int(mySubRange[1])+1)
             result.extend(subInterval)
         else:
-            restult.append(int(element))
+            result.append(int(element))
 
     return result
