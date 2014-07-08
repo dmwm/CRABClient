@@ -37,33 +37,3 @@ The task is identified by -t/--task option
                                 help = 'Increase the sendreceive-timeout in second',)
         getcommand.setOptions(self)
 
-    """
-    def processServerResult(self, result):
-        newresult = []
-        saveLog = self._hasLogCollect(result)
-
-        #prepare the list of exit codes found
-        foundExitCodes = [str(myfile['exitcode']) for myfile in result['result'] if 'type' in myfile and myfile['type'] in 'logArchive']
-        for myfile in result['result']:
-            if 'missing' in myfile:
-                #tell the user if the server did not find a log for any of the missing exit codes
-                for ec in set(myfile['missing'].keys()) - set(foundExitCodes):
-                    self.logger.info("Cannot find a log for exit code %s" % ec)
-                continue
-            #append the file if the task has no output from logcollectjobs
-            if not saveLog:
-                #set the suffix of the file (exitcode)
-                myfile['suffix'] = "ec" + str(myfile['exitcode'])
-                newresult.append(myfile)
-            #otherwise only append logcollect output (the big tar.gz)
-            elif myfile['type']=='logCollect':
-               newresult.append(myfile)
-
-        return {'result' : newresult}
-    """
-
-    def _hasLogCollect(self, result):
-        for myfile in result['result']:
-            if 'type' in myfile and myfile['type'] == 'logCollect':
-                return True
-        return False
