@@ -277,7 +277,7 @@ class submit(SubCommand):
                 del configreq[lparam]
         encoded = urllib.urlencode(configreq) + encodedLists
         self.logger.debug('Encoded submit request: %s' % encoded)
-        return encoded
+        return str(encoded)
 
     def checkStatusLoop(self,server,uniquerequestname):
 
