@@ -53,7 +53,7 @@ mapping = {
     'kill': {'requiresTaskOption' : True},
     'resubmit': {'requiresTaskOption' : True},
     'request_type': {'requiresTaskOption': True},
-    'uploadlog' : {'requiresTaskOption' : True},
+    'uploadlog' : {'requiresTaskOption' : False},
     'checkwrite': {'requiresTaskOption': False, 'requiresREST': False},
     'purge':{'requiresTaskOption': True}
 }
