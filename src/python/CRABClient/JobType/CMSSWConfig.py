@@ -59,13 +59,17 @@ class CMSSWConfig(object):
         self.outputFile = filename
         self.logger.debug("Writing CMSSW config to %s" % self.outputFile)
 
-        # Would like to store as a single pickle string rather than dumpPython
-        #  which has been unreliable at times.
+        #saving the process object as a pickle
+        pklFileName = os.path.splitext(filename)[0] + ".pkl"
+        pklFile = open(pklFileName,"wb")
+        pickle.dump(self.fullConfig.process, pklFile)
+        pklFile.close()
+
+        #create the auxiliary file
         outFile = open(filename, "wb")
+        outFile.write("import FWCore.ParameterSet.Config as cms\n")
         outFile.write("import pickle\n")
-        outFile.write('process = pickle.loads("""')
-        outFile.write(pickle.dumps(self.fullConfig.process))
-        outFile.write('""")')
+        outFile.write("process = pickle.load(open('PSet.pkl', 'rb'))\n")# % os.path.split(pklFileName)[1])
         outFile.close()
 
         return

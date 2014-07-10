@@ -81,6 +81,7 @@ class UserTarball(object):
         # Adding the pset file to the tarfile
         if cfgOutputName:
             self.tarfile.add(cfgOutputName, arcname='PSet.py')
+            self.tarfile.add(os.path.splitext(cfgOutputName)[0]+'.pkl', arcname='PSet.pkl')
         currentPath = os.getcwd()
 
 #        psetfile = getattr(self.config.JobType, 'psetName', None)
