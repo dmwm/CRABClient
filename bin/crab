@@ -24,7 +24,7 @@ from optparse import OptionParser, OptionGroup
 from socket import error as SocketError
 
 from CRABClient import __version__ as client_version
-from CRABClient.client_utilities import getAvailCommands, logfilter , uploadlogfile
+from CRABClient.client_utilities import getAvailCommands, logfilter , uploadlogfile, getLoggers
 from CRABClient.client_exceptions import ClientException
 from CRABClient.ClientMapping import parameters_mapping
 
@@ -94,47 +94,14 @@ class CRABClient(object):
 
         (options, args) = self.parser.parse_args()
 
-        '''
-        Logging is using the hierarchy system, the CRAB3.all log inherit everything from CRAB3. So everything that is
-        logged to CRAB3.all will also go to CRAB3, however thing that logged using CRAB3 will not go to CRAB3.all.
-        CRAB3 logger usess memory handler, which then will be flushed to a filehandler in the 'finally' stage. So
 
-        CRAB3.all -> screen + file
-        CRAB3     -> file
-        '''
-
-        # Set up the logger and exception handling
-        logger = logging.getLogger('CRAB3.all')
-        tblogger = logging.getLogger('CRAB3')
-        logger.setLevel(logging.DEBUG)
-
-        # Set up console output to stdout at appropriate level
+        #the default the logfile destination is /crab.log, it will be  changed  when we have loaded the taskname
         loglevel = logging.INFO
         if options.quiet:
             loglevel = logging.WARNING
         if options.debug:
             loglevel = logging.DEBUG
-        console_format = '%(message)s'
-        console = logging.StreamHandler(sys.stdout)
-        console.setFormatter(logging.Formatter(console_format))
-        console.setLevel(loglevel)
-        logger.addHandler(console)
-
-        #setting up a temporary memory logging, the flush level is set to 60, the highest logging level is 50 (.CRITICAL)
-        #so any reasonable logging level should not cause any sudden flush
-        memhandler = logging.handlers.MemoryHandler(capacity = 1024*10, flushLevel= 60)
-        ff = logging.Formatter("%(levelname)s %(asctime)s: \t %(message)s")
-        memhandler.setFormatter(ff)
-        memhandler.setLevel(logging.DEBUG)
-        #adding filter that filter color code
-        filter_ = logfilter()
-        memhandler.addFilter(filter_)
-        tblogger.addHandler(memhandler)
-
-        #the default the logfile destination is /crab.log, it will be  changed  when we have loaded the taskname
-        self.logger = logger
-        self.logger.logfile = os.path.join(os.getcwd(), 'crab.log')
-        self.memhandler = memhandler
+        self.logger, self.memhandler = getLoggers(loglevel)
 
 
         #Instructions needed in case of early failures: sometimes the traceback logger

@@ -35,6 +35,11 @@ class resubmit(SubCommand):
         self.logger.info("Resubmit request successfully sent")
         if dictresult['result'][0]['result'] != 'ok':
             self.logger.info(dictresult['result'][0]['result'])
+            returndict = {'status' : 'FAILED'}
+        else:
+            returndict = {'status' : 'SUCCESS'}
+
+        return returndict
 
     def setOptions(self):
         """

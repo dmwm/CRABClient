@@ -150,6 +150,8 @@ class remote_copy(SubCommand):
             self.logger.info("%sSuccess%s: All files successfully retrieve " % (colors.GREEN,colors.NORMAL))
             globalExitcode=0
 
+        return successfiles , failedfiles
+
     def startchildproc(self, childprocess, nsubprocess, successfiles, failedfiles):
         """
         starting sub process and creating the queue

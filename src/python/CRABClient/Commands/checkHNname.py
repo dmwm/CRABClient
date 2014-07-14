@@ -19,8 +19,7 @@ class checkHNname(SubCommand):
     name = 'checkHNname'
 
     def __call__(self):
-
-        self.standaloneCheck()
+        return self.standaloneCheck()
 
 
     def terminate(self, exitcode):
@@ -44,9 +43,9 @@ class checkHNname(SubCommand):
             self.logger.info("Your CMS HyperNews username is: %s" % hn_username)
         self.logger.info('Finished')
 
+        return {'DN' : dn , 'HNusername' : hn_username}
 
     def crabCheck(self):
-    
         self.logger.info('Attempting to extract your HN username from SiteDB...')
         try:
             userdn = self.proxy.getUserDN()
@@ -61,3 +60,4 @@ class checkHNname(SubCommand):
                 self.logger.info('WARNING: Unable to retrieve your HN username.')
         self.logger.info('Finished')
 
+        return {'DN' : userdn , 'HNusername' : hn_username}

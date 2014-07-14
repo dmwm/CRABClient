@@ -66,6 +66,45 @@ class logfilter(logging.Filter):
             record.msg = removecolor(record.msg)
         return True
 
+
+def getLoggers(loglevel):
+    '''
+    Logging is using the hierarchy system, the CRAB3.all log inherit everything from CRAB3. So everything that is
+    logged to CRAB3.all will also go to CRAB3, however thing that logged using CRAB3 will not go to CRAB3.all.
+    CRAB3 logger usess memory handler, which then will be flushed to a filehandler in the 'finally' stage. So
+
+    CRAB3.all -> screen + file
+    CRAB3     -> file
+    '''
+
+    # Set up the logger and exception handling
+    logger = logging.getLogger('CRAB3.all')
+    tblogger = logging.getLogger('CRAB3')
+    logger.setLevel(logging.DEBUG)
+
+    # Set up console output to stdout at appropriate level
+    console_format = '%(message)s'
+    console = logging.StreamHandler(sys.stdout)
+    console.setFormatter(logging.Formatter(console_format))
+    console.setLevel(loglevel)
+    logger.addHandler(console)
+
+    #setting up a temporary memory logging, the flush level is set to 60, the highest logging level is 50 (.CRITICAL)
+    #so any reasonable logging level should not cause any sudden flush
+    memhandler = logging.handlers.MemoryHandler(capacity = 1024*10, flushLevel= 60)
+    ff = logging.Formatter("%(levelname)s %(asctime)s: \t %(message)s")
+    memhandler.setFormatter(ff)
+    memhandler.setLevel(logging.DEBUG)
+    #adding filter that filter color code
+    filter_ = logfilter()
+    memhandler.addFilter(filter_)
+    tblogger.addHandler(memhandler)
+
+    logger.logfile = os.path.join(os.getcwd(), 'crab.log')
+
+    return logger, memhandler
+
+
 def getUrl(instance='prod', resource='workflow'):
         """
         Retrieve the url depending on the resource we are accessing and the instance.
