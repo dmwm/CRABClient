@@ -24,9 +24,9 @@ class checkHNname(SubCommand):
     def __call__(self):
 
         if self.options.standalone:
-            self.standaloneCheck()
+            return self.standaloneCheck()
         else:
-            self.crabCheck()
+            return self.crabCheck()
 
 
     def terminate(self, exitcode):
@@ -51,20 +51,24 @@ class checkHNname(SubCommand):
         cmd += " | grep -A1 login"
         cmd += " | tail -1"
         status, hn_username = commands.getstatusoutput(cmd)
-        hn_username = string.strip(hn_username) 
+        hn_username = string.strip(hn_username)
         hn_username = hn_username.replace('"','')
         self.logger.info('Your HN username is: %s' % hn_username)
         self.logger.info('Finished')
 
+        return {'DN' : dn , 'HNusername' : hn_username}
 
     def crabCheck(self):
-    
+
         ## Do we need to add something here?
- 
+
         self.logger.info('Starting check in CRAB-like mode...')
-        self.logger.info('Your DN is: %s' % self.getDN())
+        dn = self.getDN()
+        self.logger.info('Your DN is: %s' % dn)
+        hn_username = None
         try:
-            self.logger.info('Your HN username is: %s\n' % self.getHNUsernameFromSiteDB())
+            hn_username = self.getHNUsernameFromSiteDB()
+            self.logger.info('Your HN username is: %s\n' % hn_username)
         except:
             self.logger.info('WARNING native crab_utils failed!')
             dn = urllib.urlencode({'dn': self.getDN()})
@@ -77,6 +81,7 @@ class checkHNname(SubCommand):
                 self.logger.info('problems with crab_utils')
         self.logger.info('Finished')
 
+        return {'DN' : dn , 'HNusername' : hn_username}
 
     def getDN(self):
         """

@@ -16,7 +16,7 @@ The task is identified by -t/--task option
     visible = True #overwrite getcommand
 
     def __call__(self):
-        getcommand.__call__(self, subresource = 'logs')
+        return getcommand.__call__(self, subresource = 'logs')
 
 
     def setOptions(self):

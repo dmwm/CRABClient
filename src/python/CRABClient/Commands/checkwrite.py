@@ -44,16 +44,21 @@ class checkwrite(SubCommand):
                 else:
                     self.logger.info('Successfully deleted file %s from site %s' % (pfn, self.options.sitename))
                 self.logger.info('%sSuccess%s: Able to write on site %s' % (colors.GREEN, colors.NORMAL, self.options.sitename))
+
+                returndict = {'status' : 'SUCCESS'}
+
                 stop = True
             else:
                 if 'Permission denied' in cperr or 'mkdir: cannot create directory' in cperr:
                     self.logger.info('%sError%s: Unable to write on site %s' % (colors.RED, colors.NORMAL, self.options.sitename))
                     self.logger.info('       You may want to contact the site administrators sending them the \'crab checkwrite\' output as printed above')
+                    returndict = {'status' : 'FAILED'}
                     stop = True
                 elif 'timeout' in cpout or 'timeout' in cperr:
                     self.logger.info('Connection time out')
                     self.logger.info('Unable to check write permission on site %s' % self.options.sitename)
                     self.logger.info('Please try again later or contact the site administrators sending them the \'crab checkwrite\' output as printed above')
+                    returndict = {'status' : 'FAILED' }
                     stop = True
                 elif 'exist' in cpout or 'exist' in cperr and retry == 0:
                     self.logger.info('Error copying file %s to site %s; it may be that file already exists' % (self.filename, self.options.sitename))
@@ -69,10 +74,12 @@ class checkwrite(SubCommand):
                 else:
                     self.logger.info('Unable to check write permission on site %s' % self.options.sitename)
                     self.logger.info('Please try again later or contact the site administrators sending them the \'crab checkwrite\' output as printed above')
+                    returndict = {'status' : 'FAILED'}
                     stop = True
             if stop or use_new_file:
                 self.removeFile()
         self.logger.info('%sNOTE%s: you cannot write to a site if you did not ask permission' % (colors.BOLD, colors.NORMAL))
+        return returndict
 
 
     def createFile(self):

@@ -32,6 +32,13 @@ class ConfigCommand:
         Load the configuration file
         """
 
+        if isinstance(configname, Configuration):
+            self.configuration = configname
+            valid, configmsg = self.validateConfig()
+            if not valid:
+                raise ConfigurationException(configmsg)
+            return
+
         if not os.path.isfile(configname):
             raise ConfigurationException("Configuration file '%s' not found" % configname)
         self.logger.info('Will use configuration file %s' % configname)

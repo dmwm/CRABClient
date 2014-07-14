@@ -13,7 +13,6 @@ class uploadlog(SubCommand):
     shortnames = ['uplog']
 
     def __call__(self):
-
         self.logger.debug("uploadlog started")
         #veryfing the log file exist
         if hasattr(self.options, 'logpath') and self.options.logpath != None:
@@ -40,6 +39,8 @@ class uploadlog(SubCommand):
         self.logger.info("%sSuccess%s: Finish uploading log file" % (colors.GREEN, colors.NORMAL))
         logfileurl = cacheurl + '/logfile?name='+str(logfilename)
         self.logger.info("Log file url: %s" %logfileurl)
+
+        return {'result' : {'status' : 'SUCCESS' , 'logurl' : logfileurl}}
 
     def setOptions(self):
         """

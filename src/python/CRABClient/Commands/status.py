@@ -85,6 +85,8 @@ class status(SubCommand):
             if self.json:
                self.logger.info(dictresult['jobs'])
 
+        return {'result' : dictresult}
+
     def printShort(self, dictresult, username):
 
         self.logger.debug(dictresult) #should be something like {u'result': [[123, u'ciao'], [456, u'ciao']]}
