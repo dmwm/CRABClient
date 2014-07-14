@@ -100,7 +100,7 @@ class checkwrite(SubCommand):
 
         abspath = path.abspath(self.filename)
 
-        cpcmd = 'lcg-cp -v -b -D srmv2 --connect-timeout 180 ' + abspath + ' ' + pfn
+        cpcmd = "lcg-cp -v -b -D srmv2 --connect-timeout 180 " + abspath + " '" + pfn + "'"
         self.logger.info('Executing command: %s' % cpcmd)
         self.logger.info('Please wait...')
         cpprocess = subprocess.Popen(cpcmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
@@ -127,7 +127,7 @@ class checkwrite(SubCommand):
 
     def lcgdelete(self, pfn):
 
-        rmcmd = 'lcg-del --connect-timeout 180 -b -l -D srmv2 ' + pfn
+        rmcmd = "lcg-del --connect-timeout 180 -b -l -D srmv2 '" + pfn + "'"
         self.logger.info('Executing command: %s' % rmcmd)
         self.logger.info('Please wait...')
         delprocess = subprocess.Popen(rmcmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
