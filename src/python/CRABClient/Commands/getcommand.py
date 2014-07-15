@@ -2,7 +2,7 @@
 from CRABClient.Commands import CommandResult, mergeResults
 from CRABClient.Commands.remote_copy import remote_copy
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.client_exceptions import ConfigurationException
+from CRABClient.client_exceptions import ConfigurationException , RESTCommunicationException
 from CRABClient.client_utilities import validateJobids
 from CRABClient import __version__
 
@@ -60,7 +60,7 @@ class getcommand(SubCommand):
 
         if status != 200:
             msg = "Problem retrieving information from the server:\ninput:%s\noutput:%s\nreason:%s" % (str(inputlist), str(dictresult), str(reason))
-            raise ConfigurationException(msg)
+            raise RESTCommunicationException(msg)
 
         totalfiles = len( dictresult['result'] )
         cpresults = []
@@ -141,5 +141,6 @@ class getcommand(SubCommand):
             self.options.jobids = validateJobids(self.options.jobids)
 
         self.dump = self.options.dump
+
 
 
