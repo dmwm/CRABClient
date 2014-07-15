@@ -21,15 +21,19 @@ from CRABClient.client_exceptions import TaskNotFoundException, CachefileNotFoun
 
 class colors:
     if sys.stdout.isatty():
-        RED = '\033[91m'
-        GREEN = '\033[92m'
-        GRAY = '\033[90m'
+        RED    = '\033[91m'
+        GREEN  = '\033[92m'
+        BLUE   = '\033[93m'
+        GRAY   = '\033[90m'
         NORMAL = '\033[0m'
+        BOLD   = '\033[1m'
     else:
+        RED    = ''
+        GREEN  = ''
+        BLUE   = ''
+        GRAY   = ''
         NORMAL = ''
-        RED = ''
-        GREEN = ''
-        GRAY = ''
+        BOLD   = ''
 
 
 def getPlugins(namespace, plugins, skip):
