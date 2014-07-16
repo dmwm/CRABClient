@@ -282,7 +282,7 @@ class SubCommand(ConfigCommand):
                 raise Exception
 
         #for client that does not use --server option or --instance option
-        elif hasattr(self, 'configuration') and hasattr(self.configuration.General, 'instance'):
+        elif hasattr(self, 'configuration') and  hasattr(self.configuration.General, 'instance'):
             instance = self.configuration.General.instance
 
             #checking if instance given is vaild

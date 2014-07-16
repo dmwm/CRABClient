@@ -55,5 +55,6 @@ mapping = {
     'request_type': {'requiresTaskOption': True},
     'uploadlog' : {'requiresTaskOption' : False},
     'checkwrite': {'requiresTaskOption': False, 'requiresREST': False},
-    'purge':{'requiresTaskOption': True}
+    'purge':{'requiresTaskOption': True},
+    'remake':{'requiresTaskOption': False}
 }
