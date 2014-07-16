@@ -57,7 +57,14 @@ class purge(SubCommand):
             hashkey = ufc.checksum(tarballdir)
             self.logger.info('Tarball hashkey :%s' %hashkey)
             self.logger.info('Attempting to clean user file cache')
-            ufcresult = ufc.removeFile(hashkey)
+
+            try:
+                ufcresult = ufc.removeFile(hashkey)
+            except HTTPException, re:
+                if re.headers.has_key('X-Error-Info') and 'Not such file' in re.headers['X-Error-Info']:
+                    self.logger.info('%sError%s: Failed to find task fil in crabcache, the file might had been purged before' % (colors.RED,colors.NORMAL))
+                    raise HTTPException , re
+
             if ufcresult == '' :
                 self.logger.info('%sSuccess%s: Successfully remove file from cache' % (colors.GREEN, colors.NORMAL))
             else:
