@@ -72,7 +72,7 @@ class checkwrite(SubCommand):
                     stop = True
             if stop or use_new_file:
                 self.removeFile()
-        self.logger.info('%sNOTE%s: Please be responsible - don\'t write into a site where you didn\'t ask permission' % (colors.BOLD, colors.NORMAL))
+        self.logger.info('%sNOTE%s: you cannot write to a site if you did not ask permission' % (colors.BOLD, colors.NORMAL))
 
 
     def createFile(self):
