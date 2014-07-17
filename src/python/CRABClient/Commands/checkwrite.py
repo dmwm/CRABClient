@@ -5,7 +5,7 @@ import datetime
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.client_utilities import colors
 from WMCore.Services.PhEDEx.PhEDEx import PhEDEx
-from CRABClient.client_exceptions import MissingOptionException,ConfigurationException
+from CRABClient.client_exceptions import MissingOptionException, ConfigurationException
 from httplib import HTTPException
 
 class checkwrite(SubCommand):
@@ -18,88 +18,104 @@ class checkwrite(SubCommand):
 
     def __call__(self):
 
-        self.filename = 'crab3checkwrite.tmp'
-
         self.username = self.proxy.getHyperNewsName()
-        phedex = PhEDEx({"cert": self.proxyfilename, "key": self.proxyfilename})
 
         if hasattr(self.options, 'userlfn') and self.options.userlfn != None:
-            lfnsadd = self.options.userlfn + '/' + self.filename
+            self.lfnsaddprefix = self.options.userlfn
         else:
-            lfnsadd = '/store/user/' + self.username + '/' + self.filename
+            self.lfnsaddprefix = '/store/user/' + self.username
 
-        try:
-            pfndict = phedex.getPFN(nodes = [self.options.sitename], lfns = [lfnsadd])
-            pfn = pfndict[(self.options.sitename, lfnsadd)]
-            if not pfn:
-                self.logger.info('%sError%s: Failed to get PFN from the site. Please check the site status' % (colors.RED, colors.NORMAL))
-                raise ConfigurationException
-        except HTTPException, errormsg :
-            self.logger.info('%sError:%s Failed to contact PhEDEx or wrong PhEDEx node name is used' % (colors.RED, colors.NORMAL))
-            self.logger.info('Result: %s\nStatus :%s\nURL :%s' % (errormsg.result, errormsg.status, errormsg.url))
-            raise HTTPException, errormsg
+        self.phedex = PhEDEx({"cert": self.proxyfilename, "key": self.proxyfilename})
 
-        self.logger.info('Attempting to copy file %s to site %s' % (self.filename, self.options.sitename))
-        cpout, cperr, cpexitcode = self.lcgcp(pfn)
-
-        if cpexitcode == 0:
-            self.logger.info('Successfully copied file %s to site %s' % (self.filename, self.options.sitename))
-            self.logger.info('Attempting to delete file %s from site %s' % (pfn, self.options.sitename))
-            delexitcode = self.lcgdelete(pfn)
-            if delexitcode:
-                self.logger.info('Warning: Failed to delete file %s from site %s' % (pfn, self.options.sitename))
+        retry = 0; stop = False; use_new_file = True
+        while not stop:
+            if use_new_file:
+                self.filename = 'crab3checkwrite.' + str(retry) + '.tmp'
+                self.createFile()
+                pfn = self.getPFN()
+            self.logger.info('Attempting to copy file %s to site %s' % (self.filename, self.options.sitename))
+            cpout, cperr, cpexitcode = self.lcgcp(pfn)
+            if cpexitcode == 0:
+                self.logger.info('Successfully copied file %s to site %s' % (self.filename, self.options.sitename))
+                self.logger.info('Attempting to delete file %s from site %s' % (pfn, self.options.sitename))
+                delexitcode = self.lcgdelete(pfn)
+                if delexitcode:
+                    self.logger.info('%sWarning%s: Failed to delete file %s from site %s' % (colors.RED, colors.NORMAL, pfn, self.options.sitename))
+                else:
+                    self.logger.info('Successfully deleted file %s from site %s' % (pfn, self.options.sitename))
+                self.logger.info('%sSuccess%s: Able to write on site %s' % (colors.GREEN, colors.NORMAL, self.options.sitename))
+                stop = True
             else:
-                self.logger.info('Successfully deleted file %s from site %s' % (pfn, self.options.sitename))
-            exitcode = 0
-        elif 'Permission denied' in cperr or 'mkdir: cannot create directory' in cperr:
-            exitcode = 1
-        elif 'timeout' in cpout or 'timeout' in cperr:
-            self.logger.info("%sError: %sConnection time out, try again later" %(colors.RED, colors.NORMAL))
-            exitcode = -1
-        elif 'exist' in cpout or 'exist' in cperr:
-            self.logger.info('Error copying file %s to site %s, it may be that file already exists' % (self.filename, self.options.sitename))
-            self.logger.info('Attempting to delete file %s from site %s' % (pfn, self.options.sitename))
-            delexitcode = self.lcgdelete(pfn)
-            if delexitcode:
-                self.logger.info('Failed to delete file %s from site %s' % (pfn, self.options.sitename))
-                exitcode = -1
-            else:
-                self.logger.info('Successfully deleted file %s from site %s' % (pfn, self.options.sitename))
-                self.logger.info('Attempting to copy file %s to site %s again' % (self.filename, self.options.sitename))
-                cpout, cperr, cpexitcode = self.lcgcp(pfn)
-                if cpexitcode == 0:
-                    self.logger.info('Successfully copied file %s to site %s' % (self.filename, self.options.sitename))
+                if 'Permission denied' in cperr or 'mkdir: cannot create directory' in cperr:
+                    self.logger.info('%sError%s: Unable to write on site %s' % (colors.RED, colors.NORMAL, self.options.sitename))
+                    self.logger.info('       You may want to contact the site administrators sending them the \'crab checkwrite\' output as printed above')
+                    stop = True
+                elif 'timeout' in cpout or 'timeout' in cperr:
+                    self.logger.info('Connection time out')
+                    self.logger.info('Unable to check write permission on site %s' % self.options.sitename)
+                    self.logger.info('Please try again later or contact the site administrators sending them the \'crab checkwrite\' output as printed above')
+                    stop = True
+                elif 'exist' in cpout or 'exist' in cperr and retry == 0:
+                    self.logger.info('Error copying file %s to site %s; it may be that file already exists' % (self.filename, self.options.sitename))
                     self.logger.info('Attempting to delete file %s from site %s' % (pfn, self.options.sitename))
                     delexitcode = self.lcgdelete(pfn)
                     if delexitcode:
                         self.logger.info('Failed to delete file %s from site %s' % (pfn, self.options.sitename))
+                        use_new_file = True
                     else:
                         self.logger.info('Successfully deleted file %s from site %s' % (pfn, self.options.sitename))
-                    exitcode = 0
+                        use_new_file = False
+                    retry += 1
                 else:
-                    exitcode = 1
-        else:
-            exitcode = 1
-
-        if exitcode == 0:
-            self.logger.info('%sSuccess%s: Able to write on site %s' % (colors.GREEN, colors.NORMAL, self.options.sitename))
-        elif exitcode == -1:
-            self.logger.info('Unable to check write permission on site %s' % self.options.sitename)
-        else:
-            self.logger.info('%sError%s: Unable to write on site %s' % (colors.RED, colors.NORMAL, self.options.sitename))
+                    self.logger.info('Unable to check write permission on site %s' % self.options.sitename)
+                    self.logger.info('Please try again later or contact the site administrators sending them the \'crab checkwrite\' output as printed above')
+                    stop = True
+            if stop or use_new_file:
+                self.removeFile()
+        self.logger.info('%sNOTE%s: Please be responsible - don\'t write into a site where you didn\'t ask permission' % (colors.BOLD, colors.NORMAL))
 
 
-    def lcgcp(self, pfn):
+    def createFile(self):
 
+        abspath = path.abspath(self.filename)
         try:
-            with open(self.filename, 'w') as file:
+            with open(abspath, 'w') as file:
                 file.write('This is a dummy file created by the crab checkwrite command on %s' % str(datetime.datetime.now().strftime('%d/%m/%Y at %H:%M:%S')))
         except IOError:
             self.logger.info('%sError%s: Failed to create file %s' % (colors.RED, colors.NORMAL, self.filename))
             raise Exception
 
-        abspath = path.abspath(self.filename)
 
+    def removeFile(self):
+
+        abspath = path.abspath(self.filename)
+        try:
+            remove(abspath)
+        except Exception:
+            self.logger.info('%sWarning%s: Failed to delete file %s' % (colors.RED, colors.NORMAL, self.filename))
+            pass
+
+
+    def getPFN(self):
+
+        lfnsadd = self.lfnsaddprefix + '/' + self.filename
+        try:
+            pfndict = self.phedex.getPFN(nodes = [self.options.sitename], lfns = [lfnsadd])
+            pfn = pfndict[(self.options.sitename, lfnsadd)]
+            if not pfn:
+                self.logger.info('%sError%s: Failed to get PFN from the site. Please check the site status' % (colors.RED, colors.NORMAL))
+                raise ConfigurationException
+        except HTTPException, errormsg :
+            self.logger.info('%sError%s: Failed to contact PhEDEx or wrong PhEDEx node name is used' % (colors.RED, colors.NORMAL))
+            self.logger.info('Result: %s\nStatus :%s\nURL :%s' % (errormsg.result, errormsg.status, errormsg.url))
+            raise HTTPException, errormsg
+
+        return pfn
+
+
+    def lcgcp(self, pfn):
+
+        abspath = path.abspath(self.filename)
         cpcmd = "lcg-cp -v -b -D srmv2 --connect-timeout 180 " + abspath + " '" + pfn + "'"
         self.logger.info('Executing command: %s' % cpcmd)
         self.logger.info('Please wait...')
@@ -115,12 +131,6 @@ class checkwrite(SubCommand):
                 self.logger.info('  Stderr:\n    %s' % cperr.replace('\n','\n    '))
         else:
             self.logger.info('Successfully ran lcg-cp')
-
-        try:
-            remove(abspath)
-        except Exception:
-            self.logger.info('%sError%s: Failed to delete file %s' % (colors.RED, colors.NORMAL, self.filename))
-            pass
 
         return cpout, cperr, cpexitcode
 
@@ -144,6 +154,10 @@ class checkwrite(SubCommand):
             self.logger.info('Successfully ran lcg-del')
 
         return delexitcode
+
+
+    def terminate(self, exitcode):
+        pass
 
 
     def setOptions(self):
