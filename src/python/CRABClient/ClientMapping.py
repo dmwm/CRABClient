@@ -38,7 +38,7 @@ mapping = {
                             "faillimit"         : {"default": None,             "config": "General.failureLimit",            "type": "IntType",     "required": False},
                             "nonprodsw"         : {"default": False,            "config": "JobType.allowNonProductionCMSSW", "type": "BooleanType", "required": False},
                          },
-                  'other-config-params' : ["General.serverUrl", "General.requestName", "General.workArea",
+                  'other-config-params' : ["General.requestName", "General.workArea",
                                            "JobType.pluginName", "JobType.externalPluginFile", "JobType.psetName",
                                            "JobType.inputFiles", "JobType.pyCfgParams", "Data.primaryDataset",
                                            "Data.inputDataset", "Data.lumiMask", "Data.runRange",
