@@ -53,6 +53,9 @@ class report(SubCommand):
             self.logger.info("%d events have been read" % dictresult['result'][0]['dbsNumEvents'])
 
         if self.outdir:
+            if not os.path.exists(self.outdir):
+                self.logger.info('Creating directory: %s'  % self.outdir)
+                os.makedirs(self.outdir)
             jsonFileDir = self.outdir
         else:
             jsonFileDir = os.path.join(self.requestarea, 'results')
@@ -78,10 +81,10 @@ class report(SubCommand):
 
         This allows to set specific command options
         """
-        self.parser.add_option( "-o", "--outputdir",
+        self.parser.add_option(  "--outputdir",
                                  dest = "outdir",
                                  default = None,
-                                 help = "Filename to write JSON summary to." )
+                                 help = "Direcotory to write JSON summary to." )
 
         self.parser.add_option( "--dbs",
                                  dest = "usedbs",

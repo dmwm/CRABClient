@@ -175,13 +175,13 @@ class submit(SubCommand):
         This allows to set specific command options
         """
 
-        self.parser.add_option( "-c", "--config",
+        self.parser.add_option( "-c","--config",
                                  dest = "config",
                                  default = None,
                                  help = "CRAB configuration file.",
                                  metavar = "FILE" )
 
-        self.parser.add_option( "-w","--wait,",
+        self.parser.add_option( "--wait,",
                                 action="store_true",
                                 dest="wait",
                                 help="Continuously checking for job status after submitting.",

@@ -380,22 +380,22 @@ class status(SubCommand):
 
         This allows to set specific command options
         """
-        self.parser.add_option( '-l', '--long',
+        self.parser.add_option( '--long',
                                 dest = 'long',
                                 default = False,
                                 action = "store_true",
                                 help = 'Print one status line per running job.')
-        self.parser.add_option( "-j", "--json",
+        self.parser.add_option( "--json",
                                 dest = "json",
                                 default = False,
                                 action = "store_true",
                                 help = "Print status results in JSON.")
-        self.parser.add_option( "-u", "--summary",
+        self.parser.add_option( "--summary",
                                 dest = "summary",
                                 default = False,
                                 action = "store_true",
                                 help = "Print site summary.")
-        self.parser.add_option( "-i", "--idle",
+        self.parser.add_option( "--idle",
                                 dest = "idle",
                                 default = False,
                                 action = "store_true",

@@ -42,13 +42,13 @@ class resubmit(SubCommand):
 
         This allows to set specific command options
         """
-        self.parser.add_option( "-b", "--blacklist",
+        self.parser.add_option( "--blacklist",
                                  dest = 'siteblacklist',
                                  default = None,
                                  help = "Set the sites you want to blacklist during the resubmission." + \
                                             " Comma separated list of cms sites (e.g.: T2_ES_CIEMAT,T2_IT_Rome[...]).")
 
-        self.parser.add_option( "-w", "--whitelist",
+        self.parser.add_option( "--whitelist",
                                  dest = 'sitewhitelist',
                                  default = None,
                                  help = "Set the sites you want to whitelist during the resubmission." + \
@@ -82,7 +82,7 @@ class resubmit(SubCommand):
                                  help = "Set the maximum time, in hours, jobs in this task are allowed to run." + \
                                             " Default is 24 hours.")
 
-        self.parser.add_option( '-i', '--jobids',
+        self.parser.add_option( '--jobids',
                                 dest = 'jobids',
                                 default = None,
                                 help = 'Ids of the jobs you want to resubmit. Comma separated list of integers',

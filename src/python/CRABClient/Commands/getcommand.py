@@ -66,7 +66,7 @@ class getcommand(SubCommand):
         cpresults = []
 #        for workflow in dictresult['result']: TODO re-enable this when we will have resubmissions
         workflow = dictresult['result']        #TODO assigning workflow to dictresult. for the moment we have only one wf
-        arglist = ['-d', self.dest, '-i', workflow, '-t', self.options.task, '-p', self.proxyfilename, '-l',self.options.nparallel, '-w',self.options.waittime]
+        arglist = ['--destination', self.dest, '--input', workflow, '-t', self.options.task, '--skip-proxy', self.proxyfilename, '--parallel',self.options.nparallel, '--wait',self.options.waittime]
         if len(workflow) > 0:
             if self.options.xroot:
                 self.logger.debug("XRootD url is requested")
@@ -95,25 +95,25 @@ class getcommand(SubCommand):
 
         This allows to set specific command options
         """
-        self.parser.add_option( '-o', '--outputpath',
+        self.parser.add_option( '--outputpath',
                                 dest = 'outputpath',
                                 default = None,
                                 help = 'Where the files retrieved will be stored.  Defaults to the results/ directory.',
                                 metavar = 'URL' )
 
-        self.parser.add_option( '-d', '--dump',
+        self.parser.add_option( '--dump',
                                 dest = 'dump',
                                 default = False,
                                 action = 'store_true',
                                 help = 'Instead of performing the transfer, dump the source URLs.' )
 
-        self.parser.add_option( '-x', '--xrootd',
+        self.parser.add_option( '--xrootd',
                                 dest = 'xroot',
                                 default = False,
                                 action = 'store_true',
                                 help = 'Give XrootD url for the file.')
 
-        self.parser.add_option( '-i', '--jobids',
+        self.parser.add_option( '--jobids',
                                 dest = 'jobids',
                                 default = None,
                                 help = 'Ids of the jobs you want to retrieve. Comma separated list of integers.',

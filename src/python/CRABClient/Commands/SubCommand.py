@@ -420,7 +420,7 @@ class SubCommand(ConfigCommand):
         except NotImplementedError:
             pass
 
-        self.parser.add_option( "-p", "--skip-proxy",
+        self.parser.add_option(  "--skip-proxy",
                                  dest = "skipProxy",
                                  default = False,
                                  help = "Skip Grid proxy creation and myproxy delegation.",
@@ -432,11 +432,11 @@ class SubCommand(ConfigCommand):
                                      default = None,
                                      help = "Same as -c/-continue." )
 
-        self.parser.add_option( "-r", "--voRole",
+        self.parser.add_option( "--voRole",
                                 dest = "voRole",
                                 default = None )
 
-        self.parser.add_option( "-g", "--voGroup",
+        self.parser.add_option( "--voGroup",
                                 dest = "voGroup",
                                 default = None )
         if self.requiresREST:
@@ -446,7 +446,7 @@ class SubCommand(ConfigCommand):
                                    type = "string",
                                    help = "Running instance of CRAB service. Valid values are %s." %str(SERVICE_INSTANCES.keys()))
 
-            self.parser.add_option( "-s", "--server",
+            self.parser.add_option( "--server",
                                      dest = "server",
                                      action = "callback",
                                      type   = 'str',
