@@ -36,7 +36,7 @@ class kill(SubCommand):
 
         This allows to set specific command options
         """
-        self.parser.add_option( '-i', '--jobids',
+        self.parser.add_option( '--jobids',
                                 dest = 'jobids',
                                 default = None,
                                 help = 'Ids of the jobs you want to kill. Comma separated list of integers.',
