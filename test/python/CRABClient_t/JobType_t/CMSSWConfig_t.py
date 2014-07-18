@@ -136,8 +136,8 @@ class CMSSWConfigTest(unittest.TestCase):
         """
 
         cmsConfig = CMSSWConfig(config=None, userConfig='unittest_cfg.py', logger=self.logger)
-        self.assertEqual(cmsConfig.outputFiles()[0], ['histograms.root'])
-        self.assertEqual(cmsConfig.outputFiles()[1], ['output.root', 'output2.root'])
+        self.assertEqual(cmsConfig.outputFiles()[0], ['output.root', 'output2.root'])
+        self.assertEqual(cmsConfig.outputFiles()[1], ['histograms.root'])
 
 
     def testUpload(self):

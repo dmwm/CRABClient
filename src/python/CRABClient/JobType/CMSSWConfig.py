@@ -77,23 +77,13 @@ class CMSSWConfig(object):
 
     def outputFiles(self):
         """
-        Returns a tuple of lists of output files. First element is TFileService files,
-        second is PoolOutput files
+        Returns a tuple of lists of output files. First element is PoolOutput files,
+        second is TFileService files.
         """
 
-        tFiles = []
-        poolFiles = []
-
-        # Find TFileService
-        if self.fullConfig.process.services.has_key('TFileService'):
-            tFileService = self.fullConfig.process.services['TFileService']
-            if "fileName" in tFileService.parameterNames_():
-                tFiles.append(getattr(tFileService, 'fileName', None).value())
-
-        # Find files written by output modules
-        poolFiles = []
+        ## Find files written by output modules.
+        edmfiles = []
         outputModuleNames = self.fullConfig.process.outputModules_().keys()
-
         for outputModName in outputModuleNames:
             outputModule = getattr(self.fullConfig.process, outputModName)
             if not outputModule:
@@ -101,9 +91,8 @@ class CMSSWConfig(object):
             fileName = getattr(outputModule, 'fileName')
             if not fileName:
                 continue
-            poolFiles.append(fileName.value())
-
-        # If there are multiple output files, make sure they have filterNames set
+            edmfiles.append(fileName.value())
+        ## If there are multiple output modules, make sure they have dataset.filterName set.
         if len(outputModuleNames) > 1:
             for outputModName in outputModuleNames:
                 try:
@@ -114,4 +103,11 @@ class CMSSWConfig(object):
                     raise RuntimeError('Your output module %s does not have a "dataset" PSet ' % outputModName +
                                        'or the PSet does not have a "filterName" member.')
 
-        return tFiles, poolFiles
+        ## Find files written by TFileService.
+        tfiles = []
+        if self.fullConfig.process.services.has_key('TFileService'):
+            tFileService = self.fullConfig.process.services['TFileService']
+            if "fileName" in tFileService.parameterNames_():
+                tfiles.append(getattr(tFileService, 'fileName').value())
+
+        return edmfiles, tfiles

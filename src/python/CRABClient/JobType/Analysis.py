@@ -63,14 +63,15 @@ class Analysis(BasicJobType):
         cmsswCfg = CMSSWConfig(config=self.config, logger=self.logger,
                                userConfig=self.config.JobType.psetName)
 
-        # Interogate CMSSW config and user config for output file names, for now no use for edmFiles or TFiles here.
-        analysisFiles, edmFiles = cmsswCfg.outputFiles()
-        self.logger.debug("TFiles %s and EDM Files %s will be collected" % (analysisFiles, edmFiles))
-        configArguments['tfileoutfiles'] = analysisFiles
-        configArguments['edmoutfiles'] = edmFiles
+        ## Interogate CMSSW config and user config for output file names. For now no use for EDM files or TFiles here.
+        edmfiles, tfiles = cmsswCfg.outputFiles()
+        self.logger.debug("The following EDM output files will be collected: %s" % edmfiles)
+        self.logger.debug("The following TFile output files will be collected: %s" % tfiles)
+        configArguments['edmoutfiles'] = edmfiles
+        configArguments['tfileoutfiles'] = tfiles
 
         outputFiles = getattr(self.config.JobType, 'outputFiles', [])
-        self.logger.debug("User files %s will be collected" % outputFiles)
+        self.logger.debug("The following user output files will be collected: %s" % outputFiles)
         configArguments['addoutputfiles'].extend(outputFiles)
 
         # Write out CMSSW config
