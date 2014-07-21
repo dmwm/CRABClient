@@ -201,7 +201,7 @@ class status(SubCommand):
         self.logger.info("")
 
     def printLong(self, dictresult):
-
+        sortdict = {}
         self.logger.info("\nExtended Job Status Table\n")
         self.logger.info("%4s %-12s %-20s %10s %10s %10s %10s %10s" % ("Job", "State", "Most Recent Site", "Runtime", "Mem (MB)", "CPU %", "Retries", "Waste"))
         mem_cnt = 0
@@ -257,7 +257,10 @@ class status(SubCommand):
                 if (cpu_min == -1) or cpu < cpu_min: cpu_min = cpu
                 if cpu > cpu_max: cpu_max = cpu
                 cpu = "%.0f" % cpu
+            sortdict[str(i)] = {'state' : state , 'site' : site , 'runtime' : wall_str , 'memory' : mem , 'cpu' : cpu , 'retries' : info.get('Retries', 0) , 'waste' : waste}
             self.logger.info("%4d %-12s %-20s %10s %10s %10s %10s %10s" % (i, state, site, wall_str, mem, cpu, info.get('Retries', 0) + info.get('Restarts', 0), waste))
+
+        if hasattr(self, 'sort') and  self.sort != None: self.printSort(sortdict,self.sort)
 
         self.logger.info("\nSummary:")
         if mem_cnt:
@@ -374,16 +377,69 @@ class status(SubCommand):
                 self.logger.info("%-20s %13s" % (site, sites[site]['Pending']))
             self.logger.info("")
 
+    def printSort(self, sortdict, sortby):
+
+        sortmatrix = []
+        valuedict ={}
+        self.logger.info('')
+        for id in sortdict:
+            if sortby in ['state' , 'site']:
+                value = sortdict[id][sortby]
+                if not value in valuedict:
+                    valuedict[value] = str(id)
+                else:
+                    valuedict[value] = valuedict[value]+','+str(id)
+            elif sortby in ['memory', 'cpu' , 'retries']:
+                if not sortdict[id][sortby] == 'Unknown':
+                    value = int(sortdict[id][sortby])
+                else: value = 9999
+                sortmatrix.append((value,id))
+                sortmatrix.sort()
+            elif sortby in ['runtime' ,'waste']:
+                value = sortdict[id][sortby]
+                realvaluematrix = value.split(':')
+                realvalue = 3600*int(realvaluematrix[0]) + 60*int(realvaluematrix[1]) + int(realvaluematrix[2])
+                sortmatrix.append((realvalue,value,id))
+                sortmatrix.sort()
+
+        if sortby in ['state' , 'site']:
+            self.logger.info('Job sorted by %s: \n' % sortby)
+            self.logger.info('%-20s %-20s\n' % (sortby.title(), 'Job Id(s)'))
+            for value in valuedict:
+                self.logger.info('%-20s %-s' % (value,valuedict[value]))
+            self.logger.info('')
+        elif sortby in ['memory', 'cpu', 'retries']:
+            self.logger.info('Job sorted by %s used: \n' % sortby)
+            if sortby == 'memory':
+                self.logger.info('%-10s %-10s' % ('Memory (MB)'.center(10), 'Job Id'.center(10)))
+            elif sortby == 'cpu':
+                self.logger.info('%-10s %-10s' % ('CPU'.center(10), 'Job Id'.center(10)))
+            elif sortby == 'retries':
+                 self.logger.info('%-10s %-10s' % ('Retries'.center(10), 'Job Id'.center(10)))
+            for value in sortmatrix:
+                if value[0] == 9999:
+                    esignvalue = 'Unknown'
+                else: esignvalue = value[0]
+                self.logger.info('%10s %10s' %(str(esignvalue).center(10),value[1].center(10)))
+            self.logger.info('')
+        elif sortby in ['runtime' ,'waste']:
+            self.logger.info('Job sorted by %s used: \n' % sortby)
+            self.logger.info('%-10s %-5s\n' % (sortby.title(), 'Job Id'))
+            for value in sortmatrix:
+                self.logger.info('%-10s %-5s' % (value[1],value[2].center(5)))
+            self.logger.info('')
+
     def setOptions(self):
         """
         __setOptions__
 
         This allows to set specific command options
         """
+
         self.parser.add_option( '--long',
                                 dest = 'long',
+                                action = 'store_true',
                                 default = False,
-                                action = "store_true",
                                 help = 'Print one status line per running job.')
         self.parser.add_option( "--json",
                                 dest = "json",
@@ -400,16 +456,29 @@ class status(SubCommand):
                                 default = False,
                                 action = "store_true",
                                 help = "Print idle job summary.")
+        self.parser.add_option( "--sort",
+                                dest = "sort",
+                                default = None,
+                                help = 'Only use with option long, availble sorting: "state", "site", "runtime", "memory", "cpu", "retries" and "waste"')
 
     def validateOptions(self):
         SubCommand.validateOptions(self)
-
         if self.options.idle and (self.options.long or self.options.summary ):
             raise ConfigurationException("Idle option (-i) conflicts with -u, and -l")
-        self.long = self.options.long
         self.json = self.options.json
         self.summary = self.options.summary
         self.idle = self.options.idle
+        self.long = self.options.long
+
+        acceptedsort = ["state", "site", "runtime", "memory", "cpu", "retries", "waste"]
+        if hasattr(self.options , 'sort') and self.options.sort != None:
+            if not self.long:
+                raise ConfigurationException('%sError%s: Please use option --long togther with --sort' % (colors.RED, colors.NORMAL))
+            elif not self.options.sort in acceptedsort:
+                raise ConfigurationException('%sError%s: Only this value accepted for crab status sort: %s' % (colors.RED, colors.NORMAL, acceptedsort))
+            else:
+                self.sort = self.options.sort
+
 
 
 
