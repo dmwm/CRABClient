@@ -223,77 +223,30 @@ class SubCommand(ConfigCommand):
 
     def serverInstance(self):
         """Deriving the correct instance to use and the server url. Client is allow to propegate the instance name and coresponding url
-	   via crabconfig.py or crab option --intance and --serverurl. The variable pass via crab option will always be use over the varible
-	   in crabconfig.py. Instance name must be same as the one in SERVICE_INSTANCES or exception will be raise."""
+	   via crabconfig.py or crab option --intance. The variable pass via crab option will always be use over the varible
+	   in crabconfig.py. Instance name other than specify in the SERVICE_INSTANCE will be treated as a private instance."""
         serverurl = None
 
         #Will be use to print available instances
         availableinstace=', '.join(SERVICE_INSTANCES)
 
-        #if client use the --instance options
-        if hasattr(self.options,'instance') and self.options.instance is not None :
-            instance = self.options.instance
-            #checking validity of the instance
+        if hasattr(self.options, 'instance') and not self.options.instance is None:
+            if hasattr(self, 'configuration') and hasattr(self.configuration.General,'instance') and not self.configuration.General.instance is None:
+                self.logger.info('%sWarning%s: Instance value in configuration file is overwritten by the option command, %s intance will be use ' % (colors.RED, colors.NORMAL, self.options.instance))
 
-            #for instances other than private
-            if instance in SERVICE_INSTANCES and SERVICE_INSTANCES[instance] is not None:
-                #giving message for user for use instance other than private but still supply a url
-                if hasattr(self.options,'server') and self.options.server is not None:
-                    self.logger.info("Please use 'private' instance to specify custom server url")
-                    raise ConfigurationException("Custom url is given for instance other than 'private'")
-                else:
-                    serverurl = SERVICE_INSTANCES[instance]
-
-            #for private instance
-            elif instance in SERVICE_INSTANCES and SERVICE_INSTANCES[instance] == None:
-                #checking if url is given from option
-                if hasattr(self.options, 'server') and self.options.server is not None:
-                    serverurl = self.options.server
-                #checking if url is given from configuration
-                elif hasattr(self.configuration.General, 'serverUrl'):
-                    serverurl = self.configuration.General.serverUrl
-                else:
-                    raise MissingOptionException("Custom url is not given for private instance")
-
-            elif instance not in SERVICE_INSTANCES:
-                self.logger.info("%sError%s: Wrong instance is given, available instance: %s"  %(colors.RED, colors.NORMAL , availableinstace))
-                raise ConfigurationException("Wrong instance is given in option")
-            else:
-                self.logger.info("%sError%s: Unknown instance option or configuration states"  %(colors.RED, colors.NORMAL))
-                raise Exception
-
-        #for client that uses the --server option but no --instance option
-        elif hasattr(self.options, 'server') and self.options.server is not None:
-            if hasattr(self.configuration.General, 'instance') and self.configuration.General.instance == 'private':
-                serverurl = self.options.server
-                instance = 'private'
-
-            elif hasattr(self.configuration.General, 'instance') and self.configuration.General.instance != 'private':
-                self.logger.info("%sError%s: Custom server url is given for instance other that 'private'" %(colors.RED, colors.NORMAL))
-                raise ConfigurationException("Wrong instance is given")
-            else:
-                self.logger.info("%sError%s: Unknown instance option or configuration states" %(colors.RED, colors.NORMAL))
-                raise Exception
-
-        #for client that does not use --server option or --instance option
-        elif hasattr(self, 'configuration') and  hasattr(self.configuration.General, 'instance'):
-            instance = self.configuration.General.instance
-
-            #checking if instance given is vaild
-            if instance not in SERVICE_INSTANCES:
-                self.logger.info ("%sError%s: Wrong instance is given, available instance : %s" %(colors.RED, colors.NORMAL, availableinstace))
-                raise ConfigurationException("Wrong instance is given in configuration file")
-
-            #for instance 'private'
-            elif SERVICE_INSTANCES[instance] == None:
-                if hasattr(self.configuration.General, 'serverUrl'):
-                    serverurl = self.configuration.General.serverUrl
-                else:
-                    raise ConfigurationException("%sError%s: Private instance require server url in the configuration file" %(colors.RED, colors.NORMAL))
-            #for instance other than 'private'
-            else:
+            if self.options.instance in SERVICE_INSTANCES.keys():
+                instance = self.options.instance
                 serverurl = SERVICE_INSTANCES[instance]
-        #for client who does not give any instance option or configuration
+            else:
+                instance = 'private'
+                serverurl = self.options.instance
+        elif hasattr(self, 'configuration') and hasattr(self.configuration.General, 'instance') and not self.configuration.General.instance is None:
+            if self.configuration.General.instance in SERVICE_INSTANCES.keys():
+                instance = self.configuration.General.instance
+                serverurl = SERVICE_INSTANCES[instance]
+            else:
+                instance = 'private'
+                serverurl = self.configuration.General.instance
         else:
             instance = 'prod'
             serverurl = SERVICE_INSTANCES[instance]
@@ -439,16 +392,6 @@ class SubCommand(ConfigCommand):
                                    dest = "instance",
                                    type = "string",
                                    help = "Running instance of CRAB service. Valid values are %s." %str(SERVICE_INSTANCES.keys()))
-
-            self.parser.add_option( "--server",
-                                     dest = "server",
-                                     action = "callback",
-                                     type   = 'str',
-                                     nargs  = 1,
-                                     callback = validServerURL,
-                                     metavar = "http://HOSTNAME:PORT",
-                                     default = None,
-                                     help = "Endpoint server url to use." )
 
     def validateOptions(self):
         """
