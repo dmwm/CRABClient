@@ -149,14 +149,14 @@ class CredentialInteractions(object):
             # checking the enddate of the user certificate
             usercertDaysLeft = myproxy.getUserCertEnddate()
             if usercertDaysLeft == 0:
-                msg = "%sYOUR USER CERTIFICATE IS EXPIRED (OR WILL EXPIRE TODAY). CANNOT SUBMIT%s"\
+                msg = "%sYOUR USER CERTIFICATE IS EXPIRED (OR WILL EXPIRE TODAY). YOU CANNOT USE THE CRAB3 CLIENT. PLEASE REQUEST A NEW CERTIFICATE HERE https://gridca.cern.ch/gridca/ AND SEE https://ca.cern.ch/ca/Help/?kbid=024010%s"\
                                         % (colors.RED, colors.NORMAL)
                 raise ProxyCreationException(msg)
 
             #if the certificate is going to expire print a warning. This is going to bre printed at every command if
             #the myproxytimeleft is inferior to the timeleftthreshold
             if usercertDaysLeft < self.myproxyDesiredValidity:
-                self.logger.info("%sYour user certificate is going to expire in %s days. Please renew it! %s"\
+                self.logger.info("%sYour user certificate is going to expire in %s days. Please request a new certificate here https://gridca.cern.ch/gridca/ and see https://ca.cern.ch/ca/Help/?kbid=024010 %s"\
                                  % (colors.RED, usercertDaysLeft, colors.NORMAL) )
                 #check if usercertDaysLeft ~= myproxytimeleft which means we already delegated the proxy for as long as we could
                 if abs(usercertDaysLeft*60*60*24 - myproxytimeleft) < 60*60*24 and not trustRetrListChanged: #less than one day between usercertDaysLeft and myproxytimeleft
