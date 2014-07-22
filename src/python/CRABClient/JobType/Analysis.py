@@ -4,6 +4,7 @@ CMSSW job type plug-in
 
 import os
 import tempfile
+import re
 
 from WMCore.DataStructs.LumiList import LumiList
 
@@ -11,10 +12,10 @@ import PandaServerInterface as PandaInterface
 
 from CRABClient.JobType.BasicJobType import BasicJobType
 from CRABClient.JobType.CMSSWConfig import CMSSWConfig
-from CRABClient.JobType.LumiMask import getLumiMask
+from CRABClient.JobType.LumiMask import getLumiList, getRunList
 from CRABClient.JobType.UserTarball import UserTarball
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
-from CRABClient.client_exceptions import EnvironmentException
+from CRABClient.client_exceptions import EnvironmentException, ConfigurationException
 
 class Analysis(BasicJobType):
     """
@@ -108,17 +109,28 @@ class Analysis(BasicJobType):
             else:
                 configArguments['inputdata'] = "/CRAB_UserFiles"
 
-        # Upload lumi mask if it exists
-        lumiMaskName = getattr(self.config.Data, 'lumiMask', None)
-        if lumiMaskName:
-            self.logger.debug("Attaching lumi mask %s to the request" % lumiMaskName)
-            lumiDict = getLumiMask(config=self.config, logger=self.logger)
-            configArguments['runs'] = lumiDict.keys()
-            #for each run we'll encode the lumis as a string representing a list of integers
-            #[[1,2],[5,5]] ==> '1,2,5,5'
-            configArguments['lumis'] = [ str(reduce(lambda x,y: x+y, \
-                                            lumiDict[run]))[1:-1].replace(' ','') \
-                                            for run in configArguments['runs'] ]
+        lumi_mask_name = getattr(self.config.Data, 'lumiMask', None)
+        lumi_list = None
+        if lumi_mask_name:
+            self.logger.debug("Attaching lumi mask %s to the request" % lumi_mask_name)
+            lumi_list = getLumiList(lumi_mask_name, logger = self.logger)
+        run_ranges = getattr(self.config.Data, 'runRange', None)
+        run_ranges_is_valid = run_ranges is not None and isinstance(run_ranges, str) and re.match('^\d+((?!(-\d+-))(\,|\-)\d+)*$', run_ranges)
+        if run_ranges_is_valid:
+            run_list = getRunList(run_ranges)
+            if lumi_list:
+                lumi_list.selectRuns(run_list)
+            else:
+                if len(run_list) > 50000:
+                    msg  = "Data.runRange includes %s runs." % str(len(run_list))
+                    msg += " When Data.lumiMask is not specified, Data.runRange can not include more than 50000 runs."
+                    raise ConfigurationException(msg)
+                lumi_list = LumiList(runs = run_list)
+        if lumi_list:
+            configArguments['runs'] = lumi_list.getRuns()
+            ## For each run we encode the lumis as a string representing a list of integers: [[1,2],[5,5]] ==> '1,2,5,5'
+            lumi_mask = lumi_list.getCompactList()
+            configArguments['lumis'] = [str(reduce(lambda x,y: x+y, lumi_mask[run]))[1:-1].replace(' ','') for run in configArguments['runs']]
 
         configArguments['jobtype'] = 'Analysis'
 
