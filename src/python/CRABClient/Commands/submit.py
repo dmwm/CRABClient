@@ -38,8 +38,7 @@ class submit(SubCommand):
 
         self.logger.debug("Started submission")
         # Get some debug parameters
-        oneEventMode = hasattr(self.configuration, 'Debug') and \
-                                getattr(self.configuration.Debug, 'oneEventMode')
+        oneEventMode = hasattr(self.configuration, 'Debug') and getattr(self.configuration.Debug, 'oneEventMode', False)
         ######### Check if the user provided unexpected parameters ########
         #init the dictionary with all the known parameters
         SpellChecker.DICTIONARY = SpellChecker.train( [ val['config'] for _, val in self.requestmapper.iteritems() if val['config'] ] + \
@@ -104,8 +103,6 @@ class submit(SubCommand):
                         configreq[param] = configreq[param].rstrip('/')
                     else:
                         raise ConfigurationException("Invalid argument " + configreq[param] + " for parameter " + self.requestmapper[param]['config'] + " in the configuration.")
-        if (configreq['saveoutput'] or configreq['savelogsflag']) and 'asyncdest' not in configreq:
-            raise ConfigurationException("Missing parameter " + self.requestmapper['asyncdest']['config'] + " from the configuration.")
 
         # Add debug parameters to the configreq dict
         configreq['oneEventMode'] = int(oneEventMode)
@@ -128,6 +125,12 @@ class submit(SubCommand):
             plugin = addPlugin(fullname)[basename]
             pluginInst = plugin(*pluginParams)
             inputfiles, jobconfig, isbchecksum = pluginInst.run(configreq)
+
+        if configreq['publication']:
+            non_edm_files = jobconfig['tfileoutfiles'] + jobconfig['addoutputfiles']
+            if non_edm_files:
+                msg = "%sWARNING%s: The following output files will not be published, as they are not EDM files: %s" % (colors.RED, colors.NORMAL, non_edm_files)
+                self.logger.warning(msg)
 
         if not configreq['publishname']:
             configreq['publishname'] =  isbchecksum
@@ -226,42 +229,66 @@ class submit(SubCommand):
 
         Checking if needed input parameters are there
         """
-        if getattr(self.configuration, 'General', None) is None:
-            return False, "Crab configuration problem: general section is missing. "
+        valid, msg = SubCommand.validateConfig(self)
+        if not valid:
+            return False, msg
 
-        if getattr(self.configuration, 'Data', None) is None:
-            return False, "Crab configuration problem: Data section is missing. "
-        else:
-            if hasattr(self.configuration.Data, 'unitsPerJob'):
-                #check that it is a valid number
-                try:
-                    float(self.configuration.Data.unitsPerJob)
-                except ValueError:
-                    return False, "Crab configuration problem: unitsPerJob must be a valid number, not %s" % self.configuration.Data.unitsPerJob
+        ## Check that the configuration object has the sections we expect it to have.
+        ## (WMCore already checks that attributes added to the configuration object are of type ConfigSection.)
+        ## Even if not all configuration sections need to be there, we anyway request
+        ## the user to add all the sections in the configuration file.
+        if not hasattr(self.configuration, 'General'):
+            msg = "Crab configuration problem: Section 'General' is missing."
+            return False, msg
+        if not hasattr(self.configuration, 'JobType'):
+            msg = "Crab configuration problem: Section 'JobType' is missing."
+            return False, msg
+        if not hasattr(self.configuration, 'Data'):
+            msg = "Crab configuration problem: Section 'Data' is missing."
+            return False, msg
+        if not hasattr(self.configuration, 'Site'):
+            msg = "Crab configuration problem: Section 'Site' is missing."
+            return False, msg
 
-        if getattr(self.configuration, 'Site', None) is None:
-            return False, "Crab configuration problem: Site section is missing. "
-        elif getattr(self.configuration.Site, "storageSite", None) is None and\
-             (getattr(self.configuration.General, 'transferOutput', True) or getattr(self.configuration.General, 'saveLogs', False)):
-            return False, "Crab configuration problem: Site.storageSite parameter is missing. "
+        ## Check that Data.unitsPerjob is specified.
+        if hasattr(self.configuration.Data, 'unitsPerJob'):
+            try:
+                float(self.configuration.Data.unitsPerJob)
+            except ValueError:
+                msg = "Crab configuration problem: Parameter Data.unitsPerJob must be a valid number, not %s" % self.configuration.Data.unitsPerJob
+                return False, msg
 
-        if getattr(self.configuration, 'JobType', None) is None:
-            return False, "Crab configuration problem: JobType section is missing. "
-        else:
-            if getattr(self.configuration.JobType, 'pluginName', None) is None and\
-               getattr(self.configuration.JobType, 'externalPluginFile', None) is None:
-                return False, "Crab configuration problem: one of JobType.pluginName or JobType.externalPlugin parameters is required. "
-            if getattr(self.configuration.JobType, 'pluginName', None) is not None and\
-               getattr(self.configuration.JobType, 'externalPluginFile', None) is not None:
-                return False, "Crab configuration problem: only one between JobType.pluginName or JobType.externalPlugin parameters is required. "
-            externalPlugin = getattr(self.configuration.JobType, 'externalPluginFile', None)
-            if externalPlugin is not None:
-                addPlugin(externalPlugin)
-            elif upper(self.configuration.JobType.pluginName) not in getJobTypes():
-                msg = "JobType %s not found or not supported." % self.configuration.JobType.pluginName
+        ## Check that at least one and only one of JobType.pluginName or JobType.externalPlugin is specified.
+        if not hasattr(self.configuration.JobType, 'pluginName') and not hasattr(self.configuration.JobType, 'externalPluginFile'):
+            msg = "Crab configuration problem: One of 'JobType.pluginName' or 'JobType.externalPlugin' parameters is required."
+            return False, msg
+        if hasattr(self.configuration.JobType, 'pluginName') and hasattr(self.configuration.JobType, 'externalPluginFile'):
+            msg = "Crab configuration problem: Only one between 'JobType.pluginName' or 'JobType.externalPlugin' parameters is required."
+            return False, msg
+        ## Load the plugin.
+        externalPlugin = getattr(self.configuration.JobType, 'externalPluginFile', None)
+        if externalPlugin is not None:
+            addPlugin(externalPlugin)
+        elif upper(self.configuration.JobType.pluginName) not in getJobTypes():
+            msg = "JobType %s not found or not supported." % self.configuration.JobType.pluginName
+            return False, msg
+
+        ## Check that the particular combination (Data.publication = True, General.transferOutput = False) is not specified.
+        if hasattr(self.configuration.Data, 'publication') and hasattr(self.configuration.General, 'transferOutput'):
+            if self.configuration.Data.publication and not self.configuration.General.transferOutput:
+                msg  = "Crab configuration problem: 'Data.publication' is on, but 'General.transferOutput' is off.\n"
+                msg += "Publication can not be performed if the output files are not transferred to a permanent storage."
+                return False, msg
+
+        ## Check that a storage site is specified if General.transferOutput = True or General.saveLogs = True.
+        if not hasattr(self.configuration.Site, 'storageSite'):
+            if (hasattr(self.configuration.General, 'transferOutput') and self.configuration.General.transferOutput) or \
+               (hasattr(self.configuration.General, 'saveLogs') and self.configuration.General.saveLogs):
+                msg = "Crab configuration problem: Parameter 'Site.storageSite' is missing."
                 return False, msg
 
         return True, "Valid configuration"
+
 
     def _encodeRequest( self, configreq):
         """ Used to encode the request from a dict to a string. Include the code needed for transforming lists in the format required by

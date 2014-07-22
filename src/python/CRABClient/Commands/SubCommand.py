@@ -196,12 +196,6 @@ class SubCommand(ConfigCommand):
                 if self.voGroup == '': msg += "(i.e. no VO group) "
                 msg += "as specified in the command line."
                 self.logger.info(msg % self.voGroup)
-            if getattr(self.configuration.Data, 'publication', None) and \
-               not getattr(self.configuration.General, 'transferOutput', self.requestmapper['saveoutput']['default']):
-                msg = "Crab configuration problem: Data.publication is ON, but General.transferOutput is OFF.\n"
-                msg += "Publication can not be performed if the output files are not transferred to a permanent storage."
-                self.logger.info(msg)
-                raise ConfigurationException("Incompatible configuration options Data.publication and General.transferOutput")
 
         ##if we get an input task we load the cache and set the url from it
 
