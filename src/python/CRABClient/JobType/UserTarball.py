@@ -14,6 +14,7 @@ import hashlib
 import sys
 import logging
 
+
 from WMCore.Configuration import loadConfigurationFile, Configuration
 from WMCore.Services.UserFileCache.UserFileCache import UserFileCache
 import PandaServerInterface as PandaInterface
@@ -78,14 +79,21 @@ class UserTarball(object):
                 self.checkdirectory(filename)
                 self.tarfile.add(filename, os.path.basename(filename), recursive=True)
 
-        # Adding the pset file to the tarfile
+        # Adding the pset and crabconfig file to the tarfile
         if cfgOutputName:
             self.tarfile.add(cfgOutputName, arcname='PSet.py')
-            self.tarfile.add(os.path.splitext(cfgOutputName)[0]+'.pkl', arcname='PSet.pkl')
-        currentPath = os.getcwd()
 
-#        psetfile = getattr(self.config.JobType, 'psetName', None)
-#        self.tarfile.add(os.path.join(currentPath, psetfile), arcname='PSet.py')
+        configtmp = tempfile.NamedTemporaryFile(delete=True)
+        configtmp.write(str(self.config))
+        configtmp.flush()
+        psetfilename = getattr(self.config.JobType, 'psetName', None)
+
+        if not psetfilename == None:
+            self.tarfile.add(psetfilename,'/debug/originalPSet.py')
+        else:
+            self.logger.debug('Failed to add pset to tarball')
+        self.tarfile.add(configtmp.name, '/debug/crabConfig.py')
+        configtmp.close()
 
     def close(self):
         """
