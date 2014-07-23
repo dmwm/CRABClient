@@ -13,6 +13,7 @@ import tempfile
 import hashlib
 import sys
 import logging
+import shutil
 
 from WMCore.Configuration import loadConfigurationFile, Configuration
 from WMCore.Services.UserFileCache.UserFileCache import UserFileCache
@@ -78,14 +79,33 @@ class UserTarball(object):
                 self.checkdirectory(filename)
                 self.tarfile.add(filename, os.path.basename(filename), recursive=True)
 
-        # Adding the pset file to the tarfile
+        # Adding the pset and crabconfig file to the tarfile
         if cfgOutputName:
             self.tarfile.add(cfgOutputName, arcname='PSet.py')
-            self.tarfile.add(os.path.splitext(cfgOutputName)[0]+'.pkl', arcname='PSet.pkl')
         currentPath = os.getcwd()
 
-#        psetfile = getattr(self.config.JobType, 'psetName', None)
-#        self.tarfile.add(os.path.join(currentPath, psetfile), arcname='PSet.py')
+        debugdir = '.crabtmp/debug_'+self.config.General.requestName
+        if not os.path.exists(debugdir): os.makedirs(debugdir)
+        psetfile = getattr(self.config.JobType, 'psetName', None)
+        if os.path.exists(psetfile):
+            try:
+                shutil.copyfile(psetfile, debugdir+'/pset.py')
+            except IOError:
+                self.logger.debug('Failed to copy pset.py to temporary directory for tarball')
+        else:
+            self.logger.debug('Failed to copy pset.py to temporary directory for tarball')
+
+        try:
+            configfile = open(debugdir+'/crabconfig.py', 'w')
+            configfile.write(str(self.config))
+            configfile.close()
+        except IOError:
+            self.logger.debug('Failed to write crabconfig.py to temporary directory for tarball')
+
+        self.tarfile.add(debugdir, 'debug', recursive=True )
+
+        shutil.rmtree(debugdir,ignore_errors= True)
+
 
     def close(self):
         """
