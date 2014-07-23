@@ -101,9 +101,12 @@ class status(SubCommand):
                     self.logger.info("\t%s" % error)
 
         #Print the url of the panda monitor
-        if dictresult['taskFailureMsg']:
+        if dictresult['taskFailureMsg'] and dictresult['status'] == "FAILED":
             self.logger.error("%sError during task injection:%s\t%s" % (colors.RED,colors.NORMAL,dictresult['taskFailureMsg']))
             # We might also have more information in the job def errors
+            logJDefErr(jdef=dictresult)
+        elif dictresult['taskFailureMsg']:
+            self.logger.error("%sError during task information retrieval:%s\t%s." % (colors.RED, colors.NORMAL, dictresult['taskFailureMsg']))
             logJDefErr(jdef=dictresult)
         elif self.cachedinfo['RequestName'] == dictresult['jobSetID']:
             # CRAB3-HTCondor
