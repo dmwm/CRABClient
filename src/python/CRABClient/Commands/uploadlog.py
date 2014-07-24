@@ -64,7 +64,7 @@ class uploadlog(SubCommand):
         if hasattr(self.options, 'logpath') and self.options.logpath != None:
             self.requiresTaskOption =  False
             if not path.isfile(self.options.logpath):
-                msg = '%sError%s: Could not find the log file in the path: %s' % (colors.RED,colors.NORMAL,self.ptions.logpath)
+                msg = '%sError%s: Could not find the log file in the path: %s' % (colors.RED,colors.NORMAL,self.options.logpath)
                 raise ConfigurationException(msg)
 
         elif hasattr(self.options, 'task') and self.options.task == None:
