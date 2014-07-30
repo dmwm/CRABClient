@@ -1,5 +1,3 @@
-
-from CRABClient.Commands import CommandResult, mergeResults
 from CRABClient.Commands.remote_copy import remote_copy
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.client_exceptions import ConfigurationException , RESTCommunicationException

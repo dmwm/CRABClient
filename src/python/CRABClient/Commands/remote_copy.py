@@ -9,7 +9,6 @@ from multiprocessing import Manager
 
 from WMCore.FwkJobReport.FileInfo import readAdler32, readCksum
 
-from CRABClient.Commands import CommandResult
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.CredentialInteractions import CredentialInteractions
 from CRABClient.client_utilities import colors
@@ -150,11 +149,6 @@ class remote_copy(SubCommand):
         else:
             self.logger.info("%sSuccess%s: All files successfully retrieve " % (colors.GREEN,colors.NORMAL))
             globalExitcode=0
-
-
-
-
-        return CommandResult(globalExitcode, '')
 
     def startchildproc(self, childprocess, nsubprocess, successfiles, failedfiles):
         """
