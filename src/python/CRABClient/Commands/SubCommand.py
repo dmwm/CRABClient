@@ -382,7 +382,7 @@ class SubCommand(ConfigCommand):
 
     def terminate(self, exitcode):
         #We do not want to print logfile for each command...
-        if exitcode < 2000 and not self.name == 'checkwrite' :
+        if exitcode < 2000:
             if getattr(self.options, 'dump', False) or getattr(self.options, 'xroot', False):
                 self.logger.debug("Log file is %s" % os.path.abspath(self.logfile))
             else:
