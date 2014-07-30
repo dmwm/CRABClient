@@ -1,7 +1,6 @@
 import re
 import pickle
 import os
-import time
 
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.client_utilities import colors
@@ -16,21 +15,7 @@ class remake(SubCommand):
 
     def __call__(self):
 
-        #checking regular expression
-        tasks = ''.join(self.options.cmptask.split())
-        tasks = tasks.split(',')
-        accpetedtask = []
-        for task in tasks:
-            if re.match('^\d{6}_\d{6}_([^\:\,]+)\:[a-zA-Z]+_crab_.+' ,task):
-                accpetedtask.append(task)
-            else:
-                self.logger.info('%sWarning%s: %s rejected because it does not meet regular expression' % (colors.RED,colors.NORMAL, task))
-
-        if len(accpetedtask) < 1:
-            raise ConfigurationException("%sError%s: No task name does match regular expression, please use the complete task name from glidemon or dashboard " % (colors.RED,colors.NORMAL))
-        else:
-            for task in accpetedtask:
-                self.remakecache(task)
+        self.remakecache(''.join(self.options.cmptask.split()))
 
     def remakecache(self,taskname):
         #checking and making the request area if does not exist
@@ -50,7 +35,6 @@ class remake(SubCommand):
                 os.mkdir(os.path.join(requestare, 'inputs'))
             except IOError:
                 self.logger.info('%sWarning%s: Failed to make a requestare' % (colors.RED, colors.NORMAL))
-                requestare = os.getcwd()
 
             self.logger.info('Remaking the .requestcache for %s' % taskname)
             pickle.dump({'voGroup': '', 'Server': self.serverurl , 'instance': self.instance,'RequestName': taskname, 'voRole': '', 'Port': ''}, open(cachepath , 'w'))
@@ -65,11 +49,13 @@ class remake(SubCommand):
         self.parser.add_option( '--cmptask',
                                 dest = 'cmptask',
                                 default = None,
-                                help = 'The complete task name from glidemon or dashboard, use coma to seperate between task')
+                                help = 'The complete task name from glidemon or dashboard.')
 
     def validateOptions(self):
 
         if not hasattr(self.options, 'cmptask') or  self.options.cmptask == None :
             raise MissingOptionException("%sError%s: Please use the --cmptask option to specify the complete task name "% (colors.RED,colors.NORMAL))
+        elif not re.match('^\d{6}_\d{6}_([^\:\,]+)\:[a-zA-Z]+_crab_.+' ,self.options.cmptask):
+            raise  ConfigurationException('%sError%s: Task name given did not meet regular expression citeria' % (colors.RED, colors.NORMAL))
 
 
