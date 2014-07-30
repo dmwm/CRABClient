@@ -19,8 +19,7 @@ from CRABClient import __version__
 DBSURLS = {'reader': {'global': 'https://cmsweb.cern.ch/dbs/prod/global/DBSReader',
                       'phys01': 'https://cmsweb.cern.ch/dbs/prod/phys01/DBSReader',
                       'phys02': 'https://cmsweb.cern.ch/dbs/prod/phys02/DBSReader',
-                      'phys03': 'https://cmsweb.cern.ch/dbs/prod/phys03/DBSReader',
-                      'caf01' : 'https://cmsweb.cern.ch/dbs/prod/caf/DBSReader'},
+                      'phys03': 'https://cmsweb.cern.ch/dbs/prod/phys03/DBSReader'},
            'writer': {'phys03': 'https://cmsweb.cern.ch/dbs/prod/phys03/DBSWriter'}}
 
 class submit(SubCommand):
@@ -71,35 +70,29 @@ class submit(SubCommand):
                     if temp is None:
                         break
                 if temp is not None:
-                    if mustbetype == type(temp):
-                        configreq[param] = temp
-                    else:
-                        raise ConfigurationException("Invalid type " + str(type(temp)) + " for parameter " + self.requestmapper[param]['config'] \
-                                   + ". It is needed a " + str(mustbetype) + ".")
+                    configreq[param] = temp
                 elif self.requestmapper[param]['default'] is not None:
                     configreq[param] = self.requestmapper[param]['default']
                     temp = self.requestmapper[param]['default']
-                elif self.requestmapper[param]['required']:
-                    raise ConfigurationException("Missing parameter " + self.requestmapper[param]['config'] + " from the configuration.")
                 else:
                     ## parameter not strictly required
                     pass
             if param == "workflow":
                 if mustbetype == type(self.requestname):
                     configreq["workflow"] = self.requestname
-            elif param in ['savelogsflag','publication','nonprodsw','ignorelocality','saveoutput']:#TODO use clientmappig to do this
+            elif param in ['savelogsflag', 'publication', 'nonprodsw', 'ignorelocality', 'saveoutput']:#TODO use clientmappig to do this
                 configreq[param] = 1 if temp else 0
-            elif param in ['dbsurl','publishdbsurl']:
+            elif param in ['dbsurl', 'publishdbsurl']:
                 if param == 'dbsurl':
                     dbstype = 'reader'
                 elif param == 'publishdbsurl':
                     dbstype = 'writer'
-                alloweddbsurls = DBSURLS[dbstype].values()
-                alloweddbsurlsaliases = DBSURLS[dbstype].keys()
-                if configreq[param] in alloweddbsurlsaliases:
+                allowed_dbsurls = DBSURLS[dbstype].values() 
+                allowed_dbsurls_aliases = DBSURLS[dbstype].keys()
+                if configreq[param] in allowed_dbsurls_aliases:
                     configreq[param] = DBSURLS[dbstype][configreq[param]]
                 else:
-                    if configreq[param].rstrip('/') in alloweddbsurls:
+                    if configreq[param].rstrip('/') in allowed_dbsurls:
                         configreq[param] = configreq[param].rstrip('/')
                     else:
                         raise ConfigurationException("Invalid argument " + configreq[param] + " for parameter " + self.requestmapper[param]['config'] + " in the configuration.")
@@ -286,6 +279,27 @@ class submit(SubCommand):
                (hasattr(self.configuration.General, 'saveLogs') and self.configuration.General.saveLogs):
                 msg = "Crab configuration problem: Parameter 'Site.storageSite' is missing."
                 return False, msg
+
+        ## Check that, if the input dataset is a user dataset, Data.dbsUrl should be specified
+        ## and it should be one of the phys0x local scope DBS instances.
+        if hasattr(self.configuration.Data, 'inputDataset'):
+            inputDataset_parts = self.configuration.Data.inputDataset.split('/')
+            inputDataset_parts.pop(0)
+            inputDataset_tier = inputDataset_parts[-1] if len(inputDataset_parts) == 3 else 'undefined'
+            user_data_tiers = ['USER']
+            if inputDataset_tier in user_data_tiers:
+                if not hasattr(self.configuration.Data, 'dbsUrl'):
+                    msg = "Crab configuration problem: Parameter 'Data.dbsUrl' is missing."
+                    return False, msg
+                allowed_dbsurls_aliases = ['phys01', 'phys02', 'phys03']
+                allowed_dbsurls = []
+                for dbsurl_alias in allowed_dbsurls_aliases:
+                    allowed_dbsurls.append(DBSURLS['reader'][dbsurl_alias]) 
+                if self.configuration.Data.dbsUrl not in allowed_dbsurls + allowed_dbsurls_aliases:
+                    msg  = "Crab configuration problem: Parameter 'Data.dbsUrl' has an invalid value '%s'.\n" % self.configuration.Data.dbsUrl
+                    msg += "When the input dataset tier is %s, the parameter 'Data.dbsUrl' should be one of %s." \
+                          % (inputDataset_tier, allowed_dbsurls_aliases)
+                    return False, msg
 
         return True, "Valid configuration"
 

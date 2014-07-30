@@ -1,6 +1,7 @@
 import os
 import imp
 import json
+import types
 from optparse import OptionParser, SUPPRESS_HELP
 from ast import literal_eval
 
@@ -74,6 +75,7 @@ class ConfigCommand:
             if not valid:
                 raise ConfigurationException(configmsg)
 
+
     def _extractReason(self, configname, re):
         """
         To call in case of error loading the configuration file
@@ -100,6 +102,7 @@ class ConfigCommand:
 
         return msg
 
+
     def validateConfig(self):
         """
         __validateConfig__
@@ -107,6 +110,33 @@ class ConfigCommand:
         Checking if needed input parameters are there
         Not all the commands requires a configuration
         """
+        ## Check that each parameter specified in the configuration file is of the 
+        ## type specified in the configuration map.
+        ## Check that, if a parameter is a required one and it has no default value,
+        ## then it must be specified in the configuration file.
+        for param in self.requestmapper:
+            param_full_config_name = self.requestmapper[param].get('config')
+            if param_full_config_name is None:
+                continue
+            required_type_name = self.requestmapper[param].get('type', 'undefined')
+            try:
+                required_type = getattr(types, required_type_name)
+            except AttributeError, ex:
+                msg = "Invalid type '%s' specified in client configuration mapping for parameter '%s'." % (required_type_name, param)
+                return False, msg
+            attrs = param_full_config_name.split('.')
+            obj = self.configuration
+            while attrs and obj is not None:
+                obj = getattr(obj, attrs.pop(0), None)
+            if obj is not None:
+                if type(obj) != required_type:
+                    msg = "Invalid type %s for parameter '%s'. It is needed a %s." % (str(type(obj)), self.requestmapper[param]['config'], str(required_type))
+                    return False, msg
+            else:
+                if self.requestmapper[param].get('default') is None and self.requestmapper[param].get('required', False):
+                    msg = "Missing parameter '%s' in CRAB configuration file." % self.requestmapper[param]['config']
+                    return False, msg
+
         return True, "Valid configuration"
 
 
