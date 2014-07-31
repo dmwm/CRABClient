@@ -18,8 +18,7 @@ from WMCore.Configuration import loadConfigurationFile, Configuration
 BASEURL = '/crabserver/'
 SERVICE_INSTANCES = {'prod': 'cmsweb.cern.ch',
                      'preprod': 'cmsweb-testbed.cern.ch',
-                     'dev': 'cmsweb-dev.cern.ch',
-                     'private': None,}
+                     'dev': 'cmsweb-dev.cern.ch'}
 #if certificates in myproxy expires in less than RENEW_MYPROXY_THRESHOLD days renew them
 RENEW_MYPROXY_THRESHOLD = 15
 
@@ -156,9 +155,9 @@ class SubCommand(ConfigCommand):
         Retrieve the url depending on the resource we are accessing and the instance.
         """
         if instance in SERVICE_INSTANCES.keys():
-            if instance == 'private':
-                instance = 'dev'
             return BASEURL + instance + '/' + resource
+        elif instance == 'private':
+            return BASEURL + 'dev' + '/' + resource
         raise ConfigurationException('Error: only %s instances can be used.' %str(SERVICE_INSTANCES.keys()))
 
     def loadMapping(self):
