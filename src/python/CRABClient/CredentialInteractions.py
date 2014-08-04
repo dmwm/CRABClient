@@ -39,17 +39,28 @@ class CredentialInteractions(object):
         self.proxyChanged = False
         self.certLocation = '~/.globus/usercert.pem' if 'X509_USER_CERT' not in os.environ else os.environ['X509_USER_CERT']
 
+
+    def getUserDN(self):
+        try:
+            proxy = Proxy(self.defaultDelegation)
+        except CredentialException, ex:
+            raise EnvironmentException('Problem with Grid environment. %s ' % ex._message)
+        userdn = proxy.getSubjectFromCert(self.certLocation)
+        return userdn
+
+
     def getHyperNewsName(self):
         """
         Return a the client hypernews name
         """
         try:
-            proxy=Proxy( self.defaultDelegation )
+            proxy = Proxy(self.defaultDelegation)
         except CredentialException, ex:
             raise EnvironmentException('Problem with Grid environment. %s ' %ex._message)
-        userdn=proxy.getSubjectFromCert(self.certLocation)
-        sdb = SiteDBJSON({"key":proxy.getProxyFilename(), "cert":proxy.getProxyFilename()})
-        return  sdb.dnUserName(userdn)
+        userdn = proxy.getSubjectFromCert(self.certLocation)
+        sitedb = SiteDBJSON({"key": proxy.getProxyFilename(), "cert": proxy.getProxyFilename()})
+        return sitedb.dnUserName(userdn)
+
 
     def getUserName(self):
         """
@@ -61,6 +72,7 @@ class CredentialInteractions(object):
             self.logger.debug(ex)
             raise EnvironmentException('Problem with Grid environment. %s ' %ex._message)
         return userproxy.getUserName()
+
 
     def createNewVomsProxy(self, timeleftthreshold=0):
         """
@@ -114,6 +126,7 @@ class CredentialInteractions(object):
                 raise ProxyCreationException("Problems creating proxy.")
 
         return userproxy.userDN, userproxy.getProxyFilename()
+
 
     def createNewMyProxy(self, timeleftthreshold=0, nokey=False):
         """

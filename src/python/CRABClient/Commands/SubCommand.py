@@ -257,7 +257,7 @@ class SubCommand(ConfigCommand):
         serverurl = None
 
         #Will be use to print available instances
-        availableinstace=', '.join(SERVICE_INSTANCES)
+        available_instances = ', '.join(SERVICE_INSTANCES)
 
         if hasattr(self.options, 'instance') and not self.options.instance is None:
             if hasattr(self, 'configuration') and hasattr(self.configuration.General,'instance') and not self.configuration.General.instance is None:
