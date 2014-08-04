@@ -62,7 +62,7 @@ class purge(SubCommand):
                 ufcresult = ufc.removeFile(hashkey)
             except HTTPException, re:
                 if re.headers.has_key('X-Error-Info') and 'Not such file' in re.headers['X-Error-Info']:
-                    self.logger.info('%sError%s: Failed to find task fil in crabcache, the file might had been purged before' % (colors.RED,colors.NORMAL))
+                    self.logger.info('%sError%s: Failed to find task file in crabcache, the file might had been purged before' % (colors.RED,colors.NORMAL))
                     raise HTTPException , re
 
             if ufcresult == '' :
