@@ -18,12 +18,13 @@ import pycurl
 import logging
 import logging.handlers
 
+
 from httplib import HTTPException
 from optparse import OptionParser, OptionGroup
 from socket import error as SocketError
 
 from CRABClient import __version__ as client_version
-from CRABClient.client_utilities import getAvailCommands
+from CRABClient.client_utilities import getAvailCommands, logfilter
 from CRABClient.client_exceptions import ClientException
 from CRABClient.ClientMapping import mapping
 
@@ -106,11 +107,21 @@ class CRABClient(object):
         if options.debug:
             loglevel = logging.DEBUG
 
+        #setting up a sys.stdout logger
         console_format = '%(message)s'
         console = logging.StreamHandler(sys.stdout)
         console.setFormatter(logging.Formatter(console_format))
         console.setLevel(loglevel)
         logger.addHandler(console)
+
+        #setting up a temporary memory logging if task directory failed to load, or command does not use task name
+        #default log target, will be change when task is loaded
+        logtarget = os.path.join(os.getcwd(), 'crab.log')
+        memhandler = logging.handlers.MemoryHandler(capacity = 1024*10, target = logtarget)
+        ff = logging.Formatter("%(levelname)s %(asctime)s: \t %(message)s")
+        memhandler.setFormatter(ff)
+        memhandler.setLevel(logging.DEBUG)
+        logger.addHandler(memhandler)
 
         self.logger = logger
 
@@ -118,8 +129,6 @@ class CRABClient(object):
         #has not been set yet. The right file handler is only added when the workarea
         #of the task is created
         tbLogger = logging.getLogger('CRAB3:traceback')
-        nh = MyNullHandler()
-        tbLogger.addHandler(nh)
 
         # Replace excepthook with logger
         def log_exception(exc_type, exc_value, tback):
@@ -129,6 +138,28 @@ class CRABClient(object):
 
             Adapted from Doug Hellmann
             """
+            #flushing memory handler logger to a file logger
+            filehandler = False
+            memhandler = False
+            for instance in logging.getLogger('CRAB3:traceback').handlers:
+                if isinstance(instance, logging.FileHandler): filehandler = instance
+            for instance in logging.getLogger('CRAB3').handlers:
+                if isinstance(instance, logging.handlers.MemoryHandler): memhandler = instance
+            if not filehandler and memhandler:
+                logpath = os.path.join(os.getcwd(), 'crab.log')
+                filehandler = logging.FileHandler(logpath)
+                filehandler.setLevel(logging.DEBUG)
+                ff = logging.Formatter("%(levelname)s %(asctime)s: \t %(message)s")
+                filehandler.setFormatter( ff )
+                filter = logfilter()
+                filehandler.addFilter(filter)
+                logging.getLogger('CRAB3:traceback').addHandler(filehandler)
+                memhandler.setTarget(filehandler)
+                memhandler.flush()
+                memhandler.close()
+                logging.getLogger('CRAB3').removeHandler(memhandler)
+
+
             # This goes to the console
             logging.getLogger('CRAB3').error("ERROR: %s: %s" % (exc_type.__name__, exc_value))
             logging.getLogger('CRAB3').error("\n\tPlease email hn-cms-computing-tools@cern.ch for support and include the last lines of crab.log.")

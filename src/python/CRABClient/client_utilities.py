@@ -8,10 +8,12 @@ import os
 import re
 import datetime
 import logging
+import logging.handlers
 
 import pkgutil
 import sys
 import cPickle
+import logging
 
 from string import upper
 from optparse import OptionValueError
@@ -20,20 +22,31 @@ from CRABClient.client_exceptions import TaskNotFoundException, CachefileNotFoun
 
 
 class colors:
-    if sys.stdout.isatty():
-        RED    = '\033[91m'
-        GREEN  = '\033[92m'
-        BLUE   = '\033[93m'
-        GRAY   = '\033[90m'
-        NORMAL = '\033[0m'
-        BOLD   = '\033[1m'
-    else:
-        RED    = ''
-        GREEN  = ''
-        BLUE   = ''
-        GRAY   = ''
-        NORMAL = ''
-        BOLD   = ''
+
+    colordict = {
+                'RED':'\033[91m',
+                'GREEN':'\033[92m',
+                'BLUE':'\033[93m',
+                'GRAY':'\033[90m',
+                'NORMAL':'\033[0m',
+                'BOLD':'\033[1m' }
+
+    RED    = colordict['RED']
+    GREEN  = colordict['GREEN']
+    BLUE   = colordict['BLUE']
+    GRAY   = colordict['GRAY']
+    NORMAL = colordict['NORMAL']
+    BOLD   = colordict['BOLD']
+
+class logfilter(logging.Filter):
+
+    def filter(self, record):
+        # find color in record.msg
+        for color in colors.colordict.keys():
+            if colors.colordict[color] in record.msg:
+                record.msg = record.msg.replace(colors.colordict[color],'')
+
+        return True
 
 
 def getPlugins(namespace, plugins, skip):
@@ -156,7 +169,7 @@ def getRequestName(requestName = None):
         return prefix + requestName # + '_' + postfix
 
 
-def addFileLogger(logger, workingpath, logname = 'crab.log'):
+def addFileLogger(logger, workingpath = os.getcwd(), logname = 'crab.log'):
     """
     _addFileLogger_
     """
@@ -168,8 +181,21 @@ def addFileLogger(logger, workingpath, logname = 'crab.log'):
 
     ff = logging.Formatter("%(levelname)s %(asctime)s: \t %(message)s")
     handler.setFormatter( ff )
-
+    #add filter to remove color
+    filter = logfilter()
+    handler.addFilter(filter)
     logger.addHandler( handler )
+
+    #exctracting memory hander and flushing it to file handler
+    memhandler = None
+    for instance in logger.handlers:
+        if isinstance(instance, logging.handlers.MemoryHandler): memhandler = instance
+
+    if memhandler != None:
+        memhandler.setTarget(handler)
+        memhandler.flush()
+        memhandler.close()
+        logger.removeHandler(memhandler)
 
     # Full tracebacks should only go to the file
     # The traceback logger is also used to get messages from libraries (e.g. Proxy, PandaServerInterface)
