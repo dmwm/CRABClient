@@ -8,6 +8,7 @@ from RESTInteractions import HTTPRequests
 
 import os
 import re
+import copy
 
 class getcommand(SubCommand):
     """ Retrieve the output files of a number of jobs specified by the -q/--quantity option. The task
@@ -67,19 +68,30 @@ class getcommand(SubCommand):
         arglist = ['--destination', self.dest, '--input', workflow, '-t', self.options.task, '--skip-proxy', self.proxyfilename, '--parallel',self.options.nparallel, '--wait',self.options.waittime]
         if len(workflow) > 0:
             if self.options.xroot:
-                self.logger.debug("XRootD url is requested")
-                for fileinfo in workflow:
-                    self.logger.info("root://cms-xrd-global.cern.ch/%s" % fileinfo['lfn'])
+                self.logger.debug("XRootD urls are requested")
+                xrootlfn = ["root://cms-xrd-global.cern.ch/%s" % link['lfn'] for link in workflow]
+                self.logger.info("\n".join(xrootlfn))
+                returndict = {'xrootd' : xrootlfn}
+
             elif self.dump:
-                for fileInfo in workflow:
-                    self.logger.info(fileInfo['pfn'])
+                pfnlist = map(lambda x: x['pfn'], workflow)
+                self.logger.info("\n".join(pfnlist))
+                returndict = {'pfn' :pfnlist}
+
             else:
                 self.logger.info("Retrieving %s files" % totalfiles )
                 copyoutput = remote_copy( self.logger, arglist )
-                copyoutput()
+                successdict, faileddict = copyoutput()
+
+                #need to use deepcopy because successdict and faileddict are dict that is under the a manage dict, accessed multithreadly
+                returndict = {'success' : copy.deepcopy(successdict) , 'failed' : copy.deepcopy(faileddict)}
+
 
         if totalfiles == 0:
             self.logger.info("No files to retrieve")
+            returndict = {'success' : {} , 'failed' : {}}
+
+        return returndict
 
 
     def processServerResult(self, result):
@@ -139,6 +151,3 @@ class getcommand(SubCommand):
             self.options.jobids = validateJobids(self.options.jobids)
 
         self.dump = self.options.dump
-
-
-

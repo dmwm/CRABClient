@@ -15,7 +15,7 @@ class remake(SubCommand):
 
     def __call__(self):
 
-        self.remakecache(''.join(self.options.cmptask.split()))
+        return self.remakecache(''.join(self.options.cmptask.split()))
 
     def remakecache(self,taskname):
         #checking and making the request area if does not exist
@@ -37,8 +37,10 @@ class remake(SubCommand):
                 self.logger.info('%sWarning%s: Failed to make a requestare' % (colors.RED, colors.NORMAL))
 
             self.logger.info('Remaking the .requestcache for %s' % taskname)
-            pickle.dump({'voGroup': '', 'Server': self.serverurl , 'instance': self.instance,'RequestName': taskname, 'voRole': '', 'Port': ''}, open(cachepath , 'w'))
+            jsonfile = {'voGroup': '', 'Server': self.serverurl , 'instance': self.instance,'RequestName': taskname, 'voRole': '', 'Port': ''}, open(cachepath , 'w')
+            pickle.dump(jsonfile)
             self.logger.info('%sSuccess%s: Finish making %s ' % (colors.GREEN, colors.NORMAL, cachepath))
+            return jsonfile
 
     def setOptions(self):
         """
