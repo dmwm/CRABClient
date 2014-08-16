@@ -66,13 +66,12 @@ class Analysis(BasicJobType):
 
         ## Interogate CMSSW config and user config for output file names. For now no use for EDM files or TFiles here.
         edmfiles, tfiles = cmsswCfg.outputFiles()
+        outputFiles = [file for file in getattr(self.config.JobType, 'outputFiles', []) if file not in edmfiles+tfiles]
         self.logger.debug("The following EDM output files will be collected: %s" % edmfiles)
         self.logger.debug("The following TFile output files will be collected: %s" % tfiles)
+        self.logger.debug("The following user output files will be collected: %s" % outputFiles)
         configArguments['edmoutfiles'] = edmfiles
         configArguments['tfileoutfiles'] = tfiles
-
-        outputFiles = getattr(self.config.JobType, 'outputFiles', [])
-        self.logger.debug("The following user output files will be collected: %s" % outputFiles)
         configArguments['addoutputfiles'].extend(outputFiles)
 
         # Write out CMSSW config
