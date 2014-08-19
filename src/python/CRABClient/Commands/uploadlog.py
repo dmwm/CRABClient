@@ -4,6 +4,7 @@ from WMCore.Services.UserFileCache.UserFileCache import UserFileCache
 from CRABClient.client_utilities import colors
 from CRABClient.client_utilities import server_info
 from CRABClient.client_exceptions import ConfigurationException
+import time
 
 class uploadlog(SubCommand):
     """
@@ -17,7 +18,7 @@ class uploadlog(SubCommand):
         self.logger.debug("uploadlog started")
         #veryfing the log file exist
         if hasattr(self.options, 'logpath') and self.options.logpath != None:
-            logfilename = self.options.logpath.split('/')[-2:-1][0] + '.log'
+            logfilename = str(time.strftime("%Y-%m-%d_%H%M%S"))+'_crab.log'
             self.logfile = self.options.logpath
         elif path.isfile(self.logfile):
             self.logger.debug("crab.log exists")
