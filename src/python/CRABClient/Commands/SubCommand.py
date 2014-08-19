@@ -5,7 +5,7 @@ import types
 from optparse import OptionParser, SUPPRESS_HELP
 from ast import literal_eval
 
-from CRABClient.client_utilities import loadCache, getWorkArea, server_info, validServerURL, createWorkArea
+from CRABClient.client_utilities import loadCache, getWorkArea, server_info, validServerURL, createWorkArea, addFileLogger
 from CRABClient.client_exceptions import ConfigurationException, MissingOptionException , EnvironmentException
 from CRABClient.ClientMapping import mapping
 from CRABClient.CredentialInteractions import CredentialInteractions
@@ -186,7 +186,6 @@ class SubCommand(ConfigCommand):
         self.logfile = ''
         self.logger.debug("Executing command: '%s'" % str(self.name))
         self.proxy = None
-
         ##Get the mapping
         self.loadMapping()
         self.crab3dic = self.getConfiDict()
@@ -196,7 +195,6 @@ class SubCommand(ConfigCommand):
         if disable_interspersed_args:
             self.parser.disable_interspersed_args()
         self.setSuperOptions()
-
         ##Parse the command line parameters
         (self.options, self.args) = self.parser.parse_args( cmdargs )
 
@@ -227,9 +225,10 @@ class SubCommand(ConfigCommand):
                 self.logger.info(msg % self.voGroup)
 
         ##if we get an input task we load the cache and set the url from it
-
         if hasattr(self.options, 'task') and self.options.task:
             self.loadLocalCache()
+        elif self.logfile == '':
+            self.logfile = addFileLogger(self.logger)
 
         ## if the server url isn't already set we check the args and then the config
         if not hasattr(self, 'serverurl') and self.requiresREST:
