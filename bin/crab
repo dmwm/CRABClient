@@ -169,7 +169,7 @@ class CRABClient(object):
             tbLogger.error("Unhandled Exception!")
             tbLogger.error(exc_value, exc_info=(exc_type, exc_value, tback))
 
-#        sys.excepthook = log_exception
+        sys.excepthook = log_exception
 
         # check that the command is valid
         if len(args) == 0:
