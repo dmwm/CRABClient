@@ -170,6 +170,8 @@ class SubCommand(ConfigCommand):
             if 'map' in mapping[self.name]:
                 self.requestmapper = mapping[self.name]['map']
             self.requiresTaskOption = 'requiresTaskOption' in mapping[self.name] and mapping[self.name]['requiresTaskOption']
+            if self.requiresTaskOption:
+                self.allowUseOfTasknameFromCacheFile = True if 'allowUseOfTasknameFromCacheFile' not in mapping[self.name] else mapping[self.name]['allowUseOfTasknameFromCacheFile']
             self.initializeProxy = True if 'initializeProxy' not in mapping[self.name] else mapping[self.name]['initializeProxy']
             self.requiresREST = True if 'requiresREST' not in mapping[self.name] else mapping[self.name]['requiresREST']
             if 'other-config-params' in mapping[self.name]:
@@ -432,7 +434,7 @@ class SubCommand(ConfigCommand):
         if self.requiresTaskOption and self.options.task is None:
             if len(self.args) == 1 and self.args[0]:
                 self.options.task = self.args[0]
-            elif self.name != "kill" and self.name != 'purge' and self.crab3dic["taskname"] != None:
+            elif self.allowUseOfTasknameFromCacheFile and self.crab3dic["taskname"] != None:
                 self.options.task = self.crab3dic["taskname"]
             else:
                 raise MissingOptionException('ERROR: Task option is required.')
