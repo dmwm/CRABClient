@@ -4,8 +4,6 @@ import commands
 import urllib
 
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.client_exceptions import MissingOptionException
-from CRABClient.CredentialInteractions import CredentialInteractions
 
 
 class checkHNname(SubCommand):
