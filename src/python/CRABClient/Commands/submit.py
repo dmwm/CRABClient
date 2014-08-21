@@ -75,13 +75,17 @@ class submit(SubCommand):
                     configreq[param] = self.requestmapper[param]['default']
                     temp = self.requestmapper[param]['default']
                 else:
-                    ## parameter not strictly required
+                    ## Parameter not strictly required.
                     pass
+            ## Check that the requestname is of the right type.
+            ## This is not checked in SubCommand.validateConfig().
             if param == "workflow":
                 if mustbetype == type(self.requestname):
                     configreq["workflow"] = self.requestname
-            elif param in ['savelogsflag', 'publication', 'nonprodsw', 'ignorelocality', 'saveoutput']:#TODO use clientmappig to do this
+            ## Translate boolean flags into integers.
+            elif param in ['savelogsflag', 'publication', 'nonprodsw', 'ignorelocality', 'saveoutput']:
                 configreq[param] = 1 if temp else 0
+            ## Translate DBS URL aliases into DBS URLs.
             elif param in ['dbsurl', 'publishdbsurl']:
                 if param == 'dbsurl':
                     dbstype = 'reader'
@@ -91,11 +95,8 @@ class submit(SubCommand):
                 allowed_dbsurls_aliases = DBSURLS[dbstype].keys()
                 if configreq[param] in allowed_dbsurls_aliases:
                     configreq[param] = DBSURLS[dbstype][configreq[param]]
-                else:
-                    if configreq[param].rstrip('/') in allowed_dbsurls:
-                        configreq[param] = configreq[param].rstrip('/')
-                    else:
-                        raise ConfigurationException("Invalid argument " + configreq[param] + " for parameter " + self.requestmapper[param]['config'] + " in the configuration.")
+                elif configreq[param].rstrip('/') in allowed_dbsurls:
+                    configreq[param] = configreq[param].rstrip('/')
 
         # Add debug parameters to the configreq dict
         configreq['oneEventMode'] = int(oneEventMode)
@@ -231,16 +232,16 @@ class submit(SubCommand):
         ## Even if not all configuration sections need to be there, we anyway request
         ## the user to add all the sections in the configuration file.
         if not hasattr(self.configuration, 'General'):
-            msg = "Crab configuration problem: Section 'General' is missing."
+            msg = "Crab configuration problem: Section 'General' is missing"
             return False, msg
         if not hasattr(self.configuration, 'JobType'):
-            msg = "Crab configuration problem: Section 'JobType' is missing."
+            msg = "Crab configuration problem: Section 'JobType' is missing"
             return False, msg
         if not hasattr(self.configuration, 'Data'):
-            msg = "Crab configuration problem: Section 'Data' is missing."
+            msg = "Crab configuration problem: Section 'Data' is missing"
             return False, msg
         if not hasattr(self.configuration, 'Site'):
-            msg = "Crab configuration problem: Section 'Site' is missing."
+            msg = "Crab configuration problem: Section 'Site' is missing"
             return False, msg
 
         ## Check that Data.unitsPerjob is specified.
@@ -253,58 +254,110 @@ class submit(SubCommand):
 
         ## Check that at least one and only one of JobType.pluginName or JobType.externalPlugin is specified.
         if not hasattr(self.configuration.JobType, 'pluginName') and not hasattr(self.configuration.JobType, 'externalPluginFile'):
-            msg = "Crab configuration problem: One of 'JobType.pluginName' or 'JobType.externalPlugin' parameters is required."
+            msg = "Crab configuration problem: One of JobType.pluginName or JobType.externalPlugin parameters is required"
             return False, msg
         if hasattr(self.configuration.JobType, 'pluginName') and hasattr(self.configuration.JobType, 'externalPluginFile'):
-            msg = "Crab configuration problem: Only one between 'JobType.pluginName' or 'JobType.externalPlugin' parameters is required."
+            msg = "Crab configuration problem: Only one of JobType.pluginName or JobType.externalPlugin parameters is required"
             return False, msg
         ## Load the plugin.
         externalPlugin = getattr(self.configuration.JobType, 'externalPluginFile', None)
         if externalPlugin is not None:
             addPlugin(externalPlugin)
         elif upper(self.configuration.JobType.pluginName) not in getJobTypes():
-            msg = "JobType %s not found or not supported." % self.configuration.JobType.pluginName
+            msg = "JobType %s not found or not supported" % self.configuration.JobType.pluginName
             return False, msg
 
         ## Check that the particular combination (Data.publication = True, General.transferOutput = False) is not specified.
         if hasattr(self.configuration.Data, 'publication') and hasattr(self.configuration.General, 'transferOutput'):
             if self.configuration.Data.publication and not self.configuration.General.transferOutput:
-                msg  = "Crab configuration problem: 'Data.publication' is on, but 'General.transferOutput' is off.\n"
-                msg += "Publication can not be performed if the output files are not transferred to a permanent storage."
+                msg  = "Crab configuration problem: Data.publication is on, but General.transferOutput is off"
+                msg += "\nPublication can not be performed if the output files are not transferred to a permanent storage"
                 return False, msg
 
         ## Check that a storage site is specified if General.transferOutput = True or General.saveLogs = True.
         if not hasattr(self.configuration.Site, 'storageSite'):
             if (hasattr(self.configuration.General, 'transferOutput') and self.configuration.General.transferOutput) or \
                (hasattr(self.configuration.General, 'saveLogs') and self.configuration.General.saveLogs):
-                msg = "Crab configuration problem: Parameter 'Site.storageSite' is missing."
+                msg = "Crab configuration problem: Parameter Site.storageSite is missing"
                 return False, msg
 
-        ## Check that, if the input dataset is a user dataset, Data.dbsUrl should be specified
-        ## and it should be one of the phys0x local scope DBS instances.
-        if hasattr(self.configuration.Data, 'inputDataset'):
-            inputDataset_parts = self.configuration.Data.inputDataset.split('/')
-            inputDataset_parts.pop(0)
-            inputDataset_tier = inputDataset_parts[-1] if len(inputDataset_parts) == 3 else 'undefined'
-            user_data_tiers = ['USER']
-            if inputDataset_tier in user_data_tiers:
-                if not hasattr(self.configuration.Data, 'dbsUrl'):
-                    msg = "Crab configuration problem: Parameter 'Data.dbsUrl' is missing."
+        ## If an input dataset and a DBS URL are specified, check that the DBS URL is a good one.
+        ## Also, if the DBS URL is 'phys0x', check that the input dataset tier is USER.
+        if hasattr(self.configuration.Data, 'dbsUrl'):
+            if hasattr(self.configuration.Data, 'inputDataset'):
+                msg = None
+                dbs_urls_aliases = DBSURLS['reader'].keys()
+                dbs_urls = DBSURLS['reader'].values()
+                if (self.configuration.Data.dbsUrl not in dbs_urls_aliases) and (self.configuration.Data.dbsUrl.rstrip('/') not in dbs_urls):
+                    msg  = "Crab configuration problem: Parameter Data.dbsUrl has an invalid value '%s'" % self.configuration.Data.dbsUrl
+                    msg += "\nAllowed values are: "
+                    msg += "\n                    ".join(["'%s' ('%s')" % (alias, url) for alias, url in DBSURLS['reader'].iteritems()])
+                local_dbs_urls_aliases = ['phys01', 'phys02', 'phys03']
+                local_dbs_urls = [DBSURLS['reader'][alias] for alias in local_dbs_urls_aliases if alias in DBSURLS['reader']]
+                if self.configuration.Data.dbsUrl in local_dbs_urls + local_dbs_urls_aliases:
+                    inputDataset_parts = self.configuration.Data.inputDataset.split('/')
+                    inputDataset_parts.pop(0)
+                    inputDataset_tier = inputDataset_parts[-1] if len(inputDataset_parts) == 3 else None
+                    user_data_tiers = ['USER']
+                    if inputDataset_tier not in user_data_tiers:
+                        msg  = "Crab configuration problem: A local DBS instance '%s' was specified for reading an input dataset of tier %s" \
+                               % (self.configuration.Data.dbsUrl, inputDataset_tier)
+                        msg += "\nDatasets of tier different than %s must be read from the global DBS instance; this is, set Data.dbsUrl = 'global'" \
+                               % (", ".join(user_data_tiers[:-1]) + " or " + user_data_tiers[-1] if len(user_data_tiers) > 1 else user_data_tiers[0])
+                if msg:
+                    dbsUrl_default = self.getParamDefaultValue('Data.dbsUrl')
+                    if dbsUrl_default:
+                        dbsUrl_default, dbsUrl_default_alias = self.getDBSURLAndAlias(dbsUrl_default, 'reader')
+                        if dbsUrl_default and dbsUrl_default_alias:
+                            msg += "\nIf Data.dbsUrl would not be specified, the default '%s' ('%s') would be used" % (dbsUrl_default_alias, dbsUrl_default)
                     return False, msg
-                allowed_dbsurls_aliases = ['phys01', 'phys02', 'phys03']
-                allowed_dbsurls = []
-                for dbsurl_alias in allowed_dbsurls_aliases:
-                    allowed_dbsurls.append(DBSURLS['reader'][dbsurl_alias]) 
-                if self.configuration.Data.dbsUrl not in allowed_dbsurls + allowed_dbsurls_aliases:
-                    msg  = "Crab configuration problem: Parameter 'Data.dbsUrl' has an invalid value '%s'.\n" % self.configuration.Data.dbsUrl
-                    msg += "When the input dataset tier is %s, the parameter 'Data.dbsUrl' should be one of %s." \
-                          % (inputDataset_tier, allowed_dbsurls_aliases)
+
+        ## If a publication DBS URL is specified and publication is ON, check that the DBS URL is a good one.
+        if hasattr(self.configuration.Data, 'publishDbsUrl'):
+            publication_default = self.getParamDefaultValue('Data.publication')
+            if getattr(self.configuration.Data, 'publication', publication_default):
+                dbs_urls = DBSURLS['writer'].values()
+                dbs_urls_aliases = DBSURLS['writer'].keys()
+                if (self.configuration.Data.publishDbsUrl not in dbs_urls_aliases) and (self.configuration.Data.publishDbsUrl.rstrip('/') not in dbs_urls):
+                    msg  = "Crab configuration problem: Parameter Data.publishDbsUrl has an invalid value '%s'" % self.configuration.Data.publishDbsUrl
+                    msg += "\nAllowed values are: "
+                    msg += "\n                    ".join(["'%s' ('%s')" % (alias, url) for alias, url in DBSURLS['writer'].iteritems()])
+                    publishDbsUrl_default = self.getParamDefaultValue('Data.publishDbsUrl')
+                    if publishDbsUrl_default:
+                        publishDbsUrl_default, publishDbsUrl_default_alias = self.getDBSURLAndAlias(publishDbsUrl_default, 'writer')
+                        if publishDbsUrl_default and publishDbsUrl_default_alias:
+                            msg += "\nIf Data.publishDbsUrl would not be specified, the default '%s' ('%s') would be used" \
+                                 % (publishDbsUrl_default_alias, publishDbsUrl_default)
                     return False, msg
 
         return True, "Valid configuration"
 
 
-    def _encodeRequest( self, configreq):
+    def getDBSURLAndAlias(self, arg, dbs_type = 'reader'):
+        if arg in DBSURLS[dbs_type].keys():
+            return DBSURLS[dbs_type][arg], arg
+        if arg in DBSURLS[dbs_type].values():
+            for alias in DBSURLS[dbs_type].keys():
+                if DBSURLS[dbs_type][alias] == arg.rstrip("/"):
+                    return arg.rstrip("/"), alias
+        return None, None
+
+
+    def getParamServerName(self, param_config_name):
+        for param_server_name in self.requestmapper.keys():
+            if self.requestmapper[param_server_name].get('config', None) == param_config_name:
+                return param_server_name
+        return None
+
+
+    def getParamDefaultValue(self, param_config_name):
+        param_server_name = self.getParamServerName(param_config_name)
+        if param_server_name:
+            return self.requestmapper[param_server_name].get('default', None)
+        return None
+
+
+    def _encodeRequest(self, configreq):
         """ Used to encode the request from a dict to a string. Include the code needed for transforming lists in the format required by
             cmsweb, e.g.:   adduserfiles = ['file1','file2']  ===>  [...]adduserfiles=file1&adduserfiles=file2[...]
         """
@@ -319,6 +372,7 @@ class submit(SubCommand):
         encoded = urllib.urlencode(configreq) + encodedLists
         self.logger.debug('Encoded submit request: %s' % encoded)
         return str(encoded)
+
 
     def checkStatusLoop(self,server,uniquerequestname):
 

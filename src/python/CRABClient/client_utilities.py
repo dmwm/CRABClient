@@ -289,9 +289,11 @@ def loadCache( task, logger ):
     logfile = addFileLogger( logger, workingpath = requestarea )
     return cPickle.load(loadfile), logfile
 
+
 def getUserName(voRole, voGroup, logger):
     _, _, proxy = initProxy(voRole, voGroup, logger)
     return proxy.getUserName()
+
 
 def validServerURL(option, opt_str, value, parser):
     """
@@ -303,6 +305,7 @@ def validServerURL(option, opt_str, value, parser):
         setattr(parser.values, option.dest, value)
     else:
         setattr(parser.values, option.dest, option.default)
+
 
 def validURL(serverurl, attrtohave = ['scheme', 'netloc', 'hostname'], attrtonothave = ['path', 'params', 'query', 'fragment', 'username', 'password']):
     """
@@ -322,6 +325,7 @@ def validURL(serverurl, attrtohave = ['scheme', 'netloc', 'hostname'], attrtonot
         if not str( elemval ) == '' and elemval is not None:
             return False
     return True
+
 
 def validateJobids(jobids):
     #check the format of jobids

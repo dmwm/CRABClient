@@ -157,6 +157,7 @@ class Analysis(BasicJobType):
 
         return (valid, reason)
 
+
     def validateBasicConfig(self, config):
         """
         Validate the common portion of the config for data and MC making sure
