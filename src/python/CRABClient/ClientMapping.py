@@ -49,8 +49,8 @@ mapping = {
     'checkwrite'   : {'requiresTaskOption': False, 'requiresREST': False},
     'getlog'       : {'requiresTaskOption': True },
     'getoutput'    : {'requiresTaskOption': True },
-    'kill'         : {'requiresTaskOption': True },
-    'purge'        : {'requiresTaskOption': True },
+    'kill'         : {'requiresTaskOption': True, 'allowUseOfTasknameFromCacheFile': False},
+    'purge'        : {'requiresTaskOption': True, 'allowUseOfTasknameFromCacheFile': False},
     'remake'       : {'requiresTaskOption': False},
     'remote_copy'  : {'requiresTaskOption': True, 'initializeProxy' : False},#proxy already inited by the calling command
     'report'       : {'requiresTaskOption': True },
