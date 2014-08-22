@@ -33,30 +33,30 @@ class checkwrite(SubCommand):
                 self.filename = 'crab3checkwrite.' + str(retry) + '.tmp'
                 self.createFile()
                 pfn = self.getPFN()
-            self.logger.info('Attempting to copy file %s to site %s' % (self.filename, self.options.sitename))
+            self.logger.info('Attempting to copy (dummy) file %s to %s on site %s' % (self.filename, self.lfnsaddprefix, self.options.sitename))
             cpout, cperr, cpexitcode = self.lcgcp(pfn)
             if cpexitcode == 0:
-                self.logger.info('Successfully copied file %s to site %s' % (self.filename, self.options.sitename))
+                self.logger.info('Successfully copied file %s to %s on site %s' % (self.filename, self.lfnsaddprefix, self.options.sitename))
                 self.logger.info('Attempting to delete file %s from site %s' % (pfn, self.options.sitename))
                 delexitcode = self.lcgdelete(pfn)
                 if delexitcode:
                     self.logger.info('%sWarning%s: Failed to delete file %s from site %s' % (colors.RED, colors.NORMAL, pfn, self.options.sitename))
                 else:
                     self.logger.info('Successfully deleted file %s from site %s' % (pfn, self.options.sitename))
-                self.logger.info('%sSuccess%s: Able to write on site %s' % (colors.GREEN, colors.NORMAL, self.options.sitename))
+                self.logger.info('%sSuccess%s: Able to write to %s on site %s' % (colors.GREEN, colors.NORMAL, self.lfnsaddprefix, self.options.sitename))
                 stop = True
             else:
                 if 'Permission denied' in cperr or 'mkdir: cannot create directory' in cperr:
-                    self.logger.info('%sError%s: Unable to write on site %s' % (colors.RED, colors.NORMAL, self.options.sitename))
+                    self.logger.info('%sError%s: Unable to write to %s on site %s' % (colors.RED, colors.NORMAL, self.lfnsaddprefix, self.options.sitename))
                     self.logger.info('       You may want to contact the site administrators sending them the \'crab checkwrite\' output as printed above')
                     stop = True
                 elif 'timeout' in cpout or 'timeout' in cperr:
                     self.logger.info('Connection time out')
-                    self.logger.info('Unable to check write permission on site %s' % self.options.sitename)
+                    self.logger.info('Unable to check write permission to %s on site %s' % (self.lfnsaddprefix, self.options.sitename))
                     self.logger.info('Please try again later or contact the site administrators sending them the \'crab checkwrite\' output as printed above')
                     stop = True
                 elif 'exist' in cpout or 'exist' in cperr and retry == 0:
-                    self.logger.info('Error copying file %s to site %s; it may be that file already exists' % (self.filename, self.options.sitename))
+                    self.logger.info('Error copying file %s to %s on site %s; it may be that file already exists' % (self.filename, self.lfnsaddprefix, self.options.sitename))
                     self.logger.info('Attempting to delete file %s from site %s' % (pfn, self.options.sitename))
                     delexitcode = self.lcgdelete(pfn)
                     if delexitcode:
@@ -67,7 +67,7 @@ class checkwrite(SubCommand):
                         use_new_file = False
                     retry += 1
                 else:
-                    self.logger.info('Unable to check write permission on site %s' % self.options.sitename)
+                    self.logger.info('Unable to check write permission to %s on site %s' % (self.lfnsaddprefix, self.options.sitename))
                     self.logger.info('Please try again later or contact the site administrators sending them the \'crab checkwrite\' output as printed above')
                     stop = True
             if stop or use_new_file:
