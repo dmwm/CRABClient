@@ -77,6 +77,9 @@ class status(SubCommand):
 
         if 'jobs' not in dictresult:
             self.logger.info("\nNo jobs created yet!")
+            return dictresult
+        elif self.no_output:
+            return dictresult
         else:
             # Note several options could be combined
             if self.summary:
@@ -87,6 +90,7 @@ class status(SubCommand):
                self.printIdle(dictresult, user)
             if self.json:
                self.logger.info(dictresult['jobs'])
+            return dictresult
 
     def printShort(self, dictresult, username):
 
@@ -467,6 +471,10 @@ class status(SubCommand):
                                 dest = "sort",
                                 default = None,
                                 help = 'Only use with option long, availble sorting: "state", "site", "runtime", "memory", "cpu", "retries" and "waste"')
+        self.parser.add_option( "--no-output",
+                                dest = "no_output",
+                                default = False,
+                                help = optparse.SUPPRESS_HELP)
 
     def validateOptions(self):
         SubCommand.validateOptions(self)
@@ -476,6 +484,7 @@ class status(SubCommand):
         self.summary = self.options.summary
         self.idle = self.options.idle
         self.long = self.options.long
+        self.no_output = self.options.no_output
 
         acceptedsort = ["state", "site", "runtime", "memory", "cpu", "retries", "waste"]
         if hasattr(self.options , 'sort') and self.options.sort != None:

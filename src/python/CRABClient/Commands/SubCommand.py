@@ -29,52 +29,62 @@ class ConfigCommand:
         Provides methods for loading the configuration file handling the errors
     """
 
-    def loadConfig(self, configname, overrideargs = None):
+    def loadConfigFromFile(self, configname, overrideargs = None):
         """
         Load the configuration file
         """
 
         if not os.path.isfile(configname):
             raise ConfigurationException("Configuration file '%s' not found" % configname)
+
         self.logger.info('Will use configuration file %s' % configname)
         try:
             self.logger.debug('Loading configuration')
             self.configuration = loadConfigurationFile(os.path.abspath(configname))
-            if overrideargs:
-                for singlearg in overrideargs:
-                    if singlearg == configname: continue
-                    if len(singlearg.split('=',1)) == 1:
-                        self.logger.info('Wrong format in command-line argument \'%s\'. Expected format is <section-name>.<parameter-name>=<parameter-value>.' % singlearg)
-                        if len(singlearg) > 1 and singlearg[0] == '-':
-                            self.logger.info('If the argument \'%s\' is an option to the %s command, try \'crab %s %s [value for %s option (if required)] [arguments]\'.' \
-                                             % (singlearg, self.__class__.__name__, self.__class__.__name__, singlearg, singlearg))
-                        raise ConfigurationException('ERROR: Wrong command-line format.')
-                    fullparname, parval = singlearg.split('=',1)
-                    # now supporting just one sub params, eg: Data.inputFiles, User.email, ...
-                    parnames = fullparname.split('.', 1)
-                    if len(parnames) == 1:
-                        self.logger.info('Wrong format in command-line argument \'%s\'. Expected format is <section-name>.<parameter-name>=<parameter-value>' % singlearg)
-                        raise ConfigurationException('ERROR: Wrong command-line format.')
-                    self.configuration.section_(parnames[0])
-                    type = 'undefined'
-                    for k in self.requestmapper.keys():
-                        if self.requestmapper[k]['config'] == fullparname:
-                            type = self.requestmapper[k]['type']
-                            break
-                    if type in ['undefined','StringType']:
-                        setattr(getattr(self.configuration, parnames[0]), parnames[1], literal_eval("\'%s\'" % parval))
-                        self.logger.debug('Overriden parameter %s with \'%s\'' % (fullparname, parval))
-                    else:
-                        setattr(getattr(self.configuration, parnames[0]), parnames[1], literal_eval("%s" % parval))
-                        self.logger.debug('Overriden parameter %s with %s' % (fullparname, parval))
-            valid, configmsg = self.validateConfig() #subclasses of SubCommand overrhide this if needed
+            self.parseLoadedConfig(overrideargs)
         except RuntimeError, re:
             msg = self._extractReason(configname, re)
             raise ConfigurationException("Configuration syntax error: \n %s.\nSee the ./crab.log file for more details" % msg)
-        else:
-            ## file is there, check if it is ok
-            if not valid:
-                raise ConfigurationException(configmsg)
+
+    def loadConfigFromMemory(self, configname, overrideargs = None):
+        self.configuration = configname
+        try:
+            self.parseLoadedConfig(overrideargs)
+        except RuntimeError, re:
+            raise ConfigurationException("Configuration syntax error: \n %s" % re)
+
+    def parseLoadedConfig(self, overrideargs = None):
+        if overrideargs:
+            for singlearg in overrideargs:
+                # if singlearg == configname: continue
+                if len(singlearg.split('=',1)) == 1:
+                    self.logger.info('Wrong format in command-line argument \'%s\'. Expected format is <section-name>.<parameter-name>=<parameter-value>.' % singlearg)
+                    if len(singlearg) > 1 and singlearg[0] == '-':
+                        self.logger.info('If the argument \'%s\' is an option to the %s command, try \'crab %s %s [value for %s option (if required)] [arguments]\'.' \
+                                            % (singlearg, self.__class__.__name__, self.__class__.__name__, singlearg, singlearg))
+                    raise ConfigurationException('ERROR: Wrong command-line format.')
+                fullparname, parval = singlearg.split('=',1)
+                # now supporting just one sub params, eg: Data.inputFiles, User.email, ...
+                parnames = fullparname.split('.', 1)
+                if len(parnames) == 1:
+                    self.logger.info('Wrong format in command-line argument \'%s\'. Expected format is <section-name>.<parameter-name>=<parameter-value>' % singlearg)
+                    raise ConfigurationException('ERROR: Wrong command-line format.')
+                self.configuration.section_(parnames[0])
+                type = 'undefined'
+                for k in self.requestmapper.keys():
+                    if self.requestmapper[k]['config'] == fullparname:
+                        type = self.requestmapper[k]['type']
+                        break
+                if type in ['undefined','StringType']:
+                    setattr(getattr(self.configuration, parnames[0]), parnames[1], literal_eval("\'%s\'" % parval))
+                    self.logger.debug('Overriden parameter %s with \'%s\'' % (fullparname, parval))
+                else:
+                    setattr(getattr(self.configuration, parnames[0]), parnames[1], literal_eval("%s" % parval))
+                    self.logger.debug('Overriden parameter %s with %s' % (fullparname, parval))
+        valid, configmsg = self.validateConfig() #subclasses of SubCommand overrhide this if needed
+        ## file is there, check if it is ok
+        if not valid:
+            raise ConfigurationException(configmsg)
 
 
     def _extractReason(self, configname, re):
@@ -197,16 +207,26 @@ class SubCommand(ConfigCommand):
             self.parser.disable_interspersed_args()
         self.setSuperOptions()
         ##Parse the command line parameters
-        (self.options, self.args) = self.parser.parse_args( cmdargs )
+        inmemoryOption = '--debug.configInmemory'
+        inmemoryValue = None
+        if inmemoryOption in cmdargs:
+            oldIndex = cmdargs.index(inmemoryOption)
+            inmemoryValue = cmdargs[oldIndex+1]
+            del cmdargs[oldIndex]
+            del cmdargs[oldIndex]
 
+        (self.options, self.args) = self.parser.parse_args( cmdargs )
         ##Validate the command line parameters before initing the proxy
         self.validateOptions()
 
         self.voRole  = self.options.voRole  if self.options.voRole  is not None else ''
         self.voGroup = self.options.voGroup if self.options.voGroup is not None else ''
         ##if we get an input configuration we load it
-        if hasattr(self.options, 'config') and self.options.config is not None:
-            self.loadConfig( self.options.config, self.args )
+        if inmemoryValue:
+            self.loadConfigFromMemory(inmemoryValue)
+        elif getattr(self.options, 'config', None):
+            self.loadConfigFromFile( self.options.config, self.args )
+        if getattr(self.options, 'config', None) or inmemoryValue:
             self.requestarea, self.requestname, self.logfile = createWorkArea(self.logger,
                                                                               getattr(self.configuration.General, 'workArea', None),
                                                                               getattr(self.configuration.General, 'requestName', None))
