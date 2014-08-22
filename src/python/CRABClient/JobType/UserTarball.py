@@ -16,6 +16,7 @@ import logging
 
 
 from WMCore.Configuration import loadConfigurationFile, Configuration
+import CRABClient.Emulator
 from WMCore.Services.UserFileCache.UserFileCache import UserFileCache
 import PandaServerInterface as PandaInterface
 from CRABClient.client_exceptions import EnvironmentException
@@ -113,7 +114,7 @@ class UserTarball(object):
         archiveName = self.tarfile.name
         serverUrl = ""
         self.logger.debug(" uploading archive to cache %s " % archiveName)
-        ufc = UserFileCache({'endpoint' : self.config.JobType.filecacheurl})
+        ufc = CRABClient.Emulator.getEmulator('ufc')({'endpoint' : self.config.JobType.filecacheurl})
         result = ufc.upload(archiveName)
         if 'hashkey' not in result:
             self.logger.error("Failed to upload source files: %s" % str(result))

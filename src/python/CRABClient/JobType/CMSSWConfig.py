@@ -34,7 +34,7 @@ class CMSSWConfig(object):
             cfgDirName = os.path.dirname(userConfig)
 
             if not os.path.isfile( userConfig ):
-                msg = "Cannot find file %s" % userConfig
+                msg = "Cannot find file %s in %s" % (userConfig, os.getcwd())
                 raise ConfigException( msg )
 
             self.logger.debug("Importing CMSSW config %s" % userConfig)

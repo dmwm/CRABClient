@@ -2,7 +2,9 @@ from __future__ import division # I want floating points
 import urllib
 import sys
 import math
+import optparse
 
+import CRABClient.Emulator
 from CRABClient.client_utilities import colors, getUserName
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.client_exceptions import MissingOptionException, RESTCommunicationException, ConfigurationException
@@ -55,7 +57,8 @@ class status(SubCommand):
         return ('{0}{1:<' + str(ljust) + '}{2}').format(self._stateColor(state), state, colors.NORMAL)
 
     def __call__(self):
-        server = HTTPRequests(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
+        serverFactory = CRABClient.Emulator.getEmulator('rest')
+        server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
 
         self.logger.debug('Looking up detailed status of task %s' % self.cachedinfo['RequestName'])
         user = self.cachedinfo['RequestName'].split("_")[2].split(":")[-1]
