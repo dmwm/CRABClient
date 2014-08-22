@@ -7,7 +7,7 @@ from ast import literal_eval
 
 import CRABClient.Emulator
 
-from CRABClient.client_utilities import loadCache, getWorkArea, server_info, validServerURL, createWorkArea, addFileLogger
+from CRABClient.client_utilities import loadCache, getWorkArea, server_info, validServerURL, createWorkArea
 from CRABClient.client_exceptions import ConfigurationException, MissingOptionException , EnvironmentException
 from CRABClient.ClientMapping import mapping
 from CRABClient.CredentialInteractions import CredentialInteractions
