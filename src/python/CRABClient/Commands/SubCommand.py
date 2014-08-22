@@ -2,10 +2,10 @@ import os
 import imp
 import json
 import types
-from optparse import OptionParser, SUPPRESS_HELP
+from optparse import OptionParser
 from ast import literal_eval
 
-from CRABClient.client_utilities import loadCache, getWorkArea, server_info, validServerURL, createWorkArea, addFileLogger
+from CRABClient.client_utilities import loadCache, getWorkArea, server_info, createWorkArea
 from CRABClient.client_exceptions import ConfigurationException, MissingOptionException , EnvironmentException
 from CRABClient.ClientMapping import mapping
 from CRABClient.CredentialInteractions import CredentialInteractions
@@ -94,11 +94,7 @@ class ConfigCommand:
                                      modPath[1], modPath[2])
         except Exception, ex:
             msg = str(ex)
-
-        #workarea has not been created yet
-        with open('crab.log', 'w') as of:
-            of.write(str(re))
-
+            
         return msg
 
 
@@ -185,7 +181,7 @@ class SubCommand(ConfigCommand):
             self.name = self.__class__.__name__
         self.usage = "usage: %prog " + self.name + " [options] [args]"
         self.logger = logger
-        self.logfile = ''
+        self.logfile = self.logger.logfile
         self.logger.debug("Executing command: '%s'" % str(self.name))
         self.proxy = None
         ##Get the mapping
@@ -229,8 +225,6 @@ class SubCommand(ConfigCommand):
         ##if we get an input task we load the cache and set the url from it
         if hasattr(self.options, 'task') and self.options.task:
             self.loadLocalCache()
-        elif self.logfile == '':
-            self.logfile = addFileLogger(self.logger)
 
         ## if the server url isn't already set we check the args and then the config
         if not hasattr(self, 'serverurl') and self.requiresREST:

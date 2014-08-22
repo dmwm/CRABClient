@@ -41,11 +41,20 @@ class colors:
 class logfilter(logging.Filter):
 
     def filter(self, record):
-        # find color in record.msg
-        for color in colors.colordict.keys():
-            if colors.colordict[color] in record.msg:
-                record.msg = record.msg.replace(colors.colordict[color],'')
+        def removecolor(text):
 
+            for color in colors.colordict.keys():
+                if colors.colordict[color] in text:
+                    text = text.replace(colors.colordict[color],'')
+
+            return text
+
+        # find color in record.msg
+
+        if isinstance(record.msg, Exception):
+            record.msg = removecolor(str(record.msg))
+        else:
+            record.msg = removecolor(record.msg)
         return True
 
 
@@ -169,43 +178,14 @@ def getRequestName(requestName = None):
         return prefix + requestName # + '_' + postfix
 
 
-def addFileLogger(logger, workingpath = os.getcwd(), logname = 'crab.log'):
+def changeFileLogger(logger, workingpath = os.getcwd(), logname = 'crab.log'):
     """
-    _addFileLogger_
+    change file logger destination
     """
     logfullpath = os.path.join( workingpath, logname )
-
-    # Log debug messages to crab.log file with more verbose format
-    handler = logging.FileHandler( logfullpath )
-    handler.setLevel(logging.DEBUG)
-
-    ff = logging.Formatter("%(levelname)s %(asctime)s: \t %(message)s")
-    handler.setFormatter( ff )
-    #add filter to remove color
-    filter = logfilter()
-    handler.addFilter(filter)
-    logger.addHandler( handler )
-
-    #exctracting memory hander and flushing it to file handler
-    memhandler = None
-    for instance in logger.handlers:
-        if isinstance(instance, logging.handlers.MemoryHandler): memhandler = instance
-
-    if memhandler != None:
-        memhandler.setTarget(handler)
-        memhandler.flush()
-        memhandler.close()
-        logger.removeHandler(memhandler)
-
-    # Full tracebacks should only go to the file
-    # The traceback logger is also used to get messages from libraries (e.g. Proxy, PandaServerInterface)
-    traceback_log = logging.getLogger('CRAB3:traceback')
-    traceback_log.propagate = False
-    traceback_log.setLevel(logging.DEBUG) #Level to debug to get errors from Proxy library
-    traceback_log.addHandler(handler)
+    logging.getLogger('CRAB3.all').logfile = logfullpath
 
     return logfullpath
-
 
 def createWorkArea(logger, workingArea = '.', requestName = ''):
     """
@@ -238,7 +218,7 @@ def createWorkArea(logger, workingArea = '.', requestName = ''):
     os.mkdir(os.path.join(fullpath, 'inputs'))
 
     ## define the log file
-    logfile = addFileLogger( logger, workingpath = fullpath )
+    logfile = changeFileLogger( logger, workingpath = fullpath )
 
     return fullpath, requestName, logfile
 
@@ -286,7 +266,7 @@ def loadCache( task, logger ):
         msg = 'Cannot find .requestcache file inside the working directory for task %s' % taskName
         raise CachefileNotFoundException( msg )
 
-    logfile = addFileLogger( logger, workingpath = requestarea )
+    logfile = changeFileLogger( logger, workingpath = requestarea )
     return cPickle.load(loadfile), logfile
 
 

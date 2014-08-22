@@ -94,10 +94,18 @@ class CRABClient(object):
 
         (options, args) = self.parser.parse_args()
 
-        # Set up the logger and exception handling
+        '''
+        Logging is using the hierarchy system, the CRAB3.all log inherit everything from CRAB3. So everything that is
+        logged to CRAB3.all will also go to CRAB3, however thing that logged using CRAB3 will not go to CRAB3.all.
+        CRAB3 logger usess memory handler, which then will be flushed to a filehandler in the 'finally' stage. So
 
-        # Log verbosely
-        logger = logging.getLogger('CRAB3')
+        CRAB3.all -> screen + file
+        CRAB3     -> file
+        '''
+
+        # Set up the logger and exception handling
+        logger = logging.getLogger('CRAB3.all')
+        tblogger = logging.getLogger('CRAB3')
         logger.setLevel(logging.DEBUG)
 
         # Set up console output to stdout at appropriate level
@@ -106,31 +114,34 @@ class CRABClient(object):
             loglevel = logging.WARNING
         if options.debug:
             loglevel = logging.DEBUG
-
-        #setting up a sys.stdout logger
         console_format = '%(message)s'
         console = logging.StreamHandler(sys.stdout)
         console.setFormatter(logging.Formatter(console_format))
         console.setLevel(loglevel)
         logger.addHandler(console)
 
-        #setting up a temporary memory logging if task directory failed to load, or command does not use task name
-        #default log target, will be change when task is loaded
-        logtarget = os.path.join(os.getcwd(), 'crab.log')
-        memhandler = logging.handlers.MemoryHandler(capacity = 1024*10, target = logtarget)
+        #setting up a temporary memory logging, the flush level is set to 60, the highest logging level is 50 (.CRITICAL)
+        #so any reasonable logging level should not cause any sudden flush
+        memhandler = logging.handlers.MemoryHandler(capacity = 1024*10, flushLevel= 60)
         ff = logging.Formatter("%(levelname)s %(asctime)s: \t %(message)s")
         memhandler.setFormatter(ff)
         memhandler.setLevel(logging.DEBUG)
-        logger.addHandler(memhandler)
+        #adding filter that filter color code
+        filter_ = logfilter()
+        memhandler.addFilter(filter_)
+        tblogger.addHandler(memhandler)
 
+        #the default the logfile destination is /crab.log, it will be  changed  when we have loaded the taskname
         self.logger = logger
+        self.logger.logfile = os.path.join(os.getcwd(), 'crab.log')
+        self.memhandler = memhandler
+
 
         #Instructions needed in case of early failures: sometimes the traceback logger
         #has not been set yet. The right file handler is only added when the workarea
         #of the task is created
-        tbLogger = logging.getLogger('CRAB3:traceback')
 
-        # Replace excepthook with logger
+        # Replace excepthook with logger, unexpected exception will go to finally first then to log_exception
         def log_exception(exc_type, exc_value, tback):
             """
             Send a short version of the exception to the console,
@@ -138,34 +149,16 @@ class CRABClient(object):
 
             Adapted from Doug Hellmann
             """
-            #flushing memory handler logger to a file logger
-            filehandler = False
-            memhandler = False
-            for instance in logging.getLogger('CRAB3:traceback').handlers:
-                if isinstance(instance, logging.FileHandler): filehandler = instance
-            for instance in logging.getLogger('CRAB3').handlers:
-                if isinstance(instance, logging.handlers.MemoryHandler): memhandler = instance
-            if not filehandler and memhandler:
-                logpath = os.path.join(os.getcwd(), 'crab.log')
-                filehandler = logging.FileHandler(logpath)
-                filehandler.setLevel(logging.DEBUG)
-                ff = logging.Formatter("%(levelname)s %(asctime)s: \t %(message)s")
-                filehandler.setFormatter( ff )
-                filter = logfilter()
-                filehandler.addFilter(filter)
-                logging.getLogger('CRAB3:traceback').addHandler(filehandler)
-                memhandler.setTarget(filehandler)
-                memhandler.flush()
-                memhandler.close()
-                logging.getLogger('CRAB3').removeHandler(memhandler)
-
+            #adding a file handler
+            filehandler = logging.FileHandler(client.logger.logfile)
+            logging.getLogger('CRAB3').addHandler(filehandler)
 
             # This goes to the console
-            logging.getLogger('CRAB3').error("ERROR: %s: %s" % (exc_type.__name__, exc_value))
-            logging.getLogger('CRAB3').error("\n\tPlease email hn-cms-computing-tools@cern.ch for support and include the last lines of crab.log.")
-            logging.getLogger('CRAB3').error("\tClient Version: %s" % client_version)
+            logging.getLogger('CRAB3.all').error("ERROR: %s: %s" % (exc_type.__name__, exc_value))
+            logging.getLogger('CRAB3.all').error("\n\tPlease email hn-cms-computing-tools@cern.ch for support and include the last lines of crab.log.")
+            logging.getLogger('CRAB3.all').error("\tClient Version: %s" % client_version)
             # This goes to the log file
-            tbLogger = logging.getLogger('CRAB3:traceback')
+            tbLogger = logging.getLogger('CRAB3')
             tbLogger.error("Unhandled Exception!")
             tbLogger.error(exc_value, exc_info=(exc_type, exc_value, tback))
 
@@ -204,7 +197,7 @@ if __name__ == "__main__":
         exitcode = 0 #no exceptions no errors
     except KeyError, ke:
         # The single quotes in KeyErrors are annoying...
-        logging.getLogger('CRAB3:traceback').exception('Caught exception')
+        logging.getLogger('CRAB3').exception('Caught exception')
         # There will be other KeyErrors, catch them here...
         client.logger.error("Error %s" % str(ke))
         exitcode = 100
@@ -212,11 +205,11 @@ if __name__ == "__main__":
         msg = 'Could not establish a connection with the server. '
         msg += 'This may be a temporary problem, but if you see it repeatedly please notify AnaOps'
         client.logger.error(msg)
-        logging.getLogger('CRAB3:traceback').exception('Caught exception')
+        logging.getLogger('CRAB3').exception('Caught exception')
         exitcode = 2
     except NameError, ne:
         client.logger.error( str(ne) )
-        logging.getLogger('CRAB3:traceback').exception('Caught exception')
+        logging.getLogger('CRAB3').exception('Caught exception')
         exitcode = 3
     except HTTPException, he:
         client.logger.info("Error contacting the server.")
@@ -246,18 +239,30 @@ if __name__ == "__main__":
         client.logger.debug('Command failed with URI: %s' % he.url)
         client.logger.debug('     Input data: %s' % he.req_data)
         client.logger.debug('     Request headers: %s' % he.headers)
-        logging.getLogger('CRAB3:traceback').exception('Caught exception')
+        logging.getLogger('CRAB3').exception('Caught exception')
         exitcode = he.status
     except pycurl.error, pe:
         client.logger.error(pe)
-        logging.getLogger('CRAB3:traceback').exception('Caught exception')
+        logging.getLogger('CRAB3').exception('Caught exception')
         exitcode = pe.args[0]
         if pe[1].find('(DNS server returned answer with no data)'):
             client.logger.info("It seems the CMSWEB frontend is not responding. Please check: https://twiki.cern.ch/twiki/bin/viewauth/CMS/ScheduledInterventions")
     except ClientException, ce:
         client.logger.error(ce)
-        logging.getLogger('CRAB3:traceback').exception('Caught exception')
+        logging.getLogger('CRAB3').exception('Caught exception')
         exitcode = ce.exitcode
+    finally:
+
+        filehandler = logging.FileHandler(client.logger.logfile)
+        ff = logging.Formatter("%(levelname)s %(asctime)s: \t %(message)s")
+        filehandler.setFormatter(ff)
+        filehandler.setLevel(logging.DEBUG)
+        logging.getLogger('CRAB').addHandler(filehandler)
+
+        client.memhandler.setTarget(filehandler)
+        client.memhandler.flush()
+        client.memhandler.close()
+        client.logger.removeHandler(client.memhandler)
 
     if hasattr(client, 'cmd'):
         client.cmd.terminate( exitcode )
