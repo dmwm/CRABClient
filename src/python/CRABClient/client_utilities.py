@@ -17,7 +17,7 @@ import logging
 
 from string import upper
 from optparse import OptionValueError
-
+import CRABClient.Emulator
 from CRABClient.client_exceptions import TaskNotFoundException, CachefileNotFoundException, ConfigurationException ,ConfigException
 
 
@@ -329,7 +329,6 @@ def validateJobids(jobids):
 #Since server_info class needs SubCommand, and SubCommand needs server_info for
 #delegating the proxy then we are screwed
 #If anyone has a better solution please go on, otherwise live with that one :) :)
-from RESTInteractions import HTTPRequests
 from CRABClient.client_exceptions import RESTCommunicationException
 from CRABClient import __version__
 
@@ -337,7 +336,7 @@ def server_info(subresource, server, proxyfilename, baseurl, **kwargs):
     """
     Get relevant information about the server
     """
-    server = HTTPRequests(server, proxyfilename, proxyfilename, version=__version__)
+    server = CRABClient.Emulator.getEmulator('rest')(server, proxyfilename, proxyfilename, version=__version__)
     requestdict= {'subresource' : subresource}
     requestdict.update(**kwargs)
     dictresult, status, reason = server.get(baseurl, requestdict)
