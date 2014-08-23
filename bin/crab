@@ -13,6 +13,10 @@ if sys.version_info < (2, 6):
     sys.exit()
 
 import os
+if not os.environ.has_key("CMSSW_RELEASE_BASE"):
+    print 'Please execute `cmsenv` command in CMSSW/src directory.'
+    sys.exit()
+
 import json
 import pycurl
 import logging
