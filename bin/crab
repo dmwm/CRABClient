@@ -26,7 +26,7 @@ from socket import error as SocketError
 from CRABClient import __version__ as client_version
 from CRABClient.client_utilities import getAvailCommands, logfilter
 from CRABClient.client_exceptions import ClientException
-from CRABClient.ClientMapping import mapping
+from CRABClient.ClientMapping import parameters_mapping
 
 
 class MyNullHandler(logging.Handler):
@@ -219,10 +219,10 @@ if __name__ == "__main__":
             client.logger.info('Server answered with: %s' % he.headers['X-Error-Detail'])
         if he.headers.has_key('X-Error-Info'):
             reason = he.headers['X-Error-Info']
-            for parname in mapping['submit']['map']:
+            for parname in parameters_mapping['on-server']:
                 for tmpmsg in ['\''+parname+'\' parameter','Parameter \''+parname+'\'']:
-                    if tmpmsg in reason and mapping['submit']['map'][parname]['config']:
-                        reason = reason.replace(tmpmsg,tmpmsg.replace(parname,mapping['submit']['map'][parname]['config']))
+                    if tmpmsg in reason and parameters_mapping['on-server'][parname]['config']:
+                        reason = reason.replace(tmpmsg,tmpmsg.replace(parname,parameters_mapping['on-server'][parname]['config']))
                         break
                 else:
                     continue

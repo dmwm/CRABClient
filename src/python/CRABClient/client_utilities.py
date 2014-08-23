@@ -67,16 +67,14 @@ def getPlugins(namespace, plugins, skip):
 
     TODO: If we use WMCore more, replace with the WMFactory.
     """
-    packagemod = __import__( '%s.%s' % (namespace, plugins), \
-                                        globals(), locals(), plugins  )
+    packagemod = __import__('%s.%s' % (namespace, plugins), globals(), locals(), plugins)
     fullpath   = packagemod.__path__[0]
     modules = {}
     ## iterating on the modules contained in that package
     for el in list(pkgutil.iter_modules([fullpath])):
         if el[1] not in skip:
             ## import the package module
-            mod = __import__('%s.%s.%s' % (namespace, plugins, el[1]), \
-                                        globals(), locals(), el[1] )
+            mod = __import__('%s.%s.%s' % (namespace, plugins, el[1]), globals(), locals(), el[1])
             ## add to the module dictionary.
             ## N.B. Utilitiy modules like LumiMask do not have classes inside them
             modules[el[1]] = getattr(mod, el[1], None)
@@ -143,11 +141,9 @@ def getJobTypes(jobtypepath = 'CRABClient', jobtypename = 'JobType'):
 
 def getAvailCommands(subcmdpath = 'CRABClient', subcmdname = 'Commands'):
     """
-    _getJobTypes_
+    _getAvailCommands_
 
-    wrap the dynamic plug-in import for the available job types
-
-    TODO: this can also be a call to get a specific job type from the server
+    wrap the dynamic plug-in import for the available commands
     """
     subcmdplugins = getPlugins(subcmdpath, subcmdname, ['SubCommand'])
     result = {}

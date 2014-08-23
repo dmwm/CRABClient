@@ -104,10 +104,8 @@ class Analysis(BasicJobType):
                 if not re.match("/%(primDS)s.*" % WMCore.Lexicon.lfnParts, primDS):
                     self.logger.warning("Invalid primary dataset name %s for private MC; publishing may fail" % primDS)
                 configArguments['inputdata'] = primDS
-            elif getattr(self.config.Data, 'inputDataset', None):
-                configArguments['inputdata'] = self.config.Data.inputDataset
             else:
-                configArguments['inputdata'] = "/CRAB_UserFiles"
+                configArguments['inputdata'] = getattr(self.config.Data, 'inputDataset', '/CRAB_UserFiles')
 
         lumi_mask_name = getattr(self.config.Data, 'lumiMask', None)
         lumi_list = None

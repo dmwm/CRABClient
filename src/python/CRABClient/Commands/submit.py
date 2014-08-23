@@ -14,6 +14,7 @@ from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient import SpellChecker
 from CRABClient.client_exceptions import MissingOptionException, ConfigurationException, RESTCommunicationException
 from CRABClient.client_utilities import getJobTypes, createCache, addPlugin, server_info, colors
+from CRABClient.ClientMapping import parameters_mapping, getParamDefaultValue
 from CRABClient import __version__
 
 DBSURLS = {'reader': {'global': 'https://cmsweb.cern.ch/dbs/prod/global/DBSReader',
@@ -22,26 +23,31 @@ DBSURLS = {'reader': {'global': 'https://cmsweb.cern.ch/dbs/prod/global/DBSReade
                       'phys03': 'https://cmsweb.cern.ch/dbs/prod/phys03/DBSReader'},
            'writer': {'phys03': 'https://cmsweb.cern.ch/dbs/prod/phys03/DBSWriter'}}
 
+
 class submit(SubCommand):
-    """ Perform the submission to the CRABServer
+    """
+    Perform the submission to the CRABServer
     """
 
     shortnames = ['sub']
 
+
     def __init__(self, logger, cmdargs = []):
         SubCommand.__init__(self, logger, cmdargs, disable_interspersed_args = True)
+
 
     def __call__(self):
         valid = False
         configmsg = 'Default'
 
         self.logger.debug("Started submission")
-        # Get some debug parameters
-        oneEventMode = hasattr(self.configuration, 'Debug') and getattr(self.configuration.Debug, 'oneEventMode', False)
         ######### Check if the user provided unexpected parameters ########
         #init the dictionary with all the known parameters
-        SpellChecker.DICTIONARY = SpellChecker.train( [ val['config'] for _, val in self.requestmapper.iteritems() if val['config'] ] + \
-                                                      [ x for x in self.otherConfigParams ] )
+        all_config_params = [x for x in parameters_mapping['other-config-params']]
+        for _, val in parameters_mapping['on-server'].iteritems():
+            if val['config']:
+                all_config_params.extend(val['config'])
+        SpellChecker.DICTIONARY = SpellChecker.train(all_config_params)
         #iterate on the parameters provided by the user
         for section in self.configuration.listSections_():
             for attr in getattr(self.configuration, section).listSections_():
@@ -60,10 +66,12 @@ class submit(SubCommand):
         self.logger.debug("Working on %s" % str(self.requestarea))
 
         configreq = {}
-        for param in self.requestmapper:
-            mustbetype = getattr(types, self.requestmapper[param]['type'])
-            if self.requestmapper[param]['config']:
-                attrs = self.requestmapper[param]['config'].split('.')
+        for param in parameters_mapping['on-server']:
+            mustbetype = getattr(types, parameters_mapping['on-server'][param]['type'])
+            default = parameters_mapping['on-server'][param]['default']
+            config_params = parameters_mapping['on-server'][param]['config']
+            for config_param in config_params:
+                attrs = config_param.split('.')
                 temp = self.configuration
                 for attr in attrs:
                     temp = getattr(temp, attr, None)
@@ -71,19 +79,20 @@ class submit(SubCommand):
                         break
                 if temp is not None:
                     configreq[param] = temp
-                elif self.requestmapper[param]['default'] is not None:
-                    configreq[param] = self.requestmapper[param]['default']
-                    temp = self.requestmapper[param]['default']
+                    break
+                elif default is not None:
+                    configreq[param] = default
+                    temp = default
                 else:
                     ## Parameter not strictly required.
                     pass
             ## Check that the requestname is of the right type.
             ## This is not checked in SubCommand.validateConfig().
-            if param == "workflow":
+            if param == 'workflow':
                 if mustbetype == type(self.requestname):
-                    configreq["workflow"] = self.requestname
+                    configreq['workflow'] = self.requestname
             ## Translate boolean flags into integers.
-            elif param in ['savelogsflag', 'publication', 'nonprodsw', 'ignorelocality', 'saveoutput']:
+            elif param in ['savelogsflag', 'publication', 'nonprodsw', 'ignorelocality', 'saveoutput', 'oneEventMode']:
                 configreq[param] = 1 if temp else 0
             ## Translate DBS URL aliases into DBS URLs.
             elif param in ['dbsurl', 'publishdbsurl']:
@@ -98,9 +107,6 @@ class submit(SubCommand):
                 elif configreq[param].rstrip('/') in allowed_dbsurls:
                     configreq[param] = configreq[param].rstrip('/')
 
-        # Add debug parameters to the configreq dict
-        configreq['oneEventMode'] = int(oneEventMode)
-
         jobconfig = {}
         self.configuration.JobType.proxyfilename = self.proxyfilename
         self.configuration.JobType.capath = HTTPRequests.getCACertPath()
@@ -109,12 +115,12 @@ class submit(SubCommand):
         #if cacheSSL is specified in the server external configuration we will use it to upload the sandbox (baseURL will be ignored)
         self.configuration.JobType.filecacheurl = serverBackendURLs['cacheSSL'] if 'cacheSSL' in serverBackendURLs else None
         pluginParams = [ self.configuration, self.logger, os.path.join(self.requestarea, 'inputs') ]
-        if getattr(self.configuration.JobType, 'pluginName', None) is not None:
-            jobtypes    = getJobTypes()
-            plugjobtype = jobtypes[upper(self.configuration.JobType.pluginName)](*pluginParams)
+        crab_job_types = getJobTypes()
+        if upper(configreq['jobtype']) in crab_job_types:
+            plugjobtype = crab_job_types[upper(configreq['jobtype'])](*pluginParams)
             inputfiles, jobconfig, isbchecksum = plugjobtype.run(configreq)
         else:
-            fullname = self.configuration.JobType.externalPluginFile
+            fullname = configreq['jobtype']
             basename = os.path.basename(fullname).split('.')[0]
             plugin = addPlugin(fullname)[basename]
             pluginInst = plugin(*pluginParams)
@@ -156,8 +162,8 @@ class submit(SubCommand):
 
         self.logger.info("%sSuccess%s: Your task has been delivered to the CRAB3 server." %(colors.GREEN, colors.NORMAL))
         if not self.options.wait:
+            self.logger.info("Task name: %s" % uniquerequestname)
             self.logger.info("Please use 'crab status' to check how the submission process proceed")
-            self.logger.debug("Request ID: %s " % uniquerequestname)
 
         if self.options.wait:
             self.checkStatusLoop(server,uniquerequestname)
@@ -252,19 +258,23 @@ class submit(SubCommand):
                 msg = "Crab configuration problem: Parameter Data.unitsPerJob must be a valid number, not %s" % self.configuration.Data.unitsPerJob
                 return False, msg
 
-        ## Check that at least one and only one of JobType.pluginName or JobType.externalPlugin is specified.
-        if not hasattr(self.configuration.JobType, 'pluginName') and not hasattr(self.configuration.JobType, 'externalPluginFile'):
-            msg = "Crab configuration problem: One of JobType.pluginName or JobType.externalPlugin parameters is required"
-            return False, msg
+        ## Check that JobType.pluginName and JobType.externalPluginFile are not both specified.
         if hasattr(self.configuration.JobType, 'pluginName') and hasattr(self.configuration.JobType, 'externalPluginFile'):
-            msg = "Crab configuration problem: Only one of JobType.pluginName or JobType.externalPlugin parameters is required"
+            msg = "Crab configuration problem: Only one of JobType.pluginName or JobType.externalPluginFile parameters can be specified"
+            pluginName_default = getParamDefaultValue('JobType.pluginName')
+            if pluginName_default:
+                msg += "\nIf neither JobType.pluginName nor JobType.externalPluginFile would be specified, the default JobType.pluginName = '%s' would be used" \
+                       % pluginName_default
             return False, msg
-        ## Load the plugin.
-        externalPlugin = getattr(self.configuration.JobType, 'externalPluginFile', None)
-        if externalPlugin is not None:
-            addPlugin(externalPlugin)
-        elif upper(self.configuration.JobType.pluginName) not in getJobTypes():
-            msg = "JobType %s not found or not supported" % self.configuration.JobType.pluginName
+        ## Load the external plugin or check that the crab plugin is valid.
+        external_plugin_name = getattr(self.configuration.JobType, 'externalPluginFile', None)
+        crab_plugin_name = getattr(self.configuration.JobType, 'pluginName', None)
+        crab_job_types = {'ANALYSIS': None, 'PRIVATEMC': None} #getJobTypes()
+        if external_plugin_name:
+            addPlugin(external_plugin_name) # Do we need to do this here?
+        if crab_plugin_name and upper(crab_plugin_name) not in crab_job_types:
+            msg = "Crab configuration problem: Parameter JobType.pluginName has an invalid value '%s'" % crab_plugin_name
+            msg += "\nAllowed values are: %s" % ", ".join(['%s' % job_type for job_type in crab_job_types.keys()])
             return False, msg
 
         ## Check that the particular combination (Data.publication = True, General.transferOutput = False) is not specified.
@@ -305,7 +315,7 @@ class submit(SubCommand):
                         msg += "\nDatasets of tier different than %s must be read from the global DBS instance; this is, set Data.dbsUrl = 'global'" \
                                % (", ".join(user_data_tiers[:-1]) + " or " + user_data_tiers[-1] if len(user_data_tiers) > 1 else user_data_tiers[0])
                 if msg:
-                    dbsUrl_default = self.getParamDefaultValue('Data.dbsUrl')
+                    dbsUrl_default = getParamDefaultValue('Data.dbsUrl')
                     if dbsUrl_default:
                         dbsUrl_default, dbsUrl_default_alias = self.getDBSURLAndAlias(dbsUrl_default, 'reader')
                         if dbsUrl_default and dbsUrl_default_alias:
@@ -314,7 +324,7 @@ class submit(SubCommand):
 
         ## If a publication DBS URL is specified and publication is ON, check that the DBS URL is a good one.
         if hasattr(self.configuration.Data, 'publishDbsUrl'):
-            publication_default = self.getParamDefaultValue('Data.publication')
+            publication_default = getParamDefaultValue('Data.publication')
             if getattr(self.configuration.Data, 'publication', publication_default):
                 dbs_urls = DBSURLS['writer'].values()
                 dbs_urls_aliases = DBSURLS['writer'].keys()
@@ -322,7 +332,7 @@ class submit(SubCommand):
                     msg  = "Crab configuration problem: Parameter Data.publishDbsUrl has an invalid value '%s'" % self.configuration.Data.publishDbsUrl
                     msg += "\nAllowed values are: "
                     msg += "\n                    ".join(["'%s' ('%s')" % (alias, url) for alias, url in DBSURLS['writer'].iteritems()])
-                    publishDbsUrl_default = self.getParamDefaultValue('Data.publishDbsUrl')
+                    publishDbsUrl_default = getParamDefaultValue('Data.publishDbsUrl')
                     if publishDbsUrl_default:
                         publishDbsUrl_default, publishDbsUrl_default_alias = self.getDBSURLAndAlias(publishDbsUrl_default, 'writer')
                         if publishDbsUrl_default and publishDbsUrl_default_alias:
@@ -341,20 +351,6 @@ class submit(SubCommand):
                 if DBSURLS[dbs_type][alias] == arg.rstrip("/"):
                     return arg.rstrip("/"), alias
         return None, None
-
-
-    def getParamServerName(self, param_config_name):
-        for param_server_name in self.requestmapper.keys():
-            if self.requestmapper[param_server_name].get('config', None) == param_config_name:
-                return param_server_name
-        return None
-
-
-    def getParamDefaultValue(self, param_config_name):
-        param_server_name = self.getParamServerName(param_config_name)
-        if param_server_name:
-            return self.requestmapper[param_server_name].get('default', None)
-        return None
 
 
     def _encodeRequest(self, configreq):
