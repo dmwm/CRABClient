@@ -72,13 +72,14 @@ class status(SubCommand):
             msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(self.cachedinfo['RequestName']), str(dictresult), str(reason))
             raise RESTCommunicationException(msg)
 
+        if self.no_output:
+            return dictresult
+
         self.printShort(dictresult, user)
         self.printPublication(dictresult)
 
         if 'jobs' not in dictresult:
             self.logger.info("\nNo jobs created yet!")
-            return dictresult
-        elif self.no_output:
             return dictresult
         else:
             # Note several options could be combined
@@ -341,7 +342,7 @@ class status(SubCommand):
                         if 'Priority' not in task_info:
                             continue
                         if task_info['Priority'] == task_prio:
-                            equal_prio += 1
+                            equal_prio += 2
                         elif task_info['Priority'] > task_prio:
                             higher_prio += 1
                 if not tot_prio:
