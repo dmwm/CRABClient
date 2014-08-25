@@ -5,7 +5,9 @@ import types
 from optparse import OptionParser
 from ast import literal_eval
 
-from CRABClient.client_utilities import loadCache, getWorkArea, server_info, createWorkArea
+import CRABClient.Emulator
+
+from CRABClient.client_utilities import loadCache, getWorkArea, server_info, validServerURL, createWorkArea
 from CRABClient.client_exceptions import ConfigurationException, MissingOptionException , EnvironmentException
 from CRABClient.ClientMapping import mapping
 from CRABClient.CredentialInteractions import CredentialInteractions
@@ -184,6 +186,7 @@ class SubCommand(ConfigCommand):
         self.logfile = self.logger.logfile
         self.logger.debug("Executing command: '%s'" % str(self.name))
         self.proxy = None
+        self.restClass = CRABClient.Emulator.getEmulator('rest')
         ##Get the mapping
         self.loadMapping()
         self.crab3dic = self.getConfiDict()
