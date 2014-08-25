@@ -33,10 +33,10 @@ class report(SubCommand):
 
         # check if we got the desired results
         if not self.usedbs and not dictresult['result'][0]['runsAndLumis']:
-            self.logger.info('%sError%s: Fail in getting the information we need from the CRAB server. Only job that in FINISH state and the ouput has been transfered can be use' % (colors.RED,colors.NORMAL))
+            self.logger.info('%sError%s: Cannot get information we need from the CRAB server. Only job that in FINISH state and the output has been transferred can be used' % (colors.RED,colors.NORMAL))
             return dictresult
         elif self.usedbs and not dictresult['result'][0]['dbsInLumilist'] and not dictresult['result'][0]['dbsOutLumilist']:
-            self.logger.info('%sError%s: Fail in getting the information we need from DBS. Please check if the output (or input) dataset are not empty and the jobs is FINISH state and the publication'+\
+            self.logger.info('%sError%s: Cannot get the information we need from DBS. Please check that the output (or input) datasets are not empty, the jobs have finished, and the publication'+\
                              ' has been performed' % (colors.RED, colors.NORMAL))
             return dictresult
 
