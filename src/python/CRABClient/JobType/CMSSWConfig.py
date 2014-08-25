@@ -14,11 +14,14 @@ from PSetTweaks.WMTweak import makeTweak
 
 from CRABClient.client_exceptions import ConfigException
 
+configurationCache = {}
+
 class CMSSWConfig(object):
     """
     Class to handle CMSSW _cfg.py file
     """
     def __init__(self, config, userConfig=None, logger=None):
+        global configurationCache
         self.config = config
         self.logger = logger
 
@@ -43,9 +46,13 @@ class CMSSWConfig(object):
             if pyCfgParams:
                 sys.argv.extend(pyCfgParams)
                 self.logger.debug("Extended parameters are %s" % pyCfgParams)
-
-            self.fullConfig = imp.load_module(cfgBaseName, modPath[0],
-                                              modPath[1],  modPath[2])
+            cacheLine = (tuple(sys.path), tuple(modPath[1]), tuple(sys.argv))
+            if cacheLine in configurationCache:
+                self.fullConfig = configurationCache[cacheLine]
+            else:
+                self.fullConfig = imp.load_module(cfgBaseName, modPath[0],
+                                                    modPath[1],  modPath[2])
+                configurationCache[cacheLine] = self.fullConfig
             sys.argv = originalArgv
 
             self.tweakJson = makeTweak(self.fullConfig.process).jsonise()
