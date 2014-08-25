@@ -91,7 +91,7 @@ class CMSSWConfig(object):
             fileName = getattr(outputModule, 'fileName')
             if not fileName:
                 continue
-            edmfiles.append(fileName.value())
+            edmfiles.append(fileName.value().lstrip('file:'))
         ## If there are multiple output modules, make sure they have dataset.filterName set.
         if len(outputModuleNames) > 1:
             for outputModName in outputModuleNames:
@@ -108,6 +108,6 @@ class CMSSWConfig(object):
         if self.fullConfig.process.services.has_key('TFileService'):
             tFileService = self.fullConfig.process.services['TFileService']
             if "fileName" in tFileService.parameterNames_():
-                tfiles.append(getattr(tFileService, 'fileName').value())
+                tfiles.append(getattr(tFileService, 'fileName').value().lstrip('file:'))
 
         return edmfiles, tfiles
