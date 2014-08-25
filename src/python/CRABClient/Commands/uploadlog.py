@@ -42,6 +42,7 @@ class uploadlog(SubCommand):
         logfileurl = cacheurl + '/logfile?name='+str(logfilename)
         self.logger.info("Log file url: %s" %logfileurl)
 
+
     def setOptions(self):
         """
         __setOptions__
@@ -59,29 +60,27 @@ class uploadlog(SubCommand):
                                      default = None,
                                      help = "Same as -c/-continue" )
 
+
     def validateOptions(self):
         SubCommand.validateOptions(self)
 
         if hasattr(self.options, 'logpath') and self.options.logpath != None:
-            self.requiresTaskOption =  False
             if not path.isfile(self.options.logpath):
                 msg = '%sError%s: Could not find the log file in the path: %s' % (colors.RED,colors.NORMAL,self.options.logpath)
                 raise ConfigurationException(msg)
-
-        elif hasattr(self.options, 'task') and self.options.task == None:
-            self.requiresTaskOption = True
-            if len(self.args) == 1 and self.args[0]:
-                self.options.task = self.args[0]
-            #for the case of 'crab uploadlog', user is using the .crab3 file
-            if self.options.task == None and hasattr(self, 'crab3dic'):
-                if  self.crab3dic["taskname"] != None:
-                    self.options.task = self.crab3dic["taskname"]
-                    self.requiresTaskOption = True
-                else:
-                    msg = '%sError%s: Please use the task option -t or --logpath to specify which log to upload' % (colors.RED, colors.NORMAL)
-                    raise ConfigurationException(msg)
-        elif self.options.task != None:
-            self.requiresTaskOption = True
+        elif hasattr(self.options, 'task'):
+            self.cmdconf['requiresTaskOption'] = True
+            self.cmdconf['useCache'] = True
+            if self.options.task == None:
+                if len(self.args) == 1 and self.args[0]:
+                    self.options.task = self.args[0]
+                #for the case of 'crab uploadlog', user is using the .crab3 file
+                if self.options.task == None and hasattr(self, 'crab3dic'):
+                    if  self.crab3dic["taskname"] != None:
+                        self.options.task = self.crab3dic["taskname"]
+                    else:
+                        msg = '%sError%s: Please use the task option -t or --logpath to specify which log to upload' % (colors.RED, colors.NORMAL)
+                        raise ConfigurationException(msg)
         else:
             msg = '%sError%s: Please use the task option -t or --logpath to specify which log to upload' % (colors.RED, colors.NORMAL)
             raise ConfigurationException(msg)
