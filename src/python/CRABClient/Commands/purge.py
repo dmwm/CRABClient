@@ -2,6 +2,7 @@ from WMCore.Services.UserFileCache.UserFileCache  import UserFileCache
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.client_utilities import colors
 from CRABClient.client_utilities import server_info
+from CRABClient.client_utilities import getUrl
 from CRABClient.client_exceptions import ConfigurationException, ConfigException, RESTCommunicationException
 from httplib import HTTPException
 from RESTInteractions import HTTPRequests
@@ -48,7 +49,7 @@ class purge(SubCommand):
         #getting the cache url
 
         if not self.options.scheddonly:
-            baseurl = self.getUrl(self.instance, resource='info')
+            baseurl = getUrl(self.instance, resource='info')
             cacheurl = server_info('backendurls', self.serverurl, self.proxyfilename, baseurl)
             cacheurl = cacheurl['cacheSSL']
             cacheurldict = {'endpoint': cacheurl, 'pycurl': True}

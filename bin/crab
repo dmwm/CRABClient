@@ -24,7 +24,7 @@ from optparse import OptionParser, OptionGroup
 from socket import error as SocketError
 
 from CRABClient import __version__ as client_version
-from CRABClient.client_utilities import getAvailCommands, logfilter
+from CRABClient.client_utilities import getAvailCommands, logfilter , uploadlogfile
 from CRABClient.client_exceptions import ClientException
 from CRABClient.ClientMapping import parameters_mapping
 
@@ -161,6 +161,12 @@ class CRABClient(object):
             tbLogger = logging.getLogger('CRAB3')
             tbLogger.error("Unhandled Exception!")
             tbLogger.error(exc_value, exc_info=(exc_type, exc_value, tback))
+
+            if hasattr(client.logger, 'proxyfilename') and isinstance(client.logger.proxyfilename, str):
+                logurl = uploadlogfile(tblogger, client.logger.proxyfilename, logfilename = None, logpath = str(client.logger.logfile), instance = 'prod')
+                logging.getLogger('CRAB3.all').error('The log file has been upload automatically, please email the following url %s' % logurl)
+            else:
+                logging.getLogger('CRAB3.all').error('Please use crab uploadlog to upload the log file: %s' %client.logger.logfile )
 
         sys.excepthook = log_exception
 
