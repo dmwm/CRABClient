@@ -13,7 +13,8 @@ from RESTInteractions import HTTPRequests
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient import SpellChecker
 from CRABClient.client_exceptions import MissingOptionException, ConfigurationException, RESTCommunicationException
-from CRABClient.client_utilities import getJobTypes, createCache, addPlugin, server_info, colors
+from CRABClient.client_utilities import getJobTypes, createCache, addPlugin, server_info, colors ,getUrl
+
 from CRABClient.ClientMapping import parameters_mapping, getParamDefaultValue
 from CRABClient import __version__
 
@@ -111,7 +112,7 @@ class submit(SubCommand):
         self.configuration.JobType.proxyfilename = self.proxyfilename
         self.configuration.JobType.capath = HTTPRequests.getCACertPath()
         #get the backend URLs from the server external configuration
-        serverBackendURLs = server_info('backendurls', self.serverurl, self.proxyfilename, self.getUrl(self.instance, resource='info'))
+        serverBackendURLs = server_info('backendurls', self.serverurl, self.proxyfilename, getUrl(self.instance, resource='info'))
         #if cacheSSL is specified in the server external configuration we will use it to upload the sandbox (baseURL will be ignored)
         self.configuration.JobType.filecacheurl = serverBackendURLs['cacheSSL'] if 'cacheSSL' in serverBackendURLs else None
         pluginParams = [ self.configuration, self.logger, os.path.join(self.requestarea, 'inputs') ]
