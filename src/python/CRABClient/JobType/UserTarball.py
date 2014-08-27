@@ -41,7 +41,7 @@ class UserTarball(object):
         self.logger.debug("Making tarball in %s" % name)
         self.tarfile = tarfile.open(name=name , mode=mode, dereference=True)
         self.checksum = None
-        PandaInterface.LOGGER = logging.getLogger('CRAB3:traceback')
+        PandaInterface.LOGGER = logging.getLogger('CRAB3')
 
     def addFiles(self, userFiles=None, cfgOutputName=None):
         """

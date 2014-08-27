@@ -26,7 +26,7 @@ class CredentialInteractions(object):
         self.logger = logger
         self.defaultDelegation = {
                                   #do not print messages coming from Proxy library, but put them into the logfile
-                                  'logger':          logging.getLogger('CRAB3:traceback'),
+                                  'logger':          logging.getLogger('CRAB3'),
                                   'vo':              'cms',
                                   'myProxySvr':      myproxy,
                                   'proxyValidity'  : '24:00',
