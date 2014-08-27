@@ -17,7 +17,7 @@ class CredentialInteractions(object):
     Takes care of wrapping Proxy interaction and defining common behaviour
     for all the client commands.
     '''
-    myproxyDesiredValidity = 30 #days
+    myproxyDesiredValidity = 30 ## days
 
     def __init__(self, serverdn, myproxy, role, group, logger, myproxyAccount):
         '''
@@ -29,8 +29,8 @@ class CredentialInteractions(object):
                                   'logger':          logging.getLogger('CRAB3'),
                                   'vo':              'cms',
                                   'myProxySvr':      myproxy,
-                                  'proxyValidity'  : '24:00',
-                                  'myproxyValidity': "%i:00" % (self.myproxyDesiredValidity*24), #30 days
+                                  'proxyValidity'  : '24:00', ## hh:mm
+                                  'myproxyValidity': '%i:00' % (self.myproxyDesiredValidity*24), ## hh:mm
                                   'serverDN' :       serverdn,
                                   'group' :          group,
                                   'role':            role if role != '' else 'NULL',
@@ -40,23 +40,50 @@ class CredentialInteractions(object):
         self.certLocation = '~/.globus/usercert.pem' if 'X509_USER_CERT' not in os.environ else os.environ['X509_USER_CERT']
 
 
-    def getUserDN(self):
+    def setVOGroupVORole(self, group, role):
+        self.defaultDelegation['group'] = group
+        self.defaultDelegation['role'] = role if role != '' else 'NULL'
+
+
+    def setMyProxyAccount(self, myproxy_account):
+        self.defaultDelegation['myproxyAccount'] = myproxy_account
+
+
+    def setProxyValidity(self, validity):
+        self.defaultDelegation['proxyValidity'] = '%i:%02d' % (int(validity/60), int(validity%60))
+
+
+    def setMyProxyValidity(self, validity):
+        self.defaultDelegation['myproxyValidity'] = '%i:%02d' % (int(validity/60), int(validity%60))
+
+
+    def setServerDN(self, serverdn):
+        self.defaultDelegation['serverDN'] = serverdn
+
+
+    def setMyProxyServer(self, server):
+        self.defaultDelegation['myProxySvr'] = server
+
+
+    def proxy(self):
         try:
             proxy = Proxy(self.defaultDelegation)
         except CredentialException, ex:
-            raise EnvironmentException('Problem with Grid environment. %s ' % ex._message)
-        userdn = proxy.getSubjectFromCert(self.certLocation)
-        return userdn
+            self.logger.debug(ex)
+            raise EnvironmentException('Problem with Grid environment: %s ' % ex._message)
+        return proxy
+
+
+    def getUserDN(self):
+        proxy = self.proxy()
+        return proxy.getSubjectFromCert(self.certLocation)
 
 
     def getHyperNewsName(self):
         """
         Return a the client hypernews name
         """
-        try:
-            proxy = Proxy(self.defaultDelegation)
-        except CredentialException, ex:
-            raise EnvironmentException('Problem with Grid environment. %s ' %ex._message)
+        proxy = self.proxy()
         userdn = proxy.getSubjectFromCert(self.certLocation)
         sitedb = SiteDBJSON({"key": proxy.getProxyFilename(), "cert": proxy.getProxyFilename()})
         return sitedb.dnUserName(userdn)
@@ -66,66 +93,105 @@ class CredentialInteractions(object):
         """
         Return user name form DN
         """
-        try:
-            userproxy = Proxy( self.defaultDelegation )
-        except CredentialException, ex:
-            self.logger.debug(ex)
-            raise EnvironmentException('Problem with Grid environment. %s ' %ex._message)
-        return userproxy.getUserName()
+        proxy = self.proxy()
+        return proxy.getUserName()
 
 
-    def createNewVomsProxy(self, timeleftthreshold=0):
+    def getFilename(self):
+        proxy = self.proxy()
+        proxy_file_name = proxy.getProxyFilename()
+        if not os.path.isfile(proxy_file_name):
+            self.logger.debug("Proxy file %s not found" % proxy_file_name)
+            return ''
+        return proxy_file_name
+
+
+    def getTimeLeft(self):
+        proxy = self.proxy()
+        return proxy.getTimeLeft() ## Returns an integer that indicates the number of seconds to the expiration of the proxy
+
+
+    def createNewVomsProxySimple(self, time_left_threshold = 0):
+        proxy_created = False
+        proxy = self.proxy()
+        self.logger.debug("Checking credentials")
+        proxy_file_name = proxy.getProxyFilename()
+        if not os.path.isfile(proxy_file_name):
+            self.logger.debug("Proxy file %s not found" % proxy_file_name)
+            proxy_time_left = 0
+        else:
+            self.logger.debug("Found proxy file %s" % proxy_file_name)
+            self.logger.debug("Getting proxy life time left")
+            proxy_time_left = proxy.getTimeLeft()
+            hours, minutes, seconds = int(proxy_time_left/3600), int((proxy_time_left%3600)/60), int((proxy_time_left%3600)%60)
+            self.logger.debug("Proxy valid for %02d:%02d:%02d hours" % (hours, minutes, seconds))
+        if proxy_time_left < time_left_threshold:
+            msg = "Creating proxy for %s hours with VO role '%s' and VO group '%s'" \
+                  % (self.defaultDelegation['proxyValidity'], self.defaultDelegation['role'], self.defaultDelegation['group'])
+            self.logger.debug(msg)
+            proxy.create()
+            proxy_time_left = proxy.getTimeLeft()
+            group, role = proxy.getUserGroupAndRoleFromProxy(proxy.getProxyFilename())
+            if proxy_time_left > 0 and group == self.defaultDelegation['group'] and role == self.defaultDelegation['role']:
+                self.logger.debug("Proxy created")
+                proxy_created = True
+            else:
+                raise ProxyCreationException("Problems creating proxy")
+           
+        return proxy_created
+
+
+    def createNewVomsProxy(self, time_left_threshold = 0, proxy_created_by_crab = False):
         """
         Handles the proxy creation:
            - checks if a valid proxy still exists
            - performs the creation if it is expired
         """
         ## TODO add the change to have user-cert/key defined in the config.
-        try:
-            userproxy = Proxy( self.defaultDelegation )
-        except CredentialException, ex:
-            self.logger.debug(ex)
-            raise EnvironmentException('Problem with Grid environment. %s ' %ex._message)
-        userproxy.userDN = userproxy.getSubjectFromCert(self.certLocation)
+        proxy = self.proxy()
+        proxy.userDN = proxy.getSubjectFromCert(self.certLocation)
+        self.logger.debug("Checking credentials")
+        proxy_file_name = proxy.getProxyFilename()
+        if not os.path.isfile(proxy_file_name):
+            self.logger.debug("Proxy file %s not found" % proxy_file_name)
+            proxy_time_left = 0
+        else:
+            self.logger.debug("Found proxy file %s" % proxy_file_name)
+            self.logger.debug("Getting proxy life time left")
+            proxy_time_left = proxy.getTimeLeft()
+            hours, minutes, seconds = int(proxy_time_left/3600), int((proxy_time_left%3600)/60), int((proxy_time_left%3600)%60)
+            self.logger.debug("Proxy valid for %02d:%02d:%02d hours" % (hours, minutes, seconds))
 
-        proxytimeleft = 0
-        self.logger.debug("Getting proxy life time left")
-        # returns an integer that indicates the number of seconds to the expiration of the proxy
-        proxytimeleft = userproxy.getTimeLeft()
-        self.logger.debug("Proxy is valid: %i" % proxytimeleft)
-
-        #if it is not expired I check if role and/or group are changed
-        if not proxytimeleft < timeleftthreshold and self.defaultDelegation['role']!=None and self.defaultDelegation['group']!=None:
-            group, role = userproxy.getUserGroupAndRoleFromProxy( userproxy.getProxyFilename())
+        ## If the proxy is not expired, we check if role and/or group are changed.
+        if proxy_time_left > time_left_threshold and self.defaultDelegation['role'] != None and self.defaultDelegation['group'] != None and not proxy_created_by_crab:
+            group, role = proxy.getUserGroupAndRoleFromProxy(proxy_file_name)
             if group != self.defaultDelegation['group'] or role != self.defaultDelegation['role']:
-                #ask the user what he wants to do. Keep it or leave it?
+                ## Ask the user what he wants to do. Keep it or leave it?
                 while True:
-                    self.logger.info(("An existing proxy file has group=%s and role=%s, but in the configuration file you specified group=%s role=%s.\n" +
-                                     "Do you want to overwrite it (Y/N)?") %
-                                     (group, role, self.defaultDelegation['group'], self.defaultDelegation['role']))
+                    self.logger.info(("Proxy file %s exists with VO group = '%s' and VO role = '%s', but you have specified to use VO group = '%s' and VO role = '%s'." +
+                                      "\nDo you want to overwrite the proxy (Y/N)?") \
+                                      % (proxy_file_name, group, role, self.defaultDelegation['group'], self.defaultDelegation['role']))
                     res=raw_input()
                     if res in ['y','Y','n','N']: break
-                #If he wants to overwrite the proxy then we do it, otherwise we exit asking to modify the config
+                ## If he wants to overwrite the proxy then we do it, otherwise we exit asking to modify the config.
                 if res.upper() == 'Y':
                     self.proxyChanged = True
                 else:
-                    raise ProxyCreationException("Plase modify the config.User.voRole and config.User.voGroup parameters in your configuration file"+
-                                                 "to match the existing proxy'")
+                    raise ProxyCreationException("Please modify the User.voRole and User.voGroup parameters in your configuration file to match the existing proxy")
 
-        #if the proxy is expired, or we changed role and/or group, we need to create a new one
-        if proxytimeleft < timeleftthreshold or self.proxyChanged:
-            # creating the proxy
-            self.logger.debug("Creating a proxy for %s hours" % self.defaultDelegation['proxyValidity'] )
-            userproxy.create()
-            proxytimeleft = userproxy.getTimeLeft()
-            group , role = userproxy.getUserGroupAndRoleFromProxy( userproxy.getProxyFilename())
-
-            if proxytimeleft > 0 and group == self.defaultDelegation['group'] and role == self.defaultDelegation['role']:
+        ## If the proxy is expired, or we changed role and/or group, we need to create a new proxy.
+        if proxy_time_left < time_left_threshold or self.proxyChanged:
+            ## Create the proxy.
+            self.logger.debug("Creating new proxy for %s hours" % self.defaultDelegation['proxyValidity'] )
+            proxy.create()
+            proxy_time_left = proxy.getTimeLeft()
+            group, role = proxy.getUserGroupAndRoleFromProxy(proxy.getProxyFilename())
+            if proxy_time_left > 0 and group == self.defaultDelegation['group'] and role == self.defaultDelegation['role']:
                 self.logger.debug("Proxy created.")
             else:
                 raise ProxyCreationException("Problems creating proxy.")
 
-        return userproxy.userDN, userproxy.getProxyFilename()
+        return proxy.userDN, proxy.getProxyFilename()
 
 
     def createNewMyProxy(self, timeleftthreshold=0, nokey=False):

@@ -23,15 +23,15 @@ SERVICE_INSTANCES = {'prod': 'cmsweb.cern.ch',
 RENEW_MYPROXY_THRESHOLD = 15
 
 class ConfigCommand:
-    """ Commands which needs to load the configuration file (e.g.: submit, publish) must subclass ConfigCommand
-        Provides methods for loading the configuration file handling the errors
+    """
+    Commands which needs to load the configuration file (e.g.: submit, publish) must subclass ConfigCommand
+    Provides methods for loading the configuration file handling the errors
     """
 
     def loadConfig(self, configname, overrideargs = None):
         """
         Load the configuration file
         """
-
         if not os.path.isfile(configname):
             raise ConfigurationException("Configuration file '%s' not found" % configname)
         self.logger.info('Will use configuration file %s' % configname)
@@ -69,7 +69,7 @@ class ConfigCommand:
             valid, configmsg = self.validateConfig() #subclasses of SubCommand overrhide this if needed
         except RuntimeError, re:
             msg = self._extractReason(configname, re)
-            raise ConfigurationException("Configuration syntax error: \n %s.\nSee the ./crab.log file for more details" % msg)
+            raise ConfigurationException("Configuration syntax error:\n%s\nSee the ./crab.log file for more details" % msg)
         else:
             ## file is there, check if it is ok
             if not valid:
@@ -168,7 +168,7 @@ class SubCommand(ConfigCommand):
         self.logger = logger
         self.logfile = self.logger.logfile
         self.logger.debug("Executing command: '%s'" % str(self.name))
-        self.proxy = None
+
         self.cmdconf = commands_configuration.get(self.name)
         self.crab3dic = self.getConfiDict()
 
@@ -183,14 +183,36 @@ class SubCommand(ConfigCommand):
         ## Validate the command line parameters before initializing the proxy.
         self.validateOptions()
 
+        ## Retrieve VO role/group from the command line parameters.
         self.voRole  = self.options.voRole  if self.options.voRole  is not None else ''
         self.voGroup = self.options.voGroup if self.options.voGroup is not None else ''
-        ## If we get an input configuration, we load it.
+
+        ## Create the object that will do the proxy operations. We ignore the VO role/group and
+        ## server URL in the initialization, because they are not used until we do the proxy
+        ## delegation to myproxy server. And the delegation happends in handleProxy(), which is
+        ## called after we load the configuration file and retrieve the final values for those
+        ## parameters. handleProxy() takes care of passing those parameters to self.proxy.
+        self.proxy = CredentialInteractions('', '', self.voRole, self.voGroup, self.logger, '')
+
+        ## Create a new proxy (if there isn't a valid one already) with current VO role/group.
+        ## The VO role/group are not relevant for the proxy. We only do want to check that the
+        ## user doesn't expect the proxy to have different VO role/group than those specified
+        ## in the configuration file, but this check is than later in handleProxy() after we
+        ## load the configuration file.
+        self.proxy_created = False
+        if not self.options.skipProxy and self.cmdconf['initializeProxy']:
+            self.proxy_created = self.proxy.createNewVomsProxySimple(time_left_threshold = 720)
+
+        ## If we get an input configuration file:
         if hasattr(self.options, 'config') and self.options.config is not None:
+            ## Load the configuration file and validate it.
             self.loadConfig(self.options.config, self.args)
+            ## Create the CRAB project directory.
             self.requestarea, self.requestname, self.logfile = createWorkArea(self.logger,
                                                                               getattr(self.configuration.General, 'workArea', None),
                                                                               getattr(self.configuration.General, 'requestName', None))
+            ## If VO role/group were not given in the command options, get them from the configuration file.
+            ## If they are specified in both places, print a message saying that the command options will be used.
             if self.options.voRole  is None and hasattr(self.configuration, 'User'):
                 self.voRole  = getattr(self.configuration.User, 'voRole',  '')
             if self.options.voGroup is None and hasattr(self.configuration, 'User'):
@@ -206,7 +228,7 @@ class SubCommand(ConfigCommand):
                 msg += "as specified in the command line."
                 self.logger.info(msg % self.voGroup)
 
-        ## If we get an input task, we load the cache and set the url from it.
+        ## If we get an input task, we load the cache and set the server URL and VO role/group from it.
         if hasattr(self.options, 'task') and self.options.task:
             self.loadLocalCache()
 
@@ -216,9 +238,19 @@ class SubCommand(ConfigCommand):
         elif not self.cmdconf['requiresREST']:
             self.instance, self.serverurl = None, None
 
+        ## Update (or create) the .crab3 cache file.
         self.updateCrab3()
+
+        ## At this point there should be a valid proxy, because we have already checked that and
+        ## eventually created a new one. If the proxy was not created by CRAB, we check that the
+        ## VO role/group in the proxy are the same as specified by the user in the configuration
+        ## file (or in the command line options). If it is not, we ask the user if he wants to 
+        ## overwrite the current proxy. If he doesn't want to overwrite it, we don't continue 
+        ## and ask him to provide the VO role/group as in the existing proxy. 
+        ## Finally, delegate the proxy to myproxy server.
         self.handleProxy()
-        #logging user command and optin use for debuging purpose
+
+        ## Logging user command and options used for debuging purpose.
         self.logger.debug('Command use: %s' % self.name)
         self.logger.debug('Options use: %s' % cmdargs)
         if self.cmdconf['requiresREST']:
@@ -274,30 +306,25 @@ class SubCommand(ConfigCommand):
             self.logger.info("Server is saying that compatible versions are: %s"  % compatibleversion)
 
 
-    def handleProxy(self ):
+    def handleProxy(self):
         """ 
         Init the user proxy, and delegate it if necessary.
         """
-        if not self.options.skipProxy and self.cmdconf['initializeProxy']:
-            proxy = CredentialInteractions('', '', self.voRole, self.voGroup, self.logger, myproxyAccount=self.serverurl)
-
-            self.proxy = proxy
-
-            self.logger.debug("Checking credentials")
-            _, self.proxyfilename = proxy.createNewVomsProxy( timeleftthreshold = 720 )
-
-            if self.cmdconf['requiresREST']: #if the command does not contact the REST we can't delegate the proxy
-                proxy.myproxyAccount = self.serverurl
-                baseurl = self.getUrl(self.instance, resource='info')
-                #get the dn of the task workers from the server
-                alldns = server_info('delegatedn', self.serverurl, self.proxyfilename, baseurl)
-
-                for serverdn in alldns['services']:
-                    proxy.defaultDelegation['serverDN'] = serverdn
-                    proxy.defaultDelegation['myProxySvr'] = 'myproxy.cern.ch'
-
-                    self.logger.debug("Registering user credentials for server %s" % serverdn)
-                    proxy.createNewMyProxy( timeleftthreshold = 60 * 60 * 24 * RENEW_MYPROXY_THRESHOLD, nokey=True)
+        if not self.options.skipProxy:
+            if self.cmdconf['initializeProxy']:
+                self.proxy.setVOGroupVORole(self.voGroup, self.voRole)
+                self.proxy.setMyProxyAccount(self.serverurl)
+                _, self.proxyfilename = self.proxy.createNewVomsProxy(time_left_threshold = 720, proxy_created_by_crab = self.proxy_created)
+                if self.cmdconf['requiresREST']: ## If the command doesn't contact the REST, we can't delegate the proxy.
+                    self.proxy.myproxyAccount = self.serverurl
+                    baseurl = self.getUrl(self.instance, resource = 'info')
+                    ## Get the DN of the task workers from the server.
+                    all_task_workers_dns = server_info('delegatedn', self.serverurl, self.proxyfilename, baseurl)
+                    for serverdn in all_task_workers_dns['services']:
+                        self.proxy.setServerDN(serverdn)
+                        self.proxy.setMyProxyServer('myproxy.cern.ch')
+                        self.logger.debug("Registering user credentials for server %s" % serverdn)
+                        self.proxy.createNewMyProxy(timeleftthreshold = 60 * 60 * 24 * RENEW_MYPROXY_THRESHOLD, nokey = True)
         else:
             self.proxyfilename = self.options.skipProxy
             os.environ['X509_USER_PROXY'] = self.options.skipProxy

@@ -9,7 +9,7 @@ import re
 import datetime
 import logging
 import logging.handlers
-
+import commands, string
 import pkgutil
 import sys
 import cPickle
@@ -18,7 +18,7 @@ import logging
 from string import upper
 from optparse import OptionValueError
 
-from CRABClient.client_exceptions import TaskNotFoundException, CachefileNotFoundException, ConfigurationException ,ConfigException
+from CRABClient.client_exceptions import TaskNotFoundException, CachefileNotFoundException, ConfigurationException, ConfigException, HyperNewsNameException 
 
 
 class colors:
@@ -37,6 +37,7 @@ class colors:
     GRAY   = colordict['GRAY']
     NORMAL = colordict['NORMAL']
     BOLD   = colordict['BOLD']
+
 
 class logfilter(logging.Filter):
 
@@ -183,6 +184,7 @@ def changeFileLogger(logger, workingpath = os.getcwd(), logname = 'crab.log'):
 
     return logfullpath
 
+
 def createWorkArea(logger, workingArea = '.', requestName = ''):
     """
     _createWorkArea_
@@ -269,6 +271,22 @@ def loadCache( task, logger ):
 def getUserName(voRole, voGroup, logger):
     _, _, proxy = initProxy(voRole, voGroup, logger)
     return proxy.getUserName()
+
+
+def getHyperNewsName():
+    ## Direct stderr from voms-proxy-* to dev/null to avoid stupid Java messages :-(
+    status, proxy_file_name = commands.getstatusoutput('eval `scram unsetenv -sh`; voms-proxy-info -path 2>/dev/null')
+    status, proxy_time_left = commands.getstatusoutput('eval `scram unsetenv -sh`; voms-proxy-info -timeleft 2>/dev/null')
+    capath = os.environ['X509_CERT_DIR'] if 'X509_CERT_DIR' in os.environ else '/etc/grid-security/certificates'
+    cmd  = "curl -s --capath %s --cert %s --key %s 'https://cmsweb.cern.ch/sitedb/data/prod/whoami'" % (capath, proxy_file_name, proxy_file_name)
+    cmd += " | tr ':,' '\n'"
+    cmd += " | grep -A1 login"
+    cmd += " | tail -1"
+    status, hn_username = commands.getstatusoutput(cmd)
+    hn_username = string.strip(hn_username).replace('"','')
+    if not hn_username:
+        raise HyperNewsNameException("Unable to retrieve CMS HyperNews username from SiteDB")
+    return hn_username
 
 
 def validServerURL(option, opt_str, value, parser):
