@@ -62,6 +62,12 @@ class EnvironmentException(ClientException):
     """
     exitcode = 3011
 
+class HyperNewsNameException(ClientException):
+    """
+    Raise when there is a problem with the CMS HyperNews username
+    """
+    exitcode = 3012
+
 class PanDaException(ClientException):
     """
     Specific errors coming from interaction with PanDa

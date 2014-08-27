@@ -4,6 +4,8 @@ import commands
 import urllib
 
 from CRABClient.Commands.SubCommand import SubCommand
+from CRABClient.client_utilities import getHyperNewsName
+from CRABClient.client_exceptions import HyperNewsNameException
 
 
 class checkHNname(SubCommand):
@@ -27,33 +29,25 @@ class checkHNname(SubCommand):
 
     def standaloneCheck(self):
 
-        self.logger.info('Starting check in standalone mode...')
+        self.logger.info('Attempting to extract your CMS HyperNews username from SiteDB...')
         ## Direct stderr from voms-proxy-* to dev/null to avoid stupid Java messages :-(
         status, dn = commands.getstatusoutput('eval `scram unsetenv -sh`; voms-proxy-info -identity 2>/dev/null')
-        if status == 0:
-           self.logger.info('Your DN is: %s' % dn)
+        if status:
+            self.logger.info('WARNING: Unable to retrieve your DN.')
+            return
+        self.logger.info('Your DN is: %s' % dn)
+        try:
+            hn_username = getHyperNewsName()
+        except HyperNewsNameException:
+            self.logger.info("SiteDB returned no username for the above DN")
         else:
-           self.logger.info('WARNING: Unable to retrieve your DN.')
-        status, proxy_file = commands.getstatusoutput('eval `scram unsetenv -sh`; voms-proxy-info -path 2>/dev/null')
-        if status != 0:
-            self.logger.info('ERROR getting proxy path')
-        os.environ['X509_USER_PROXY'] = proxy_file
-        if not 'X509_CERT_DIR' in os.environ:
-            os.environ['X509_CERT_DIR'] = '/etc/grid-security/certificates'
-        cmd  = "curl -s --capath $X509_CERT_DIR --cert $X509_USER_PROXY --key $X509_USER_PROXY 'https://cmsweb.cern.ch/sitedb/data/prod/whoami'"
-        cmd += " | tr ':,' '\n'"
-        cmd += " | grep -A1 login"
-        cmd += " | tail -1"
-        status, hn_username = commands.getstatusoutput(cmd)
-        hn_username = string.strip(hn_username) 
-        hn_username = hn_username.replace('"','')
-        self.logger.info('Your HN username is: %s' % hn_username)
+            self.logger.info("Your CMS HyperNews username is: %s" % hn_username)
         self.logger.info('Finished')
 
 
     def crabCheck(self):
     
-        self.logger.info('Starting check in CRAB-like mode...')
+        self.logger.info('Attempting to extract your HN username from SiteDB...')
         try:
             userdn = self.proxy.getUserDN()
             self.logger.info('Your DN is: %s' % userdn)
