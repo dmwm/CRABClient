@@ -66,7 +66,7 @@ class Analysis(BasicJobType):
 
         ## Interogate CMSSW config and user config for output file names. For now no use for EDM files or TFiles here.
         edmfiles, tfiles = cmsswCfg.outputFiles()
-        outputFiles = [file for file in getattr(self.config.JobType, 'outputFiles', []) if file not in edmfiles+tfiles]
+        outputFiles = [file.lstrip('file:') for file in getattr(self.config.JobType, 'outputFiles', []) if file.lstrip('file:') not in edmfiles+tfiles]
         self.logger.debug("The following EDM output files will be collected: %s" % edmfiles)
         self.logger.debug("The following TFile output files will be collected: %s" % tfiles)
         self.logger.debug("The following user output files will be collected: %s" % outputFiles)
@@ -78,7 +78,7 @@ class Analysis(BasicJobType):
         cmsswCfg.writeFile(cfgOutputName)
 
         with UserTarball(name=tarFilename, logger=self.logger, config=self.config) as tb:
-            inputFiles = getattr(self.config.JobType, 'inputFiles', [])
+            inputFiles = [file.lstrip('file:') for file in getattr(self.config.JobType, 'inputFiles', [])]
             tb.addFiles(userFiles=inputFiles, cfgOutputName=cfgOutputName)
             configArguments['adduserfiles'] = [os.path.basename(f) for f in inputFiles]
             uploadResults = tb.upload()
