@@ -253,16 +253,18 @@ if __name__ == "__main__":
         exitcode = ce.exitcode
     finally:
 
-        filehandler = logging.FileHandler(client.logger.logfile)
-        ff = logging.Formatter("%(levelname)s %(asctime)s: \t %(message)s")
-        filehandler.setFormatter(ff)
-        filehandler.setLevel(logging.DEBUG)
-        logging.getLogger('CRAB').addHandler(filehandler)
+        # the command crab --version do not have a logger instance
+        if hasattr(client, 'logger'):
+            filehandler = logging.FileHandler(client.logger.logfile)
+            ff = logging.Formatter("%(levelname)s %(asctime)s: \t %(message)s")
+            filehandler.setFormatter(ff)
+            filehandler.setLevel(logging.DEBUG)
+            logging.getLogger('CRAB').addHandler(filehandler)
 
-        client.memhandler.setTarget(filehandler)
-        client.memhandler.flush()
-        client.memhandler.close()
-        client.logger.removeHandler(client.memhandler)
+            client.memhandler.setTarget(filehandler)
+            client.memhandler.flush()
+            client.memhandler.close()
+            client.logger.removeHandler(client.memhandler)
 
     if hasattr(client, 'cmd'):
         client.cmd.terminate( exitcode )
