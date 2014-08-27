@@ -6,6 +6,7 @@ from optparse import OptionParser
 from ast import literal_eval
 
 from CRABClient.client_utilities import loadCache, getWorkArea, server_info, createWorkArea
+from CRABClient.client_utilities import BASEURL, SERVICE_INSTANCES
 from CRABClient.client_exceptions import ConfigurationException, MissingOptionException , EnvironmentException
 from CRABClient.ClientMapping import parameters_mapping, commands_configuration
 from CRABClient.CredentialInteractions import CredentialInteractions
@@ -15,10 +16,6 @@ from WMCore.Credential.Proxy import Proxy
 
 from WMCore.Configuration import loadConfigurationFile, Configuration
 
-BASEURL = '/crabserver/'
-SERVICE_INSTANCES = {'prod': 'cmsweb.cern.ch',
-                     'preprod': 'cmsweb-testbed.cern.ch',
-                     'dev': 'cmsweb-dev.cern.ch'}
 #if certificates in myproxy expires in less than RENEW_MYPROXY_THRESHOLD days renew them
 RENEW_MYPROXY_THRESHOLD = 15
 
@@ -229,7 +226,6 @@ class SubCommand(ConfigCommand):
         if self.cmdconf['requiresREST']:
             self.logger.debug("Command url %s" %(self.uri))
 
-
     def serverInstance(self):
         """
         Deriving the correct instance to use and the server url. Client is allowed to propagate the instance name and corresponding url
@@ -302,6 +298,9 @@ class SubCommand(ConfigCommand):
             self.proxyfilename = self.options.skipProxy
             os.environ['X509_USER_PROXY'] = self.options.skipProxy
             self.logger.debug('Skipping proxy creation')
+
+        #will be use by the system exception hook
+        self.logger.proxyfilename = self.proxyfilename
 
 
     def loadLocalCache(self, serverurl = None):
