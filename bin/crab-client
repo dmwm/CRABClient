@@ -1,0 +1,21 @@
+#!/bin/sh
+case $(cmsos) in
+    slc6_*) os=slc6 ;;
+    slc5_*) os=slc5 ;;
+    *) os=slc6 ;;
+esac
+
+#Sourcing crabclient
+crab_client=/cvmfs/cms.cern.ch/crab3/crab_$os.sh
+if [ -f $crab_client ]
+then
+    source $crab_client;
+elif [ -f /cvmfs/cms.cern.ch/crab3/crab.sh ]
+then
+    source /cvmfs/cms.cern.ch/crab3/crab.sh;
+else
+    echo "ERROR: CRAB3 client not found in CVMFS '/cvmfs/cms.cern.ch'"
+    exit 1
+fi
+
+$CRABCLIENT_ROOT/bin/crab "$@"
