@@ -222,7 +222,7 @@ if __name__ == "__main__":
             for parname in parameters_mapping['on-server']:
                 for tmpmsg in ['\''+parname+'\' parameter','Parameter \''+parname+'\'']:
                     if tmpmsg in reason and parameters_mapping['on-server'][parname]['config']:
-                        reason = reason.replace(tmpmsg,tmpmsg.replace(parname,parameters_mapping['on-server'][parname]['config']))
+                        reason = reason.replace(tmpmsg,tmpmsg.replace(parname,' or '.join(parameters_mapping['on-server'][parname]['config'])))
                         break
                 else:
                     continue
