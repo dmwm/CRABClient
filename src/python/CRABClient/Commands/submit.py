@@ -7,6 +7,7 @@ import types
 import imp
 import urllib
 import time
+import re
 
 from RESTInteractions import HTTPRequests
 
@@ -249,6 +250,11 @@ class submit(SubCommand):
         if not hasattr(self.configuration, 'Site'):
             msg = "Crab configuration problem: Section 'Site' is missing"
             return False, msg
+
+        ## Check is there is a white space in the request name
+        if hasattr(self.configuration.General, 'requestName') and not re.match('^\S*$',self.configuration.General.requestName):
+            msg = 'Please do not use white space character for requestName in the crab configuration file'
+            return False , msg
 
         ## Check that Data.unitsPerjob is specified.
         if hasattr(self.configuration.Data, 'unitsPerJob'):
