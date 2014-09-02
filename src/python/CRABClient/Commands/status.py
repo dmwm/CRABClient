@@ -477,7 +477,7 @@ class status(SubCommand):
         acceptedsort = ["state", "site", "runtime", "memory", "cpu", "retries", "waste"]
         if hasattr(self.options , 'sort') and self.options.sort != None:
             if not self.long:
-                raise ConfigurationException('%sError%s: Please use option --long togther with --sort' % (colors.RED, colors.NORMAL))
+                raise ConfigurationException('%sError%s: Please use option --long together with --sort' % (colors.RED, colors.NORMAL))
             elif not self.options.sort in acceptedsort:
                 raise ConfigurationException('%sError%s: Only this value accepted for crab status sort: %s' % (colors.RED, colors.NORMAL, acceptedsort))
             else:
