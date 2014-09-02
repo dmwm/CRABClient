@@ -251,6 +251,8 @@ if __name__ == "__main__":
         client.logger.error(ce)
         logging.getLogger('CRAB3').exception('Caught exception')
         exitcode = ce.exitcode
+    except KeyboardInterrupt:
+        client.logger.error('Keyboard Interrupted')
     finally:
 
         # the command crab --version do not have a logger instance
