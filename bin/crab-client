@@ -8,7 +8,10 @@ esac
 #It is required to have CMSSW env for submit command
 case "$1" in
   sub|submit)
-      echo 'submit';;
+      if [ -z "$SCRAMRT_SET" ]; then
+          echo "ERROR: For submitting CRAB3 tasks, you need to have CMSSW Environment"
+          exit 1
+      fi;;
   *) 
       eval scram unsetenv -sh;;
 esac
