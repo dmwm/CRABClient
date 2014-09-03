@@ -5,6 +5,14 @@ case $(cmsos) in
     *) os=slc6 ;;
 esac
 
+#It is required to have CMSSW env for submit command
+case "$1" in
+  sub|submit)
+      echo 'submit';;
+  *) 
+      eval scram unsetenv -sh;;
+esac
+
 #Sourcing crabclient
 crab_client=/cvmfs/cms.cern.ch/crab3/crab_$os.sh
 if [ -f $crab_client ]

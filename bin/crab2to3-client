@@ -5,6 +5,7 @@ case $(cmsos) in
     *) os=slc6 ;;
 esac
 
+eval scram unsetenv -sh
 #Sourcing crabclient
 crab_client=/cvmfs/cms.cern.ch/crab3/crab_$os.sh
 if [ -f $crab_client ]
