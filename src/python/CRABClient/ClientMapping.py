@@ -43,6 +43,7 @@ parameters_mapping = {
                   'vorole'         : {'default': None,       'config': ['User.voRole'],                     'type': 'StringType',  'required': False},
                   'vogroup'        : {'default': None,       'config': ['User.voGroup'],                    'type': 'StringType',  'required': False},
                   'oneEventMode'   : {'default': False,      'config': ['Debug.oneEventMode'],              'type': 'BooleanType', 'required': False},
+                  'asourl'         : {'default': None,       'config': ['Debug.ASOURL'],                    'type': 'StringType',  'required': False},
                  },
     'other-config-params': ['General.workArea', 'General.instance', 'Data.lumiMask', 'Data.runRange', 'JobType.psetName', 'JobType.pyCfgParams']
 }
