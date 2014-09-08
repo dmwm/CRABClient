@@ -10,12 +10,14 @@ from CRABClient.client_exceptions import HyperNewsNameException
 
 class checkHNname(SubCommand):
     """
-    Let the user to test the extraction of his/her HN username from SiteDB.
-    There are two methods for doing this: standaloneCheck() and crabCheck().
-    It was decided that it is enough with the standaloneCheck() method,
-    so we use only this option. I didn't remove the crabCheck() method
-    just in case we realize in the future that this method is also useful.
+    Use to check user Hypernews / Cern username from SiteDB
     """
+    #Let the user to test the extraction of his/her HN username from SiteDB.
+    #There are two methods for doing this: standaloneCheck() and crabCheck().
+    #It was decided that it is enough with the standaloneCheck() method,
+    #so we use only this option. I didn't remove the crabCheck() method
+    #just in case we realize in the future that this method is also useful.
+
     name = 'checkHNname'
 
     def __call__(self):
@@ -46,7 +48,7 @@ class checkHNname(SubCommand):
 
 
     def crabCheck(self):
-    
+
         self.logger.info('Attempting to extract your HN username from SiteDB...')
         try:
             userdn = self.proxy.getUserDN()
