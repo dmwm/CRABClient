@@ -9,7 +9,8 @@ from urllib import urlencode
 
 class kill(SubCommand):
     """
-    Simply call the server side of the kill
+    Command to kill submitted task, user must give a taskname to be kill
+
     """
     visible = True
 
