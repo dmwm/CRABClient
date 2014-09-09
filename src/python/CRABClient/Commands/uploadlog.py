@@ -4,6 +4,8 @@ from WMCore.Services.UserFileCache.UserFileCache import UserFileCache
 from CRABClient.client_utilities import colors
 from CRABClient.client_utilities import server_info
 from CRABClient.client_exceptions import ConfigurationException
+from CRABClient.client_utilities import uploadlogfile
+
 import time
 
 class uploadlog(SubCommand):
@@ -27,20 +29,7 @@ class uploadlog(SubCommand):
             self.logger.info("%sError:%s Could not locate log file" % (colors.RED, colors.NORMAL))
             raise ConfigurationException
 
-        #getting the cache url
-        baseurl=self.getUrl(self.instance, resource='info')
-        cacheurl=server_info('backendurls', self.serverurl, self.proxyfilename, baseurl)
-        cacheurl=cacheurl['cacheSSL']
-        cacheurldict={'endpoint' : cacheurl}
-
-        ufc=UserFileCache(cacheurldict)
-        self.logger.debug("cacheURL: %s\nLog file name: %s" % (cacheurl, logfilename))
-        self.logger.info("Uploading log file")
-        ufc.uploadLog(str(self.logfile), logfilename)
-
-        self.logger.info("%sSuccess%s: Finish uploading log file" % (colors.GREEN, colors.NORMAL))
-        logfileurl = cacheurl + '/logfile?name='+str(logfilename)
-        self.logger.info("Log file url: %s" %logfileurl)
+        logfileurl = uploadlogfile(self.logger, self.proxyfilename, logfilename = logfilename, logpath = str(self.logfile), instance = self.instance, serverurl = self.serverurl)
 
 
     def setOptions(self):

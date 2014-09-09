@@ -10,6 +10,7 @@ import datetime
 import logging
 import logging.handlers
 import commands, string
+import time
 import pkgutil
 import sys
 import cPickle
@@ -20,6 +21,12 @@ from optparse import OptionValueError
 
 from CRABClient.client_exceptions import TaskNotFoundException, CachefileNotFoundException, ConfigurationException, ConfigException, HyperNewsNameException 
 
+from WMCore.Services.UserFileCache.UserFileCache import UserFileCache
+
+BASEURL = '/crabserver/'
+SERVICE_INSTANCES = {'prod': 'cmsweb.cern.ch',
+                     'preprod': 'cmsweb-testbed.cern.ch',
+                     'dev': 'cmsweb-dev.cern.ch'}
 
 class colors:
 
@@ -58,6 +65,66 @@ class logfilter(logging.Filter):
             record.msg = removecolor(record.msg)
         return True
 
+def getUrl(instance='prod', resource='workflow'):
+        """
+        Retrieve the url depending on the resource we are accessing and the instance.
+        """
+        if instance in SERVICE_INSTANCES.keys():
+            return BASEURL + instance + '/' + resource
+        elif instance == 'private':
+            return BASEURL + 'dev' + '/' + resource
+        raise ConfigurationException('Error: only %s instances can be used.' %str(SERVICE_INSTANCES.keys()))
+
+def uploadlogfile(logger , proxyfilename , logfilename = None , logpath = None , instance = 'prod' , serverurl = None):
+
+    doupload = True
+
+    if logfilename == None:
+        logfilename = str(time.strftime("%Y-%m-%d_%H%M%S"))+'_crab.log'
+
+
+    if logpath != None:
+        if os.path.exists(logpath): pass
+        else:
+            doupload = False
+            logger.debug('%sError%s: %s does not exist' %(colors.RED, colors.NORMAL, logpath))
+    else:
+        if os.path.exists(str(os.getcwd()) + '/crab.log'):
+            logpath = str(os.getcwd())+'/crab.log'
+        else:
+            logger.debug('%sError%s: Failed to find /crab.log in current director, %s' % (colors.RED, colors.NORMAL, str(os.getcwd())))
+
+    if serverurl == None and instance in SERVICE_INSTANCES.keys():
+        serverurl = SERVICE_INSTANCES[instance]
+    elif not instance in SERVICE_INSTANCES.keys() and serverurl != None:
+        instance = 'private'
+    elif not instance in SERVICE_INSTANCES.keys() and serverurl == None:
+        logger.debug('%sError%s: serverurl is not None' %(colors.RED, colors.NORMAL, logpath))
+        doupload = False
+
+    if proxyfilename == None:
+        logger.debug('No proxy is give')
+        doupload = False
+
+    baseurl = getUrl(instance = instance , resource = 'info')
+    if doupload:
+        cacheurl=server_info('backendurls', serverurl, proxyfilename, baseurl)
+        cacheurl=cacheurl['cacheSSL']
+        cacheurldict={'endpoint' : cacheurl}
+
+        ufc=UserFileCache(cacheurldict)
+        logger.debug("cacheURL: %s\nLog file name: %s" % (cacheurl, logfilename))
+        logger.info("Uploading log file")
+        ufc.uploadLog(logpath, logfilename)
+
+        logfileurl = cacheurl + '/logfile?name='+str(logfilename)
+        logger.info("Log file url: %s" %logfileurl)
+        return  logfileurl
+    else:
+        logger.info('Failed to upload the log file')
+        logfileurl = False
+
+    return  logfileurl
 
 def getPlugins(namespace, plugins, skip):
     """
