@@ -8,7 +8,7 @@ import imp
 import urllib
 import time
 
-from RESTInteractions import HTTPRequests
+import CRABClient.Emulator
 
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient import SpellChecker
@@ -42,6 +42,8 @@ class submit(SubCommand):
         configmsg = 'Default'
 
         self.logger.debug("Started submission")
+        serverFactory = CRABClient.Emulator.getEmulator('rest')
+        # Get some debug parameters
         ######### Check if the user provided unexpected parameters ########
         #init the dictionary with all the known parameters
         all_config_params = [x for x in parameters_mapping['other-config-params']]
@@ -110,7 +112,7 @@ class submit(SubCommand):
 
         jobconfig = {}
         self.configuration.JobType.proxyfilename = self.proxyfilename
-        self.configuration.JobType.capath = HTTPRequests.getCACertPath()
+        self.configuration.JobType.capath = serverFactory.getCACertPath()
         #get the backend URLs from the server external configuration
         serverBackendURLs = server_info('backendurls', self.serverurl, self.proxyfilename, getUrl(self.instance, resource='info'))
         #if cacheSSL is specified in the server external configuration we will use it to upload the sandbox (baseURL will be ignored)
@@ -139,7 +141,7 @@ class submit(SubCommand):
             configreq['publishname'] = "%s-%s" %(configreq['publishname'], isbchecksum)
         configreq.update(jobconfig)
 
-        server = HTTPRequests(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
+        server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
 
         self.logger.info("Sending the request to the server")
         self.logger.debug("Submitting %s " % str( configreq ) )
@@ -168,7 +170,7 @@ class submit(SubCommand):
 
         if self.options.wait:
             self.checkStatusLoop(server,uniquerequestname)
-
+        self.logger.debug("About to return")
         return uniquerequestname
 
 

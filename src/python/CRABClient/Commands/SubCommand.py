@@ -7,6 +7,7 @@ from ast import literal_eval
 
 from CRABClient.client_utilities import loadCache, getWorkArea, server_info, createWorkArea
 from CRABClient.client_utilities import BASEURL, SERVICE_INSTANCES
+import CRABClient.Emulator
 from CRABClient.client_exceptions import ConfigurationException, MissingOptionException , EnvironmentException
 from CRABClient.ClientMapping import parameters_mapping, commands_configuration
 from CRABClient.CredentialInteractions import CredentialInteractions
@@ -166,6 +167,8 @@ class SubCommand(ConfigCommand):
         self.logfile = self.logger.logfile
         self.logger.debug("Executing command: '%s'" % str(self.name))
 
+        self.proxy = None
+        self.restClass = CRABClient.Emulator.getEmulator('rest')
         self.cmdconf = commands_configuration.get(self.name)
         self.crab3dic = self.getConfiDict()
 

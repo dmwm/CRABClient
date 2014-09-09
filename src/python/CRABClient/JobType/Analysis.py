@@ -95,7 +95,7 @@ class Analysis(BasicJobType):
             fnames = []
             for fname in open(userFileName).readlines():
                 fnames.append(fname.strip())
-            configArguments['userfiles'] = fnames
+            configArguments['userfiles'] = filter(lambda x: x, fnames) #removing whitelines and empty objects
 
             primDS = getattr(self.config.Data, 'primaryDataset', None)
             if primDS:

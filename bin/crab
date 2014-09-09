@@ -211,22 +211,12 @@ if __name__ == "__main__":
     try:
         client()
         exitcode = 0 #no exceptions no errors
-    except KeyError, ke:
-        # The single quotes in KeyErrors are annoying...
-        logging.getLogger('CRAB3').exception('Caught exception')
-        # There will be other KeyErrors, catch them here...
-        client.logger.error("Error %s" % str(ke))
-        exitcode = 100
     except SocketError, se:
         msg = 'Could not establish a connection with the server. '
         msg += 'This may be a temporary problem, but if you see it repeatedly please notify AnaOps'
         client.logger.error(msg)
         logging.getLogger('CRAB3').exception('Caught exception')
         exitcode = 2
-    except NameError, ne:
-        client.logger.error( str(ne) )
-        logging.getLogger('CRAB3').exception('Caught exception')
-        exitcode = 3
     except HTTPException, he:
         client.logger.info("Error contacting the server.")
         if he.status==503 and he.result.find("CMSWEB Error: Service unavailable")!=-1:
