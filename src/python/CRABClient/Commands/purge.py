@@ -13,7 +13,7 @@ import subprocess
 
 class purge(SubCommand):
     """
-    clean user schedd and cache for a given workflow
+    clean user schedd and cache for a given task. User must specify the taskname to be purge
     """
 
     visible = True
