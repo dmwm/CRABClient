@@ -137,7 +137,7 @@ class CRABClient(object):
             #uploading log file
             if hasattr(clientinstance, 'cmd') and hasattr(clientinstance.cmd , 'proxyfilename') and clientinstance.cmd.proxyfilename != None:
                 try:
-                    logurl = uploadlogfile(tblogger, clientinstance.cmd.proxyfilename, logfilename = None, logpath = str(client.logger.logfile), instance = 'prod')
+                    logurl = uploadlogfile(tbLogger, clientinstance.cmd.proxyfilename, logfilename = None, logpath = str(client.logger.logfile), instance = 'prod')
                     logging.getLogger('CRAB3.all').error('\tThe log file has been upload automatically, please email the following url %s to %s' % (logurl, feebackemail))
                 except Exception:
                     logging.getLogger('CRAB3.all').debug('Failed to upload file automatically')
