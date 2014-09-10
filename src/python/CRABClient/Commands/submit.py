@@ -7,6 +7,9 @@ import types
 import imp
 import urllib
 import time
+import re
+
+from WMCore.Lexicon import userprocdataset, primdataset, userProcDSParts
 
 import CRABClient.Emulator
 
@@ -138,16 +141,16 @@ class submit(SubCommand):
                 self.logger.warning(msg)
 
         if not configreq['publishname']:
-            configreq['publishname'] =  isbchecksum
+            configreq['publishname'] = isbchecksum
         else:
-            configreq['publishname'] = "%s-%s" %(configreq['publishname'], isbchecksum)
+            configreq['publishname'] = "%s-%s" % (configreq['publishname'], isbchecksum)
         configreq.update(jobconfig)
-        server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
+        server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version = __version__)
 
         self.logger.info("Sending the request to the server")
-        self.logger.debug("Submitting %s " % str( configreq ) )
+        self.logger.debug("Submitting %s " % str(configreq))
 
-        dictresult, status, reason = server.put( self.uri, data = self._encodeRequest(configreq) )
+        dictresult, status, reason = server.put(self.uri, data = self._encodeRequest(configreq))
         self.logger.debug("Result: %s" % dictresult)
         if status != 200:
             msg = "Problem sending the request:\ninput:%s\noutput:%s\nreason:%s" % (str(configreq), str(dictresult), str(reason))
@@ -247,16 +250,16 @@ class submit(SubCommand):
         ## Even if not all configuration sections need to be there, we anyway request
         ## the user to add all the sections in the configuration file.
         if not hasattr(self.configuration, 'General'):
-            msg = "Crab configuration problem: Section 'General' is missing"
+            msg = "CRAB configuration problem: Section 'General' is missing"
             return False, msg
         if not hasattr(self.configuration, 'JobType'):
-            msg = "Crab configuration problem: Section 'JobType' is missing"
+            msg = "CRAB configuration problem: Section 'JobType' is missing"
             return False, msg
         if not hasattr(self.configuration, 'Data'):
-            msg = "Crab configuration problem: Section 'Data' is missing"
+            msg = "CRAB configuration problem: Section 'Data' is missing"
             return False, msg
         if not hasattr(self.configuration, 'Site'):
-            msg = "Crab configuration problem: Section 'Site' is missing"
+            msg = "CRAB configuration problem: Section 'Site' is missing"
             return False, msg
 
         ## Check that Data.unitsPerjob is specified.
@@ -264,12 +267,12 @@ class submit(SubCommand):
             try:
                 float(self.configuration.Data.unitsPerJob)
             except ValueError:
-                msg = "Crab configuration problem: Parameter Data.unitsPerJob must be a valid number, not %s" % self.configuration.Data.unitsPerJob
+                msg = "CRAB configuration problem: Parameter Data.unitsPerJob must be a valid number, not %s" % self.configuration.Data.unitsPerJob
                 return False, msg
 
         ## Check that JobType.pluginName and JobType.externalPluginFile are not both specified.
         if hasattr(self.configuration.JobType, 'pluginName') and hasattr(self.configuration.JobType, 'externalPluginFile'):
-            msg = "Crab configuration problem: Only one of JobType.pluginName or JobType.externalPluginFile parameters can be specified"
+            msg = "CRAB configuration problem: Only one of JobType.pluginName or JobType.externalPluginFile parameters can be specified"
             pluginName_default = getParamDefaultValue('JobType.pluginName')
             if pluginName_default:
                 msg += "\nIf neither JobType.pluginName nor JobType.externalPluginFile would be specified, the default JobType.pluginName = '%s' would be used" \
@@ -282,14 +285,14 @@ class submit(SubCommand):
         if external_plugin_name:
             addPlugin(external_plugin_name) # Do we need to do this here?
         if crab_plugin_name and upper(crab_plugin_name) not in crab_job_types:
-            msg = "Crab configuration problem: Parameter JobType.pluginName has an invalid value '%s'" % crab_plugin_name
+            msg = "CRAB configuration problem: Parameter JobType.pluginName has an invalid value '%s'" % crab_plugin_name
             msg += "\nAllowed values are: %s" % ", ".join(['%s' % job_type for job_type in crab_job_types.keys()])
             return False, msg
 
         ## Check that the particular combination (Data.publication = True, General.transferOutput = False) is not specified.
         if hasattr(self.configuration.Data, 'publication') and hasattr(self.configuration.General, 'transferOutput'):
             if self.configuration.Data.publication and not self.configuration.General.transferOutput:
-                msg  = "Crab configuration problem: Data.publication is on, but General.transferOutput is off"
+                msg  = "CRAB configuration problem: Data.publication is on, but General.transferOutput is off"
                 msg += "\nPublication can not be performed if the output files are not transferred to a permanent storage"
                 return False, msg
 
@@ -297,7 +300,7 @@ class submit(SubCommand):
         if not hasattr(self.configuration.Site, 'storageSite'):
             if (hasattr(self.configuration.General, 'transferOutput') and self.configuration.General.transferOutput) or \
                (hasattr(self.configuration.General, 'saveLogs') and self.configuration.General.saveLogs):
-                msg = "Crab configuration problem: Parameter Site.storageSite is missing"
+                msg = "CRAB configuration problem: Parameter Site.storageSite is missing"
                 return False, msg
 
         ## If an input dataset and a DBS URL are specified, check that the DBS URL is a good one.
@@ -308,7 +311,7 @@ class submit(SubCommand):
                 dbs_urls_aliases = DBSURLS['reader'].keys()
                 dbs_urls = DBSURLS['reader'].values()
                 if (self.configuration.Data.dbsUrl not in dbs_urls_aliases) and (self.configuration.Data.dbsUrl.rstrip('/') not in dbs_urls):
-                    msg  = "Crab configuration problem: Parameter Data.dbsUrl has an invalid value '%s'" % self.configuration.Data.dbsUrl
+                    msg  = "CRAB configuration problem: Parameter Data.dbsUrl has an invalid value '%s'" % self.configuration.Data.dbsUrl
                     msg += "\nAllowed values are: "
                     msg += "\n                    ".join(["'%s' ('%s')" % (alias, url) for alias, url in DBSURLS['reader'].iteritems()])
                 local_dbs_urls_aliases = ['phys01', 'phys02', 'phys03']
@@ -319,7 +322,7 @@ class submit(SubCommand):
                     inputDataset_tier = inputDataset_parts[-1] if len(inputDataset_parts) == 3 else None
                     user_data_tiers = ['USER']
                     if inputDataset_tier not in user_data_tiers:
-                        msg  = "Crab configuration problem: A local DBS instance '%s' was specified for reading an input dataset of tier %s" \
+                        msg  = "CRAB configuration problem: A local DBS instance '%s' was specified for reading an input dataset of tier %s" \
                                % (self.configuration.Data.dbsUrl, inputDataset_tier)
                         msg += "\nDatasets of tier different than %s must be read from the global DBS instance; this is, set Data.dbsUrl = 'global'" \
                                % (", ".join(user_data_tiers[:-1]) + " or " + user_data_tiers[-1] if len(user_data_tiers) > 1 else user_data_tiers[0])
@@ -338,7 +341,7 @@ class submit(SubCommand):
                 dbs_urls = DBSURLS['writer'].values()
                 dbs_urls_aliases = DBSURLS['writer'].keys()
                 if (self.configuration.Data.publishDbsUrl not in dbs_urls_aliases) and (self.configuration.Data.publishDbsUrl.rstrip('/') not in dbs_urls):
-                    msg  = "Crab configuration problem: Parameter Data.publishDbsUrl has an invalid value '%s'" % self.configuration.Data.publishDbsUrl
+                    msg  = "CRAB configuration problem: Parameter Data.publishDbsUrl has an invalid value '%s'" % self.configuration.Data.publishDbsUrl
                     msg += "\nAllowed values are: "
                     msg += "\n                    ".join(["'%s' ('%s')" % (alias, url) for alias, url in DBSURLS['writer'].iteritems()])
                     publishDbsUrl_default = getParamDefaultValue('Data.publishDbsUrl')
@@ -348,6 +351,63 @@ class submit(SubCommand):
                             msg += "\nIf Data.publishDbsUrl would not be specified, the default '%s' ('%s') would be used" \
                                  % (publishDbsUrl_default_alias, publishDbsUrl_default)
                     return False, msg
+
+        ## If a publication dataset name is specified and publication is ON, check that the
+        ## publication dataset name is valid. If no publication dataset name is specified, CRAB
+        ## will use the request name as the publication dataset name. So if no publication dataset
+        ## name is specified, but the request name is, check that the request name is valid.
+        ## DBS uses the function 'dataset' in WMCore.Lexicon to validate a dataset name. For
+        ## user produced datasets, it also validates the dataset name using the function
+        ## 'userprocdataset' in WMCore.Lexicon. This last function is more restrictive than
+        ## 'dataset', so we use 'userprocdataset' here.
+        if getattr(self.configuration.Data, 'publishDataName', None):
+            publication_default = getParamDefaultValue('Data.publication')
+            if getattr(self.configuration.Data, 'publication', publication_default):
+                dummy_username = 'username'
+                dummy_psethash = '9'*32
+                publishDataName_to_check = '%s-%s-%s' % (dummy_username, self.configuration.Data.publishDataName, dummy_psethash)
+                try:
+                    userprocdataset(publishDataName_to_check)
+                except AssertionError:
+                    msg  = "CRAB configuration problem: Parameter Data.publishDataName has an invalid value for publication in DBS: "
+                    msg += "Data.publishDataName should not have more than 157 characters and it should match the regular expression %s" % userProcDSParts['publishdataname']
+                    return False, msg
+        elif getattr(self.configuration.General, 'requestName', None):
+            publication_default = getParamDefaultValue('Data.publication')
+            if getattr(self.configuration.Data, 'publication', publication_default):
+                dummy_username = 'username'
+                dummy_psethash = '9'*32
+                dummy_timestamp = '140903_234251'
+                publishDataName_to_check = '%s-%s_crab_%s-%s' % (dummy_username, dummy_timestamp, self.configuration.General.requestName, dummy_psethash)
+                try:
+                    userprocdataset(publishDataName_to_check)
+                except AssertionError:
+                    msg  = "CRAB configuration problem: Since Data.publishDataName has not been specified, "
+                    msg += "CRAB will use <time-stamp>_crab_<General.requestName> in its place. "
+                    msg += "However, parameter General.requestName has an invalid value for publication in DBS: "
+                    msg += "General.requestName should not have more than 138 characters and it should match the regular expression %s" % userProcDSParts['publishdataname']
+                    return False, msg
+
+        ## If a primary dataset name is specified and publication is ON, check that the primary
+        ## dataset name is valid.
+        if getattr(self.configuration.Data, 'primaryDataset', None):
+            publication_default = getParamDefaultValue('Data.publication')
+            if getattr(self.configuration.Data, 'publication', publication_default):
+                try:
+                    primdataset(self.configuration.Data.primaryDataset)
+                except AssertionError, ex:
+                    msg = "CRAB configuration problem: Parameter Data.primaryDataset has an invalid value for publication in DBS: %s" % ex
+                    return False, msg
+
+        ## Check that General.requestName is valid. Do similar validation as in the server where
+        ## the regexpr used is RX_WORKFLOW = re.compile(r'^[a-zA-Z0-9\-_]{1,232}$') in
+        ## CRABInterface/Regexps.py.
+        if getattr(self.configuration.General, 'requestName', None):
+            regexp_requestName = r'^[a-zA-Z0-9\-_]{1,215}$' # 255 - len(<time-stamp>_<schedd-name>:<username>_crab_) = 255 - 13 - 1 - 11 - 1 - 8 - 6 = 215
+            if not re.compile(regexp_requestName).match(self.configuration.General.requestName):
+                msg  = "CRAB configuration problem: Parameter General.requestName has an invalid value: "
+                msg += "'%s' doesn't match the regular expression '%s'" % (self.configuration.General.requestName, regexp_requestName)
+                return False, msg
 
         return True, "Valid configuration"
 
