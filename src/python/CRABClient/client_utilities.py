@@ -15,6 +15,7 @@ import pkgutil
 import sys
 import cPickle
 import logging
+import subprocess
 
 from string import upper
 from optparse import OptionValueError
@@ -122,6 +123,16 @@ def uploadlogfile(logger , proxyfilename , logfilename = None , logpath = None ,
     if logfilename == None:
         logfilename = str(time.strftime("%Y-%m-%d_%H%M%S"))+'_crab.log'
 
+    logger.info('Fetching user enviroment to log file')
+
+    try:
+        cmd = 'env'
+        logger.debug('Running env command')
+        pipe = subprocess.Popen(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
+        stdout, stderr = pipe.communicate()
+        logger.debug('\n\n\nUSER ENVIROMENT\n%s' % stdout)
+    except Exception, se:
+        logger.debug('Failed to get the user env\nException message: %s' % (se))
 
     if logpath != None:
         if os.path.exists(logpath): pass
