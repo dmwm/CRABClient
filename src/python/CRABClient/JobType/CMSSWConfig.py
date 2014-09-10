@@ -87,33 +87,42 @@ class CMSSWConfig(object):
         Returns a tuple of lists of output files. First element is PoolOutput files,
         second is TFileService files.
         """
-
-        ## Find files written by output modules.
         edmfiles = []
-        outputModuleNames = self.fullConfig.process.outputModules_().keys()
-        for outputModName in outputModuleNames:
-            outputModule = getattr(self.fullConfig.process, outputModName)
-            if not outputModule:
-                continue
-            fileName = getattr(outputModule, 'fileName')
-            if not fileName:
-                continue
-            edmfiles.append(fileName.value().lstrip('file:'))
+        process = self.fullConfig.process
+
+        #determine all paths/endpaths which will run
+        pathsToRun = set()
+        if process.schedule is not None:
+            for p in process.schedule:
+                pathsToRun.add(p.label())
+
+        #determine all modules on EndPaths
+        modulesOnEndPaths = set()
+        for m in process.endpaths_().itervalues():
+             if len(pathsToRun)==0 or m.label() in pathsToRun:
+                 for n in m.moduleNames():
+                     modulesOnEndPaths.add(n)
+
+        outputModules = set()
+        for n,o in process.outputModules_().iteritems():
+            if n in modulesOnEndPaths and hasattr(o, 'fileName'):
+                edmfiles.append(o.fileName.value().lstrip('file:'))
+                outputModules.add(o)
+
         ## If there are multiple output modules, make sure they have dataset.filterName set.
-        if len(outputModuleNames) > 1:
-            for outputModName in outputModuleNames:
+        if len(outputModules) > 1:
+            for outputModule in outputModules:
                 try:
-                    outputModule = getattr(self.fullConfig.process, outputModName)
                     dataset = getattr(outputModule, 'dataset')
                     filterName = getattr(dataset, 'filterName')
                 except AttributeError:
-                    raise RuntimeError('Your output module %s does not have a "dataset" PSet ' % outputModName +
+                    raise RuntimeError('Your output module %s does not have a "dataset" PSet ' % outputModule +
                                        'or the PSet does not have a "filterName" member.')
 
         ## Find files written by TFileService.
         tfiles = []
-        if self.fullConfig.process.services.has_key('TFileService'):
-            tFileService = self.fullConfig.process.services['TFileService']
+        if process.services.has_key('TFileService'):
+            tFileService = process.services['TFileService']
             if "fileName" in tFileService.parameterNames_():
                 tfiles.append(getattr(tFileService, 'fileName').value().lstrip('file:'))
 
