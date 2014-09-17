@@ -3,8 +3,7 @@ from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.client_exceptions import ConfigurationException , RESTCommunicationException
 from CRABClient.client_utilities import validateJobids
 from CRABClient import __version__
-
-from RESTInteractions import HTTPRequests
+import CRABClient.Emulator
 
 import os
 import re
@@ -52,7 +51,8 @@ class getcommand(SubCommand):
         if getattr(self.options, 'jobids', None):
             self.logger.debug('Retrieving jobs %s' % self.options.jobids )
             inputlist.extend( self.options.jobids )
-        server = HTTPRequests(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
+        serverFactory = CRABClient.Emulator.getEmulator('rest')
+        server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
         dictresult, status, reason = server.get(self.uri, data = inputlist)
         self.logger.debug('Server result: %s' % dictresult )
         dictresult = self.processServerResult(dictresult)

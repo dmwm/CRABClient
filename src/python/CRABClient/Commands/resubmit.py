@@ -2,8 +2,7 @@ from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.client_exceptions import ConfigException, RESTCommunicationException
 from CRABClient.client_utilities import validateJobids
 from CRABClient import __version__
-
-from RESTInteractions import HTTPRequests
+import CRABClient.Emulator
 
 from urllib import urlencode
 import re
@@ -14,7 +13,8 @@ class resubmit(SubCommand):
     -t/--task option
     """
     def __call__(self):
-        server = HTTPRequests(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
+        serverFactory = CRABClient.Emulator.getEmulator('rest')
+        server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
 
         self.logger.debug('Requesting resubmission for failed jobs in task %s' % self.cachedinfo['RequestName'] )
         configreq = { 'workflow' : self.cachedinfo['RequestName']}

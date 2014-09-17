@@ -2,8 +2,7 @@ from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.client_exceptions import RESTCommunicationException
 from CRABClient.client_utilities import validateJobids
 from CRABClient import __version__
-
-from RESTInteractions import HTTPRequests
+import CRABClient.Emulator
 
 from urllib import urlencode
 
@@ -14,7 +13,8 @@ class kill(SubCommand):
     visible = True
 
     def __call__(self):
-        server = HTTPRequests(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
+        serverFactory = CRABClient.Emulator.getEmulator('rest')
+        server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
 
         self.logger.debug('Killing task %s' % self.cachedinfo['RequestName'])
         dictresult, status, reason = server.delete(self.uri, data = urlencode({ 'workflow' : self.cachedinfo['RequestName']}) + '&' + urlencode(self.jobids))
@@ -33,8 +33,7 @@ class kill(SubCommand):
             resultdict = {'status' : 'SUCCESS'}
 
         return resultdict
-
-
+    
     def setOptions(self):
         """
         __setOptions__

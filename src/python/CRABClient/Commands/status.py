@@ -9,7 +9,6 @@ from CRABClient.client_utilities import colors, getUserName
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.client_exceptions import MissingOptionException, RESTCommunicationException, ConfigurationException
 from CRABClient import __version__
-from RESTInteractions import HTTPRequests
 
 def to_hms(val):
     s = val % 60

@@ -5,7 +5,7 @@ from CRABClient.client_utilities import server_info
 from CRABClient.client_utilities import getUrl
 from CRABClient.client_exceptions import ConfigurationException, ConfigException, RESTCommunicationException
 from httplib import HTTPException
-from RESTInteractions import HTTPRequests
+import CRABClient.Emulator
 from CRABClient import __version__
 
 import glob
@@ -31,7 +31,8 @@ class purge(SubCommand):
         #checking task status
 
         self.logger.info('Checking task status')
-        server = HTTPRequests(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
+        serverFactory = CRABClient.Emulator.getEmulator('rest')
+        server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
         dictresult, status, _ = server.get(self.uri, data = {'workflow': self.cachedinfo['RequestName'], 'verbose': 0})
 
         dictresult = dictresult['result'][0] #take just the significant part
