@@ -10,8 +10,7 @@ from CRABClient.client_utilities import getJobTypes, colors
 from CRABClient.JobType.BasicJobType import BasicJobType
 from CRABClient.client_exceptions import ConfigurationException
 from CRABClient import __version__
-
-from RESTInteractions import HTTPRequests
+import CRABClient.Emulator
 
 class report(SubCommand):
     """ Get the list of good lumis for your task identified by -t/--task option
@@ -20,7 +19,8 @@ class report(SubCommand):
     shortnames = ['rep']
 
     def __call__(self):
-        server = HTTPRequests(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
+        serverFactory = CRABClient.Emulator.getEmulator('rest')
+        server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
 
         self.logger.debug('Looking up report for task %s' % self.cachedinfo['RequestName'])
         dictresult, status, reason = server.get(self.uri, data = {'workflow': self.cachedinfo['RequestName'], 'subresource': 'report', 'shortformat': self.usedbs})
