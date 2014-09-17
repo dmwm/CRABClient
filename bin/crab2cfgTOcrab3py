@@ -180,17 +180,6 @@ def checkMonteCarlo(configC3, configC2):
         configC3.Data.totalUnits = configC2.getint('CMSSW', 'total_number_of_events')
     return monteCarlo
 
-def checkDBSURL(configC3):
-    if configC3.Data.publishDbsUrl == 'phys03':
-        configC3.Data.publishDbsUrl = 'https://cmsweb.cern.ch/dbs/prod/phys03/DBSWriter/'
-    if configC3.Data.dbsUrl == 'phys03':
-        configC3.Data.dbsUrl = 'https://cmsweb.cern.ch/dbs/prod/phys03/DBSReader/'
-    elif configC3.Data.dbsUrl == 'phys02':
-        configC3.Data.dbsUrl = 'https://cmsweb.cern.ch/dbs/prod/phys02/DBSReader/'
-    elif configC3.Data.dbsUrl == 'phys01':
-        configC3.Data.dbsUrl = 'https://cmsweb.cern.ch/dbs/prod/phys01/DBSReader/'
-    elif configC3.Data.dbsUrl == 'global':
-        configC3.Data.dbsUrl = 'https://cmsweb.cern.ch/dbs/prod/global/DBSReader/'
 
 def getConfiguration(paramsMap, configC2):
     configC3 = Configuration()
@@ -216,7 +205,6 @@ def getConfiguration(paramsMap, configC2):
             setattr(section, parameterC3, crab2paramValue)
     # Is this CRAB2 config a MC config?
     checkMonteCarlo(configC3, configC2)
-    checkDBSURL(configC3)
     return configC3, missingParams
 
 def printUnsupporterParams(configC2):
