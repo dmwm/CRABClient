@@ -246,7 +246,7 @@ class CredentialInteractions(object):
                 myproxy.myproxyValidity = "%i:00" % (usercertDaysLeft*24)
 
             # creating the proxy
-            self.logger.debug("Delegating a myproxy for %s hours" % self.defaultDelegation['myproxyValidity'] )
+            self.logger.debug("Delegating a myproxy for %s hours" % myproxy.myproxyValidity )
             try:
                 myproxy.delegate(serverRenewer = True, nokey=nokey)
                 self.logger.debug("My-proxy delegated.")
