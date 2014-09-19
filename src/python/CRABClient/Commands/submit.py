@@ -111,6 +111,8 @@ class submit(SubCommand):
                     configreq[param] = DBSURLS[dbstype][configreq[param]]
                 elif configreq[param].rstrip('/') in allowed_dbsurls:
                     configreq[param] = configreq[param].rstrip('/')
+            elif param == 'scriptexe' and 'scriptexe' in configreq:
+                configreq[param] = os.path.basename(configreq[param])
 
         jobconfig = {}
         self.configuration.JobType.proxyfilename = self.proxyfilename
@@ -349,6 +351,11 @@ class submit(SubCommand):
                                  % (publishDbsUrl_default_alias, publishDbsUrl_default)
                     return False, msg
 
+        if hasattr(self.configuration.JobType, 'scriptExe'):
+            if not os.path.isfile(self.configuration.JobType.scriptExe):
+                msg = "Cannot find the file %s specified in the scriptExe configuration parameter" % self.configuration.JobType.scriptExe
+                return False, msg
+
         return True, "Valid configuration"
 
 
@@ -367,7 +374,7 @@ class submit(SubCommand):
             cmsweb, e.g.:   adduserfiles = ['file1','file2']  ===>  [...]adduserfiles=file1&adduserfiles=file2[...]
         """
         listParams = ['adduserfiles', 'addoutputfiles', 'sitewhitelist', 'siteblacklist', 'blockwhitelist', 'blockblacklist',
-                      'tfileoutfiles', 'edmoutfiles', 'runs', 'lumis', 'userfiles']
+                      'tfileoutfiles', 'edmoutfiles', 'runs', 'lumis', 'userfiles', 'scriptargs']
         encodedLists = ''
         for lparam in listParams:
             if lparam in configreq:

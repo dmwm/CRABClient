@@ -18,7 +18,6 @@ import logging
 from WMCore.Configuration import loadConfigurationFile, Configuration
 import CRABClient.Emulator
 from WMCore.Services.UserFileCache.UserFileCache import UserFileCache
-import PandaServerInterface as PandaInterface
 from CRABClient.client_exceptions import EnvironmentException
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
 from CRABClient.client_exceptions import InputFileNotFoundException, CachefileNotFoundException
@@ -42,7 +41,6 @@ class UserTarball(object):
         self.logger.debug("Making tarball in %s" % name)
         self.tarfile = tarfile.open(name=name , mode=mode, dereference=True)
         self.checksum = None
-        PandaInterface.LOGGER = logging.getLogger('CRAB3')
 
     def addFiles(self, userFiles=None, cfgOutputName=None):
         """
@@ -80,6 +78,11 @@ class UserTarball(object):
                 self.checkdirectory(filename)
                 self.tarfile.add(filename, os.path.basename(filename), recursive=True)
 
+
+        scriptExe = getattr(self.config.JobType, 'scriptExe', None)
+        if scriptExe:
+            self.tarfile.add(scriptExe, arcname=os.path.basename(scriptExe))
+
         # Adding the pset and crabconfig file to the tarfile
         if cfgOutputName:
             self.tarfile.add(cfgOutputName, arcname='PSet.py')
@@ -90,6 +93,7 @@ class UserTarball(object):
         configtmp.write(str(self.config))
         configtmp.flush()
         psetfilename = getattr(self.config.JobType, 'psetName', None)
+
 
         if not psetfilename == None:
             self.tarfile.add(psetfilename,'/debug/originalPSet.py')

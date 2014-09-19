@@ -4,7 +4,7 @@ _ClientMapping_
 
 This allows to have an agnostic client.
 For each client command it is possible to define the path of the REST request, the map between
-the client configuration and the final request to send to the server. It includes type of the 
+the client configuration and the final request to send to the server. It includes type of the
 parameter so that the client can do a basic sanity check on the input data type.
 For each server parameter, there can be more than one parameters in the CRAB configuration file.
 If that is the case then the meaning is that any of the parameters in the CRAB configuration
@@ -38,6 +38,8 @@ parameters_mapping = {
                   'maxmemory'      : {'default': None,       'config': ['JobType.maxmemory'],               'type': 'IntType',     'required': False},
                   'priority'       : {'default': None,       'config': ['JobType.priority'],                'type': 'IntType',     'required': False},
                   'nonprodsw'      : {'default': False,      'config': ['JobType.allowNonProductionCMSSW'], 'type': 'BooleanType', 'required': False},
+                  'scriptexe'      : {'default': None,       'config': ['JobType.scriptExe'],               'type': 'StringType',  'required': False},
+                  'scriptargs'     : {'default': None,       'config': ['JobType.scriptArgs'],              'type': 'ListType',    'required': False},
                   'asyncdest'      : {'default': None,       'config': ['Site.storageSite'],                'type': 'StringType',  'required': False},
                   'sitewhitelist'  : {'default': None,       'config': ['Site.whitelist'],                  'type': 'ListType',    'required': False},
                   'siteblacklist'  : {'default': None,       'config': ['Site.blacklist'],                  'type': 'ListType',    'required': False},
