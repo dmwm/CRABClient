@@ -82,6 +82,7 @@ def getLoggers(loglevel):
     logger = logging.getLogger('CRAB3.all')
     tblogger = logging.getLogger('CRAB3')
     logger.setLevel(logging.DEBUG)
+    tblogger.setLevel(logging.DEBUG)
 
     # Set up console output to stdout at appropriate level
     console_format = '%(message)s'
