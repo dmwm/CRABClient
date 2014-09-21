@@ -13,7 +13,7 @@ file is used to set the same server parameter.
 
 parameters_mapping = {
     'on-server': {'workflow'       : {'default': None,       'config': ['General.requestName'],             'type': 'StringType',  'required': False},
-                  'activity'       : {'default': 'analysis-crab3', 'config': ['General.activity'],                'type': 'StringType',  'required': False},
+                  'activity'       : {'default': None,       'config': ['General.activity'],                'type': 'StringType',  'required': False},
                   'saveoutput'     : {'default': True,       'config': ['General.transferOutput'],          'type': 'BooleanType', 'required': False},
                   'savelogsflag'   : {'default': False,      'config': ['General.saveLogs'],                'type': 'BooleanType', 'required': False},
                   'faillimit'      : {'default': None,       'config': ['General.failureLimit'],            'type': 'IntType',     'required': False},
