@@ -116,7 +116,7 @@ class CMSSWConfig(object):
                     dataset = getattr(outputModule, 'dataset')
                     filterName = getattr(dataset, 'filterName')
                 except AttributeError:
-                    raise RuntimeError('Your output module %s does not have a "dataset" PSet ' % outputModule +
+                    raise RuntimeError('Your output module %s does not have a "dataset" PSet ' % outputModule.label() +
                                        'or the PSet does not have a "filterName" member.')
 
         ## Find files written by TFileService.
