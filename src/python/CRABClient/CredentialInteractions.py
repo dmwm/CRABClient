@@ -249,7 +249,13 @@ class CredentialInteractions(object):
             self.logger.debug("Delegating a myproxy for %s hours" % myproxy.myproxyValidity )
             try:
                 myproxy.delegate(serverRenewer = True, nokey=nokey)
-                self.logger.debug("My-proxy delegated.")
+                myproxytimeleft = myproxy.getMyProxyTimeLeft(serverRenewer=True, nokey=nokey)
+                if myproxytimeleft <= 0:
+                    raise ProxyCreationException("It seems your proxy has not been delegated to myproxy. Please check the logfile for the exact error "+\
+                                                            "(it might simply you typed a wrong password)")
+                else:
+                    self.logger.debug("My-proxy delegated.")
             except Exception, ex:
-                raise ProxyCreationException("Problems delegating My-proxy. %s"%ex._message)
+                msg = ex._message if hasattr(ex, '_message') else str(ex)
+                raise ProxyCreationException("Problems delegating My-proxy. %s" % msg)
 
