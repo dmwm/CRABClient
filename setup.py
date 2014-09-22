@@ -137,7 +137,7 @@ def main():
     author_email = "",
     keywords     = ["CRABClient"]
     package_dir  = \
-        {"CRABClient": "src/python/CRABClient"}
+        {"CRABClient": "src/python/CRABClient", "CRABAPI": "src/python/CRABAPI"}
     packages     = find_packages('src/python')
     data_files   = [('etc', ['doc/FullConfiguration.py', 'doc/ExampleConfiguration.py'])] # list of tuples whose entries are (dir, [data_files])
     cms_license  = "CMS experiment software"
