@@ -39,13 +39,15 @@ class colors:
                 'GRAY':'\033[90m',
                 'NORMAL':'\033[0m',
                 'BOLD':'\033[1m' }
-
-    RED    = colordict['RED']
-    GREEN  = colordict['GREEN']
-    BLUE   = colordict['BLUE']
-    GRAY   = colordict['GRAY']
-    NORMAL = colordict['NORMAL']
-    BOLD   = colordict['BOLD']
+    if sys.stdout.isatty():
+        RED    = colordict['RED']
+        GREEN  = colordict['GREEN']
+        BLUE   = colordict['BLUE']
+        GRAY   = colordict['GRAY']
+        NORMAL = colordict['NORMAL']
+        BOLD   = colordict['BOLD']
+    else:
+        RED, GREEN, BLUE, GRAY, NORMAL, BOLD = '', '', '', '', '', ''
 
 
 class logfilter(logging.Filter):
