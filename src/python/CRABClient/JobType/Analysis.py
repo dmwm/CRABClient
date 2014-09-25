@@ -10,6 +10,7 @@ from WMCore.DataStructs.LumiList import LumiList
 
 import PandaServerInterface as PandaInterface
 
+from WMCore.Lexicon import lfnParts
 from CRABClient.JobType.BasicJobType import BasicJobType
 from CRABClient.JobType.CMSSWConfig import CMSSWConfig
 from CRABClient.JobType.LumiMask import getLumiList, getRunList
@@ -101,7 +102,7 @@ class Analysis(BasicJobType):
             if primDS:
                 # Normalizes "foo/bar" and "/foo/bar" to "/foo/bar"
                 primDS = "/" + os.path.join(*primDS.split("/"))
-                if not re.match("/%(primDS)s.*" % WMCore.Lexicon.lfnParts, primDS):
+                if not re.match("/%(primDS)s.*" % lfnParts, primDS):
                     self.logger.warning("Invalid primary dataset name %s for private MC; publishing may fail" % primDS)
                 configArguments['inputdata'] = primDS
             else:
