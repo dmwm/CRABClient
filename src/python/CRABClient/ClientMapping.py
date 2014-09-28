@@ -48,6 +48,7 @@ parameters_mapping = {
                   'oneEventMode'   : {'default': False,      'config': ['Debug.oneEventMode'],              'type': 'BooleanType', 'required': False},
                   'asourl'         : {'default': None,       'config': ['Debug.ASOURL'],                    'type': 'StringType',  'required': False},
                   'scheddname'     : {'default': None,       'config': ['Debug.scheddName'],                'type': 'StringType',  'required': False},
+                  'extrajdl'       : {'default': None,       'config': ['Debug.extraJDL'],                  'type': 'ListType',    'required': False},
                  },
     'other-config-params': ['General.workArea', 'General.instance', 'Data.lumiMask', 'Data.runRange', 'JobType.psetName', 'JobType.pyCfgParams']
 }

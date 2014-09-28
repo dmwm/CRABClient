@@ -105,7 +105,7 @@ class submit(SubCommand):
                     dbstype = 'reader'
                 elif param == 'publishdbsurl':
                     dbstype = 'writer'
-                allowed_dbsurls = DBSURLS[dbstype].values() 
+                allowed_dbsurls = DBSURLS[dbstype].values()
                 allowed_dbsurls_aliases = DBSURLS[dbstype].keys()
                 if configreq[param] in allowed_dbsurls_aliases:
                     configreq[param] = DBSURLS[dbstype][configreq[param]]
@@ -374,7 +374,7 @@ class submit(SubCommand):
             cmsweb, e.g.:   adduserfiles = ['file1','file2']  ===>  [...]adduserfiles=file1&adduserfiles=file2[...]
         """
         listParams = ['adduserfiles', 'addoutputfiles', 'sitewhitelist', 'siteblacklist', 'blockwhitelist', 'blockblacklist',
-                      'tfileoutfiles', 'edmoutfiles', 'runs', 'lumis', 'userfiles', 'scriptargs']
+                      'tfileoutfiles', 'edmoutfiles', 'runs', 'lumis', 'userfiles', 'scriptargs', 'extrajdl']
         encodedLists = ''
         for lparam in listParams:
             if lparam in configreq:
