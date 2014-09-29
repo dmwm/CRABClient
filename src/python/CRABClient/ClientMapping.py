@@ -63,7 +63,8 @@ commands_configuration = {
     'request_type' : {'requiresREST': True,  'initializeProxy' : True,  'requiresTaskOption': True,  'useCache': True },
     'resubmit'     : {'requiresREST': True,  'initializeProxy' : True,  'requiresTaskOption': True,  'useCache': True },
     'status'       : {'requiresREST': True,  'initializeProxy' : True,  'requiresTaskOption': True,  'useCache': True },
-    'uploadlog'    : {'requiresREST': True,  'initializeProxy' : True,  'requiresTaskOption': False, 'useCache': False}
+    'uploadlog'    : {'requiresREST': True,  'initializeProxy' : True,  'requiresTaskOption': False, 'useCache': False},
+    'tasks'        : {'requiresREST': True,  'initializeProxy' : True,  'requiresTaskOption': False, 'useCache': False}
 }
 
 
