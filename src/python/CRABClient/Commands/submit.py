@@ -7,6 +7,9 @@ import types
 import imp
 import urllib
 import time
+import re
+
+from WMCore.Lexicon import userprocdataset, primdataset, userProcDSParts
 
 import CRABClient.Emulator
 
@@ -140,11 +143,11 @@ class submit(SubCommand):
                 self.logger.warning(msg)
 
         if not configreq['publishname']:
-            configreq['publishname'] =  isbchecksum
+            configreq['publishname'] = isbchecksum
         else:
-            configreq['publishname'] = "%s-%s" %(configreq['publishname'], isbchecksum)
+            configreq['publishname'] = "%s-%s" % (configreq['publishname'], isbchecksum)
         configreq.update(jobconfig)
-        server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
+        server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version = __version__)
 
         self.logger.info("Sending the request to the server")
         self.logger.debug("Submitting %s " % str(configreq))
@@ -369,6 +372,52 @@ class submit(SubCommand):
                             msg += "\nIf Data.publishDBS would not be specified, the default '%s' ('%s') would be used" \
                                  % (publishDBS_default_alias, publishDBS_default)
                     return False, msg
+
+        ## If a publication dataset name is specified and publication is ON, check that the
+        ## publication dataset name is valid. If no publication dataset name is specified, CRAB
+        ## will use the request name as the publication dataset name. So if no publication dataset
+        ## name is specified, but the request name is, check that the request name is valid.
+        ## DBS uses the function 'dataset' in WMCore.Lexicon to validate a dataset name. For
+        ## user produced datasets, it also validates the dataset name using the function
+        ## 'userprocdataset' in WMCore.Lexicon. This last function is more restrictive than
+        ## 'dataset', so we use 'userprocdataset' here.
+        if getattr(self.configuration.Data, 'publishDataName', None):
+            publication_default = getParamDefaultValue('Data.publication')
+            if getattr(self.configuration.Data, 'publication', publication_default):
+                dummy_username = 'username'
+                dummy_psethash = '9'*32
+                publishDataName_to_check = '%s-%s-%s' % (dummy_username, self.configuration.Data.publishDataName, dummy_psethash)
+                try:
+                    userprocdataset(publishDataName_to_check)
+                except AssertionError:
+                    msg  = "CRAB configuration problem: Parameter Data.publishDataName has an invalid value for publication in DBS: "
+                    msg += "Data.publishDataName should not have more than 157 characters and it should match the regular expression %s" % userProcDSParts['publishdataname']
+                    return False, msg
+        elif getattr(self.configuration.General, 'requestName', None):
+            publication_default = getParamDefaultValue('Data.publication')
+            if getattr(self.configuration.Data, 'publication', publication_default):
+                dummy_username = 'username'
+                dummy_psethash = '9'*32
+                dummy_timestamp = '140903_234251'
+                publishDataName_to_check = '%s-%s_crab_%s-%s' % (dummy_username, dummy_timestamp, self.configuration.General.requestName, dummy_psethash)
+                try:
+                    userprocdataset(publishDataName_to_check)
+                except AssertionError:
+                    msg  = "CRAB configuration problem: Since Data.publishDataName has not been specified, "
+                    msg += "CRAB will use <time-stamp>_crab_<General.requestName> in its place. "
+                    msg += "However, parameter General.requestName has an invalid value for publication in DBS: "
+                    msg += "General.requestName should not have more than 138 characters and it should match the regular expression %s" % userProcDSParts['publishdataname']
+                    return False, msg
+
+        ## Check that General.requestName is valid. Do similar validation as in the server where
+        ## the regexpr used is RX_WORKFLOW = re.compile(r'^[a-zA-Z0-9\-_]{1,232}$') in
+        ## CRABInterface/Regexps.py.
+        if getattr(self.configuration.General, 'requestName', None):
+            regexp_requestName = r'^[a-zA-Z0-9\-_]{1,215}$' # 255 - len(<time-stamp>_<schedd-name>:<username>_crab_) = 255 - 13 - 1 - 11 - 1 - 8 - 6 = 215
+            if not re.compile(regexp_requestName).match(self.configuration.General.requestName):
+                msg = "CRAB configuration problem: Parameter General.requestName has an invalid value: "
+                msg += "'%s' doesn't match the regular expression '%s'" % (self.configuration.General.requestName, regexp_requestName)
+                return False, msg
 
         if hasattr(self.configuration.JobType, 'scriptExe'):
             if not os.path.isfile(self.configuration.JobType.scriptExe):
