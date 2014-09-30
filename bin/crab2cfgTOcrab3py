@@ -64,8 +64,10 @@ paramsMap = [
     ('General'  , 'transferOutput'       , False, 'USER'   , 'copy_data'                , RawConfigParser.getboolean),
     ('JobType'  , 'psetName'             , True , 'CMSSW'  , 'pset'                     , RawConfigParser.get),
     ('JobType'  , 'pyCfgParams'          , False, 'CMSSW'  , 'pycfg_params'             , _getSpacedList),
-    ('JobType'  , 'inputFiles'           , False, 'CMSSW'  , 'additional_input_files'   , _getlist),
+    ('JobType'  , 'inputFiles'           , False, 'USER'   , 'additional_input_files'   , _getlist),
     ('JobType'  , 'outputFiles'          , False, 'CMSSW'  , 'output_file'              , _getlist),
+    ('JobType'  , 'scriptExe'            , False, 'USER'   , 'script_exe'               , RawConfigParser.get),
+    ('JobType'  , 'scriptArgs'           , False, 'USER'   , 'script_arguments'         , _getlist),
     ('JobType'  , 'maxjobruntime'        , False, 'GRID'   , 'max_wall_clock_time'      , getInteger),
     ('JobType'  , 'maxmemory'            , False, 'GRID'   , 'max_rss'                  , getInteger),
     ('Data'     , 'inputDataset'         , False, 'CMSSW'  , 'datasetpath'              , RawConfigParser.get),
@@ -85,8 +87,7 @@ paramsMap = [
 ]
 
 #Not yet supported parameters. If they are present in the crab2cfg file we print a message saying they are not yet supported
-notYetSuppParams = ['script_arguments',
-                    'outputdir',
+notYetSuppParams = ['outputdir',
                     'logdir',
                     'check_user_remote_dir',
                     'user_remote_dir',
@@ -95,7 +96,6 @@ notYetSuppParams = ['script_arguments',
                     'requirements',
                     'dont_check_proxy', #we actually have something from the command line
                     'dont_check_myproxy',
-                    'script_exe',
                     'use_parent',
                     'executable',
                     'data_location_override',
@@ -109,8 +109,7 @@ notYetSuppParams = ['script_arguments',
                    ]
 
 #List of deprecated parameters. We print a warning message saying they are obsolete
-deprecatedParams = [
-                    'server_name',
+deprecatedParams = ['server_name',
                     'use_server', #of course we use it
                     'scheduler',
                     'jobtype',
