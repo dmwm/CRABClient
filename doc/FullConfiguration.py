@@ -57,8 +57,8 @@ config.section_("Data")
 
 ## To publish produced data there are 3 parameters to set:
 #config.Data.publication = True
-#config.Data.dbsUrl = "https://cmsweb.cern.ch/dbs/prod/global/DBSReader"
-#config.Data.publishDbsUrl = "https://cmsweb.cern.ch/dbs/prod/prod/phys03/DBSWriter"
+#config.Data.inputDBS = "https://cmsweb.cern.ch/dbs/prod/global/DBSReader"
+#config.Data.publishDBS = "https://cmsweb.cern.ch/dbs/prod/prod/phys03/DBSWriter"
 
 ## User options
 config.section_("User")

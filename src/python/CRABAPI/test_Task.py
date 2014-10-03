@@ -77,7 +77,7 @@ class DeepTask(unittest.TestCase):
         myTask = CRABAPI.Abstractions.Task()
         myTask.config.section_("General")
         myTask.config.General.requestName   = 'test1'
-        myTask.config.General.saveLogs = True
+        myTask.config.General.transferLogs = True
         myTask.config.General.workArea = os.path.join(self.testDir, "unit")
         myTask.config.section_("JobType")
         myTask.config.JobType.pluginName  = 'PrivateMC'

@@ -61,23 +61,23 @@ def getInteger(configC2, sectionC2, parameterC2):
 #For each Crab3 parameter give the corresponding crab2 parameter
 paramsMap = [
     ('General'  , 'requestName'          , False, 'USER'   , 'ui_working_dir'           , RawConfigParser.get),
-    ('General'  , 'transferOutput'       , False, 'USER'   , 'copy_data'                , RawConfigParser.getboolean),
+    ('General'  , 'transferOutputs'      , False, 'USER'   , 'copy_data'                , RawConfigParser.getboolean),
     ('JobType'  , 'psetName'             , True , 'CMSSW'  , 'pset'                     , RawConfigParser.get),
     ('JobType'  , 'pyCfgParams'          , False, 'CMSSW'  , 'pycfg_params'             , _getSpacedList),
     ('JobType'  , 'inputFiles'           , False, 'USER'   , 'additional_input_files'   , _getlist),
     ('JobType'  , 'outputFiles'          , False, 'CMSSW'  , 'output_file'              , _getlist),
     ('JobType'  , 'scriptExe'            , False, 'USER'   , 'script_exe'               , RawConfigParser.get),
     ('JobType'  , 'scriptArgs'           , False, 'USER'   , 'script_arguments'         , _getlist),
-    ('JobType'  , 'maxjobruntime'        , False, 'GRID'   , 'max_wall_clock_time'      , getInteger),
-    ('JobType'  , 'maxmemory'            , False, 'GRID'   , 'max_rss'                  , getInteger),
+    ('JobType'  , 'maxJobRuntimeMin'     , False, 'GRID'   , 'max_wall_clock_time'      , getInteger),
+    ('JobType'  , 'maxMemoryMB'          , False, 'GRID'   , 'max_rss'                  , getInteger),
     ('Data'     , 'inputDataset'         , False, 'CMSSW'  , 'datasetpath'              , RawConfigParser.get),
-    ('Data'     , 'dbsUrl'               , False, 'CMSSW'  , 'dbs_url'                  , RawConfigParser.get),
+    ('Data'     , 'inputDBS'             , False, 'CMSSW'  , 'dbs_url'                  , RawConfigParser.get),
     ('Data'     , 'splitting'            , False, ''       , ''                         , _getsplitting),       #_getsplitting knows corresp. params
     ('Data'     , 'unitsPerJob'          , False, ''       , ''                         , _getunits),           #_getunits does the work
     ('Data'     , 'lumiMask'             , False, 'CMSSW'  , 'lumi_mask'                , RawConfigParser.get),
     ('Data'     , 'publication'          , False, 'USER'   , 'publish_data'             , RawConfigParser.getboolean),
     ('Data'     , 'publishDataName'      , False, 'USER'   , 'publish_data_name'        , RawConfigParser.get),
-    ('Data'     , 'publishDbsUrl'        , False, 'USER'   , 'dbs_url_for_publication'  , RawConfigParser.get),
+    ('Data'     , 'publishDBS'           , False, 'USER'   , 'dbs_url_for_publication'  , RawConfigParser.get),
     ('Data'     , 'runRange'             , False, 'CMSSW'  , 'runselection'             , RawConfigParser.get),
     ('User'     , 'voRole'               , False, 'GRID'   , 'role'                     , RawConfigParser.get),
     ('User'     , 'voGroup'              , False, 'GRID'   , 'group'                    , RawConfigParser.get),

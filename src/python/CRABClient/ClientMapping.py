@@ -14,28 +14,28 @@ file is used to set the same server parameter.
 parameters_mapping = {
     'on-server': {'workflow'       : {'default': None,       'config': ['General.requestName'],             'type': 'StringType',  'required': False},
                   'activity'       : {'default': None,       'config': ['General.activity'],                'type': 'StringType',  'required': False},
-                  'saveoutput'     : {'default': True,       'config': ['General.transferOutput'],          'type': 'BooleanType', 'required': False},
-                  'savelogsflag'   : {'default': False,      'config': ['General.saveLogs'],                'type': 'BooleanType', 'required': False},
+                  'saveoutput'     : {'default': True,       'config': ['General.transferOutputs'],         'type': 'BooleanType', 'required': False},
+                  'savelogsflag'   : {'default': False,      'config': ['General.transferLogs'],            'type': 'BooleanType', 'required': False},
                   'faillimit'      : {'default': None,       'config': ['General.failureLimit'],            'type': 'IntType',     'required': False},
                   'inputdata'      : {'default': None,       'config': ['Data.inputDataset',
                                                                         'Data.primaryDataset'],             'type': 'StringType',  'required': False},
                   'userfiles'      : {'default': None,       'config': ['Data.userInputFile'],              'type': 'StringType',  'required': False},
-                  'dbsurl'         : {'default': 'global',   'config': ['Data.dbsUrl'],                     'type': 'StringType',  'required': False},
+                  'dbsurl'         : {'default': 'global',   'config': ['Data.inputDBS'],                   'type': 'StringType',  'required': False},
                   'ignorelocality' : {'default': False,      'config': ['Data.ignoreLocality'],             'type': 'BooleanType', 'required': False},
                   'splitalgo'      : {'default': None,       'config': ['Data.splitting'],                  'type': 'StringType',  'required': True },
                   'algoargs'       : {'default': None,       'config': ['Data.unitsPerJob'],                'type': 'IntType',     'required': True },
                   'totalunits'     : {'default': 0,          'config': ['Data.totalUnits'],                 'type': 'IntType',     'required': False},
-                  'lfn'            : {'default': None,       'config': ['Data.outlfn'],                     'type': 'StringType',  'required': False},
+                  'lfn'            : {'default': None,       'config': ['Data.outLFN'],                     'type': 'StringType',  'required': False},
                   'publication'    : {'default': True,       'config': ['Data.publication'],                'type': 'BooleanType', 'required': False},
-                  'publishdbsurl'  : {'default': 'phys03',   'config': ['Data.publishDbsUrl'],              'type': 'StringType',  'required': False},
+                  'publishdbsurl'  : {'default': 'phys03',   'config': ['Data.publishDBS'],                 'type': 'StringType',  'required': False},
                   'publishname'    : {'default': '',         'config': ['Data.publishDataName'],            'type': 'StringType',  'required': False},
                   'jobtype'        : {'default': 'Analysis', 'config': ['JobType.pluginName',
                                                                         'JobType.externalPluginFile'],      'type': 'StringType',  'required': False},
                   'adduserfiles'   : {'default': [],         'config': ['JobType.inputFiles'],              'type': 'ListType',    'required': False},
                   'addoutputfiles' : {'default': [],         'config': ['JobType.outputFiles'],             'type': 'ListType',    'required': False},
-                  'maxjobruntime'  : {'default': None,       'config': ['JobType.maxjobruntime'],           'type': 'IntType',     'required': False},
-                  'numcores'       : {'default': None,       'config': ['JobType.numcores'],                'type': 'IntType',     'required': False},
-                  'maxmemory'      : {'default': None,       'config': ['JobType.maxmemory'],               'type': 'IntType',     'required': False},
+                  'maxjobruntime'  : {'default': None,       'config': ['JobType.maxJobRuntimeMin'],        'type': 'IntType',     'required': False},
+                  'numcores'       : {'default': None,       'config': ['JobType.numCores'],                'type': 'IntType',     'required': False},
+                  'maxmemory'      : {'default': None,       'config': ['JobType.maxMemoryMB'],             'type': 'IntType',     'required': False},
                   'priority'       : {'default': None,       'config': ['JobType.priority'],                'type': 'IntType',     'required': False},
                   'nonprodsw'      : {'default': False,      'config': ['JobType.allowNonProductionCMSSW'], 'type': 'BooleanType', 'required': False},
                   'scriptexe'      : {'default': None,       'config': ['JobType.scriptExe'],               'type': 'StringType',  'required': False},
@@ -53,6 +53,15 @@ parameters_mapping = {
     'other-config-params': ['General.workArea', 'General.instance', 'Data.lumiMask', 'Data.runRange', 'JobType.psetName', 'JobType.pyCfgParams']
 }
 
+renamed_params = {'General.transferOutput' : 'General.transferOutputs',
+                  'General.saveLogs'       : 'General.transferLogs',
+                  'Data.outlfn'            : 'Data.outLFN',
+                  'Data.dbsUrl'            : 'Data.inputDBS',
+                  'Data.publishDbsUrl'     : 'Data.publishDBS',
+                  'JobType.numcores'       : 'JobType.numCores',
+                  'JobType.maxmemory'      : 'JobType.maxMemoryMB',
+                  'JobType.maxjobruntime'  : 'JobType.maxJobRuntimeMin'
+}
 
 commands_configuration = {
     'submit'       : {'requiresREST': True,  'initializeProxy' : True,  'requiresTaskOption': False, 'useCache': False},
