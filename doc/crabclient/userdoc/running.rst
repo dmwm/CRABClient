@@ -313,7 +313,7 @@ To publish your output, type:
 
 only one of -c/-u is required. If you use -c, you must have specified::
 
-    config.Data.publishDbsUrl = 'https://cmsdbsprod.cern.ch:8443/cms_dbs_ph_analysis_02_writer/servlet/DBSServlet'
+    config.Data.publishDBS = 'https://cmsdbsprod.cern.ch:8443/cms_dbs_ph_analysis_02_writer/servlet/DBSServlet'
 
 or similar in your config file. If you specify the DBS URL with -u, it will override any setting in the config file.
 
