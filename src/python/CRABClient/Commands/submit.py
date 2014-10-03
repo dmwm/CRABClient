@@ -15,7 +15,7 @@ from CRABClient import SpellChecker
 from CRABClient.client_exceptions import MissingOptionException, ConfigurationException, RESTCommunicationException
 from CRABClient.client_utilities import getJobTypes, createCache, addPlugin, server_info, colors ,getUrl
 
-from CRABClient.ClientMapping import parameters_mapping, getParamDefaultValue
+from CRABClient.ClientMapping import parameters_mapping, renamed_params, getParamDefaultValue
 from CRABClient import __version__
 
 from WMCore.Configuration import Configuration
@@ -249,29 +249,39 @@ class submit(SubCommand):
         ## Even if not all configuration sections need to be there, we anyway request
         ## the user to add all the sections in the configuration file.
         if not hasattr(self.configuration, 'General'):
-            msg = "Crab configuration problem: Section 'General' is missing"
+            msg = "CRAB configuration problem: Section 'General' is missing"
             return False, msg
         if not hasattr(self.configuration, 'JobType'):
-            msg = "Crab configuration problem: Section 'JobType' is missing"
+            msg = "CRAB configuration problem: Section 'JobType' is missing"
             return False, msg
         if not hasattr(self.configuration, 'Data'):
-            msg = "Crab configuration problem: Section 'Data' is missing"
+            msg = "CRAB configuration problem: Section 'Data' is missing"
             return False, msg
         if not hasattr(self.configuration, 'Site'):
-            msg = "Crab configuration problem: Section 'Site' is missing"
+            msg = "CRAB configuration problem: Section 'Site' is missing"
             return False, msg
+
+        ## Some parameters may have been renamed. Check here if the configuration file has an old
+        ## parameter defined, and in that case tell the user what is the new parameter name.
+        for old_param, new_param in renamed_params.iteritems():
+            if len(old_param.split('.')) != 2 or len(new_param.split('.')) != 2:
+                continue
+            old_param_section, old_param_name = old_param.split('.')
+            if hasattr(self.configuration, old_param_section) and hasattr(getattr(self.configuration, old_param_section), old_param_name):
+                msg = "CRAB configuration problem: Parameter %s has been renamed to %s; please change your configuration file accordingly" % (old_param, new_param)
+                return False, msg
 
         ## Check that Data.unitsPerjob is specified.
         if hasattr(self.configuration.Data, 'unitsPerJob'):
             try:
                 float(self.configuration.Data.unitsPerJob)
             except ValueError:
-                msg = "Crab configuration problem: Parameter Data.unitsPerJob must be a valid number, not %s" % self.configuration.Data.unitsPerJob
+                msg = "CRAB configuration problem: Parameter Data.unitsPerJob must be a valid number, not %s" % self.configuration.Data.unitsPerJob
                 return False, msg
 
         ## Check that JobType.pluginName and JobType.externalPluginFile are not both specified.
         if hasattr(self.configuration.JobType, 'pluginName') and hasattr(self.configuration.JobType, 'externalPluginFile'):
-            msg = "Crab configuration problem: Only one of JobType.pluginName or JobType.externalPluginFile parameters can be specified"
+            msg = "CRAB configuration problem: Only one of JobType.pluginName or JobType.externalPluginFile parameters can be specified"
             pluginName_default = getParamDefaultValue('JobType.pluginName')
             if pluginName_default:
                 msg += "\nIf neither JobType.pluginName nor JobType.externalPluginFile would be specified, the default JobType.pluginName = '%s' would be used" \
@@ -284,71 +294,71 @@ class submit(SubCommand):
         if external_plugin_name:
             addPlugin(external_plugin_name) # Do we need to do this here?
         if crab_plugin_name and upper(crab_plugin_name) not in crab_job_types:
-            msg = "Crab configuration problem: Parameter JobType.pluginName has an invalid value '%s'" % crab_plugin_name
+            msg = "CRAB configuration problem: Parameter JobType.pluginName has an invalid value '%s'" % crab_plugin_name
             msg += "\nAllowed values are: %s" % ", ".join(['%s' % job_type for job_type in crab_job_types.keys()])
             return False, msg
 
-        ## Check that the particular combination (Data.publication = True, General.transferOutput = False) is not specified.
-        if hasattr(self.configuration.Data, 'publication') and hasattr(self.configuration.General, 'transferOutput'):
-            if self.configuration.Data.publication and not self.configuration.General.transferOutput:
-                msg  = "Crab configuration problem: Data.publication is on, but General.transferOutput is off"
+        ## Check that the particular combination (Data.publication = True, General.transferOutputs = False) is not specified.
+        if hasattr(self.configuration.Data, 'publication') and hasattr(self.configuration.General, 'transferOutputs'):
+            if self.configuration.Data.publication and not self.configuration.General.transferOutputs:
+                msg  = "CRAB configuration problem: Data.publication is on, but General.transferOutputs is off"
                 msg += "\nPublication can not be performed if the output files are not transferred to a permanent storage"
                 return False, msg
 
-        ## Check that a storage site is specified if General.transferOutput = True or General.saveLogs = True.
+        ## Check that a storage site is specified if General.transferOutputs = True or General.transferLogs = True.
         if not hasattr(self.configuration.Site, 'storageSite'):
-            if (hasattr(self.configuration.General, 'transferOutput') and self.configuration.General.transferOutput) or \
-               (hasattr(self.configuration.General, 'saveLogs') and self.configuration.General.saveLogs):
-                msg = "Crab configuration problem: Parameter Site.storageSite is missing"
+            if (hasattr(self.configuration.General, 'transferOutputs') and self.configuration.General.transferOutputs) or \
+               (hasattr(self.configuration.General, 'transferLogs') and self.configuration.General.transferLogs):
+                msg = "CRAB configuration problem: Parameter Site.storageSite is missing"
                 return False, msg
 
         ## If an input dataset and a DBS URL are specified, check that the DBS URL is a good one.
         ## Also, if the DBS URL is 'phys0x', check that the input dataset tier is USER.
-        if hasattr(self.configuration.Data, 'dbsUrl'):
+        if hasattr(self.configuration.Data, 'inputDBS'):
             if hasattr(self.configuration.Data, 'inputDataset'):
                 msg = None
                 dbs_urls_aliases = DBSURLS['reader'].keys()
                 dbs_urls = DBSURLS['reader'].values()
-                if (self.configuration.Data.dbsUrl not in dbs_urls_aliases) and (self.configuration.Data.dbsUrl.rstrip('/') not in dbs_urls):
-                    msg  = "Crab configuration problem: Parameter Data.dbsUrl has an invalid value '%s'" % self.configuration.Data.dbsUrl
+                if (self.configuration.Data.inputDBS not in dbs_urls_aliases) and (self.configuration.Data.inputDBS.rstrip('/') not in dbs_urls):
+                    msg  = "CRAB configuration problem: Parameter Data.inputDBS has an invalid value '%s'" % self.configuration.Data.inputDBS
                     msg += "\nAllowed values are: "
                     msg += "\n                    ".join(["'%s' ('%s')" % (alias, url) for alias, url in DBSURLS['reader'].iteritems()])
                 local_dbs_urls_aliases = ['phys01', 'phys02', 'phys03']
                 local_dbs_urls = [DBSURLS['reader'][alias] for alias in local_dbs_urls_aliases if alias in DBSURLS['reader']]
-                if self.configuration.Data.dbsUrl in local_dbs_urls + local_dbs_urls_aliases:
+                if self.configuration.Data.inputDBS in local_dbs_urls + local_dbs_urls_aliases:
                     inputDataset_parts = self.configuration.Data.inputDataset.split('/')
                     inputDataset_parts.pop(0)
                     inputDataset_tier = inputDataset_parts[-1] if len(inputDataset_parts) == 3 else None
                     user_data_tiers = ['USER']
                     if inputDataset_tier not in user_data_tiers:
-                        msg  = "Crab configuration problem: A local DBS instance '%s' was specified for reading an input dataset of tier %s" \
-                               % (self.configuration.Data.dbsUrl, inputDataset_tier)
-                        msg += "\nDatasets of tier different than %s must be read from the global DBS instance; this is, set Data.dbsUrl = 'global'" \
+                        msg  = "CRAB configuration problem: A local DBS instance '%s' was specified for reading an input dataset of tier %s" \
+                               % (self.configuration.Data.inputDBS, inputDataset_tier)
+                        msg += "\nDatasets of tier different than %s must be read from the global DBS instance; this is, set Data.inputDBS = 'global'" \
                                % (", ".join(user_data_tiers[:-1]) + " or " + user_data_tiers[-1] if len(user_data_tiers) > 1 else user_data_tiers[0])
                 if msg:
-                    dbsUrl_default = getParamDefaultValue('Data.dbsUrl')
-                    if dbsUrl_default:
-                        dbsUrl_default, dbsUrl_default_alias = self.getDBSURLAndAlias(dbsUrl_default, 'reader')
-                        if dbsUrl_default and dbsUrl_default_alias:
-                            msg += "\nIf Data.dbsUrl would not be specified, the default '%s' ('%s') would be used" % (dbsUrl_default_alias, dbsUrl_default)
+                    inputDBS_default = getParamDefaultValue('Data.inputDBS')
+                    if inputDBS_default:
+                        inputDBS_default, inputDBS_default_alias = self.getDBSURLAndAlias(inputDBS_default, 'reader')
+                        if inputDBS_default and inputDBS_default_alias:
+                            msg += "\nIf Data.inputDBS would not be specified, the default '%s' ('%s') would be used" % (inputDBS_default_alias, inputDBS_default)
                     return False, msg
 
         ## If a publication DBS URL is specified and publication is ON, check that the DBS URL is a good one.
-        if hasattr(self.configuration.Data, 'publishDbsUrl'):
+        if hasattr(self.configuration.Data, 'publishDBS'):
             publication_default = getParamDefaultValue('Data.publication')
             if getattr(self.configuration.Data, 'publication', publication_default):
                 dbs_urls = DBSURLS['writer'].values()
                 dbs_urls_aliases = DBSURLS['writer'].keys()
-                if (self.configuration.Data.publishDbsUrl not in dbs_urls_aliases) and (self.configuration.Data.publishDbsUrl.rstrip('/') not in dbs_urls):
-                    msg  = "Crab configuration problem: Parameter Data.publishDbsUrl has an invalid value '%s'" % self.configuration.Data.publishDbsUrl
+                if (self.configuration.Data.publishDBS not in dbs_urls_aliases) and (self.configuration.Data.publishDBS.rstrip('/') not in dbs_urls):
+                    msg  = "CRAB configuration problem: Parameter Data.publishDBS has an invalid value '%s'" % self.configuration.Data.publishDBS
                     msg += "\nAllowed values are: "
                     msg += "\n                    ".join(["'%s' ('%s')" % (alias, url) for alias, url in DBSURLS['writer'].iteritems()])
-                    publishDbsUrl_default = getParamDefaultValue('Data.publishDbsUrl')
-                    if publishDbsUrl_default:
-                        publishDbsUrl_default, publishDbsUrl_default_alias = self.getDBSURLAndAlias(publishDbsUrl_default, 'writer')
-                        if publishDbsUrl_default and publishDbsUrl_default_alias:
-                            msg += "\nIf Data.publishDbsUrl would not be specified, the default '%s' ('%s') would be used" \
-                                 % (publishDbsUrl_default_alias, publishDbsUrl_default)
+                    publishDBS_default = getParamDefaultValue('Data.publishDBS')
+                    if publishDBS_default:
+                        publishDBS_default, publishDBS_default_alias = self.getDBSURLAndAlias(publishDBS_default, 'writer')
+                        if publishDBS_default and publishDBS_default_alias:
+                            msg += "\nIf Data.publishDBS would not be specified, the default '%s' ('%s') would be used" \
+                                 % (publishDBS_default_alias, publishDBS_default)
                     return False, msg
 
         if hasattr(self.configuration.JobType, 'scriptExe'):

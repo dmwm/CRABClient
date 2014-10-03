@@ -52,8 +52,8 @@ config.section_("Data")
 
 ## To publish produced data there are 3 parameters to set:
 #config.Data.publication = True
-#config.Data.dbsUrl = "http://cmsdbsprod.cern.ch/cms_dbs_prod_global/servlet/DBSServlet"
-#config.Data.publishDbsUrl = "https://cmsdbsprod.cern.ch:8443/cms_dbs_ph_analysis_02_writer/servlet/DBSServlet"
+#config.Data.inputDBS = "http://cmsdbsprod.cern.ch/cms_dbs_prod_global/servlet/DBSServlet"
+#config.Data.publishDBS = "https://cmsdbsprod.cern.ch:8443/cms_dbs_ph_analysis_02_writer/servlet/DBSServlet"
 
 ## User options
 config.section_("User")
