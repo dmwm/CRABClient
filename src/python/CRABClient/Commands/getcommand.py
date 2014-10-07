@@ -74,10 +74,9 @@ class getcommand(SubCommand):
                 returndict = {'xrootd': xrootlfn}
             elif self.dump:
                 jobid_pfn_lfn_list = map(lambda x: (x['jobid'], x['pfn'], x['lfn']), workflow)
-                #jobid_pfn_lfn_list = [(int(lfn.rsplit('_',1)[1].split('.')[0]), pfn, lfn) for pfn, lfn in pfn_lfn_list]
                 jobid_pfn_lfn_list.sort()
                 self.logger.info('\n'.join(["=== Files from job %s\nPFN: %s\nLFN: %s" % (jobid, pfn, lfn) for jobid, pfn, lfn in jobid_pfn_lfn_list]))
-                returndict = {'pfn': [pfn for pfn, _ in pfn_lfn_list], 'lfn': [lfn for _, lfn in pfn_lfn_list]}
+                returndict = {'pfn': [pfn for _, pfn, _ in jobid_pfn_lfn_list], 'lfn': [lfn for _, _, lfn in jobid_pfn_lfn_list]}
             else:
                 self.logger.info("Retrieving %s files" % totalfiles )
                 copyoutput = remote_copy( self.logger, arglist )
