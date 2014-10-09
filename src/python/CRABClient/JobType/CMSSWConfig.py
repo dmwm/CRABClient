@@ -31,27 +31,30 @@ class CMSSWConfig(object):
 
         if userConfig:
             cfgBaseName = os.path.basename(userConfig).replace(".py", "")
-            cfgDirName = os.path.dirname(userConfig)
+            cfgDirName = os.path.dirname(os.path.abspath(userConfig))
 
-            if not os.path.isfile( userConfig ):
+            if not os.path.isfile(userConfig):
                 msg = "Cannot find file %s in %s" % (userConfig, os.getcwd())
-                raise ConfigException( msg )
+                raise ConfigException(msg)
 
             self.logger.debug("Importing CMSSW config %s" % userConfig)
-            modPath = imp.find_module(cfgBaseName, [cfgDirName])
-
             pyCfgParams = getattr(self.config.JobType, 'pyCfgParams', [])
             originalArgv = sys.argv
             sys.argv = [userConfig]
             if pyCfgParams:
                 sys.argv.extend(pyCfgParams)
                 self.logger.debug("Extended parameters are %s" % pyCfgParams)
-            cacheLine = (tuple(sys.path), tuple(modPath[1]), tuple(sys.argv))
+            file, pathname, description = imp.find_module(cfgBaseName, [cfgDirName])
+            cacheLine = (tuple(sys.path), tuple(pathname), tuple(sys.argv))
             if cacheLine in configurationCache:
                 self.fullConfig = configurationCache[cacheLine]
+                file.close()
             else:
-                self.fullConfig = imp.load_module(cfgBaseName, modPath[0],
-                                                    modPath[1],  modPath[2])
+                sys.path.append(os.getcwd())
+                try:
+                    self.fullConfig = imp.load_module(cfgBaseName, file, pathname, description)
+                finally:
+                    file.close()
                 configurationCache[cacheLine] = self.fullConfig
             sys.argv = originalArgv
 
