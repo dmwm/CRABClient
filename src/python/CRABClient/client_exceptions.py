@@ -62,9 +62,9 @@ class EnvironmentException(ClientException):
     """
     exitcode = 3011
 
-class HyperNewsNameException(ClientException):
+class UsernameException(ClientException):
     """
-    Raise when there is a problem with the CMS HyperNews username
+    Raise when there is a problem with the username
     """
     exitcode = 3012
 

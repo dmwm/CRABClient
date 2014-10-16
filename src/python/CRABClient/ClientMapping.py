@@ -64,21 +64,21 @@ renamed_params = {'General.transferOutput' : 'General.transferOutputs',
 }
 
 commands_configuration = {
-    'submit'       : {'requiresREST': True,  'initializeProxy' : True,  'requiresTaskOption': False, 'useCache': False},
-    'checkHNname'  : {'requiresREST': False, 'initializeProxy' : True,  'requiresTaskOption': False, 'useCache': False},
-    'checkwrite'   : {'requiresREST': False, 'initializeProxy' : True,  'requiresTaskOption': False, 'useCache': False},
-    'getlog'       : {'requiresREST': True,  'initializeProxy' : True,  'requiresTaskOption': True,  'useCache': True },
-    'getoutput'    : {'requiresREST': True,  'initializeProxy' : True,  'requiresTaskOption': True,  'useCache': True },
-    'kill'         : {'requiresREST': True,  'initializeProxy' : True,  'requiresTaskOption': True,  'useCache': False},
-    'purge'        : {'requiresREST': True,  'initializeProxy' : True,  'requiresTaskOption': True,  'useCache': False},
-    'remake'       : {'requiresREST': True,  'initializeProxy' : True,  'requiresTaskOption': False, 'useCache': False},
-    'remote_copy'  : {'requiresREST': True,  'initializeProxy' : False, 'requiresTaskOption': True,  'useCache': True },
-    'report'       : {'requiresREST': True,  'initializeProxy' : True,  'requiresTaskOption': True,  'useCache': True },
-    'request_type' : {'requiresREST': True,  'initializeProxy' : True,  'requiresTaskOption': True,  'useCache': True },
-    'resubmit'     : {'requiresREST': True,  'initializeProxy' : True,  'requiresTaskOption': True,  'useCache': True },
-    'status'       : {'requiresREST': True,  'initializeProxy' : True,  'requiresTaskOption': True,  'useCache': True },
-    'uploadlog'    : {'requiresREST': True,  'initializeProxy' : True,  'requiresTaskOption': False, 'useCache': False},
-    'tasks'        : {'requiresREST': True,  'initializeProxy' : True,  'requiresTaskOption': False, 'useCache': False}
+    'submit'        : {'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': False, 'useCache': False},
+    'checkusername' : {'requiresREST': False, 'initializeProxy': True,  'requiresTaskOption': False, 'useCache': False},
+    'checkwrite'    : {'requiresREST': False, 'initializeProxy': True,  'requiresTaskOption': False, 'useCache': False},
+    'getlog'        : {'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True },
+    'getoutput'     : {'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True },
+    'kill'          : {'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': False},
+    'purge'         : {'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': False},
+    'remake'        : {'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': False, 'useCache': False},
+    'remote_copy'   : {'requiresREST': True,  'initializeProxy': False, 'requiresTaskOption': True,  'useCache': True },
+    'report'        : {'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True },
+    'request_type'  : {'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True },
+    'resubmit'      : {'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True },
+    'status'        : {'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True },
+    'uploadlog'     : {'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': False, 'useCache': False},
+    'tasks'         : {'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': False, 'useCache': False}
 }
 
 
