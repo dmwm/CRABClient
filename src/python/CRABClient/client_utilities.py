@@ -288,9 +288,8 @@ def getRequestName(requestName = None):
     if requestName is None or not isinstance(requestName,str) or len(requestName) == 0:
         return prefix + postfix
     elif '/' in requestName:
-        msg = '%sError %s: The "/" character is not accepted in the requestName parameter.\
-         If your intention was to specity the location of your task, please use the config.General.workArea parameter' \
-              % (colors.RED, colors.NORMAL)
+        msg  = "%sError%s: The '/' character is not accepted in the requestName parameter." % (colors.RED, colors.NORMAL)
+        msg += " If your intention was to specify the location of your task, please use the General.workArea parameter."
         raise ConfigurationException(msg)
     else:
         return prefix + requestName # + '_' + postfix
