@@ -20,7 +20,7 @@ import subprocess
 from string import upper
 from optparse import OptionValueError
 
-from CRABClient.client_exceptions import TaskNotFoundException, CachefileNotFoundException, ConfigurationException, ConfigException, HyperNewsNameException
+from CRABClient.client_exceptions import TaskNotFoundException, CachefileNotFoundException, ConfigurationException, ConfigException, UsernameException
 
 from WMCore.Services.UserFileCache.UserFileCache import UserFileCache
 import CRABClient.Emulator
@@ -394,7 +394,7 @@ def getUserName(voRole, voGroup, logger):
     return proxy.getUserName()
 
 
-def getHyperNewsName():
+def getUsername():
     ## Direct stderr from voms-proxy-* to dev/null to avoid stupid Java messages :-(
     status, proxy_file_name = commands.getstatusoutput('eval `scram unsetenv -sh`; voms-proxy-info -path 2>/dev/null')
     status, proxy_time_left = commands.getstatusoutput('eval `scram unsetenv -sh`; voms-proxy-info -timeleft 2>/dev/null')
@@ -403,11 +403,11 @@ def getHyperNewsName():
     cmd += " | tr ':,' '\n'"
     cmd += " | grep -A1 login"
     cmd += " | tail -1"
-    status, hn_username = commands.getstatusoutput(cmd)
-    hn_username = string.strip(hn_username).replace('"','')
-    if not hn_username:
-        raise HyperNewsNameException("Unable to retrieve CMS HyperNews username from SiteDB")
-    return hn_username
+    status, username = commands.getstatusoutput(cmd)
+    username = string.strip(username).replace('"','')
+    if not username:
+        raise UsernameException("Unable to retrieve username from SiteDB")
+    return username
 
 
 def validServerURL(option, opt_str, value, parser):
