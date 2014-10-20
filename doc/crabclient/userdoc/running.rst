@@ -62,7 +62,7 @@ To perform the submission you can use the **submit** command of CRABClient:
        -h, --help            show this help message and exit
        -c FILE, --config=FILE
                              CRAB configuration file
-       -p USERDN, --skip-proxy=USERDN
+       --proxy=PROXYFILE
                              Skip Grid proxy creation and myproxy delegation
        -s http://HOSTNAME:PORT, --server=http://HOSTNAME:PORT
                              Endpoint server url to use

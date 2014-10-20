@@ -76,20 +76,22 @@ class CredentialInteractions(object):
 
     def getUserDN(self):
         proxy = self.proxy()
-        return proxy.getSubjectFromCert(self.certLocation)
+        userdn = proxy.getSubjectFromCert(self.certLocation)
+        return userdn
 
 
-    def getHyperNewsName(self):
+    def getUsernameFromSiteDB(self):
         """
         Return a the client hypernews name
         """
         proxy = self.proxy()
         userdn = proxy.getSubjectFromCert(self.certLocation)
         sitedb = SiteDBJSON({"key": proxy.getProxyFilename(), "cert": proxy.getProxyFilename()})
-        return sitedb.dnUserName(userdn)
+        username = sitedb.dnUserName(userdn)
+        return username
 
 
-    def getUserName(self):
+    def getUsername(self):
         """
         Return user name form DN
         """
