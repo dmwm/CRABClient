@@ -35,7 +35,7 @@ class submit(SubCommand):
     shortnames = ['sub']
 
 
-    def __init__(self, logger, cmdargs = []):
+    def __init__(self, logger, cmdargs = None):
         SubCommand.__init__(self, logger, cmdargs, disable_interspersed_args = True)
 
 

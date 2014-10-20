@@ -20,7 +20,7 @@ import subprocess
 from string import upper
 from optparse import OptionValueError
 
-from CRABClient.client_exceptions import TaskNotFoundException, CachefileNotFoundException, ConfigurationException, ConfigException, UsernameException
+from CRABClient.client_exceptions import TaskNotFoundException, CachefileNotFoundException, ConfigurationException, ConfigException, UsernameException, ProxyException
 
 from WMCore.Services.UserFileCache.UserFileCache import UserFileCache
 import CRABClient.Emulator
@@ -79,7 +79,6 @@ def getLoggers(loglevel):
     CRAB3.all -> screen + file
     CRAB3     -> file
     '''
-
     # Set up the logger and exception handling
     logger = logging.getLogger('CRAB3.all')
     tblogger = logging.getLogger('CRAB3')
@@ -117,9 +116,10 @@ def getUrl(instance='prod', resource='workflow'):
             return BASEURL + instance + '/' + resource
         elif instance == 'private':
             return BASEURL + 'dev' + '/' + resource
-        raise ConfigurationException('Error: only %s instances can be used.' %str(SERVICE_INSTANCES.keys()))
+        raise ConfigurationException('Error: only the following instances can be used: %s' %str(SERVICE_INSTANCES.keys()))
 
-def uploadlogfile(logger , proxyfilename , logfilename = None , logpath = None , instance = 'prod' , serverurl = None):
+
+def uploadlogfile(logger, proxyfilename, logfilename = None, logpath = None, instance = 'prod', serverurl = None):
 
     doupload = True
 
@@ -138,22 +138,21 @@ def uploadlogfile(logger , proxyfilename , logfilename = None , logpath = None ,
         logger.debug('Failed to get the user env\nException message: %s' % (se))
 
     if logpath != None:
-        if os.path.exists(logpath): pass
-        else:
+        if not os.path.exists(logpath):
             doupload = False
             logger.debug('%sError%s: %s does not exist' %(colors.RED, colors.NORMAL, logpath))
     else:
         if os.path.exists(str(os.getcwd()) + '/crab.log'):
             logpath = str(os.getcwd())+'/crab.log'
         else:
-            logger.debug('%sError%s: Failed to find /crab.log in current director, %s' % (colors.RED, colors.NORMAL, str(os.getcwd())))
+            logger.debug('%sError%s: Failed to find crab.log in current directory %s' % (colors.RED, colors.NORMAL, str(os.getcwd())))
 
     if serverurl == None and instance in SERVICE_INSTANCES.keys():
         serverurl = SERVICE_INSTANCES[instance]
     elif not instance in SERVICE_INSTANCES.keys() and serverurl != None:
         instance = 'private'
     elif not instance in SERVICE_INSTANCES.keys() and serverurl == None:
-        logger.debug('%sError%s: serverurl is not None' %(colors.RED, colors.NORMAL, logpath))
+        logger.debug('%sError%s: serverurl is None' %(colors.RED, colors.NORMAL))
         doupload = False
 
     if proxyfilename == None:
@@ -162,11 +161,11 @@ def uploadlogfile(logger , proxyfilename , logfilename = None , logpath = None ,
 
     baseurl = getUrl(instance = instance , resource = 'info')
     if doupload:
-        cacheurl=server_info('backendurls', serverurl, proxyfilename, baseurl)
-        cacheurl=cacheurl['cacheSSL']
-        cacheurldict={'endpoint' : cacheurl}
+        cacheurl = server_info('backendurls', serverurl, proxyfilename, baseurl)
+        cacheurl = cacheurl['cacheSSL']
+        cacheurldict = {'endpoint': cacheurl}
 
-        ufc=UserFileCache(cacheurldict)
+        ufc = UserFileCache(cacheurldict)
         logger.debug("cacheURL: %s\nLog file name: %s" % (cacheurl, logfilename))
         logger.info("Uploading log file")
         ufc.uploadLog(logpath, logfilename)
@@ -285,7 +284,7 @@ def getRequestName(requestName = None):
     prefix  = 'crab_'
     postfix = str(datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
 
-    if requestName is None or not isinstance(requestName,str) or len(requestName) == 0:
+    if requestName is None or not isinstance(requestName, str) or len(requestName) == 0:
         return prefix + postfix
     elif '/' in requestName:
         msg  = "%sError%s: The '/' character is not accepted in the requestName parameter." % (colors.RED, colors.NORMAL)
@@ -356,57 +355,158 @@ def createCache(requestarea, host, port, uniquerequestname, voRole, voGroup, ins
     touchfile.close()
 
 
-def getWorkArea( task ):
+def getWorkArea(task):
     requestarea = ''
     requestname = ''
-    if os.path.isabs( task ):
+    if os.path.isabs(task):
         requestarea = task
         requestname = os.path.split(os.path.normpath(requestarea))[1]
     else:
-        requestarea = os.path.abspath( task )
+        requestarea = os.path.abspath(task)
         requestname = task
     return requestarea, requestname
 
 
-def loadCache( task, logger ):
-    requestarea, requestname = getWorkArea( task )
+def loadCache(task, logger):
+    requestarea, requestname = getWorkArea(task)
     cachename = os.path.join(requestarea, '.requestcache')
     taskName = task.split('/')[-1] #Contains only the taskname without the path
-
     #Check if the task directory exists
-    if not os.path.isdir( requestarea ):
+    if not os.path.isdir(requestarea):
         msg = 'Working directory for task %s not found ' % taskName
-        raise TaskNotFoundException( msg )
+        raise TaskNotFoundException(msg)
     #If the .requestcache file exists open it!
     if os.path.isfile(cachename):
-        loadfile = open( cachename, 'r' )
+        loadfile = open(cachename, 'r')
     else:
         msg = 'Cannot find .requestcache file inside the working directory for task %s' % taskName
-        raise CachefileNotFoundException( msg )
+        raise CachefileNotFoundException(msg)
 
-    logfile = changeFileLogger( logger, workingpath = requestarea )
+    logfile = changeFileLogger(logger, workingpath = requestarea)
     return cPickle.load(loadfile), logfile
 
 
-def getUserName(voRole, voGroup, logger):
+def getUsername(voRole, voGroup, logger):
     _, _, proxy = initProxy(voRole, voGroup, logger)
-    return proxy.getUserName()
+    return proxy.getUsername()
 
 
-def getUsername():
-    ## Direct stderr from voms-proxy-* to dev/null to avoid stupid Java messages :-(
-    status, proxy_file_name = commands.getstatusoutput('eval `scram unsetenv -sh`; voms-proxy-info -path 2>/dev/null')
-    status, proxy_time_left = commands.getstatusoutput('eval `scram unsetenv -sh`; voms-proxy-info -timeleft 2>/dev/null')
+def getUserDN():
+    """
+    Retrieve the user DN from the proxy.
+    """
+    scram_cmd = 'which scram >/dev/null 2>&1 && eval `scram unsetenv -sh`'
+    ## Check if there is a proxy.
+    status, proxy_info = commands.getstatusoutput(scram_cmd+'; voms-proxy-info')
+    if status:
+        raise ProxyException(proxy_info)
+    ## Retrieve DN from proxy.
+    status, userdn = commands.getstatusoutput(scram_cmd+'; voms-proxy-info -identity 2>/dev/null')
+    if status or not userdn:
+        msg  = "Unable to retrieve DN from proxy:"
+        msg += " Command 'voms-proxy-info -identity' returned status %s and output '%s'." % (status, userdn)
+        raise ProxyException(msg)
+    return userdn
+
+
+def getUserDN_wrapped(logger):
+    """
+    Wrapper function for getUserDN,
+    catching exceptions and printing messages.
+    """
+    userdn = None
+    logger.info('Retrieving DN from proxy...')
+    try:
+        userdn = getUserDN()
+    except ProxyException, ex:
+        msg = "%sError%s: %s" % (colors.RED, colors.NORMAL, ex)
+        logger.error(msg)
+    except:
+        msg = "%Error%s: Unable to retrieve DN from proxy." % (colors.RED, colors.NORMAL)
+        logger.error(msg)
+    else:
+        logger.info('DN is: %s' % userdn)
+    return userdn
+
+
+def getUsernameFromSiteDB():
+    """
+    Retrieve username from SiteDB by doing a query to
+    https://cmsweb.cern.ch/sitedb/data/prod/whoami
+    using the users proxy.
+    """
+    scram_cmd = 'which scram >/dev/null 2>&1 && eval `scram unsetenv -sh`'
+    ## Check if there is a proxy.
+    status, proxy_info = commands.getstatusoutput(scram_cmd+'; voms-proxy-info')
+    if status:
+        raise ProxyException(proxy_info)
+    ## Check if proxy is valid.
+    status, proxy_time_left = commands.getstatusoutput(scram_cmd+'; voms-proxy-info -timeleft')
+    if status or not proxy_time_left:
+        msg  = "Aborting the attempt to retrieve username from SiteDB:"
+        msg += " Command 'voms-proxy-info -timeleft' returned status %s and output '%s'." % (status, proxy_time_left)
+        raise ProxyException(msg)
+    if int(proxy_time_left) < 60:
+        msg  = "Aborting the attempt to retrieve username from SiteDB:"
+        msg += " Proxy not valid or valid for less than 60 seconds."
+        raise ProxyException(msg)
+    ## Retrieve proxy file location.
+    ## (Redirect stderr from voms-proxy-* to dev/null to avoid stupid Java messages)
+    status, proxy_file_name = commands.getstatusoutput(scram_cmd+'; voms-proxy-info -path 2>/dev/null')
+    if status or not proxy_file_name:
+        msg  = "Aborting the attempt to retrieve username from SiteDB:"
+        msg += " Command 'voms-proxy-info -path' returned status %s and output '%s'." % (status, proxy_file_name)
+        raise ProxyException(msg)
+    ## Path to certificates.
     capath = os.environ['X509_CERT_DIR'] if 'X509_CERT_DIR' in os.environ else '/etc/grid-security/certificates'
+    ## Prepare command to query username from SiteDB.
     cmd  = "curl -s --capath %s --cert %s --key %s 'https://cmsweb.cern.ch/sitedb/data/prod/whoami'" % (capath, proxy_file_name, proxy_file_name)
     cmd += " | tr ':,' '\n'"
     cmd += " | grep -A1 login"
     cmd += " | tail -1"
+    ## Execute the command.
     status, username = commands.getstatusoutput(cmd)
+    if status or not username:
+        msg  = "Unable to retrieve username from SiteDB:" ## don't change this message, or change also checkusername.py
+        msg += " Command '%s' returned status %s and output '%s'." % (cmd.replace('\n', '\\n'), status, username)
+        raise UsernameException(msg)
     username = string.strip(username).replace('"','')
-    if not username:
-        raise UsernameException("Unable to retrieve username from SiteDB")
     return username
+
+
+def getUsernameFromSiteDB_wrapped(logger):
+    """
+    Wrapper function for getUsernameFromSiteDB,
+    catching exceptions and printing messages.
+    """
+    username = None
+    logger.info('Retrieving username from SiteDB...')
+    infomsg  = "\n%sNote%s: Make sure you have the correct certificate mapped in SiteDB" % (colors.BOLD, colors.NORMAL)
+    infomsg += " (you can check what is the certificate you currently have mapped in SiteDB"
+    infomsg += " by searching for your name in https://cmsweb.cern.ch/sitedb/prod/people)."
+    infomsg += " For instructions on how to map a certificate in SiteDB, see https://twiki.cern.ch/twiki/bin/viewauth/CMS/SiteDBForCRAB."
+    try:
+        username = getUsernameFromSiteDB()
+    except ProxyException, ex:
+        msg = "%sError%s: %s" % (colors.RED, colors.NORMAL, ex)
+        logger.error(msg)
+    except UsernameException, ex:
+        msg = "%sError%s: %s" % (colors.RED, colors.NORMAL, ex)
+        msg += infomsg
+        logger.error(msg)
+    except:
+        msg = "%sError%s: Unable to retrieve username from SiteDB." % (colors.RED, colors.NORMAL)
+        msg += infomsg
+        logger.error(msg)
+    else:
+        logger.info("Username is: %s" % username)
+    return username
+
+
+def getUserDNandUsernameFromSiteDB(logger):
+    userdn = getUserDN_wrapped(logger)
+    username = getUsernameFromSiteDB_wrapped(logger) if userdn else None
+    return {'DN': userdn, 'username': username}
 
 
 def validServerURL(option, opt_str, value, parser):
@@ -443,18 +543,18 @@ def validURL(serverurl, attrtohave = ['scheme', 'netloc', 'hostname'], attrtonot
 
 def validateJobids(jobids):
     #check the format of jobids
-    if re.match('^\d+((?!(-\d+-))(\,|\-)\d+)*$',jobids):
-        jobid=[]
-        element=jobids.split(',')
+    if re.match('^\d+((?!(-\d+-))(\,|\-)\d+)*$', jobids):
+        jobid = []
+        element = jobids.split(',')
         for number in element:
             if '-' in number:
-                sub=number.split('-')
-                jobid.extend(range(int(sub[0]),int(sub[1])+1))
+                sub = number.split('-')
+                jobid.extend(range(int(sub[0]), int(sub[1])+1))
             else:
                 jobid.append(int(number))
         #removing duplicate and sort the list
         jobid = list(set(jobid))
-        return [('jobids',job) for job in jobid]
+        return [('jobids', job) for job in jobid]
     else:
         raise ConfigurationException("The command line option jobids should be a comma separated list of integers or range, no whitespace")
 
@@ -463,7 +563,6 @@ def validateJobids(jobids):
 #Since server_info class needs SubCommand, and SubCommand needs server_info for
 #delegating the proxy then we are screwed
 #If anyone has a better solution please go on, otherwise live with that one :) :)
-from CRABClient.client_exceptions import RESTCommunicationException
 from CRABClient import __version__
 
 def server_info(subresource, server, proxyfilename, baseurl, **kwargs):
@@ -471,7 +570,7 @@ def server_info(subresource, server, proxyfilename, baseurl, **kwargs):
     Get relevant information about the server
     """
     server = CRABClient.Emulator.getEmulator('rest')(server, proxyfilename, proxyfilename, version=__version__)
-    requestdict= {'subresource' : subresource}
+    requestdict = {'subresource': subresource}
     requestdict.update(**kwargs)
     dictresult, status, reason = server.get(baseurl, requestdict)
 
