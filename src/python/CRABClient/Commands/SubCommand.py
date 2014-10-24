@@ -164,7 +164,7 @@ class SubCommand(ConfigCommand):
         raise ConfigurationException('Error: only %s instances can be used.' %str(SERVICE_INSTANCES.keys()))
 
 
-    def __init__(self, logger, cmdargs = [], disable_interspersed_args = False):
+    def __init__(self, logger, cmdargs = None, disable_interspersed_args = False):
         """
         Initialize common client parameters
         """
@@ -186,7 +186,8 @@ class SubCommand(ConfigCommand):
             self.parser.disable_interspersed_args()
         self.setSuperOptions()
         ## Parse the command line parameters.
-        (self.options, self.args) = self.parser.parse_args( cmdargs )
+        cmdargs = cmdargs or []
+        (self.options, self.args) = self.parser.parse_args(cmdargs)
 
         ## Validate the command line parameters before initializing the proxy.
         self.validateOptions()
@@ -203,12 +204,12 @@ class SubCommand(ConfigCommand):
         self.proxy = CredentialInteractions('', '', self.voRole, self.voGroup, self.logger, '')
 
         ## Create a new proxy (if there isn't a valid one already) with current VO role/group.
-        ## The VO role/group are not relevant for the proxy. We only do want to check that the
+        ## The VO role/group are not relevant for the proxy. We only want to check that the
         ## user doesn't expect the proxy to have different VO role/group than those specified
-        ## in the configuration file, but this check is than later in handleProxy() after we
+        ## in the configuration file, but this check is done later in handleProxy() after we
         ## load the configuration file.
         self.proxy_created = False
-        if not self.options.skipProxy and self.cmdconf['initializeProxy']:
+        if not self.options.proxy and self.cmdconf['initializeProxy']:
             self.proxy_created = self.proxy.createNewVomsProxySimple(time_left_threshold = 720)
 
         ## If we get an input configuration file:
@@ -269,6 +270,7 @@ class SubCommand(ConfigCommand):
         if self.cmdconf['requiresREST']:
             self.logger.debug("Command url %s" %(self.uri))
 
+
     def serverInstance(self):
         """
         Deriving the correct instance to use and the server url. Client is allowed to propagate the instance name and corresponding url
@@ -281,7 +283,7 @@ class SubCommand(ConfigCommand):
         available_instances = ', '.join(SERVICE_INSTANCES)
 
         if hasattr(self.options, 'instance') and not self.options.instance is None:
-            if hasattr(self, 'configuration') and hasattr(self.configuration.General,'instance') and not self.configuration.General.instance is None:
+            if hasattr(self, 'configuration') and hasattr(self.configuration.General, 'instance') and not self.configuration.General.instance is None:
                 self.logger.info('%sWarning%s: Instance value in configuration file is overwritten by the option command, %s intance will be use ' % (colors.RED, colors.NORMAL, self.options.instance))
 
             if self.options.instance in SERVICE_INSTANCES.keys():
@@ -317,7 +319,7 @@ class SubCommand(ConfigCommand):
         """ 
         Init the user proxy, and delegate it if necessary.
         """
-        if not self.options.skipProxy:
+        if not self.options.proxy:
             if self.cmdconf['initializeProxy']:
                 self.proxy.setVOGroupVORole(self.voGroup, self.voRole)
                 self.proxy.setMyProxyAccount(self.serverurl)
@@ -333,8 +335,8 @@ class SubCommand(ConfigCommand):
                         self.logger.debug("Registering user credentials for server %s" % serverdn)
                         self.proxy.createNewMyProxy(timeleftthreshold = 60 * 60 * 24 * RENEW_MYPROXY_THRESHOLD, nokey = True)
         else:
-            self.proxyfilename = self.options.skipProxy
-            os.environ['X509_USER_PROXY'] = self.options.skipProxy
+            self.proxyfilename = self.options.proxy
+            os.environ['X509_USER_PROXY'] = self.options.proxy
             self.logger.debug('Skipping proxy creation')
 
     def loadLocalCache(self, serverurl = None):
@@ -417,25 +419,24 @@ class SubCommand(ConfigCommand):
         except NotImplementedError:
             pass
 
-        self.parser.add_option(  "--skip-proxy",
-                                 dest = "skipProxy",
-                                 default = False,
-                                 help = "Skip Grid proxy creation and myproxy delegation.",
-                                 metavar = "USERDN" )
+        self.parser.add_option("--proxy",
+                               dest = "proxy",
+                               default = False,
+                               help = "Use the given proxy. Skip Grid proxy creation and myproxy delegation.")
 
         if self.cmdconf['requiresTaskOption']:
-            self.parser.add_option( "-t", "--task",
-                                     dest = "task",
-                                     default = None,
-                                     help = "Same as -c/-continue." )
+            self.parser.add_option("-t", "--task",
+                                   dest = "task",
+                                   default = None,
+                                   help = "Same as -c/-continue.")
 
-        self.parser.add_option( "--voRole",
-                                dest = "voRole",
-                                default = None )
+        self.parser.add_option("--voRole",
+                               dest = "voRole",
+                               default = None)
 
-        self.parser.add_option( "--voGroup",
-                                dest = "voGroup",
-                                default = None )
+        self.parser.add_option("--voGroup",
+                               dest = "voGroup",
+                               default = None)
         if self.cmdconf['requiresREST']:
 
             self.parser.add_option("--instance",

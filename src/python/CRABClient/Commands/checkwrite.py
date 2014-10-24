@@ -3,31 +3,46 @@ from os import path, remove
 import datetime
 
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.client_utilities import colors
+from CRABClient.client_utilities import colors, getUserDNandUsernameFromSiteDB
 from WMCore.Services.PhEDEx.PhEDEx import PhEDEx
 from CRABClient.client_exceptions import MissingOptionException, ConfigurationException
 from httplib import HTTPException
 
+
 class checkwrite(SubCommand):
     """
-      let user to test if he/she have permission to write on specify site
+    Let user to test if he/she have permission to write on specify site
     """
     name = 'checkwrite'
     shortnames = ['chk']
 
+    def __init__(self, logger, cmdargs = None):
+        SubCommand.__init__(self, logger, cmdargs)
+        self.phedex = PhEDEx({"cert": self.proxyfilename, "key": self.proxyfilename, "logger": self.logger})
+        self.lfnsaddprefix = None
+        self.filename = None
+
 
     def __call__(self):
-
-        self.username = self.proxy.getHyperNewsName()
 
         if hasattr(self.options, 'userlfn') and self.options.userlfn != None:
             self.lfnsaddprefix = self.options.userlfn
         else:
-            self.lfnsaddprefix = '/store/user/' + self.username
+            ## If the user didn't provide an LFN path where to check the write permission,
+            ## assume he/she wants to check in /store/user/<username>. Retrieve his/her
+            ## username from SiteDB.
+            self.logger.info('Will check write permission in the default location /store/user/<username>')
+            username = getUserDNandUsernameFromSiteDB(self.logger).get('username')
+            if username:
+                self.lfnsaddprefix = '/store/user/' + username
+            else:
+                return {'status': 'FAILED'}
 
-        self.phedex = PhEDEx({"cert": self.proxyfilename, "key": self.proxyfilename})
+        self.logger.info('Will check write permission in %s on site %s' % (self.lfnsaddprefix, self.options.sitename))
 
-        retry = 0; stop = False; use_new_file = True
+        retry = 0
+        stop = False
+        use_new_file = True
         while not stop:
             if use_new_file:
                 self.filename = 'crab3checkwrite.' + str(retry) + '.tmp'
@@ -43,25 +58,25 @@ class checkwrite(SubCommand):
                     self.logger.info('%sWarning%s: Failed to delete file %s from site %s' % (colors.RED, colors.NORMAL, pfn, self.options.sitename))
                 else:
                     self.logger.info('Successfully deleted file %s from site %s' % (pfn, self.options.sitename))
-                self.logger.info('%sSuccess%s: Able to write to %s on site %s' % (colors.GREEN, colors.NORMAL, self.lfnsaddprefix, self.options.sitename))
-
-                returndict = {'status' : 'SUCCESS'}
-
+                self.logger.info('%sSuccess%s: Able to write in %s on site %s' % (colors.GREEN, colors.NORMAL, self.lfnsaddprefix, self.options.sitename))
+                returndict = {'status': 'SUCCESS'}
                 stop = True
             else:
                 if 'Permission denied' in cperr or 'mkdir: cannot create directory' in cperr:
-                    self.logger.info('%sError%s: Unable to write to %s on site %s' % (colors.RED, colors.NORMAL, self.lfnsaddprefix, self.options.sitename))
-                    self.logger.info('       You may want to contact the site administrators sending them the \'crab checkwrite\' output as printed above')
-                    returndict = {'status' : 'FAILED'}
+                    msg  = '%sError%s: Unable to write in %s on site %s' % (colors.RED, colors.NORMAL, self.lfnsaddprefix, self.options.sitename)
+                    msg += '\n       You may want to contact the site administrators sending them the \'crab checkwrite\' output as printed above.'
+                    self.logger.info(msg)
+                    returndict = {'status': 'FAILED'}
                     stop = True
                 elif 'timeout' in cpout or 'timeout' in cperr:
-                    self.logger.info('Connection time out')
-                    self.logger.info('Unable to check write permission to %s on site %s' % (self.lfnsaddprefix, self.options.sitename))
-                    self.logger.info('Please try again later or contact the site administrators sending them the \'crab checkwrite\' output as printed above')
-                    returndict = {'status' : 'FAILED' }
+                    self.logger.info('Connection time out.')
+                    msg  = 'Unable to check write permission in %s on site %s' % (self.lfnsaddprefix, self.options.sitename)
+                    msg += '\nPlease try again later or contact the site administrators sending them the \'crab checkwrite\' output as printed above.'
+                    self.logger.info(msg)
+                    returndict = {'status': 'FAILED'}
                     stop = True
                 elif 'exist' in cpout or 'exist' in cperr and retry == 0:
-                    self.logger.info('Error copying file %s to %s on site %s; it may be that file already exists' % (self.filename, self.lfnsaddprefix, self.options.sitename))
+                    self.logger.info('Error copying file %s to %s on site %s; it may be that file already exists.' % (self.filename, self.lfnsaddprefix, self.options.sitename))
                     self.logger.info('Attempting to delete file %s from site %s' % (pfn, self.options.sitename))
                     delexitcode = self.lcgdelete(pfn)
                     if delexitcode:
@@ -72,13 +87,16 @@ class checkwrite(SubCommand):
                         use_new_file = False
                     retry += 1
                 else:
-                    self.logger.info('Unable to check write permission to %s on site %s' % (self.lfnsaddprefix, self.options.sitename))
-                    self.logger.info('Please try again later or contact the site administrators sending them the \'crab checkwrite\' output as printed above')
+                    msg  = 'Unable to check write permission in %s on site %s' % (self.lfnsaddprefix, self.options.sitename)
+                    msg += '\nPlease try again later or contact the site administrators sending them the \'crab checkwrite\' output as printed above.'
+                    self.logger.info(msg)
                     returndict = {'status' : 'FAILED'}
                     stop = True
             if stop or use_new_file:
                 self.removeFile()
-        self.logger.info('%sNOTE%s: you cannot write to a site if you did not ask permission' % (colors.BOLD, colors.NORMAL))
+
+        self.logger.info('%sNote%s: You cannot write to a site if you did not ask permission.' % (colors.BOLD, colors.NORMAL))
+
         return returndict
 
 
@@ -86,8 +104,8 @@ class checkwrite(SubCommand):
 
         abspath = path.abspath(self.filename)
         try:
-            with open(abspath, 'w') as file:
-                file.write('This is a dummy file created by the crab checkwrite command on %s' % str(datetime.datetime.now().strftime('%d/%m/%Y at %H:%M:%S')))
+            with open(abspath, 'w') as fd:
+                fd.write('This is a dummy file created by the crab checkwrite command on %s' % str(datetime.datetime.now().strftime('%d/%m/%Y at %H:%M:%S')))
         except IOError:
             self.logger.info('%sError%s: Failed to create file %s' % (colors.RED, colors.NORMAL, self.filename))
             raise Exception
@@ -98,9 +116,8 @@ class checkwrite(SubCommand):
         abspath = path.abspath(self.filename)
         try:
             remove(abspath)
-        except Exception:
+        except:
             self.logger.info('%sWarning%s: Failed to delete file %s' % (colors.RED, colors.NORMAL, self.filename))
-            pass
 
 
     def getPFN(self):
@@ -112,7 +129,7 @@ class checkwrite(SubCommand):
             if not pfn:
                 self.logger.info('%sError%s: Failed to get PFN from the site. Please check the site status' % (colors.RED, colors.NORMAL))
                 raise ConfigurationException
-        except HTTPException, errormsg :
+        except HTTPException, errormsg:
             self.logger.info('%sError%s: Failed to contact PhEDEx or wrong PhEDEx node name is used' % (colors.RED, colors.NORMAL))
             self.logger.info('Result: %s\nStatus :%s\nURL :%s' % (errormsg.result, errormsg.status, errormsg.url))
             raise HTTPException, errormsg
@@ -129,13 +146,12 @@ class checkwrite(SubCommand):
         cpprocess = subprocess.Popen(cpcmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
         cpout, cperr = cpprocess.communicate()
         cpexitcode = cpprocess.returncode
-
         if cpexitcode:
             self.logger.info('Failed running lcg-cp')
             if cpout:
-                self.logger.info('  Stdout:\n    %s' % cpout.replace('\n','\n    '))
+                self.logger.info('  Stdout:\n    %s' % str(cpout).replace('\n', '\n    '))
             if cperr:
-                self.logger.info('  Stderr:\n    %s' % cperr.replace('\n','\n    '))
+                self.logger.info('  Stderr:\n    %s' % str(cperr).replace('\n', '\n    '))
         else:
             self.logger.info('Successfully ran lcg-cp')
 
@@ -150,13 +166,12 @@ class checkwrite(SubCommand):
         delprocess = subprocess.Popen(rmcmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
         delout, delerr = delprocess.communicate()
         delexitcode = delprocess.returncode
-
         if delexitcode:
             self.logger.info('Failed running lcg-del')
             if delout:
-                self.logger.info('  Stdout:\n    %s' % delout.replace('\n','\n    '))
+                self.logger.info('  Stdout:\n    %s' % str(delout).replace('\n', '\n    '))
             if delerr:
-                self.logger.info('  Stderr:\n    %s' % delerr.replace('\n','\n    '))
+                self.logger.info('  Stderr:\n    %s' % str(delerr).replace('\n', '\n    '))
         else:
             self.logger.info('Successfully ran lcg-del')
 
@@ -173,12 +188,12 @@ class checkwrite(SubCommand):
 
         This allows to set specific command options
         """
-        self.parser.add_option( '--site',
-                                dest = 'sitename',
-                                help = 'The PhEDEx node name of the site to be checked.')
-        self.parser.add_option( '--lfn',
-                                dest = 'userlfn',
-                                help = 'A user lfn address.')
+        self.parser.add_option('--site',
+                               dest = 'sitename',
+                               help = 'The PhEDEx node name of the site to be checked.')
+        self.parser.add_option('--lfn',
+                               dest = 'userlfn',
+                               help = 'A user lfn address.')
 
 
     def validateOptions(self):

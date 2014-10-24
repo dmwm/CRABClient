@@ -51,22 +51,28 @@ class RESTCommunicationException(ClientException):
 
 class ProxyCreationException(ClientException):
     """
-    Raised when a there is a problem in proxy creation. exitcode > 2000 prints log
+    Raised when there is a problem in proxy creation. exitcode > 2000 prints log
     """
     exitcode = 3010
 
 class EnvironmentException(ClientException):
     """
-    Raised when a there is a problem in the environment where the client is executed.
+    Raised when there is a problem in the environment where the client is executed.
     E.g.: if the X509_CERT_DIR variable is not set we raise this exception
     """
     exitcode = 3011
 
 class UsernameException(ClientException):
     """
-    Raise when there is a problem with the username
+    Raised when there is a problem with the username (e.g. when retrieving it from SiteDB).
     """
     exitcode = 3012
+
+class ProxyException(ClientException):
+    """
+    Raised when there is a problem with the proxy (e.g. proxy file not found).
+    """
+    exitcode = 3013
 
 class PanDaException(ClientException):
     """

@@ -16,7 +16,7 @@ class Task(object):
         """
             submit - Sends the current task to the server. Returns requestID
         """
-        args = ['-c', self.config, '--skip-proxy', '1']
+        args = ['-c', self.config, '--proxy', '1']
         submitCommand = self.submitClass(self.clientLog, args)
         retval = submitCommand()
         print "retval was %s" % retval
