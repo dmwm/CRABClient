@@ -1,13 +1,11 @@
 from __future__ import division # I want floating points
 import urllib
-import sys
 import math
-import optparse
 
 import CRABClient.Emulator
 from CRABClient.client_utilities import colors, getUsername
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.client_exceptions import MissingOptionException, RESTCommunicationException, ConfigurationException
+from CRABClient.client_exceptions import RESTCommunicationException, ConfigurationException
 from CRABClient import __version__
 
 def to_hms(val):
@@ -73,6 +71,7 @@ class status(SubCommand):
 
         self.printShort(dictresult, user)
         self.printPublication(dictresult)
+        self.printErrors(dictresult)
 
         if 'jobs' not in dictresult:
             self.logger.info("\nNo jobs created yet!")
@@ -81,11 +80,11 @@ class status(SubCommand):
             if self.summary:
                 self.printSummary(dictresult)
             if self.long:
-               self.printLong(dictresult)
+                self.printLong(dictresult)
             if self.idle:
-               self.printIdle(dictresult, user)
+                self.printIdle(dictresult, user)
             if self.json:
-               self.logger.info(dictresult['jobs'])
+                self.logger.info(dictresult['jobs'])
 
         return dictresult
 
@@ -135,6 +134,33 @@ class status(SubCommand):
             self.logger.info("Details:\t\t\t{0} {1}".format(self._printState(state_list[0], 13), self._percentageString(state_list[0], states[state_list[0]], total)))
             for status in state_list[1:]:
                 self.logger.info("\t\t\t\t{0} {1}".format(self._printState(status, 13), self._percentageString(status, states[status], total)))
+
+
+    def printErrors(self, dictresult):
+        """ Iterate over dictresult['jobs'] if present, which is a dictionary like:
+                {'10': {'State': 'running'}, '1': {'State': 'failed', 'Error' : [10,'error message']}, '3': {'State': 'failed', 'Error' : [10,'error message']} ...
+            and group the errors per exit code counting how many jobs exited with a certain exit code, and print the summary
+        """
+        ec_numjobs = {} #a map containing the exit code as key and the number of jobs with this exit code as value
+        ec_error = {}   #a map containint the exit code as key and the exit message as value (the last one we found)
+        unknown = 0
+        self.logger.info("\nError summary:")
+        if 'jobs' in dictresult:
+            for jobid, status in dictresult['jobs'].iteritems():
+                if status['State'] == 'failed' and 'Error' in status:
+                    ec = status['Error'][0] #exit code of this failed job
+                    ec_numjobs[ec] = ec_numjobs.setdefault(ec, 0) + 1
+                    ec_error[ec] = status['Error'][1]
+                elif status['State'] == 'failed':
+                    unknown += 1
+
+            for ec, count in ec_numjobs.iteritems():
+                self.logger.info("%s jobs failedexited with exit code %s" % (count, ec))
+                self.logger.info('\t'+'\n\t'.join(ec_error[ec].split('\n')))
+
+            if unknown:
+                self.logger.info("Could not find exit code details for %s jobs" % unknown)
+            self.logger.info("Have a look at https://twiki.cern.ch/twiki/bin/viewauth/CMSPublic/JobExitCodes for a description of the exit codes")
 
 
     def printPublication(self, dictresult):
@@ -423,7 +449,7 @@ class status(SubCommand):
             elif sortby == 'cpu':
                 self.logger.info('%-10s %-10s' % ('CPU'.center(10), 'Job Id'.center(10)))
             elif sortby == 'retries':
-                 self.logger.info('%-10s %-10s' % ('Retries'.center(10), 'Job Id'.center(10)))
+                self.logger.info('%-10s %-10s' % ('Retries'.center(10), 'Job Id'.center(10)))
             for value in sortmatrix:
                 if value[0] == 9999:
                     esignvalue = 'Unknown'
