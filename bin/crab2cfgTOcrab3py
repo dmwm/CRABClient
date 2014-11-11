@@ -188,7 +188,6 @@ def getConfiguration(paramsMap, configC2):
     configC3.section_("User")
     configC3.section_("Site")
     configC3.JobType.pluginName = 'Analysis'
-    configC3.User.email = ''
     missingParams = []
     for sectionC3, parameterC3, mandatory, sectionC2, parameterC2, getter in paramsMap:
         try:
