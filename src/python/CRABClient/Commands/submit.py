@@ -13,7 +13,7 @@ import CRABClient.Emulator
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient import SpellChecker
 from CRABClient.client_exceptions import MissingOptionException, ConfigurationException, RESTCommunicationException
-from CRABClient.client_utilities import getJobTypes, createCache, addPlugin, server_info, colors ,getUrl
+from CRABClient.client_utilities import getJobTypes, createCache, addPlugin, server_info, colors, getUrl
 
 from CRABClient.ClientMapping import parameters_mapping, renamed_params, getParamDefaultValue
 from CRABClient import __version__
@@ -147,9 +147,14 @@ class submit(SubCommand):
         server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
 
         self.logger.info("Sending the request to the server")
-        self.logger.debug("Submitting %s " % str( configreq ) )
+        self.logger.debug("Submitting %s " % str(configreq))
+        ## TODO: this shouldn't be hard-coded.
+        listParams = ['adduserfiles', 'addoutputfiles', 'sitewhitelist', 'siteblacklist', 'blockwhitelist', 'blockblacklist', \
+                      'tfileoutfiles', 'edmoutfiles', 'runs', 'lumis', 'userfiles', 'scriptargs', 'extrajdl']
+        configreq_encoded = self._encodeRequest(configreq, listParams)
+        self.logger.debug('Encoded submit request: %s' % (configreq_encoded))
 
-        dictresult, status, reason = server.put( self.uri, data = self._encodeRequest(configreq) )
+        dictresult, status, reason = server.put( self.uri, data = configreq_encoded)
         self.logger.debug("Result: %s" % dictresult)
         if status != 200:
             msg = "Problem sending the request:\ninput:%s\noutput:%s\nreason:%s" % (str(configreq), str(dictresult), str(reason))
@@ -378,21 +383,18 @@ class submit(SubCommand):
                     return DBSURLS[dbs_type][alias], alias
         return None, None
 
-
-    def _encodeRequest(self, configreq):
+    ## TODO: This method is shared with resubmit. Put it in a common place.
+    def _encodeRequest(self, configreq, listParams):
         """ Used to encode the request from a dict to a string. Include the code needed for transforming lists in the format required by
             cmsweb, e.g.:   adduserfiles = ['file1','file2']  ===>  [...]adduserfiles=file1&adduserfiles=file2[...]
         """
-        listParams = ['adduserfiles', 'addoutputfiles', 'sitewhitelist', 'siteblacklist', 'blockwhitelist', 'blockblacklist',
-                      'tfileoutfiles', 'edmoutfiles', 'runs', 'lumis', 'userfiles', 'scriptargs', 'extrajdl']
         encodedLists = ''
         for lparam in listParams:
             if lparam in configreq:
-                if len(configreq[lparam])>0:
+                if len(configreq[lparam]) > 0:
                     encodedLists += ('&%s=' % lparam) + ('&%s=' % lparam).join( map(urllib.quote, configreq[lparam]) )
                 del configreq[lparam]
         encoded = urllib.urlencode(configreq) + encodedLists
-        self.logger.debug('Encoded submit request: %s' % encoded)
         return str(encoded)
 
 
