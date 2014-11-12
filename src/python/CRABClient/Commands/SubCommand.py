@@ -72,7 +72,7 @@ class ConfigCommand:
                     else:
                         setattr(getattr(self.configuration, parnames[0]), parnames[1], literal_eval("%s" % parval))
                         self.logger.debug('Overriden parameter %s with %s' % (fullparname, parval))
-            valid, configmsg = self.validateConfig() #subclasses of SubCommand overrhide this if needed
+            valid, configmsg = self.validateConfig() #subclasses of SubCommand override this if needed
         except RuntimeError, re:
             msg = self._extractReason(configname, re)
             raise ConfigurationException("Configuration syntax error:\n%s\nSee the ./crab.log file for more details" % msg)
@@ -212,6 +212,9 @@ class SubCommand(ConfigCommand):
         if not self.options.proxy and self.cmdconf['initializeProxy']:
             self.proxy_created = self.proxy.createNewVomsProxySimple(time_left_threshold = 720)
 
+        ## Get the username from SiteDB.
+        self.username = self.proxy.getUsernameFromSiteDB()
+
         ## If we get an input configuration file:
         if hasattr(self.options, 'config') and self.options.config is not None:
             ## Load the configuration file and validate it.
@@ -338,6 +341,7 @@ class SubCommand(ConfigCommand):
             self.proxyfilename = self.options.proxy
             os.environ['X509_USER_PROXY'] = self.options.proxy
             self.logger.debug('Skipping proxy creation')
+
 
     def loadLocalCache(self, serverurl = None):
         """ 

@@ -186,17 +186,17 @@ class submit(SubCommand):
         This allows to set specific command options
         """
 
-        self.parser.add_option( "-c","--config",
-                                 dest = "config",
-                                 default = None,
-                                 help = "CRAB configuration file.",
-                                 metavar = "FILE" )
+        self.parser.add_option("-c","--config",
+                               dest = "config",
+                               default = None,
+                               help = "CRAB configuration file.",
+                               metavar = "FILE" )
 
-        self.parser.add_option( "--wait,",
-                                action="store_true",
-                                dest="wait",
-                                help="Continuously checking for job status after submitting.",
-                                default=False )
+        self.parser.add_option("--wait,",
+                               action = "store_true",
+                               dest = "wait",
+                               help = "Continuously checking for job status after submitting.",
+                               default = False )
 
 
 
@@ -261,6 +261,13 @@ class submit(SubCommand):
             msg = "CRAB configuration problem: Section 'Site' is missing"
             return False, msg
 
+        transferOutputs_default = getParamDefaultValue('General.transferOutputs')
+        transferLogs_default = getParamDefaultValue('General.transferLogs')
+        pluginName_default = getParamDefaultValue('JobType.pluginName')
+        inputDBS_default = getParamDefaultValue('Data.inputDBS')
+        publication_default = getParamDefaultValue('Data.publication')
+        publishDBS_default = getParamDefaultValue('Data.publishDBS')
+
         ## Some parameters may have been renamed. Check here if the configuration file has an old
         ## parameter defined, and in that case tell the user what is the new parameter name.
         for old_param, new_param in renamed_params.iteritems():
@@ -268,24 +275,24 @@ class submit(SubCommand):
                 continue
             old_param_section, old_param_name = old_param.split('.')
             if hasattr(self.configuration, old_param_section) and hasattr(getattr(self.configuration, old_param_section), old_param_name):
-                msg = "CRAB configuration problem: Parameter %s has been renamed to %s; please change your configuration file accordingly" % (old_param, new_param)
+                msg  = "CRAB configuration problem: The parameter %s has been renamed to %s;" % (old_param, new_param)
+                msg += " please change your configuration file accordingly."
                 return False, msg
 
-        ## Check that Data.unitsPerjob is specified.
+        ## Check if the Data.unitsPerJob parameter can be converted to a float.
         if hasattr(self.configuration.Data, 'unitsPerJob'):
             try:
                 float(self.configuration.Data.unitsPerJob)
             except ValueError:
-                msg = "CRAB configuration problem: Parameter Data.unitsPerJob must be a valid number, not %s" % self.configuration.Data.unitsPerJob
+                msg = "CRAB configuration problem: The parameter Data.unitsPerJob must be a valid number, not %s." % (self.configuration.Data.unitsPerJob)
                 return False, msg
 
         ## Check that JobType.pluginName and JobType.externalPluginFile are not both specified.
         if hasattr(self.configuration.JobType, 'pluginName') and hasattr(self.configuration.JobType, 'externalPluginFile'):
-            msg = "CRAB configuration problem: Only one of JobType.pluginName or JobType.externalPluginFile parameters can be specified"
-            pluginName_default = getParamDefaultValue('JobType.pluginName')
+            msg = "CRAB configuration problem: Only one of the parameters JobType.pluginName or JobType.externalPluginFile can be specified."
             if pluginName_default:
-                msg += "\nIf neither JobType.pluginName nor JobType.externalPluginFile would be specified, the default JobType.pluginName = '%s' would be used" \
-                       % pluginName_default
+                msg += "\nIf neither JobType.pluginName nor JobType.externalPluginFile would be specified,"
+                msg += " the default JobType.pluginName = '%s' would be used." % (pluginName_default)
             return False, msg
         ## Load the external plugin or check that the crab plugin is valid.
         external_plugin_name = getattr(self.configuration.JobType, 'externalPluginFile', None)
@@ -294,23 +301,20 @@ class submit(SubCommand):
         if external_plugin_name:
             addPlugin(external_plugin_name) # Do we need to do this here?
         if crab_plugin_name and upper(crab_plugin_name) not in crab_job_types:
-            msg = "CRAB configuration problem: Parameter JobType.pluginName has an invalid value '%s'" % crab_plugin_name
-            msg += "\nAllowed values are: %s" % ", ".join(['%s' % job_type for job_type in crab_job_types.keys()])
+            msg  = "CRAB configuration problem: The parameter JobType.pluginName has an invalid value '%s'." % (crab_plugin_name)
+            msg += "\nAllowed values are: %s" % (", ".join(['%s' % job_type for job_type in crab_job_types.keys()]))
             return False, msg
 
         ## Check that the particular combination (Data.publication = True, General.transferOutputs = False) is not specified.
-        if hasattr(self.configuration.Data, 'publication') and hasattr(self.configuration.General, 'transferOutputs'):
-            if self.configuration.Data.publication and not self.configuration.General.transferOutputs:
-                msg  = "CRAB configuration problem: Data.publication is on, but General.transferOutputs is off"
-                msg += "\nPublication can not be performed if the output files are not transferred to a permanent storage"
-                return False, msg
+        if getattr(self.configuration.Data, 'publication', publication_default) and not getattr(self.configuration.General, 'transferOutputs', transferOutputs_default):
+            msg  = "CRAB configuration problem: Data.publication is on, but General.transferOutputs is off."
+            msg += "\nPublication can not be performed if the output files are not transferred to a permanent storage."
+            return False, msg
 
-        ## Check that a storage site is specified if General.transferOutputs = True or General.transferLogs = True.
+        ## Check that a storage site is specified (even if no transfers are requested).
         if not hasattr(self.configuration.Site, 'storageSite'):
-            if (hasattr(self.configuration.General, 'transferOutputs') and self.configuration.General.transferOutputs) or \
-               (hasattr(self.configuration.General, 'transferLogs') and self.configuration.General.transferLogs):
-                msg = "CRAB configuration problem: Parameter Site.storageSite is missing"
-                return False, msg
+            msg = "CRAB configuration problem: The parameter Site.storageSite is missing."
+            return False, msg
 
         ## If an input dataset and a DBS URL are specified, check that the DBS URL is a good one.
         ## Also, if the DBS URL is 'phys0x', check that the input dataset tier is USER.
@@ -320,7 +324,7 @@ class submit(SubCommand):
                 dbs_urls_aliases = DBSURLS['reader'].keys()
                 dbs_urls = DBSURLS['reader'].values()
                 if (self.configuration.Data.inputDBS not in dbs_urls_aliases) and (self.configuration.Data.inputDBS.rstrip('/') not in dbs_urls):
-                    msg  = "CRAB configuration problem: Parameter Data.inputDBS has an invalid value '%s'" % self.configuration.Data.inputDBS
+                    msg  = "CRAB configuration problem: The parameter Data.inputDBS has an invalid value '%s'." % (self.configuration.Data.inputDBS)
                     msg += "\nAllowed values are: "
                     msg += "\n                    ".join(["'%s' ('%s')" % (alias, url) for alias, url in DBSURLS['reader'].iteritems()])
                 local_dbs_urls_aliases = ['phys01', 'phys02', 'phys03']
@@ -331,39 +335,69 @@ class submit(SubCommand):
                     inputDataset_tier = inputDataset_parts[-1] if len(inputDataset_parts) == 3 else None
                     user_data_tiers = ['USER']
                     if inputDataset_tier not in user_data_tiers:
-                        msg  = "CRAB configuration problem: A local DBS instance '%s' was specified for reading an input dataset of tier %s" \
+                        msg  = "CRAB configuration problem: A local DBS instance '%s' was specified for reading an input dataset of tier %s." \
                                % (self.configuration.Data.inputDBS, inputDataset_tier)
-                        msg += "\nDatasets of tier different than %s must be read from the global DBS instance; this is, set Data.inputDBS = 'global'" \
+                        msg += "\nDatasets of tier different than %s must be read from the global DBS instance; this is, set Data.inputDBS = 'global'." \
                                % (", ".join(user_data_tiers[:-1]) + " or " + user_data_tiers[-1] if len(user_data_tiers) > 1 else user_data_tiers[0])
                 if msg:
-                    inputDBS_default = getParamDefaultValue('Data.inputDBS')
                     if inputDBS_default:
                         inputDBS_default, inputDBS_default_alias = self.getDBSURLAndAlias(inputDBS_default, 'reader')
                         if inputDBS_default and inputDBS_default_alias:
-                            msg += "\nIf Data.inputDBS would not be specified, the default '%s' ('%s') would be used" % (inputDBS_default_alias, inputDBS_default)
+                            msg += "\nIf Data.inputDBS would not be specified, the default '%s' ('%s') would be used." % (inputDBS_default_alias, inputDBS_default)
                     return False, msg
 
         ## If a publication DBS URL is specified and publication is ON, check that the DBS URL is a good one.
         if hasattr(self.configuration.Data, 'publishDBS'):
-            publication_default = getParamDefaultValue('Data.publication')
             if getattr(self.configuration.Data, 'publication', publication_default):
                 dbs_urls = DBSURLS['writer'].values()
                 dbs_urls_aliases = DBSURLS['writer'].keys()
                 if (self.configuration.Data.publishDBS not in dbs_urls_aliases) and (self.configuration.Data.publishDBS.rstrip('/') not in dbs_urls):
-                    msg  = "CRAB configuration problem: Parameter Data.publishDBS has an invalid value '%s'" % self.configuration.Data.publishDBS
+                    msg  = "CRAB configuration problem: The parameter Data.publishDBS has an invalid value '%s'." % (self.configuration.Data.publishDBS)
                     msg += "\nAllowed values are: "
                     msg += "\n                    ".join(["'%s' ('%s')" % (alias, url) for alias, url in DBSURLS['writer'].iteritems()])
-                    publishDBS_default = getParamDefaultValue('Data.publishDBS')
                     if publishDBS_default:
                         publishDBS_default, publishDBS_default_alias = self.getDBSURLAndAlias(publishDBS_default, 'writer')
                         if publishDBS_default and publishDBS_default_alias:
-                            msg += "\nIf Data.publishDBS would not be specified, the default '%s' ('%s') would be used" \
+                            msg += "\nIf Data.publishDBS would not be specified, the default '%s' ('%s') would be used." \
                                  % (publishDBS_default_alias, publishDBS_default)
                     return False, msg
 
+        ## Check is the parameter Data.outLFN is valid.
+        if hasattr(self.configuration.Data, 'outLFN'):
+            warningmsg  = "%sWARNING%s: In compliance with the newly approved policy for the CMS global LFN name space," % (colors.RED, colors.NORMAL)
+            warningmsg += " CRAB3 will require (starting from the next December 2014 release) that the parameter Data.outLFN starts with either '/store/user/<username>/'"
+            warningmsg += " or '/store/group/<groupname>/<username>/' (or '/store/local/' if publication is off),"
+            warningmsg += " where the username must be your username as registered in SiteDB (i.e. the username of your the CERN primary account)."
+            warningmsg += " Your username is: '%s'." % (self.username)
+            if self.configuration.Data.outLFN.startswith('/store/group/'):
+                if len(self.configuration.Data.outLFN.split('/')) < 5 or self.configuration.Data.outLFN.split('/')[4] != self.username:
+                    #msg  = "CRAB configuration problem: The parameter Data.outLFN must start with either '/store/user/<username>/'"
+                    #msg += " or '/store/group/<groupname>/<username>/' (or '/store/local/' if publication is off),"
+                    #msg += " where the username must be your username as registered in SiteDB (i.e. the username of your the CERN primary account)."
+                    #msg += " Your username is: '%s'." % (self.username)
+                    #return False, msg
+                    self.logger.warning(warningmsg)
+            elif self.configuration.Data.outLFN.startswith('/store/user/'):
+                if len(self.configuration.Data.outLFN.split('/')) < 4 or self.configuration.Data.outLFN.split('/')[3] != self.username:
+                    #msg  = "CRAB configuration problem: The parameter Data.outLFN must start with either '/store/user/<username>/'"
+                    #msg += " or '/store/group/<groupname>/<username>/' (or '/store/local/' if publication is off),"
+                    #msg += " where the username must be your username as registered in SiteDB (i.e. the username of your the CERN primary account)."
+                    #msg += " Your username is: '%s'." % (self.username)
+                    #return False, msg
+                    self.logger.warning(warningmsg)
+            elif self.configuration.Data.outLFN.startswith('/store/local/'):
+                if getattr(self.configuration.Data, 'publication', publication_default):
+                    #msg  = "CRAB configuration problem: Publication is on, but Data.outLFN starts with '/store/local/'."
+                    #msg += "\nPublication can not be performed for output files in a /store/local/ LFN name space."
+                    #return False, msg
+                    self.logger.warning(warningmsg)
+            else:
+                #return False, msg
+                self.logger.warning(warningmsg)
+
         if hasattr(self.configuration.JobType, 'scriptExe'):
             if not os.path.isfile(self.configuration.JobType.scriptExe):
-                msg = "Cannot find the file %s specified in the scriptExe configuration parameter" % self.configuration.JobType.scriptExe
+                msg = "Cannot find the file %s specified in the scriptExe configuration parameter." % self.configuration.JobType.scriptExe
                 return False, msg
 
         return True, "Valid configuration"
