@@ -144,23 +144,26 @@ class status(SubCommand):
         ec_numjobs = {} #a map containing the exit code as key and the number of jobs with this exit code as value
         ec_error = {}   #a map containint the exit code as key and the exit message as value (the last one we found)
         unknown = 0
-        self.logger.info("\nError summary:")
+        are_failed_jobs = False
         if 'jobs' in dictresult:
             for jobid, status in dictresult['jobs'].iteritems():
-                if status['State'] == 'failed' and 'Error' in status:
-                    ec = status['Error'][0] #exit code of this failed job
-                    ec_numjobs[ec] = ec_numjobs.setdefault(ec, 0) + 1
-                    ec_error[ec] = status['Error'][1]
-                elif status['State'] == 'failed':
-                    unknown += 1
-
+                if status['State'] == 'failed':
+                    are_failed_jobs = True
+                    if 'Error' in status:
+                        ec = status['Error'][0] #exit code of this failed job
+                        ec_numjobs[ec] = ec_numjobs.setdefault(ec, 0) + 1
+                        ec_error[ec] = status['Error'][1]
+                    else:
+                        unknown += 1
+        if are_failed_jobs:
+            msg = "\nError summary:"
             for ec, count in ec_numjobs.iteritems():
-                self.logger.info("%s jobs failedexited with exit code %s" % (count, ec))
-                self.logger.info('\t'+'\n\t'.join(ec_error[ec].split('\n')))
-
+                msg += "\n%s jobs failed with exit code %s:" % (count, ec)
+                msg += '\n\t'+'\n\t'.join(ec_error[ec].split('\n'))
             if unknown:
-                self.logger.info("Could not find exit code details for %s jobs" % unknown)
-            self.logger.info("Have a look at https://twiki.cern.ch/twiki/bin/viewauth/CMSPublic/JobExitCodes for a description of the exit codes")
+                msg += "\nCould not find exit code details for %s jobs" % (unknown)
+            msg += "\nHave a look at https://twiki.cern.ch/twiki/bin/viewauth/CMSPublic/JobExitCodes for a description of the exit codes"
+            self.logger.info(msg)
 
 
     def printPublication(self, dictresult):
