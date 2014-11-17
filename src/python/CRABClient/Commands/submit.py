@@ -426,7 +426,7 @@ class submit(SubCommand):
             dictresult = dictresult['result'][0]
 
             if status != 200:
-                self.logger.info("The task has been submitted, \nImpossible to check task status now. \nPlease check again later by using: crab status -t  <Task Name>")
+                self.logger.info("The task has been submitted, \nImpossible to check task status now. \nPlease check again later by using: crab status -d <crab project directory>")
                 msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(uniquerequestname), str(dictresult), str(reason))
                 raise RESTCommunicationException(msg)
 
@@ -438,7 +438,7 @@ class submit(SubCommand):
 
                 if dictresult['status'] == 'FAILED':
                     continuecheck = False
-                    self.logger.info(self.logger.info("%sError%s: The submission of your task failed. Please use 'crab status -t <Task Name>' to get the error message" %(colors.RED, colors.NORMAL)))
+                    self.logger.info(self.logger.info("%sError%s: The submission of your task failed. Please use 'crab status -d <crab project directory>' to get the error message" %(colors.RED, colors.NORMAL)))
                 elif dictresult['status'] == 'SUBMITTED' or dictresult['status'] == 'UNKNOWN': #untile the node_state file is available status is unknown
                     continuecheck = False
                     self.logger.info("%sSuccess%s: Your task has been processed and your jobs have been submitted successfully" % (colors.GREEN, colors.NORMAL))
@@ -452,7 +452,7 @@ class submit(SubCommand):
 
             if currenttime > endtime:
                 continuecheck = False
-                self.logger.info("Exceed max query time \n Please check again later by using: crab status -t  <Task Name>")
+                self.logger.info("Exceed maximum query time \n Please check again later by using: crab status -d <crab project directory>")
                 waittime=currenttime-starttime
                 self.logger.debug("Wait time:%s" % waittime)
                 break

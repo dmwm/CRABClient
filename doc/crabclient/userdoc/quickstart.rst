@@ -14,14 +14,14 @@ This section is intended for impatient users who are already confident with the 
 
 * check the status of all the jobs::
 
-    $ crab status -t <task dir>
+    $ crab status -d <task dir>
 
 
 * retrieve the output of the jobs 1,2,3,5::
 
-    $ crab get-output -t <task dir> -r 1-3,5
+    $ crab get-output -d <task dir> -r 1-3,5
 
 
 * see the list of good lumis for your task::
 
-    $ crab report -t <task dir>
+    $ crab report -d <task dir>

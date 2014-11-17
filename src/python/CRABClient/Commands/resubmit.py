@@ -9,8 +9,8 @@ import re
 
 
 class resubmit(SubCommand):
-    """ Resubmit the failed jobs of the task identified by
-    -t/--task option
+    """
+    Resubmit the failed jobs of the task identified by the -d/--dir option.
     """
     def __call__(self):
         serverFactory = CRABClient.Emulator.getEmulator('rest')

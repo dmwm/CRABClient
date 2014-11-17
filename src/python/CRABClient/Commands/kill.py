@@ -8,7 +8,8 @@ from urllib import urlencode
 
 class kill(SubCommand):
     """
-    Command to kill submitted task, user must give a taskname to be kill
+    Command to kill submitted tasks. The user must give the crab project 
+    directory for the task he/she wants to kill.
     """
     visible = True
 

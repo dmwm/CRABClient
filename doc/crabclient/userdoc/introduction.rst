@@ -13,7 +13,7 @@ Important information
 
 * The ``crab (-)create`` command is not anymore available because the creation part is moved at server level; the workflow starts directly from the submission command (:ref:`submission`).
 
-* The ``--continue/-c`` is now replaced by ``--task/-t`` option.
+* The ``--continue/-c`` is now replaced by ``--dir/-d`` option.
 
 * All outputs and logs are stored on a remote SE by default: ``get-output`` is no longer needed except to check your data.
 

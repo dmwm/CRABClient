@@ -13,7 +13,8 @@ from CRABClient import __version__
 import CRABClient.Emulator
 
 class report(SubCommand):
-    """ Get the list of good lumis for your task identified by -t/--task option
+    """
+    Get the list of good lumis for your task identified by the -d/--dir option.
     """
     name = 'report'
     shortnames = ['rep']

@@ -6,10 +6,10 @@ from CRABClient.client_exceptions import ConfigurationException
 import os
 
 class getlog(getcommand):
-    """ Retrieve the log files of a number of jobs specified by the -q/--quantity option.
--q logfiles per exit code are returned if SaveLogs=False, otherwise all the logfiles
-collected by the LogCollect job are returned.
-The task is identified by -t/--task option
+    """
+    Retrieve the log files of a number of jobs specified by the -q/--quantity option.
+    -q logfiles per exit code are returned if transferLogs = False; otherwise all the log files
+    collected by the LogCollect job are returned. The task is identified by the -d/--dir option.
     """
     name = 'getlog'
     shortnames = ['log']

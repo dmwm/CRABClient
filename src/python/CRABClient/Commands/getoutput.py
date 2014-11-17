@@ -6,7 +6,7 @@ import os
 
 class getoutput(getcommand):
     """ Retrieve the output files of a number of jobs specified by the -q/--quantity option. The task
-        is identified by -t/--task option
+        is identified by the -d/--dir option
     """
     name = 'getoutput'
     shortnames = ['output', 'out']

@@ -3,7 +3,8 @@ from CRABClient import __version__
 import CRABClient.Emulator
 
 class request_type(SubCommand):
-    """ Return the string of the workflow type identified by -t/--task option
+    """
+    Return the string of the workflow type identified by the -d/--dir option.
     """
     visible = False
 

@@ -27,7 +27,7 @@ PUBLICATION_STATES = {
 class status(SubCommand):
     """
     Query the status of your tasks, or detailed information of one or more tasks
-    identified by -t/--task option
+    identified by the -d/--dir option.
     """
 
     shortnames = ['st']
