@@ -75,7 +75,7 @@ class ConfigCommand:
             valid, configmsg = self.validateConfig() #subclasses of SubCommand overrhide this if needed
         except RuntimeError, re:
             msg = self._extractReason(configname, re)
-            raise ConfigurationException("Configuration syntax error:\n%s\nSee the ./crab.log file for more details" % msg)
+            raise ConfigurationException("Configuration syntax error:\n%s\nPlease refer to <https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3CommonErrors#Configuration_syntax_error>\nSee the ./crab.log file for more details" % msg)
         else:
             ## file is there, check if it is ok
             if not valid:
