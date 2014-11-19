@@ -11,7 +11,6 @@ import time
 import CRABClient.Emulator
 
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient import SpellChecker
 from CRABClient.client_exceptions import MissingOptionException, ConfigurationException, RESTCommunicationException
 from CRABClient.client_utilities import getJobTypes, createCache, addPlugin, server_info, colors, getUrl
 
@@ -45,23 +44,6 @@ class submit(SubCommand):
 
         self.logger.debug("Started submission")
         serverFactory = CRABClient.Emulator.getEmulator('rest')
-        # Get some debug parameters
-        ######### Check if the user provided unexpected parameters ########
-        #init the dictionary with all the known parameters
-        all_config_params = [x for x in parameters_mapping['other-config-params']]
-        for _, val in parameters_mapping['on-server'].iteritems():
-            if val['config']:
-                all_config_params.extend(val['config'])
-        SpellChecker.DICTIONARY = SpellChecker.train(all_config_params)
-        #iterate on the parameters provided by the user
-        for section in self.configuration.listSections_():
-            for attr in getattr(self.configuration, section).listSections_():
-                par = (section + '.' + attr)
-                #if the parameter is not know exit, but try to correct it before
-                if not SpellChecker.is_correct( par ):
-                    msg = 'The parameter %s is not known.\nPlease refer to <https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookCRAB3Tutorial#CRAB_configuration_parameters> for list of valid parameter.\nSee the ./crab.log file for more details"' % par
-                    msg += '' if SpellChecker.correct(par) == par else '\nOr maybe did you mean %s?' % SpellChecker.correct(par)
-                    raise ConfigurationException(msg)
 
         #usertarball and cmsswconfig use this parameter and we should set it up in a correct way
         self.configuration.General.serverUrl = self.serverurl
@@ -254,16 +236,16 @@ class submit(SubCommand):
         ## Even if not all configuration sections need to be there, we anyway request
         ## the user to add all the sections in the configuration file.
         if not hasattr(self.configuration, 'General'):
-            msg = "Invalid CRAB configuration: Section 'General' is missing"
+            msg = "Invalid CRAB configuration: Section 'General' is missing."
             return False, msg
         if not hasattr(self.configuration, 'JobType'):
-            msg = "Invalid CRAB configuration: Section 'JobType' is missing"
+            msg = "Invalid CRAB configuration: Section 'JobType' is missing."
             return False, msg
         if not hasattr(self.configuration, 'Data'):
-            msg = "Invalid CRAB configuration: Section 'Data' is missing"
+            msg = "Invalid CRAB configuration: Section 'Data' is missing."
             return False, msg
         if not hasattr(self.configuration, 'Site'):
-            msg = "Invalid CRAB configuration: Section 'Site' is missing"
+            msg = "Invalid CRAB configuration: Section 'Site' is missing."
             return False, msg
 
         ## Some parameters may have been renamed. Check here if the configuration file has an old
@@ -273,7 +255,7 @@ class submit(SubCommand):
                 continue
             old_param_section, old_param_name = old_param.split('.')
             if hasattr(self.configuration, old_param_section) and hasattr(getattr(self.configuration, old_param_section), old_param_name):
-                msg = "Invalid CRAB configuration: Parameter %s has been renamed to %s; please change your configuration file accordingly" % (old_param, new_param)
+                msg = "Invalid CRAB configuration: Parameter %s has been renamed to %s; please change your configuration file accordingly." % (old_param, new_param)
                 return False, msg
 
         ## Check that Data.unitsPerjob is specified.
@@ -281,16 +263,16 @@ class submit(SubCommand):
             try:
                 float(self.configuration.Data.unitsPerJob)
             except ValueError:
-                msg = "Invalid CRAB configuration: Parameter Data.unitsPerJob must be a valid number, not %s" % self.configuration.Data.unitsPerJob
+                msg = "Invalid CRAB configuration: Parameter Data.unitsPerJob must be a valid number, not %s." % (self.configuration.Data.unitsPerJob)
                 return False, msg
 
         ## Check that JobType.pluginName and JobType.externalPluginFile are not both specified.
         if hasattr(self.configuration.JobType, 'pluginName') and hasattr(self.configuration.JobType, 'externalPluginFile'):
-            msg = "Invalid CRAB configuration: Only one of JobType.pluginName or JobType.externalPluginFile parameters can be specified"
+            msg = "Invalid CRAB configuration: Only one of JobType.pluginName or JobType.externalPluginFile parameters can be specified."
             pluginName_default = getParamDefaultValue('JobType.pluginName')
             if pluginName_default:
-                msg += "\nIf neither JobType.pluginName nor JobType.externalPluginFile would be specified, the default JobType.pluginName = '%s' would be used" \
-                       % pluginName_default
+                msg += "\nIf neither JobType.pluginName nor JobType.externalPluginFile would be specified,"
+                msg += " the default JobType.pluginName = '%s' would be used." % (pluginName_default)
             return False, msg
         ## Load the external plugin or check that the crab plugin is valid.
         external_plugin_name = getattr(self.configuration.JobType, 'externalPluginFile', None)
@@ -298,27 +280,27 @@ class submit(SubCommand):
         crab_job_types = {'ANALYSIS': None, 'PRIVATEMC': None} #getJobTypes()
         if external_plugin_name:
             addPlugin(external_plugin_name) # Do we need to do this here?
-        if crab_plugin_name and upper(crab_plugin_name) not in crab_job_types:
-            msg = "Invalid CRAB configuration: Parameter JobType.pluginName has an invalid value '%s'" % crab_plugin_name
-            msg += "\nAllowed values are: %s" % ", ".join(['%s' % job_type for job_type in crab_job_types.keys()])
-            return False, msg
-        if upper(crab_plugin_name) == 'PRIVATEMC' and hasattr(self.configuration.Data, 'inputDataset'):
-            msg = "Invalid CRAB configuration: JobType.pluginName cannot be %s if you are setting config.Data.inputdataset.\n" % crab_plugin_name
-            msg += "Please, use the Analysis plugin or remove the config.Data.inputdataset parameter"
-            return False, msg
+        if crab_plugin_name:
+            if upper(crab_plugin_name) not in crab_job_types:
+                msg = "Invalid CRAB configuration: Parameter JobType.pluginName has an invalid value ('%s')." % (crab_plugin_name)
+                msg += "\nAllowed values are: %s." % (", ".join(['%s' % job_type for job_type in crab_job_types.keys()]))
+                return False, msg
+            msg  = "Will use CRAB plugin %s" % ("Analysis" if upper(crab_plugin_name) == 'ANALYSIS' else "PrivateMC")
+            msg += " (i.e. will run %s job type)." % ("an analysis" if upper(crab_plugin_name) == 'ANALYSIS' else "a MC generation")
+            self.logger.info(msg)
 
         ## Check that the particular combination (Data.publication = True, General.transferOutputs = False) is not specified.
-        if hasattr(self.configuration.Data, 'publication') and hasattr(self.configuration.General, 'transferOutputs'):
-            if self.configuration.Data.publication and not self.configuration.General.transferOutputs:
-                msg  = "Invalid CRAB configuration: Data.publication is on, but General.transferOutputs is off"
-                msg += "\nPublication can not be performed if the output files are not transferred to a permanent storage"
-                return False, msg
+        if getattr(self.configuration.Data, 'publication', getParamDefaultValue('Data.publication')) and \
+           not getattr(self.configuration.General, 'transferOutputs', getParamDefaultValue('General.transferOutputs')):
+            msg  = "Invalid CRAB configuration: Data.publication is True, but General.transferOutputs is False."
+            msg += "\nPublication can not be performed if the output files are not transferred to a permanent storage."
+            return False, msg
 
         ## Check that a storage site is specified if General.transferOutputs = True or General.transferLogs = True.
         if not hasattr(self.configuration.Site, 'storageSite'):
-            if (hasattr(self.configuration.General, 'transferOutputs') and self.configuration.General.transferOutputs) or \
-               (hasattr(self.configuration.General, 'transferLogs') and self.configuration.General.transferLogs):
-                msg = "Invalid CRAB configuration: Parameter Site.storageSite is missing"
+            if getattr(self.configuration.General, 'transferLogs', getParamDefaultValue('General.transferLogs')) or \
+               getattr(self.configuration.General, 'transferOutputs', getParamDefaultValue('General.transferOutputs')):
+                msg = "Invalid CRAB configuration: Parameter Site.storageSite is missing."
                 return False, msg
 
         ## If an input dataset and a DBS URL are specified, check that the DBS URL is a good one.
@@ -329,7 +311,7 @@ class submit(SubCommand):
                 dbs_urls_aliases = DBSURLS['reader'].keys()
                 dbs_urls = DBSURLS['reader'].values()
                 if (self.configuration.Data.inputDBS not in dbs_urls_aliases) and (self.configuration.Data.inputDBS.rstrip('/') not in dbs_urls):
-                    msg  = "Invalid CRAB configuration: Parameter Data.inputDBS has an invalid value '%s'" % self.configuration.Data.inputDBS
+                    msg  = "Invalid CRAB configuration: Parameter Data.inputDBS has an invalid value ('%s')." % (self.configuration.Data.inputDBS)
                     msg += "\nAllowed values are: "
                     msg += "\n                    ".join(["'%s' ('%s')" % (alias, url) for alias, url in DBSURLS['reader'].iteritems()])
                 local_dbs_urls_aliases = ['phys01', 'phys02', 'phys03']
@@ -340,39 +322,38 @@ class submit(SubCommand):
                     inputDataset_tier = inputDataset_parts[-1] if len(inputDataset_parts) == 3 else None
                     user_data_tiers = ['USER']
                     if inputDataset_tier not in user_data_tiers:
-                        msg  = "Invalid CRAB configuration: A local DBS instance '%s' was specified for reading an input dataset of tier %s" \
+                        msg  = "Invalid CRAB configuration: A local DBS instance '%s' was specified for reading an input dataset of tier %s." \
                                % (self.configuration.Data.inputDBS, inputDataset_tier)
-                        msg += "\nDatasets of tier different than %s must be read from the global DBS instance; this is, set Data.inputDBS = 'global'" \
+                        msg += "\nDatasets of tier different than %s must be read from the global DBS instance; this is, set Data.inputDBS = 'global'." \
                                % (", ".join(user_data_tiers[:-1]) + " or " + user_data_tiers[-1] if len(user_data_tiers) > 1 else user_data_tiers[0])
                 if msg:
                     inputDBS_default = getParamDefaultValue('Data.inputDBS')
                     if inputDBS_default:
                         inputDBS_default, inputDBS_default_alias = self.getDBSURLAndAlias(inputDBS_default, 'reader')
                         if inputDBS_default and inputDBS_default_alias:
-                            msg += "\nIf Data.inputDBS would not be specified, the default '%s' ('%s') would be used" % (inputDBS_default_alias, inputDBS_default)
+                            msg += "\nIf Data.inputDBS would not be specified, the default '%s' ('%s') would be used." % (inputDBS_default_alias, inputDBS_default)
                     return False, msg
 
         ## If a publication DBS URL is specified and publication is ON, check that the DBS URL is a good one.
         if hasattr(self.configuration.Data, 'publishDBS'):
-            publication_default = getParamDefaultValue('Data.publication')
-            if getattr(self.configuration.Data, 'publication', publication_default):
+            if getattr(self.configuration.Data, 'publication', getParamDefaultValue('Data.publication')):
                 dbs_urls = DBSURLS['writer'].values()
                 dbs_urls_aliases = DBSURLS['writer'].keys()
                 if (self.configuration.Data.publishDBS not in dbs_urls_aliases) and (self.configuration.Data.publishDBS.rstrip('/') not in dbs_urls):
-                    msg  = "Invalid CRAB configuration: Parameter Data.publishDBS has an invalid value '%s'" % self.configuration.Data.publishDBS
+                    msg  = "Invalid CRAB configuration: Parameter Data.publishDBS has an invalid value ('%s')." % (self.configuration.Data.publishDBS)
                     msg += "\nAllowed values are: "
                     msg += "\n                    ".join(["'%s' ('%s')" % (alias, url) for alias, url in DBSURLS['writer'].iteritems()])
                     publishDBS_default = getParamDefaultValue('Data.publishDBS')
                     if publishDBS_default:
                         publishDBS_default, publishDBS_default_alias = self.getDBSURLAndAlias(publishDBS_default, 'writer')
                         if publishDBS_default and publishDBS_default_alias:
-                            msg += "\nIf Data.publishDBS would not be specified, the default '%s' ('%s') would be used" \
+                            msg += "\nIf Data.publishDBS would not be specified, the default '%s' ('%s') would be used." \
                                  % (publishDBS_default_alias, publishDBS_default)
                     return False, msg
 
         if hasattr(self.configuration.JobType, 'scriptExe'):
             if not os.path.isfile(self.configuration.JobType.scriptExe):
-                msg = "Cannot find the file %s specified in the scriptExe configuration parameter" % self.configuration.JobType.scriptExe
+                msg = "Cannot find the file %s specified in the JobType.scriptExe configuration parameter." % (self.configuration.JobType.scriptExe)
                 return False, msg
 
         return True, "Valid configuration"

@@ -6,7 +6,8 @@ import os
 import re
 
 from CRABClient.JobType.Analysis import Analysis
-import WMCore.Lexicon
+from CRABClient.ClientMapping import getParamDefaultValue
+
 
 class PrivateMC(Analysis):
     """
@@ -19,16 +20,10 @@ class PrivateMC(Analysis):
         """
         tarFilename, configArguments, isbchecksum = super(PrivateMC, self).run(requestConfig)
         configArguments['jobtype'] = 'PrivateMC'
-        primDS = getattr(self.config.Data, 'primaryDataset', None)
-        if primDS:
-            # Normalizes "foo/bar" and "/foo/bar" to "/foo/bar"
-            primDS = "/" + os.path.join(*primDS.split("/"))
-            if not re.match("/%(primDS)s.*" % WMCore.Lexicon.lfnParts, primDS):
-                self.logger.warning("Invalid primary dataset name %s for private MC; publishing may fail" % primDS)
-            configArguments['inputdata'] = primDS
+        if hasattr(self.config.Data, 'primaryDataset'):
+            configArguments['inputdata'] = "/" + self.config.Data.primaryDataset
         else:
             configArguments['inputdata'] = "/CRAB_PrivateMC"
-
         return tarFilename, configArguments, isbchecksum
 
     def validateConfig(self, config):
@@ -37,16 +32,33 @@ class PrivateMC(Analysis):
         required values are there and optional values don't conflict. Subclass to CMSSW for most of the work
         """
         valid, reason = self.validateBasicConfig(config)
-        # Put MC requirements here
         if not valid:
-            return (valid, reason)
+            return valid, reason
 
-        if not getattr(config.Data, 'totalUnits', None):
-            valid = False
-            reason += 'Crab configuration problem: missing or null totalUnits. '
+        ## Check that there is no input dataset specified.
+        if getattr(config.Data, 'inputDataset', None):
+            msg  = "Invalid CRAB configuration: MC generation job type does not use an input dataset."
+            msg += "\nIf you really intend to run over an input dataset, then you have to run an analysis job type (i.e. set JobType.pluginName = 'Analysis')."
+            return False, msg
+
+        ## If publication is True, check that there is a primary dataset name specified.
+        if getattr(config.Data, 'publication', getParamDefaultValue('Data.publication')):
+            if not hasattr(config.Data, 'primaryDataset'):
+                msg  = "Invalid CRAB configuration: Parameter Data.primaryDataset not specified."
+                msg += "\nMC generation job type requires this parameter for publication."
+                return False, msg
+
+        if not hasattr(config.Data, 'totalUnits'):
+            msg  = "Invalid CRAB configuration: Parameter Data.totalUnits not specified."
+            msg += "\nMC generation job type requires this parameter to know how many events to generate."
+            return False, msg
+        elif config.Data.totalUnits <= 0:
+            msg  = "Invalid CRAB configuration: Parameter Data.totalUnits has an invalid value (%s)." % (config.Data.totalUnits)
+            msg += " It must be a natural number."
+            return False, msg
 
         if self.splitAlgo != 'EventBased':  
-            valid = False
-            reason += 'MC production jobtype supports EventBased splitting only. '
+            msg  = "Invalid CRAB configuration: MC generation job type only supports event-based splitting (i.e. Data.splitting = 'EventBased')."
+            return False, msg
 
-        return (valid, reason)
+        return True, "Valid configuration"
