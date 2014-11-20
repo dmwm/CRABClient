@@ -192,7 +192,7 @@ class status(SubCommand):
                     self.logger.info("\t\t\t\t{0} {1}".format(self._printState(status, 13), self._percentageString(status, states[status], total)))
         if 'outdatasets' in dictresult and dictresult['outdatasets']:
             info = '\nOutput dataset:\t\t\t{0}'\
-                   '\nOutput dataset url:\t\thttps://cmsweb.cern.ch/das/request?input={1}&instance=prod%%2Fphys03'
+                   '\nOutput dataset url:\t\thttps://cmsweb.cern.ch/das/request?input={1}&instance=prod%2Fphys03'
             self.logger.info(''.join([info.format(o, urllib.quote(o, '')) for o in dictresult['outdatasets']]))
 
 
