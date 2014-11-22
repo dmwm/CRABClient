@@ -192,25 +192,37 @@ class SubCommand(ConfigCommand):
         ## Validate the command line parameters before initializing the proxy.
         self.validateOptions()
 
-        ## Retrieve VO role/group from the command line parameters.
-        self.voRole  = self.options.voRole  if self.options.voRole  is not None else ''
-        self.voGroup = self.options.voGroup if self.options.voGroup is not None else ''
-
-        ## Create the object that will do the proxy operations. We ignore the VO role/group and
-        ## server URL in the initialization, because they are not used until we do the proxy
-        ## delegation to myproxy server. And the delegation happends in handleProxy(), which is
-        ## called after we load the configuration file and retrieve the final values for those
-        ## parameters. handleProxy() takes care of passing those parameters to self.proxy.
+        ## Retrieve VO role/group from the command line options.
+        proxyOptsSetPlace = {'role': '', 'group': ''}
+        if self.options.voRole is not None:
+            self.voRole = self.options.voRole
+            proxyOptsSetPlace['role'] = 'cmdopts'
+            msg = "Using VO role '%s' as specified in the command line." % (self.voRole)
+            self.logger.debug(msg)
+        else:
+            self.voRole = ''
+        if self.options.voGroup is not None:
+            self.voGroup = self.options.voGroup
+            proxyOptsSetPlace['group'] = 'cmdopts'
+            msg = "Using VO group '%s' as specified in the command line." % (self.voGroup)
+            self.logger.debug(msg)
+        else:
+            self.voGroup = ''
+        ## Create the object that will do the proxy operations. We don't really care
+        ## what VO role and group and server URL we pass to the constructor, because
+        ## these are not used until we do the proxy delegation to the myproxy server.
+        ## And this happens in handleProxy(), which is called after we load the
+        ## configuration file and retrieve the final values for those parameters.
+        ## handleProxy() takes care of passing those parameters to self.proxy.
         self.proxy = CredentialInteractions('', '', self.voRole, self.voGroup, self.logger, '')
 
-        ## Create a new proxy (if there isn't a valid one already) with current VO role/group.
-        ## The VO role/group are not relevant for the proxy. We only want to check that the
-        ## user doesn't expect the proxy to have different VO role/group than those specified
-        ## in the configuration file, but this check is done later in handleProxy() after we
-        ## load the configuration file.
+        ## If the user didn't use the --proxy command line option, and if there isn't
+        ## a valid proxy already, we create a new one with the current VO role and
+        ## group (as commented above, we don't really care what are the VO role and
+        ## group so far).
         self.proxy_created = False
         if not self.options.proxy and self.cmdconf['initializeProxy']:
-            self.proxy_created = self.proxy.createNewVomsProxySimple(time_left_threshold = 720)
+            self.proxy_created = self.proxy.createNewVomsProxySimple(timeleftthreshold = 720)
 
         ## Extract the username from the proxy.
         self.proxyusername = self.proxy.getUsername()
@@ -220,31 +232,43 @@ class SubCommand(ConfigCommand):
             ## Load the configuration file and validate it.
             self.loadConfig(self.options.config, self.args)
             ## Create the CRAB project directory.
-            self.requestarea, self.requestname, self.logfile = createWorkArea(self.logger,
-                                                                              getattr(self.configuration.General, 'workArea', None),
+            self.requestarea, self.requestname, self.logfile = createWorkArea(self.logger, \
+                                                                              getattr(self.configuration.General, 'workArea', None), \
                                                                               getattr(self.configuration.General, 'requestName', None))
-            ## If VO role/group were not given in the command options, get them from the configuration file.
-            ## If they are specified in both places, print a message saying that the command options will be used.
-            if self.options.voRole  is None and hasattr(self.configuration, 'User'):
-                self.voRole  = getattr(self.configuration.User, 'voRole',  '')
-            if self.options.voGroup is None and hasattr(self.configuration, 'User'):
-                self.voGroup = getattr(self.configuration.User, 'voGroup', '')
-            if (self.options.voRole  is not None) and (hasattr(self.configuration, 'User') and hasattr(self.configuration.User, 'voRole' )):
-                msg = "Ignoring the VO role specified in the configuration file. Using VO role \"%s\" "
-                if self.voRole == '': msg += "(i.e. no VO role) "
-                msg += "as specified in the command line."
-                self.logger.info(msg % self.voRole)
-            if (self.options.voGroup is not None) and (hasattr(self.configuration, 'User') and hasattr(self.configuration.User, 'voGroup')):
-                msg = "Ignoring the VO group specified in the configuration file. Using VO group \"%s\" "
-                if self.voGroup == '': msg += "(i.e. no VO group) "
-                msg += "as specified in the command line."
-                self.logger.info(msg % self.voGroup)
+            ## If VO role/group were not given in the command options, get them from
+            ## the configuration file. If they are specified in both places, print a
+            ## message saying that the command line options will be used.
+            if hasattr(self.configuration, 'User') and hasattr(self.configuration.User, 'voRole'):
+                if self.options.voRole is None:
+                    self.voRole = self.configuration.User.voRole
+                    proxyOptsSetPlace['role'] = 'config'
+                    msg = "Using VO role '%s' as specified in the configuration file." % (self.voRole)
+                else:
+                    msg  = "Ignoring the VO role specified in the configuration file."
+                    msg += " Using VO role '%s'" % (self.voRole)
+                    if self.voRole == '':
+                        msg += " (i.e. no VO role)"
+                    msg += " as specified in the command line."
+                self.logger.debug(msg)
+            if hasattr(self.configuration, 'User') and hasattr(self.configuration.User, 'voGroup'):
+                if self.options.voGroup is None:
+                    self.voGroup = self.configuration.User.voGroup
+                    proxyOptsSetPlace['group'] = 'config'
+                    msg = "Using VO group '%s' as specified in the configuration file." % (self.voGroup)
+                else:
+                    msg  = "Ignoring the VO group specified in the configuration file."
+                    msg += " Using VO group '%s'" % (self.voGroup)
+                    if self.voGroup == '':
+                        msg += " (i.e. no VO group)"
+                    msg += " as specified in the command line."
+                self.logger.debug(msg)
 
-        ## If we get an input task, we load the cache and set the server URL and VO role/group from it.
+        ## If we get an input task, we load the cache and set the server URL
+        ## and VO role and group from it.
         if hasattr(self.options, 'task') and self.options.task:
-            self.loadLocalCache()
+            self.loadLocalCache(proxyOptsSetPlace)
 
-        ## If the server url isn't already set, we check the args and then the config.
+        ## If the server URL isn't already set, we check the args and then the config.
         if not hasattr(self, 'serverurl') and self.cmdconf['requiresREST']:
             self.instance, self.serverurl = self.serverInstance()
         elif not self.cmdconf['requiresREST']:
@@ -253,14 +277,23 @@ class SubCommand(ConfigCommand):
         ## Update (or create) the .crab3 cache file.
         self.updateCrab3()
 
-        ## At this point there should be a valid proxy, because we have already checked that and
-        ## eventually created a new one. If the proxy was not created by CRAB, we check that the
-        ## VO role/group in the proxy are the same as specified by the user in the configuration
-        ## file (or in the command line options). If it is not, we ask the user if he wants to 
-        ## overwrite the current proxy. If he doesn't want to overwrite it, we don't continue 
-        ## and ask him to provide the VO role/group as in the existing proxy. 
-        ## Finally, delegate the proxy to myproxy server.
-        self.handleProxy()
+        ## Unless the user used the --proxy command line option, at this point we
+        ## are sure that there is a valid proxy (because we have already checked
+        ## that, and eventually created a new one). If the user didn't use the
+        ## --proxy command line option, and if there is a valid proxy not created
+        ## by CRAB, we check that the VO role and group in the proxy are the same
+        ## as specified by the user in the configuration file (or in the command
+        ## line options). If they are not, we ask the user if he/she wants to
+        ## overwrite the current proxy. If the user doesn't want to overwrite it,
+        ## we don't continue and ask him/her to change the VO role and group in
+        ## the configuration file (or in the command line options) to match what
+        ## is in the existing proxy. The reason we do this is the following: when
+        ## delegating the proxy to myproxy server, the VO role and group used in
+        ## the delegation are the ones specified by the user in the configuration
+        ## file (or in the command line options), and not the ones in the proxy,
+        ## and we don't want that the user gets confused about what VO role and
+        ## group are being used.
+        self.handleProxy(proxyOptsSetPlace)
 
         ## Logging user command and options used for debuging purpose.
         self.logger.debug('Command use: %s' % self.name)
@@ -317,7 +350,7 @@ class SubCommand(ConfigCommand):
             self.logger.info("Server is saying that compatible versions are: %s"  % compatibleversion)
 
 
-    def handleProxy(self):
+    def handleProxy(self, proxyOptsSetPlace):
         """ 
         Init the user proxy, and delegate it if necessary.
         """
@@ -325,7 +358,9 @@ class SubCommand(ConfigCommand):
             if self.cmdconf['initializeProxy']:
                 self.proxy.setVOGroupVORole(self.voGroup, self.voRole)
                 self.proxy.setMyProxyAccount(self.serverurl)
-                _, self.proxyfilename = self.proxy.createNewVomsProxy(time_left_threshold = 720, proxy_created_by_crab = self.proxy_created)
+                _, self.proxyfilename = self.proxy.createNewVomsProxy(timeleftthreshold = 720, \
+                                                                      proxyCreatedByCRAB = self.proxy_created, \
+                                                                      proxyOptsSetPlace = proxyOptsSetPlace)
                 if self.cmdconf['requiresREST']: ## If the command doesn't contact the REST, we can't delegate the proxy.
                     self.proxy.myproxyAccount = self.serverurl
                     baseurl = self.getUrl(self.instance, resource = 'info')
@@ -341,7 +376,8 @@ class SubCommand(ConfigCommand):
             os.environ['X509_USER_PROXY'] = self.options.proxy
             self.logger.debug('Skipping proxy creation')
 
-    def loadLocalCache(self, serverurl = None):
+
+    def loadLocalCache(self, proxyOptsSetPlace, serverurl = None):
         """ 
         Loads the client cache and set up the server url
         """
@@ -350,8 +386,18 @@ class SubCommand(ConfigCommand):
         port = ':' + self.cachedinfo['Port'] if self.cachedinfo['Port'] else ''
         self.instance = self.cachedinfo['instance']
         self.serverurl = self.cachedinfo['Server'] + port
-        self.voRole = self.cachedinfo['voRole'] #if not self.options.voRole else self.options.voRole
-        self.voGroup = self.cachedinfo['voGroup'] #if not self.options.voGroup else self.options.voGroup
+        if self.options.voRole is None or self.options.voGroup is None:
+            msgadd = []
+            if self.options.voRole is None:
+                self.voRole = self.cachedinfo['voRole']
+                proxyOptsSetPlace['role'] = 'cache'
+                msgadd.append("role '%s'" % (self.voRole))
+            if self.options.voGroup is None:
+                self.voGroup = self.cachedinfo['voGroup']
+                proxyOptsSetPlace['group'] = 'cache'
+                msgadd.append("group '%s'" % (self.voGroup))
+            msg = "Using VO %s as written in the request cache file for this task." % (" and ".join(msgadd))
+            self.logger.debug(msg)
 
 
     def getConfiDict(self):
@@ -443,8 +489,8 @@ class SubCommand(ConfigCommand):
         self.parser.add_option("--voGroup",
                                dest = "voGroup",
                                default = None)
-        if self.cmdconf['requiresREST']:
 
+        if self.cmdconf['requiresREST']:
             self.parser.add_option("--instance",
                                    dest = "instance",
                                    type = "string",
