@@ -21,6 +21,7 @@ parameters_mapping = {
                                                                         'Data.primaryDataset'],             'type': 'StringType',  'required': False},
                   'userfiles'      : {'default': None,       'config': ['Data.userInputFile'],              'type': 'StringType',  'required': False},
                   'dbsurl'         : {'default': 'global',   'config': ['Data.inputDBS'],                   'type': 'StringType',  'required': False},
+                  'useparent'      : {'default': None,       'config': ['Data.useParent'],                  'type': 'BooleanType', 'required': False},
                   'ignorelocality' : {'default': False,      'config': ['Data.ignoreLocality'],             'type': 'BooleanType', 'required': False},
                   'splitalgo'      : {'default': None,       'config': ['Data.splitting'],                  'type': 'StringType',  'required': True },
                   'algoargs'       : {'default': None,       'config': ['Data.unitsPerJob'],                'type': 'IntType',     'required': True },
