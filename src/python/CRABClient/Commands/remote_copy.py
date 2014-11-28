@@ -67,14 +67,14 @@ class remote_copy(SubCommand):
             return -1
 
         #lcgCmd = 'lcg-cp --connect-timeout 20 --sendreceive-timeout 240 --verbose -b -D srmv2'
-        lcgCmd = 'lcg-cp --connect-timeout 20 --verbose -b -D srmv2'
+        Cmd = 'env -i gfal-copy -v'
 
        #Increase the client timeout
         if self.options.waittime==None:
-            lcgCmd=lcgCmd+" --sendreceive-timeout 1800"
+            Cmd=Cmd+" -T 1800"
         else:
             sendrecievetimeadd=1800+int(self.options.waittime)
-            lcgCmd=lcgCmd+" --sendreceive-timeout " + str(sendrecievetimeadd)
+            Cmd=Cmd+" -T " + str(sendrecievetimeadd)
 
         #lcgtimeout = 20 + 240 + 60 #giving 1 extra minute: 5min20"
         srmtimeout = 900 #default transfer timeout in case the file size is unknown: 15min
@@ -121,7 +121,7 @@ class remote_copy(SubCommand):
             ##### Creating the command
             maxtime = srmtimeout if not 'size' in myfile or myfile['size']==0 else int(ceil(2*myfile['size']/downspeed)) #timeout based on file size and download speed * 2
             localsrmtimeout = minsrmtimeout if maxtime < minsrmtimeout else maxtime #do not want a too short timeout
-            cmd = '%s %s %s %%s' % (lcgCmd, ' --srm-timeout ' + str(localsrmtimeout) + ' ', myfile['pfn'])
+            cmd = '%s %s %s %%s' % (Cmd, ' -t ' + str(localsrmtimeout) + ' ', myfile['pfn'])
             if url_input:
                 cmd = cmd % localFilename
             else:
