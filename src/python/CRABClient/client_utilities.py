@@ -25,6 +25,8 @@ from CRABClient.client_exceptions import TaskNotFoundException, CachefileNotFoun
 from WMCore.Services.UserFileCache.UserFileCache import UserFileCache
 import CRABClient.Emulator
 
+from WMCore.Configuration import Configuration
+
 BASEURL = '/crabserver/'
 SERVICE_INSTANCES = {'prod': 'cmsweb.cern.ch',
                      'preprod': 'cmsweb-testbed.cern.ch',
@@ -575,3 +577,14 @@ def server_info(subresource, server, proxyfilename, baseurl, **kwargs):
     dictresult, status, reason = server.get(baseurl, requestdict)
 
     return dictresult['result'][0]
+
+def getBasicConfig():
+    config = Configuration()
+
+    config.section_("General")
+    config.section_("JobType")
+    config.section_("Data")
+    config.section_("Site")
+    config.section_("User")
+    
+    return config
