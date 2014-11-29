@@ -38,6 +38,21 @@ class checkwrite(SubCommand):
             else:
                 return {'status': 'FAILED'}
 
+        cp_cmd = ""
+        del_cmd = ""
+        if self.cmd_exists("gfal-copy") and self.cmd_exists("gfal-rm"):
+            self.logger.info("Will use `gfal-copy`, `gfal-rm` commands for checking write permissions")
+            cp_cmd = "env -i gfal-copy -v -t 180 "
+            del_cmd = "env -i gfal-rm -v -t 180 "
+        elif self.cmd_exists("lcg-cp") and self.cmd_exists("lcg-del"):
+            self.logger.info("Will use `lcg-cp`, `lcg-del` commands for checking write permissions")
+            cp_cmd = "lcg-cp -v -b -D srmv2 --connect-timeout 180 "
+            del_cmd = "lcg-del --connect-timeout 180 -b -l -D srmv2 "
+        else:
+            self.logger.info("Neither gfal or lcg command was found")
+            return {'status': 'FAILED'}
+
+
         self.logger.info('Will check write permission in %s on site %s' % (self.lfnsaddprefix, self.options.sitename))
 
         retry = 0
@@ -49,11 +64,11 @@ class checkwrite(SubCommand):
                 self.createFile()
                 pfn = self.getPFN()
             self.logger.info('Attempting to copy (dummy) file %s to %s on site %s' % (self.filename, self.lfnsaddprefix, self.options.sitename))
-            cpout, cperr, cpexitcode = self.lcgcp(pfn)
+            cpout, cperr, cpexitcode = self.cp(pfn, cp_cmd)
             if cpexitcode == 0:
                 self.logger.info('Successfully copied file %s to %s on site %s' % (self.filename, self.lfnsaddprefix, self.options.sitename))
                 self.logger.info('Attempting to delete file %s from site %s' % (pfn, self.options.sitename))
-                delexitcode = self.lcgdelete(pfn)
+                delexitcode = self.delete(pfn, del_cmd)
                 if delexitcode:
                     self.logger.info('%sWarning%s: Failed to delete file %s from site %s' % (colors.RED, colors.NORMAL, pfn, self.options.sitename))
                 else:
@@ -78,7 +93,7 @@ class checkwrite(SubCommand):
                 elif 'exist' in cpout or 'exist' in cperr and retry == 0:
                     self.logger.info('Error copying file %s to %s on site %s; it may be that file already exists.' % (self.filename, self.lfnsaddprefix, self.options.sitename))
                     self.logger.info('Attempting to delete file %s from site %s' % (pfn, self.options.sitename))
-                    delexitcode = self.lcgdelete(pfn)
+                    delexitcode = self.delete(pfn, del_cmd)
                     if delexitcode:
                         self.logger.info('Failed to delete file %s from site %s' % (pfn, self.options.sitename))
                         use_new_file = True
@@ -137,43 +152,51 @@ class checkwrite(SubCommand):
         return pfn
 
 
-    def lcgcp(self, pfn):
+    def cmd_exists(self, cmd):
+        try:
+            null = open("/dev/null", "w")
+            subprocess.Popen(cmd, stdout=null, stderr=null)
+            null.close()
+            return True
+        except OSError:
+            return False
+
+
+    def cp(self, pfn, command):
 
         abspath = path.abspath(self.filename)
-        cpcmd = "lcg-cp -v -b -D srmv2 --connect-timeout 180 " + abspath + " '" + pfn + "'"
+        if self.cmd_exists("gfal-copy"):
+            abspath = "file://" + abspath
+        cpcmd = command + abspath + " '" + pfn + "'"
         self.logger.info('Executing command: %s' % cpcmd)
         self.logger.info('Please wait...')
         cpprocess = subprocess.Popen(cpcmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
         cpout, cperr = cpprocess.communicate()
         cpexitcode = cpprocess.returncode
         if cpexitcode:
-            self.logger.info('Failed running lcg-cp')
+            self.logger.info('Failed running copy command')
             if cpout:
                 self.logger.info('  Stdout:\n    %s' % str(cpout).replace('\n', '\n    '))
             if cperr:
                 self.logger.info('  Stderr:\n    %s' % str(cperr).replace('\n', '\n    '))
-        else:
-            self.logger.info('Successfully ran lcg-cp')
 
         return cpout, cperr, cpexitcode
 
 
-    def lcgdelete(self, pfn):
+    def delete(self, pfn, command):
 
-        rmcmd = "lcg-del --connect-timeout 180 -b -l -D srmv2 '" + pfn + "'"
+        rmcmd = command + "'" + pfn + "'"
         self.logger.info('Executing command: %s' % rmcmd)
         self.logger.info('Please wait...')
         delprocess = subprocess.Popen(rmcmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
         delout, delerr = delprocess.communicate()
         delexitcode = delprocess.returncode
         if delexitcode:
-            self.logger.info('Failed running lcg-del')
+            self.logger.info('Failed running delete command')
             if delout:
                 self.logger.info('  Stdout:\n    %s' % str(delout).replace('\n', '\n    '))
             if delerr:
                 self.logger.info('  Stderr:\n    %s' % str(delerr).replace('\n', '\n    '))
-        else:
-            self.logger.info('Successfully ran lcg-del')
 
         return delexitcode
 
