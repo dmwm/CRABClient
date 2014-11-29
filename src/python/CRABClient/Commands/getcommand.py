@@ -10,8 +10,9 @@ import re
 import copy
 
 class getcommand(SubCommand):
-    """ Retrieve the output files of a number of jobs specified by the -q/--quantity option. The task
-        is identified by -t/--task option
+    """
+    Retrieve the output files of a number of jobs specified by the -q/--quantity option. The task
+    is identified by the -d/--dir option.
     """
 
     visible = False
@@ -65,7 +66,7 @@ class getcommand(SubCommand):
         cpresults = []
 #        for workflow in dictresult['result']: TODO re-enable this when we will have resubmissions
         workflow = dictresult['result']        #TODO assigning workflow to dictresult. for the moment we have only one wf
-        arglist = ['--destination', self.dest, '--input', workflow, '-t', self.options.task, '--proxy', self.proxyfilename, '--parallel', self.options.nparallel, '--wait', self.options.waittime]
+        arglist = ['--destination', self.dest, '--input', workflow, '-d', self.options.task, '--proxy', self.proxyfilename, '--parallel', self.options.nparallel, '--wait', self.options.waittime]
         if len(workflow) > 0:
             if self.options.xroot:
                 self.logger.debug("XRootD urls are requested")

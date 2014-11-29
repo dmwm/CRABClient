@@ -45,10 +45,10 @@ class uploadlog(SubCommand):
                                  help = "Specify the log path file",
                                  )
 
-        self.parser.add_option( "-t", "--task",
-                                     dest = "task",
-                                     default = None,
-                                     help = "Same as -c/-continue" )
+        self.parser.add_option("-d", "--dir",
+                               dest = "task",
+                               default = None,
+                               help = "Path to the crab project directory for which the crab command should be executed.")
 
 
     def validateOptions(self):
@@ -69,8 +69,8 @@ class uploadlog(SubCommand):
                     if  self.crab3dic["taskname"] != None:
                         self.options.task = self.crab3dic["taskname"]
                     else:
-                        msg = '%sError%s: Please use the task option -t or --logpath to specify which log to upload' % (colors.RED, colors.NORMAL)
+                        msg = '%sError%s: Please use the directory option -d or --logpath to specify which log to upload' % (colors.RED, colors.NORMAL)
                         raise ConfigurationException(msg)
         else:
-            msg = '%sError%s: Please use the task option -t or --logpath to specify which log to upload' % (colors.RED, colors.NORMAL)
+            msg = '%sError%s: Please use the directory option -d or --logpath to specify which log to upload' % (colors.RED, colors.NORMAL)
             raise ConfigurationException(msg)

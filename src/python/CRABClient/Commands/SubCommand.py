@@ -8,7 +8,7 @@ from ast import literal_eval
 from CRABClient.client_utilities import loadCache, getWorkArea, server_info, createWorkArea
 from CRABClient.client_utilities import BASEURL, SERVICE_INSTANCES
 import CRABClient.Emulator
-from CRABClient.client_exceptions import ConfigurationException, MissingOptionException , EnvironmentException
+from CRABClient.client_exceptions import ConfigurationException, MissingOptionException, EnvironmentException, UnknownOptionException
 from CRABClient.ClientMapping import parameters_mapping, commands_configuration
 from CRABClient.CredentialInteractions import CredentialInteractions
 from CRABClient.__init__ import __version__
@@ -189,6 +189,11 @@ class SubCommand(ConfigCommand):
         cmdargs = cmdargs or []
         (self.options, self.args) = self.parser.parse_args(cmdargs)
 
+        if self.options.oldtask is not None:
+            msg = "CRAB command line option error: the option -t/--task has been renamed to -d/--dir."
+            self.logger.error(msg)
+            raise UnknownOptionException
+ 
         ## Validate the command line parameters before initializing the proxy.
         self.validateOptions()
 
@@ -425,10 +430,14 @@ class SubCommand(ConfigCommand):
                                help = "Use the given proxy. Skip Grid proxy creation and myproxy delegation.")
 
         if self.cmdconf['requiresTaskOption']:
-            self.parser.add_option("-t", "--task",
+            self.parser.add_option("-d", "--dir",
                                    dest = "task",
                                    default = None,
-                                   help = "Same as -c/-continue.")
+                                   help = "Path to the crab project directory for which the crab command should be executed.")
+            self.parser.add_option("-t", "--task",
+                                   dest = "oldtask",
+                                   default = None,
+                                   help = "Deprecated option renamed to -d/--dir in CRAB v3.3.12.")
 
         self.parser.add_option("--voRole",
                                dest = "voRole",

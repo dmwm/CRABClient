@@ -28,15 +28,15 @@ These are the main CRAB commands available in the **3.0.x** version. In the pict
 
     * ``crab status``: shows the status progress of your tasks, or detailed information of the task;
 
-    * ``crab get-output``: retrieves the output files of the successful jobs specified by -r/--range option part of the task identified by -t/--task option;
+    * ``crab get-output``: retrieves the output files of the successful jobs specified by -r/--range option part of the task identified by -d/--dir option;
 
-    * ``crab get-log``: retrieves the log files of the finished jobs specified by -r/--range option part of the task identified by -t/--task option;
+    * ``crab get-log``: retrieves the log files of the finished jobs specified by -r/--range option part of the task identified by -d/--dir option;
 
     * ``crab get-error``: retrieves the post mortem infromation of all the failed jobs in the task, or detailed information of just one failed job;
 
-    * ``crab report``: gets the list of good lumis for your task identified by the -t/--task option.
+    * ``crab report``: gets the list of good lumis for your task identified by the -d/--dir option.
 
-    * ``crab kill``: abort the task identified by the -t/--task option and all kill all the jobs associated to it.
+    * ``crab kill``: abort the task identified by the -d/--dir option and all kill all the jobs associated to it.
 
     * ``crab resubmit``: resubmit the failed jobs of a finished task.
 
@@ -117,7 +117,7 @@ to check a specific task just add the task optiojn:
 
 .. code-block:: console
 
-    $ crab status -t  <dir name>
+    $ crab status -d  <dir name>
 
 which should produce a similar output on the terminale screen like::
 
@@ -190,11 +190,11 @@ One of the major changes between CRAB-2 and CRAB-3 is on the output file managem
 
 .. code-block:: console
 
-    $ crab get-output -t <dir name> -r [job lists/ranges]
+    $ crab get-output -d <dir name> -r [job lists/ranges]
 
 the job results will be copied in the res subdirectory of your crab project, but you can always define through the command line outputpath option to store the files directly in another path. Here below an example of how the screen output of the command should look like::
 
-    [lxplus432] ~/scratch1/MyTests $ crab get-output --task=crab_MyAnalysis1 --range=1-5
+    [lxplus432] ~/scratch1/MyTests $ crab get-output --dir=crab_MyAnalysis1 --range=1-5
     Checking credentials
     Starting retrieving remote files for requested jobs ['1', '2', '3', '4', '5']
     Job 1: output in /afs/cern.ch/user/m/mcinquil/scratch1/MyTests/crab_MyAnalysis1/results/output_1.1.root
@@ -212,13 +212,13 @@ Another change between CRAB-2 and CRAB-3 is on the log file management. As for t
 
 .. code-block:: console
 
-    $ crab get-log -t <dir name> -r [job lists/ranges]
+    $ crab get-log -d <dir name> -r [job lists/ranges]
 
 The job log files will be copied in the res subdirectory of your CRAB project, but you can always define through the command line outputpath option to store the files directly in another path.
 
 Here below an example of how the screen output of the command should look like::
 
-    [lxplus432] ~/scratch1/MyTests $ crab get-log -t crab_MyAnalysis1 -r 1-5
+    [lxplus432] ~/scratch1/MyTests $ crab get-log -d crab_MyAnalysis1 -r 1-5
     Checking credentials
     Starting retrieving remote files for requested jobs ['1', '2', '3', '4', '5']
     Job 1: output in /afs/cern.ch/user/m/mcinquil/scratch1/MyTests/crab_MyAnalysis1/results/1.tgz
@@ -236,11 +236,11 @@ In order to retrieve the list of good lumi sections that the task has analyzed i
 
 .. code-block:: console
 
-    $ crab report -t <dir name>
+    $ crab report -d <dir name>
 
 Here below an example of how the screen output of the command should look like::
 
-    [lxplus406] ~/scratch1/MyTests $ crab report -t crab_MyAnalysis1/
+    [lxplus406] ~/scratch1/MyTests $ crab report -d crab_MyAnalysis1/
     Sucessfully analyzed 84 lumi(s) from 1 run(s)
     Summary of processed lumi sections written to lumiReport.json
 
@@ -255,7 +255,7 @@ To kill a task you can type:
 
 .. code-block:: console
 
-    $ crab kill -t <dir name>
+    $ crab kill -d <dir name>
 
 which should simply produce a similar output on the terminale screen like::
 
@@ -269,7 +269,7 @@ To resubmit a task you can type:
 
 .. code-block:: console
 
-    $ crab resubmit -t <dir name>
+    $ crab resubmit -d <dir name>
 
 You can only resubmit completed tasks, so if you resubmit a running one you will get something similar to::
 
@@ -295,7 +295,7 @@ You can also use the --force option during resubmission which will kill a task i
 
 .. code-block:: console
 
-    $ crab resubmit --force -t crab_taskname
+    $ crab resubmit --force -d crab_taskname
 
 which willl produce::
 
@@ -309,7 +309,7 @@ To publish your output, type:
 
 .. code-block:: console
 
-    $ crab publish -t <dir name> -c [config_file] -u [dbs_url]
+    $ crab publish -d <dir name> -c [config_file] -u [dbs_url]
 
 only one of -c/-u is required. If you use -c, you must have specified::
 
