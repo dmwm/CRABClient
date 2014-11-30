@@ -588,3 +588,13 @@ def getBasicConfig():
     config.section_("User")
     
     return config
+
+
+def cmd_exist(cmd):
+    try:
+        null = open("/dev/null", "w")
+        subprocess.Popen(cmd, stdout=null, stderr=null)
+        null.close()
+        return True
+    except OSError:
+        return False

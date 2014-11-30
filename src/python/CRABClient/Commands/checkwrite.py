@@ -3,7 +3,7 @@ from os import path, remove
 import datetime
 
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.client_utilities import colors, getUserDNandUsernameFromSiteDB
+from CRABClient.client_utilities import colors, getUserDNandUsernameFromSiteDB, cmd_exist
 from WMCore.Services.PhEDEx.PhEDEx import PhEDEx
 from CRABClient.client_exceptions import MissingOptionException, ConfigurationException
 from httplib import HTTPException
@@ -40,11 +40,11 @@ class checkwrite(SubCommand):
 
         cp_cmd = ""
         del_cmd = ""
-        if self.cmd_exists("gfal-copy") and self.cmd_exists("gfal-rm"):
+        if cmd_exist("gfal-copy") and cmd_exist("gfal-rm"):
             self.logger.info("Will use `gfal-copy`, `gfal-rm` commands for checking write permissions")
             cp_cmd = "env -i gfal-copy -v -t 180 "
             del_cmd = "env -i gfal-rm -v -t 180 "
-        elif self.cmd_exists("lcg-cp") and self.cmd_exists("lcg-del"):
+        elif cmd_exist("lcg-cp") and cmd_exist("lcg-del"):
             self.logger.info("Will use `lcg-cp`, `lcg-del` commands for checking write permissions")
             cp_cmd = "lcg-cp -v -b -D srmv2 --connect-timeout 180 "
             del_cmd = "lcg-del --connect-timeout 180 -b -l -D srmv2 "
@@ -152,20 +152,10 @@ class checkwrite(SubCommand):
         return pfn
 
 
-    def cmd_exists(self, cmd):
-        try:
-            null = open("/dev/null", "w")
-            subprocess.Popen(cmd, stdout=null, stderr=null)
-            null.close()
-            return True
-        except OSError:
-            return False
-
-
     def cp(self, pfn, command):
 
         abspath = path.abspath(self.filename)
-        if self.cmd_exists("gfal-copy"):
+        if cmd_exist("gfal-copy"):
             abspath = "file://" + abspath
         cpcmd = command + abspath + " '" + pfn + "'"
         self.logger.info('Executing command: %s' % cpcmd)

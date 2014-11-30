@@ -11,7 +11,7 @@ from WMCore.FwkJobReport.FileInfo import readAdler32, readCksum
 
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.CredentialInteractions import CredentialInteractions
-from CRABClient.client_utilities import colors
+from CRABClient.client_utilities import colors, cmd_exist
 
 
 class remote_copy(SubCommand):
@@ -67,7 +67,7 @@ class remote_copy(SubCommand):
             return -1
 
         command = ""
-        if self.cmd_exists("gfal-copy"):
+        if cmd_exist("gfal-copy"):
             command = "env -i gfal-copy -v "
             command += " -T "
         else:
@@ -126,7 +126,7 @@ class remote_copy(SubCommand):
             localsrmtimeout = minsrmtimeout if maxtime < minsrmtimeout else maxtime # do not want a too short timeout
 
             timeout = " --srm-timeout "
-            if self.cmd_exists("gfal-copy"):
+            if cmd_exist("gfal-copy"):
                 timeout = " -t "
             cmd = '%s %s %s %%s' % (command, timeout + str(localsrmtimeout) + ' ', myfile['pfn'])
             if url_input:
@@ -169,16 +169,6 @@ class remote_copy(SubCommand):
             subprocessarray[i].start()
 
         return inputq,subprocessarray
-
-
-    def cmd_exists(self, cmd):
-        try:
-            null = open("/dev/null", "w")
-            subprocess.Popen(cmd, stdout=null, stderr=null)
-            null.close()
-            return True
-        except OSError:
-            return False
 
 
     def stopchildproc(self,inputq,processarray,nsubprocess):
