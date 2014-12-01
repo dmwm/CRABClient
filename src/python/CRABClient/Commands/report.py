@@ -1,16 +1,16 @@
-import json
 import os
 import re
+import json
 from string import upper
 from ast import literal_eval
 
-from CRABClient.Commands.request_type import request_type
-from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.client_utilities import getJobTypes, colors
-from CRABClient.JobType.BasicJobType import BasicJobType
-from CRABClient.client_exceptions import ConfigurationException
-from CRABClient import __version__
 import CRABClient.Emulator
+from CRABClient import __version__
+from CRABClient.Commands.SubCommand import SubCommand
+from CRABClient.JobType.BasicJobType import BasicJobType
+from CRABClient.Commands.request_type import request_type
+from CRABClient.client_utilities import getJobTypes, colors
+from CRABClient.client_exceptions import ConfigurationException
 
 class report(SubCommand):
     """
@@ -36,21 +36,30 @@ class report(SubCommand):
         if not self.usedbs and not dictresult['result'][0]['runsAndLumis']:
             self.logger.info('%sError%s: Cannot get information we need from the CRAB server. Only job that in FINISH state and the output has been transferred can be used' % (colors.RED,colors.NORMAL))
             return dictresult
-
         elif self.usedbs and not dictresult['result'][0]['dbsInLumilist'] and not dictresult['result'][0]['dbsOutLumilist']:
             self.logger.info('%sError%s: Cannot get the information we need from DBS. Please check that the output (or input) datasets are not empty, the jobs have finished, and the publication'+\
                              ' has been performed' % (colors.RED, colors.NORMAL))
             return dictresult
 
-        #get the runlumi per each job. runsAndLumis contains the filematadata info per job
-        runlumiLists = map(lambda x: literal_eval(x['runlumi']), dictresult['result'][0]['runsAndLumis'].values())
+        # Keeping only EDM files
+        edmOnlyRes = {}
+        for jn, val in dictresult['result'][0]['runsAndLumis'].iteritems():
+             edmOnlyRes[jn] = [f for f in val if f['type'] == 'EDM']
 
         if not self.usedbs:
-            analyzed, diff, doublelumis = BasicJobType.mergeLumis(runlumiLists, dictresult['result'][0]['lumiMask'])
-            numFiles = len(reduce(set().union, map(lambda x: literal_eval(x['parents']), dictresult['result'][0]['runsAndLumis'].values())))
-            self.logger.info("%d files have been read" % numFiles)
-            self.logger.info("%d events have been read" % sum(map(lambda x: x['events'], dictresult['result'][0]['runsAndLumis'].values())))
-
+            analyzed, diff, doublelumis = BasicJobType.mergeLumis(edmOnlyRes, dictresult['result'][0]['lumiMask'])
+            def _getNumFiles(jobs):
+                pfiles = set() # parent files
+                for jn, val in jobs.iteritems():
+                    for rep in val:
+                        pfiles = pfiles.union(set(literal_eval(rep['parents'])))
+                return len(pfiles)
+            self.logger.info("%d files have been processed" % _getNumFiles(edmOnlyRes))
+            def _getNumEvents(jobs, type):
+                for jn, val in jobs.iteritems():
+                    yield sum([ x['events'] for x in val if x['type'] == type])
+            self.logger.info("%d events have been read" % sum(_getNumEvents(dictresult['result'][0]['runsAndLumis'], 'POOLIN')))
+            self.logger.info("%d events have been processed" % sum(_getNumEvents(dictresult['result'][0]['runsAndLumis'], 'EDM')))
         else:
             analyzed, diff, doublelumis = BasicJobType.subtractLumis(dictresult['result'][0]['dbsInLumilist'], dictresult['result'][0]['dbsOutLumilist'])
             self.logger.info("%d files have been read" % dictresult['result'][0]['dbsNumFiles'])

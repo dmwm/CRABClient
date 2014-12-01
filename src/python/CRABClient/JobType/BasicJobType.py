@@ -4,7 +4,7 @@ Conventions:
  1) the plug-in file name has to be equal to the plug-in class
  2) a plug-in needs to implement mainly the run method
 """
-
+from ast import literal_eval
 from WMCore.Configuration import Configuration
 from WMCore.DataStructs.LumiList import LumiList
 
@@ -56,12 +56,15 @@ class BasicJobType(object):
         mergedLumis = set()
 
         #merge the lumis from single files
-        for report in inputdata:
-            for run,lumis in report.iteritems():
-                for lumi in lumis:
-                    if (run,lumi) in mergedLumis:
-                        doubleLumis.add((run,lumi))
-                    mergedLumis.add((run,lumi))
+        for reports in inputdata.values():
+            for report in reports:
+                for run, lumis in literal_eval(report['runlumi']).iteritems():
+                    for lumi in lumis:
+                        if (run,lumi) == ("193999","14"):
+                            import pdb;pdb.set_trace()
+                        if (run,lumi) in mergedLumis:
+                            doubleLumis.add((run,lumi))
+                        mergedLumis.add((run,lumi))
 
         #convert the runlumis from list of pairs to dict: [(123,3), (123,4), (123,5), (123,7), (234,6)] => {123 : [3,4,5,7], 234 : [6]}
         dLumisDict = {}
