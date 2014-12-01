@@ -189,11 +189,6 @@ class SubCommand(ConfigCommand):
         cmdargs = cmdargs or []
         (self.options, self.args) = self.parser.parse_args(cmdargs)
 
-        if self.options.oldtask is not None:
-            msg = "CRAB command line option error: the option -t/--task has been renamed to -d/--dir."
-            self.logger.error(msg)
-            raise UnknownOptionException
- 
         ## Validate the command line parameters before initializing the proxy.
         self.validateOptions()
 
@@ -461,6 +456,10 @@ class SubCommand(ConfigCommand):
         Validate the command line options of the command.
         Raise a ConfigurationException in case of error; don't do anything if ok.
         """
+
+        if self.cmdconf['requiresTaskOption'] and self.options.oldtask is not None:
+            msg = "CRAB command line option error: the option -t/--task has been renamed to -d/--dir."
+            raise UnknownOptionException(msg)
 
         if self.cmdconf['requiresTaskOption'] and self.options.task is None:
             if len(self.args) == 1 and self.args[0]:

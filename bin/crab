@@ -77,13 +77,13 @@ class CRABClient(object):
 
         # This is the important bit
         self.parser.disable_interspersed_args()
-        self.parser.add_option( "-q", "--quiet",
+        self.parser.add_option( "--quiet",
                                 action = "store_true",
                                 dest = "quiet",
                                 default = False,
                                 help = "don't print any messages to stdout" )
 
-        self.parser.add_option( "-d", "--debug",
+        self.parser.add_option( "--debug",
                                 action = "store_true",
                                 dest = "debug",
                                 default = False,
