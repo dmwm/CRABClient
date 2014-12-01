@@ -59,8 +59,8 @@ class submit(SubCommand):
                 par = (section + '.' + attr)
                 #if the parameter is not know exit, but try to correct it before
                 if not SpellChecker.is_correct( par ):
-                    msg = 'The parameter %s is not known.' % par
-                    msg += '' if SpellChecker.correct(par) == par else ' Did you mean %s?' % SpellChecker.correct(par)
+                    msg = 'The parameter %s is not known.\nPlease refer to <https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookCRAB3Tutorial#CRAB_configuration_parameters> for list of valid parameter.\nSee the ./crab.log file for more details"' % par
+                    msg += '' if SpellChecker.correct(par) == par else '\nOr maybe did you mean %s?' % SpellChecker.correct(par)
                     raise ConfigurationException(msg)
 
         #usertarball and cmsswconfig use this parameter and we should set it up in a correct way
