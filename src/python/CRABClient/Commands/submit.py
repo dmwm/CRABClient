@@ -372,10 +372,10 @@ class submit(SubCommand):
     def getDBSURLAndAlias(self, arg, dbs_type = 'reader'):
         if arg in DBSURLS[dbs_type].keys():
             return DBSURLS[dbs_type][arg], arg
-        if arg in DBSURLS[dbs_type].values():
+        if arg.rstrip('/') in DBSURLS[dbs_type].values():
             for alias in DBSURLS[dbs_type].keys():
-                if DBSURLS[dbs_type][alias] == arg.rstrip("/"):
-                    return arg.rstrip("/"), alias
+                if DBSURLS[dbs_type][alias] == arg.rstrip('/'):
+                    return DBSURLS[dbs_type][alias], alias
         return None, None
 
 
