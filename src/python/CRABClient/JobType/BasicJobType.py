@@ -60,8 +60,6 @@ class BasicJobType(object):
             for report in reports:
                 for run, lumis in literal_eval(report['runlumi']).iteritems():
                     for lumi in lumis:
-                        if (run,lumi) == ("193999","14"):
-                            import pdb;pdb.set_trace()
                         if (run,lumi) in mergedLumis:
                             doubleLumis.add((run,lumi))
                         mergedLumis.add((run,lumi))
