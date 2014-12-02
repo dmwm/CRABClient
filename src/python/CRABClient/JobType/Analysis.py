@@ -67,19 +67,19 @@ class Analysis(BasicJobType):
 
         ## Interogate CMSSW config and user config for output file names. For now no use for EDM files or TFiles here.
         edmfiles, tfiles = cmsswCfg.outputFiles()
-        outputFiles = [re.sub('^file:', '', file) for file in getattr(self.config.JobType, 'outputFiles', []) if re.sub('^file:', '', file) not in edmfiles+tfiles]
+        addoutputFiles = [re.sub(r'^file:', '', file) for file in getattr(self.config.JobType, 'outputFiles', []) if re.sub(r'^file:', '', file) not in edmfiles+tfiles]
         self.logger.debug("The following EDM output files will be collected: %s" % edmfiles)
         self.logger.debug("The following TFile output files will be collected: %s" % tfiles)
         self.logger.debug("The following user output files will be collected: %s" % outputFiles)
         configArguments['edmoutfiles'] = edmfiles
         configArguments['tfileoutfiles'] = tfiles
-        configArguments['addoutputfiles'].extend(outputFiles)
+        configArguments['addoutputfiles'].extend(addoutputFiles)
 
         # Write out CMSSW config
         cmsswCfg.writeFile(cfgOutputName)
 
         with UserTarball(name=tarFilename, logger=self.logger, config=self.config) as tb:
-            inputFiles = [re.sub('^file:', '', file) for file in getattr(self.config.JobType, 'inputFiles', [])]
+            inputFiles = [re.sub(r'^file:', '', file) for file in getattr(self.config.JobType, 'inputFiles', [])]
             tb.addFiles(userFiles=inputFiles, cfgOutputName=cfgOutputName)
             configArguments['adduserfiles'] = [os.path.basename(f) for f in inputFiles]
             uploadResults = tb.upload()
@@ -150,7 +150,7 @@ class Analysis(BasicJobType):
             valid = False
             reason += 'Crab configuration problem: missing or null input dataset name. '
 
-        if self.splitAlgo == 'EventBased':  
+        if self.splitAlgo == 'EventBased':
             valid = False
             reason += 'Analysis JobType does not support EventBased Splitting.'
 
