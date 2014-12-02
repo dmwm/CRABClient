@@ -9,6 +9,7 @@ import sys
 import hashlib
 import logging
 import pickle
+import re
 
 from PSetTweaks.WMTweak import makeTweak
 
@@ -109,7 +110,7 @@ class CMSSWConfig(object):
         outputModules = set()
         for n,o in process.outputModules_().iteritems():
             if n in modulesOnEndPaths and hasattr(o, 'fileName'):
-                edmfiles.append(o.fileName.value().lstrip('file:'))
+                edmfiles.append(re.sub(r'^file:', '', o.fileName.value()))
                 outputModules.add(o)
 
         ## If there are multiple output modules, make sure they have dataset.filterName set.
@@ -127,6 +128,6 @@ class CMSSWConfig(object):
         if process.services.has_key('TFileService'):
             tFileService = process.services['TFileService']
             if "fileName" in tFileService.parameterNames_():
-                tfiles.append(getattr(tFileService, 'fileName').value().lstrip('file:'))
+                tfiles.append(re.sub(r'^file:', '', getattr(tFileService, 'fileName').value()))
 
         return edmfiles, tfiles
