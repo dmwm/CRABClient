@@ -30,19 +30,19 @@ class remote_copy(SubCommand):
         This allows to set specific command options
         """
 
-        self.parser.add_option( "-d", "--destination",
-                                dest = "destination",
-                                default = None )
+        self.parser.add_option("--destination",
+                               dest = "destination",
+                               default = None )
 
-        self.parser.add_option( "-i", "--input",
-                                dest = "inputdict",
-                                default = None )
+        self.parser.add_option("--input",
+                               dest = "inputdict",
+                               default = None )
 
-        self.parser.add_option("-l", "--parallel",
-                                dest = "nparallel")
+        self.parser.add_option("--parallel",
+                               dest = "nparallel")
 
-        self.parser.add_option("-w", "--wait",
-                                dest = "waittime")
+        self.parser.add_option("--wait",
+                               dest = "waittime")
 
     def __call__(self):
         """

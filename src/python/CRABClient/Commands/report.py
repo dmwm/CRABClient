@@ -59,7 +59,7 @@ class report(SubCommand):
                 for jn, val in jobs.iteritems():
                     yield sum([ x['events'] for x in val if x['type'] == type])
             self.logger.info("%d events have been read" % sum(_getNumEvents(dictresult['result'][0]['runsAndLumis'], 'POOLIN')))
-            self.logger.info("%d events have been processed" % sum(_getNumEvents(dictresult['result'][0]['runsAndLumis'], 'EDM')))
+            self.logger.info("%d events have been written" % sum(_getNumEvents(dictresult['result'][0]['runsAndLumis'], 'EDM')))
         else:
             analyzed, diff, doublelumis = BasicJobType.subtractLumis(dictresult['result'][0]['dbsInLumilist'], dictresult['result'][0]['dbsOutLumilist'])
             self.logger.info("%d files have been read" % dictresult['result'][0]['dbsNumFiles'])
