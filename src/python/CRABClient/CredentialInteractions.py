@@ -80,6 +80,12 @@ class CredentialInteractions(object):
         return userdn
 
 
+    def getUsername(self):
+        proxy = self.proxy()
+        username = proxy.getUsername()
+        return username
+
+
     def getUsernameFromSiteDB(self):
         """
         Return a the client hypernews name
@@ -91,9 +97,9 @@ class CredentialInteractions(object):
         return username
 
 
-    def getUsername(self):
+    def getUserName(self):
         """
-        Return user name form DN
+        Return user name from DN
         """
         proxy = self.proxy()
         return proxy.getUserName()

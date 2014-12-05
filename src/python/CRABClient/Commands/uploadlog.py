@@ -28,9 +28,9 @@ class uploadlog(SubCommand):
             self.logger.info("%sError:%s Could not locate log file" % (colors.RED, colors.NORMAL))
             raise ConfigurationException
 
-        logfileurl = uploadlogfile(self.logger, self.proxyfilename, logfilename = logfilename, logpath = str(self.logfile), instance = self.instance, serverurl = self.serverurl)
-
-
+        logfileurl = uploadlogfile(self.logger, self.proxyfilename, logfilename = logfilename, \
+                                   logpath = str(self.logfile), instance = self.instance, \
+                                   serverurl = self.serverurl, username = self.proxyusername)
         return {'result' : {'status' : 'SUCCESS' , 'logurl' : logfileurl}}
 
     def setOptions(self):
