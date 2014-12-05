@@ -76,7 +76,18 @@ class getcommand(SubCommand):
             elif self.dump:
                 jobid_pfn_lfn_list = map(lambda x: (x['jobid'], x['pfn'], x['lfn']), workflow)
                 jobid_pfn_lfn_list.sort()
-                self.logger.info('\n'.join(["=== Files from job %s\nPFN: %s\nLFN: %s" % (jobid, pfn, lfn) for jobid, pfn, lfn in jobid_pfn_lfn_list]))
+                lastjobid = -1
+                filecounter = 1
+                msg = ""
+                for jobid, pfn, lfn in jobid_pfn_lfn_list:
+                    if jobid != lastjobid:
+                        msg += "%s=== Files from job %s:" % ('\n' if lastjobid != -1 else '', jobid)
+                        lastjobid = jobid
+                        filecounter = 1
+                    msg += "\n%d) PFN: %s" % (filecounter, pfn)
+                    msg += "\n%s  LFN: %s" % (' '*(len(str(filecounter))), lfn)
+                    filecounter += 1
+                self.logger.info(msg)
                 returndict = {'pfn': [pfn for _, pfn, _ in jobid_pfn_lfn_list], 'lfn': [lfn for _, _, lfn in jobid_pfn_lfn_list]}
             else:
                 self.logger.info("Retrieving %s files" % totalfiles )
