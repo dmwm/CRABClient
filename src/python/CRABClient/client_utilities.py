@@ -121,7 +121,7 @@ def getUrl(instance='prod', resource='workflow'):
         raise ConfigurationException('Error: only the following instances can be used: %s' %str(SERVICE_INSTANCES.keys()))
 
 
-def uploadlogfile(logger, proxyfilename, logfilename = None, logpath = None, instance = 'prod', serverurl = None):
+def uploadlogfile(logger, proxyfilename, logfilename = None, logpath = None, instance = 'prod', serverurl = None, username = None):
 
     doupload = True
 
@@ -158,7 +158,7 @@ def uploadlogfile(logger, proxyfilename, logfilename = None, logpath = None, ins
         doupload = False
 
     if proxyfilename == None:
-        logger.debug('No proxy is give')
+        logger.debug('No proxy was given')
         doupload = False
 
     baseurl = getUrl(instance = instance , resource = 'info')
@@ -171,9 +171,10 @@ def uploadlogfile(logger, proxyfilename, logfilename = None, logpath = None, ins
         logger.debug("cacheURL: %s\nLog file name: %s" % (cacheurl, logfilename))
         logger.info("Uploading log file")
         ufc.uploadLog(logpath, logfilename)
-
         logfileurl = cacheurl + '/logfile?name='+str(logfilename)
-        logger.info("Log file url: %s" %logfileurl)
+        if username:
+            logfileurl += '&username='+str(username)
+        logger.info("Log file url: %s" % (logfileurl))
         return  logfileurl
     else:
         logger.info('Failed to upload the log file')
@@ -388,11 +389,6 @@ def loadCache(task, logger):
     return cPickle.load(loadfile), logfile
 
 
-def getUsername(voRole, voGroup, logger):
-    _, _, proxy = initProxy(voRole, voGroup, logger)
-    return proxy.getUsername()
-
-
 def getUserDN():
     """
     Retrieve the user DN from the proxy.
@@ -473,6 +469,8 @@ def getUsernameFromSiteDB():
         msg += " Command '%s' returned status %s and output '%s'." % (cmd.replace('\n', '\\n'), status, username)
         raise UsernameException(msg)
     username = string.strip(username).replace('"','')
+    if username == 'null':
+        username = None
     return username
 
 
@@ -489,6 +487,9 @@ def getUsernameFromSiteDB_wrapped(logger):
     infomsg += " For instructions on how to map a certificate in SiteDB, see https://twiki.cern.ch/twiki/bin/viewauth/CMS/SiteDBForCRAB."
     try:
         username = getUsernameFromSiteDB()
+        if not username:
+            raise
+        logger.info("Username is: %s" % username)
     except ProxyException, ex:
         msg = "%sError%s: %s" % (colors.RED, colors.NORMAL, ex)
         logger.error(msg)
@@ -500,8 +501,6 @@ def getUsernameFromSiteDB_wrapped(logger):
         msg = "%sError%s: Unable to retrieve username from SiteDB." % (colors.RED, colors.NORMAL)
         msg += infomsg
         logger.error(msg)
-    else:
-        logger.info("Username is: %s" % username)
     return username
 
 

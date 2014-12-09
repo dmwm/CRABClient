@@ -23,7 +23,6 @@ class checkusername(SubCommand):
 
 
     def crabCheck(self):
-
         userdn = None
         username = None
         self.logger.info('Attempting to retrieve your username from SiteDB...')

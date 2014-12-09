@@ -3,7 +3,7 @@ import urllib
 import math
 
 import CRABClient.Emulator
-from CRABClient.client_utilities import colors, getUsername
+from CRABClient.client_utilities import colors
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.client_exceptions import RESTCommunicationException, ConfigurationException
 from CRABClient import __version__
@@ -121,7 +121,6 @@ class status(SubCommand):
             self.logger.info("Dashboard monitoring URL:\t%s" % dashurl)
 
         elif dictresult['jobSetID']:
-            username = urllib.quote(getUsername(self.voRole, self.voGroup, self.logger))
             self.logger.info("Panda url:\t\t\thttp://pandamon-cms-dev.cern.ch/jobinfo?jobtype=*&jobsetID=%s&prodUserName=%s" % (dictresult['jobSetID'], username))
             # We have cases where the job def errors are there but we have a job def id
             logJDefErr(jdef=dictresult)

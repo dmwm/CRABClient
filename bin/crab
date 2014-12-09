@@ -116,34 +116,39 @@ class CRABClient(object):
 
             Adapted from Doug Hellmann
             """
-            ## feedback email address
-
-            feebackemail = 'hn-cms-computing-tools@cern.ch'
+            ## Feedback email address
+            feedbackemail = 'hn-cms-computing-tools@cern.ch'
 
             #adding a file handler
             clientinstance = self
             filehandler = logging.FileHandler(client.logger.logfile)
             logging.getLogger('CRAB3').addHandler(filehandler)
 
-            # This goes to the console
+            ## This goes to the console.
             logging.getLogger('CRAB3.all').error("ERROR: %s: %s" % (exc_type.__name__, exc_value))
-            logging.getLogger('CRAB3.all').error("\n\tPlease email %s for support with the crab.log file or crab.log url." % feebackemail)
+            logging.getLogger('CRAB3.all').error("\n\tPlease email %s for support with the crab.log file or crab.log URL." % (feedbackemail))
             logging.getLogger('CRAB3.all').error("\tClient Version: %s" % client_version)
-            # This goes to the log file
+            ## This goes to the crab log file.
             tbLogger = logging.getLogger('CRAB3')
             tbLogger.error("Unhandled Exception!")
-            tbLogger.error(exc_value, exc_info=(exc_type, exc_value, tback))
+            tbLogger.error(exc_value, exc_info = (exc_type, exc_value, tback))
 
-            #uploading log file
-            if hasattr(clientinstance, 'cmd') and hasattr(clientinstance.cmd , 'proxyfilename') and clientinstance.cmd.proxyfilename != None:
+            ## Uploading the crab log file.
+            if hasattr(clientinstance, 'cmd') and hasattr(clientinstance.cmd, 'proxyfilename') and clientinstance.cmd.proxyfilename != None:
+                username = ''
+                if hasattr(clientinstance.cmd, 'proxyusername'):
+                    username = clientinstance.cmd.proxyusername
                 try:
-                    logurl = uploadlogfile(tbLogger, clientinstance.cmd.proxyfilename, logfilename = None, logpath = str(client.logger.logfile), instance = 'prod')
-                    logging.getLogger('CRAB3.all').error('\tThe log file has been upload automatically, please email the following url %s to %s' % (logurl, feebackemail))
+                    logurl = uploadlogfile(tbLogger, clientinstance.cmd.proxyfilename, logfilename = None, \
+                                           logpath = str(client.logger.logfile), instance = 'prod', username = username)
+                    msg  = "\tThe log file %s has been uploaded automatically." % (client.logger.logfile)
+                    msg += "\n\tPlease email the following URL '%s' to %s." % (logurl, feedbackemail)
+                    logging.getLogger('CRAB3.all').error(msg)
                 except Exception:
-                    logging.getLogger('CRAB3.all').debug('Failed to upload file automatically')
-                    logging.getLogger('CRAB3.all').error('\tPlease use crab uploadlog to upload the log file: %s' %client.logger.logfile )
+                    logging.getLogger('CRAB3.all').debug('Failed to upload log file automatically')
+                    logging.getLogger('CRAB3.all').error('\tPlease use crab uploadlog to upload the log file %s' % (client.logger.logfile))
             else:
-                logging.getLogger('CRAB3.all').error('\tPlease use crab uploadlog to upload the log file: %s' %client.logger.logfile )
+                logging.getLogger('CRAB3.all').error('\tPlease use crab uploadlog to upload the log file %s' % (client.logger.logfile))
 
         sys.excepthook = log_exception
 
