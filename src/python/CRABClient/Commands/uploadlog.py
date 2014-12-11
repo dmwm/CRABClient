@@ -30,7 +30,7 @@ class uploadlog(SubCommand):
 
         logfileurl = uploadlogfile(self.logger, self.proxyfilename, logfilename = logfilename, \
                                    logpath = str(self.logfile), instance = self.instance, \
-                                   serverurl = self.serverurl, username = self.proxyusername)
+                                   serverurl = self.serverurl)
         return {'result' : {'status' : 'SUCCESS' , 'logurl' : logfileurl}}
 
     def setOptions(self):

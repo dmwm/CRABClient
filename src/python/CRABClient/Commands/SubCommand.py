@@ -212,9 +212,6 @@ class SubCommand(ConfigCommand):
         if not self.options.proxy and self.cmdconf['initializeProxy']:
             self.proxy_created = self.proxy.createNewVomsProxySimple(time_left_threshold = 720)
 
-        ## Extract the username from the proxy.
-        self.proxyusername = self.proxy.getUsername()
-
         ## If we get an input configuration file:
         if hasattr(self.options, 'config') and self.options.config is not None:
             ## Load the configuration file and validate it.
