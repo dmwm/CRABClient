@@ -557,7 +557,9 @@ def validateJobids(jobids):
         jobid = list(set(jobid))
         return [('jobids', job) for job in jobid]
     else:
-        raise ConfigurationException("The command line option jobids should be a comma separated list of integers or range, no whitespace")
+        msg  = "The command line option --jobids takes a comma separated list of"
+        msg += " integers or ranges, without whitespaces."
+        raise ConfigurationException(msg)
 
 
 #XXX Trying to do it as a Command causes a lot of headaches (and workaround code).
