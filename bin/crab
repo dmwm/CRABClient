@@ -135,12 +135,9 @@ class CRABClient(object):
 
             ## Uploading the crab log file.
             if hasattr(clientinstance, 'cmd') and hasattr(clientinstance.cmd, 'proxyfilename') and clientinstance.cmd.proxyfilename != None:
-                username = ''
-                if hasattr(clientinstance.cmd, 'proxyusername'):
-                    username = clientinstance.cmd.proxyusername
                 try:
                     logurl = uploadlogfile(tbLogger, clientinstance.cmd.proxyfilename, logfilename = None, \
-                                           logpath = str(client.logger.logfile), instance = 'prod', username = username)
+                                           logpath = str(client.logger.logfile), instance = 'prod')
                     msg  = "\tThe log file %s has been uploaded automatically." % (client.logger.logfile)
                     msg += "\n\tPlease email the following URL '%s' to %s." % (logurl, feedbackemail)
                     logging.getLogger('CRAB3.all').error(msg)

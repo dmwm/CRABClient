@@ -154,7 +154,7 @@ def uploadlogfile(logger, proxyfilename, logfilename = None, logpath = None, ins
     elif not instance in SERVICE_INSTANCES.keys() and serverurl != None:
         instance = 'private'
     elif not instance in SERVICE_INSTANCES.keys() and serverurl == None:
-        logger.debug('%sError%s: serverurl is None' %(colors.RED, colors.NORMAL))
+        logger.debug('%sError%s: serverurl is None' % (colors.RED, colors.NORMAL))
         doupload = False
 
     if proxyfilename == None:
@@ -169,12 +169,15 @@ def uploadlogfile(logger, proxyfilename, logfilename = None, logpath = None, ins
 
         ufc = UserFileCache(cacheurldict)
         logger.debug("cacheURL: %s\nLog file name: %s" % (cacheurl, logfilename))
-        logger.info("Uploading log file")
+        logger.info("Uploading log file...")
         ufc.uploadLog(logpath, logfilename)
+        logger.info("%sSuccess%s: Log file uploaded successfully." % (colors.GREEN, colors.NORMAL))
         logfileurl = cacheurl + '/logfile?name='+str(logfilename)
+        if not username:
+            username = getUsernameFromSiteDB_wrapped(logger, quiet = True)
         if username:
             logfileurl += '&username='+str(username)
-        logger.info("Log file url: %s" % (logfileurl))
+        logger.info("Log file URL: %s" % (logfileurl))
         return  logfileurl
     else:
         logger.info('Failed to upload the log file')
@@ -474,13 +477,17 @@ def getUsernameFromSiteDB():
     return username
 
 
-def getUsernameFromSiteDB_wrapped(logger):
+def getUsernameFromSiteDB_wrapped(logger, quiet = False):
     """
     Wrapper function for getUsernameFromSiteDB,
     catching exceptions and printing messages.
     """
     username = None
-    logger.info('Retrieving username from SiteDB...')
+    msg = "Retrieving username from SiteDB..."
+    if quiet:
+        logger.debug(msg)
+    else:
+        logger.info(msg)
     infomsg  = "\n%sNote%s: Make sure you have the correct certificate mapped in SiteDB" % (colors.BOLD, colors.NORMAL)
     infomsg += " (you can check what is the certificate you currently have mapped in SiteDB"
     infomsg += " by searching for your name in https://cmsweb.cern.ch/sitedb/prod/people)."
@@ -489,18 +496,31 @@ def getUsernameFromSiteDB_wrapped(logger):
         username = getUsernameFromSiteDB()
         if not username:
             raise
-        logger.info("Username is: %s" % username)
+        msg = "Username is: %s" % (username)
+        if quiet:
+            logger.debug(msg)
+        else:
+            logger.info(msg)
     except ProxyException, ex:
         msg = "%sError%s: %s" % (colors.RED, colors.NORMAL, ex)
-        logger.error(msg)
+        if quiet:
+            logger.debug(msg)
+        else:        
+            logger.error(msg)
     except UsernameException, ex:
         msg = "%sError%s: %s" % (colors.RED, colors.NORMAL, ex)
         msg += infomsg
-        logger.error(msg)
+        if quiet:
+            logger.debug(msg)
+        else:
+            logger.error(msg)
     except:
         msg = "%sError%s: Unable to retrieve username from SiteDB." % (colors.RED, colors.NORMAL)
         msg += infomsg
-        logger.error(msg)
+        if quiet:
+            logger.debug(msg)
+        else:
+            logger.error(msg)
     return username
 
 
