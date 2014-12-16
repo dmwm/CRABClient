@@ -302,6 +302,10 @@ class submit(SubCommand):
             msg = "CRAB configuration problem: Parameter JobType.pluginName has an invalid value '%s'" % crab_plugin_name
             msg += "\nAllowed values are: %s" % ", ".join(['%s' % job_type for job_type in crab_job_types.keys()])
             return False, msg
+        if upper(crab_plugin_name) == 'PRIVATEMC' and hasattr(self.configuration.Data, 'inputDataset'):
+            msg = "CRAB configuration problem: JobType.pluginName cannot be %s if you are setting config.Data.inputdataset.\n" % crab_plugin_name
+            msg += "Please, use the Analysis plugin or remove the config.Data.inputdataset parameter"
+            return False, msg
 
         ## Check that the particular combination (Data.publication = True, General.transferOutputs = False) is not specified.
         if hasattr(self.configuration.Data, 'publication') and hasattr(self.configuration.General, 'transferOutputs'):
