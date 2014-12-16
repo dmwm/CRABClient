@@ -113,6 +113,9 @@ class status(SubCommand):
             self.logger.error("%sError during task information retrieval:%s\t%s." % (colors.RED, colors.NORMAL, dictresult['taskFailureMsg']))
             logJDefErr(jdef=dictresult)
         elif self.cachedinfo['RequestName'] == dictresult['jobSetID']:
+            if dictresult['taskWarningMsg']:
+                for item in dictresult['taskWarningMsg']:
+                    self.logger.warning("%sWarning:%s\t\t\t%s." % (colors.RED, colors.NORMAL, item))
             # CRAB3-HTCondor
             taskname = urllib.quote(dictresult['jobSetID'])
             self.logger.info("Glidemon monitoring URL:\thttp://glidemon.web.cern.ch/glidemon/jobs.php?taskname=%s" % taskname)
@@ -168,7 +171,7 @@ class status(SubCommand):
     def printPublication(self, dictresult):
         self.logger.info("")
         if 'publication' not in dictresult or not dictresult['publication'] or not dictresult['jobsPerStatus']:
-            self.logger.error("No publication information available yet")
+            self.logger.info("No publication information available yet")
             return
 
         states = dictresult['publication']
