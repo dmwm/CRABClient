@@ -34,7 +34,10 @@ class report(SubCommand):
 
         # check if we got the desired results
         if not self.usedbs and not dictresult['result'][0]['runsAndLumis']:
-            self.logger.info('%sError%s: Cannot get information we need from the CRAB server. Only job that in FINISH state and the output has been transferred can be used' % (colors.RED,colors.NORMAL))
+            self.logger.info(('%sError%s: Cannot get the information we need from the CRAB server.'
+                              'Only job that in the FINISH state and the output has been transferred can be used.'
+                              'Notice, if your task has been submitted more than 30 days ago, then everything has been cleaned.'
+                              'If you published you can use --dbs=yes to get the some information') % (colors.RED,colors.NORMAL))
             return dictresult
         elif self.usedbs and not dictresult['result'][0]['dbsInLumilist'] and not dictresult['result'][0]['dbsOutLumilist']:
             self.logger.info('%sError%s: Cannot get the information we need from DBS. Please check that the output (or input) datasets are not empty, the jobs have finished, and the publication'+\
@@ -42,19 +45,19 @@ class report(SubCommand):
             return dictresult
 
         # Keeping only EDM files
-        edmOnlyRes = {}
+        poolInOnlyRes = {}
         for jn, val in dictresult['result'][0]['runsAndLumis'].iteritems():
-             edmOnlyRes[jn] = [f for f in val if f['type'] == 'EDM']
+             poolInOnlyRes[jn] = [f for f in val if f['type'] == 'POOLIN']
 
         if not self.usedbs:
-            analyzed, diff, doublelumis = BasicJobType.mergeLumis(edmOnlyRes, dictresult['result'][0]['lumiMask'])
+            analyzed, diff, doublelumis = BasicJobType.mergeLumis(poolInOnlyRes, dictresult['result'][0]['lumiMask'])
             def _getNumFiles(jobs):
                 pfiles = set() # parent files
                 for jn, val in jobs.iteritems():
                     for rep in val:
                         pfiles = pfiles.union(set(literal_eval(rep['parents'])))
                 return len(pfiles)
-            self.logger.info("%d files have been processed" % _getNumFiles(edmOnlyRes))
+            self.logger.info("%d files have been processed" % _getNumFiles(poolInOnlyRes))
             def _getNumEvents(jobs, type):
                 for jn, val in jobs.iteritems():
                     yield sum([ x['events'] for x in val if x['type'] == type])
@@ -62,8 +65,8 @@ class report(SubCommand):
             self.logger.info("%d events have been written" % sum(_getNumEvents(dictresult['result'][0]['runsAndLumis'], 'EDM')))
         else:
             analyzed, diff, doublelumis = BasicJobType.subtractLumis(dictresult['result'][0]['dbsInLumilist'], dictresult['result'][0]['dbsOutLumilist'])
-            self.logger.info("%d files have been read" % dictresult['result'][0]['dbsNumFiles'])
-            self.logger.info("%d events have been read" % dictresult['result'][0]['dbsNumEvents'])
+            self.logger.info("%d files have been processed" % dictresult['result'][0]['dbsNumFiles'])
+            self.logger.info("%d events have been written" % dictresult['result'][0]['dbsNumEvents'])
         returndict = {}
         if self.outdir:
             if not os.path.exists(self.outdir):

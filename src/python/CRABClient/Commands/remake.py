@@ -26,7 +26,7 @@ class remake(SubCommand):
         cachepath = os.path.join(requestare , '.requestcache')
 
         if os.path.exists(cachepath):
-            self.logger.info("%sError%s: %s is not created because it is still exist " % (colors.RED,colors.NORMAL,cachepath))
+            self.logger.info("%sError%s: %s is not created because it is already existing" % (colors.RED,colors.NORMAL,cachepath))
         elif not os.path.exists(requestare):
             self.logger.info('Remaking %s folder' %requestare)
             try:
@@ -41,7 +41,7 @@ class remake(SubCommand):
             pickle.dump({'voGroup': '', 'Server': self.serverurl , 'instance': self.instance,'RequestName': taskname, 'voRole': '', 'Port': ''}, dumpfile)
             dumpfile.close()
             self.logger.info('%sSuccess%s: Finish making %s ' % (colors.GREEN, colors.NORMAL, cachepath))
-            return 0 
+            return 0
 
     def setOptions(self):
         """
