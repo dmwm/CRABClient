@@ -254,16 +254,16 @@ class submit(SubCommand):
         ## Even if not all configuration sections need to be there, we anyway request
         ## the user to add all the sections in the configuration file.
         if not hasattr(self.configuration, 'General'):
-            msg = "CRAB configuration problem: Section 'General' is missing"
+            msg = "Invalid CRAB configuration: Section 'General' is missing"
             return False, msg
         if not hasattr(self.configuration, 'JobType'):
-            msg = "CRAB configuration problem: Section 'JobType' is missing"
+            msg = "Invalid CRAB configuration: Section 'JobType' is missing"
             return False, msg
         if not hasattr(self.configuration, 'Data'):
-            msg = "CRAB configuration problem: Section 'Data' is missing"
+            msg = "Invalid CRAB configuration: Section 'Data' is missing"
             return False, msg
         if not hasattr(self.configuration, 'Site'):
-            msg = "CRAB configuration problem: Section 'Site' is missing"
+            msg = "Invalid CRAB configuration: Section 'Site' is missing"
             return False, msg
 
         ## Some parameters may have been renamed. Check here if the configuration file has an old
@@ -273,7 +273,7 @@ class submit(SubCommand):
                 continue
             old_param_section, old_param_name = old_param.split('.')
             if hasattr(self.configuration, old_param_section) and hasattr(getattr(self.configuration, old_param_section), old_param_name):
-                msg = "CRAB configuration problem: Parameter %s has been renamed to %s; please change your configuration file accordingly" % (old_param, new_param)
+                msg = "Invalid CRAB configuration: Parameter %s has been renamed to %s; please change your configuration file accordingly" % (old_param, new_param)
                 return False, msg
 
         ## Check that Data.unitsPerjob is specified.
@@ -281,12 +281,12 @@ class submit(SubCommand):
             try:
                 float(self.configuration.Data.unitsPerJob)
             except ValueError:
-                msg = "CRAB configuration problem: Parameter Data.unitsPerJob must be a valid number, not %s" % self.configuration.Data.unitsPerJob
+                msg = "Invalid CRAB configuration: Parameter Data.unitsPerJob must be a valid number, not %s" % self.configuration.Data.unitsPerJob
                 return False, msg
 
         ## Check that JobType.pluginName and JobType.externalPluginFile are not both specified.
         if hasattr(self.configuration.JobType, 'pluginName') and hasattr(self.configuration.JobType, 'externalPluginFile'):
-            msg = "CRAB configuration problem: Only one of JobType.pluginName or JobType.externalPluginFile parameters can be specified"
+            msg = "Invalid CRAB configuration: Only one of JobType.pluginName or JobType.externalPluginFile parameters can be specified"
             pluginName_default = getParamDefaultValue('JobType.pluginName')
             if pluginName_default:
                 msg += "\nIf neither JobType.pluginName nor JobType.externalPluginFile would be specified, the default JobType.pluginName = '%s' would be used" \
@@ -299,18 +299,18 @@ class submit(SubCommand):
         if external_plugin_name:
             addPlugin(external_plugin_name) # Do we need to do this here?
         if crab_plugin_name and upper(crab_plugin_name) not in crab_job_types:
-            msg = "CRAB configuration problem: Parameter JobType.pluginName has an invalid value '%s'" % crab_plugin_name
+            msg = "Invalid CRAB configuration: Parameter JobType.pluginName has an invalid value '%s'" % crab_plugin_name
             msg += "\nAllowed values are: %s" % ", ".join(['%s' % job_type for job_type in crab_job_types.keys()])
             return False, msg
         if upper(crab_plugin_name) == 'PRIVATEMC' and hasattr(self.configuration.Data, 'inputDataset'):
-            msg = "CRAB configuration problem: JobType.pluginName cannot be %s if you are setting config.Data.inputdataset.\n" % crab_plugin_name
+            msg = "Invalid CRAB configuration: JobType.pluginName cannot be %s if you are setting config.Data.inputdataset.\n" % crab_plugin_name
             msg += "Please, use the Analysis plugin or remove the config.Data.inputdataset parameter"
             return False, msg
 
         ## Check that the particular combination (Data.publication = True, General.transferOutputs = False) is not specified.
         if hasattr(self.configuration.Data, 'publication') and hasattr(self.configuration.General, 'transferOutputs'):
             if self.configuration.Data.publication and not self.configuration.General.transferOutputs:
-                msg  = "CRAB configuration problem: Data.publication is on, but General.transferOutputs is off"
+                msg  = "Invalid CRAB configuration: Data.publication is on, but General.transferOutputs is off"
                 msg += "\nPublication can not be performed if the output files are not transferred to a permanent storage"
                 return False, msg
 
@@ -318,7 +318,7 @@ class submit(SubCommand):
         if not hasattr(self.configuration.Site, 'storageSite'):
             if (hasattr(self.configuration.General, 'transferOutputs') and self.configuration.General.transferOutputs) or \
                (hasattr(self.configuration.General, 'transferLogs') and self.configuration.General.transferLogs):
-                msg = "CRAB configuration problem: Parameter Site.storageSite is missing"
+                msg = "Invalid CRAB configuration: Parameter Site.storageSite is missing"
                 return False, msg
 
         ## If an input dataset and a DBS URL are specified, check that the DBS URL is a good one.
@@ -329,7 +329,7 @@ class submit(SubCommand):
                 dbs_urls_aliases = DBSURLS['reader'].keys()
                 dbs_urls = DBSURLS['reader'].values()
                 if (self.configuration.Data.inputDBS not in dbs_urls_aliases) and (self.configuration.Data.inputDBS.rstrip('/') not in dbs_urls):
-                    msg  = "CRAB configuration problem: Parameter Data.inputDBS has an invalid value '%s'" % self.configuration.Data.inputDBS
+                    msg  = "Invalid CRAB configuration: Parameter Data.inputDBS has an invalid value '%s'" % self.configuration.Data.inputDBS
                     msg += "\nAllowed values are: "
                     msg += "\n                    ".join(["'%s' ('%s')" % (alias, url) for alias, url in DBSURLS['reader'].iteritems()])
                 local_dbs_urls_aliases = ['phys01', 'phys02', 'phys03']
@@ -340,7 +340,7 @@ class submit(SubCommand):
                     inputDataset_tier = inputDataset_parts[-1] if len(inputDataset_parts) == 3 else None
                     user_data_tiers = ['USER']
                     if inputDataset_tier not in user_data_tiers:
-                        msg  = "CRAB configuration problem: A local DBS instance '%s' was specified for reading an input dataset of tier %s" \
+                        msg  = "Invalid CRAB configuration: A local DBS instance '%s' was specified for reading an input dataset of tier %s" \
                                % (self.configuration.Data.inputDBS, inputDataset_tier)
                         msg += "\nDatasets of tier different than %s must be read from the global DBS instance; this is, set Data.inputDBS = 'global'" \
                                % (", ".join(user_data_tiers[:-1]) + " or " + user_data_tiers[-1] if len(user_data_tiers) > 1 else user_data_tiers[0])
@@ -359,7 +359,7 @@ class submit(SubCommand):
                 dbs_urls = DBSURLS['writer'].values()
                 dbs_urls_aliases = DBSURLS['writer'].keys()
                 if (self.configuration.Data.publishDBS not in dbs_urls_aliases) and (self.configuration.Data.publishDBS.rstrip('/') not in dbs_urls):
-                    msg  = "CRAB configuration problem: Parameter Data.publishDBS has an invalid value '%s'" % self.configuration.Data.publishDBS
+                    msg  = "Invalid CRAB configuration: Parameter Data.publishDBS has an invalid value '%s'" % self.configuration.Data.publishDBS
                     msg += "\nAllowed values are: "
                     msg += "\n                    ".join(["'%s' ('%s')" % (alias, url) for alias, url in DBSURLS['writer'].iteritems()])
                     publishDBS_default = getParamDefaultValue('Data.publishDBS')
