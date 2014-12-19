@@ -599,7 +599,7 @@ def server_info(subresource, server, proxyfilename, baseurl, **kwargs):
 
     return dictresult['result'][0]
 
-def getBasicConfig():
+def basicConfig():
     config = Configuration()
 
     config.section_("General")
@@ -607,7 +607,7 @@ def getBasicConfig():
     config.section_("Data")
     config.section_("Site")
     config.section_("User")
-    
+    config.section_("Debug")    
     return config
 
 
