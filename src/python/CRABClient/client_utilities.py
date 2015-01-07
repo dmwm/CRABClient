@@ -6,6 +6,7 @@ This contains some utility methods for the client
 
 import os
 import re
+import urllib
 import datetime
 import logging
 import logging.handlers
@@ -18,9 +19,10 @@ import logging
 import subprocess
 
 from string import upper
+from urlparse import urlparse
 from optparse import OptionValueError
 
-from CRABClient.client_exceptions import TaskNotFoundException, CachefileNotFoundException, ConfigurationException, ConfigException, UsernameException, ProxyException
+from CRABClient.client_exceptions import ClientException, TaskNotFoundException, CachefileNotFoundException, ConfigurationException, ConfigException, UsernameException, ProxyException
 
 from WMCore.Services.UserFileCache.UserFileCache import UserFileCache
 import CRABClient.Emulator
@@ -619,3 +621,26 @@ def cmd_exist(cmd):
         return True
     except OSError:
         return False
+
+def getFileFromURL(url, filename = None):
+    if filename == None:
+        path = urlparse(url).path
+        filename = os.path.basename(path)
+    try:
+        socket = urllib.urlopen(url)
+        filestr = socket.read()
+    except IOError, ioex:
+        tblogger = logging.getLogger('CRAB3')
+        tblogger.exception(ioex)
+        msg = "Error while trying to retrieve file from %s: %s" % (url, ioex)
+        msg += "\nMake sure the URL is correct."
+        raise ClientException(msg)
+    except Exception, ex:
+        tblogger = logging.getLogger('CRAB3')
+        tblogger.exception(ex)
+        msg = 'Unexpected error while trying to retrieve file from %s: %s' % (url, ex)
+        raise ClientException(msg)
+    with open(filename, 'w') as f:
+        f.write(filestr)
+    return filename
+
