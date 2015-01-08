@@ -63,8 +63,6 @@ class submit(SubCommand):
                     msg += '' if SpellChecker.correct(par) == par else '\nOr maybe did you mean %s?' % SpellChecker.correct(par)
                     raise ConfigurationException(msg)
 
-        #usertarball and cmsswconfig use this parameter and we should set it up in a correct way
-        self.configuration.General.serverUrl = self.serverurl
 
         uniquerequestname = None
 
@@ -115,23 +113,21 @@ class submit(SubCommand):
                 configreq[param] = os.path.basename(configreq[param])
 
         jobconfig = {}
-        self.configuration.JobType.proxyfilename = self.proxyfilename
-        self.configuration.JobType.capath = serverFactory.getCACertPath()
         #get the backend URLs from the server external configuration
         serverBackendURLs = server_info('backendurls', self.serverurl, self.proxyfilename, getUrl(self.instance, resource='info'))
         #if cacheSSL is specified in the server external configuration we will use it to upload the sandbox (baseURL will be ignored)
-        self.configuration.JobType.filecacheurl = serverBackendURLs['cacheSSL'] if 'cacheSSL' in serverBackendURLs else None
+        filecacheurl = serverBackendURLs['cacheSSL'] if 'cacheSSL' in serverBackendURLs else None
         pluginParams = [ self.configuration, self.logger, os.path.join(self.requestarea, 'inputs') ]
         crab_job_types = getJobTypes()
         if upper(configreq['jobtype']) in crab_job_types:
             plugjobtype = crab_job_types[upper(configreq['jobtype'])](*pluginParams)
-            inputfiles, jobconfig, isbchecksum = plugjobtype.run(configreq)
+            inputfiles, jobconfig, isbchecksum = plugjobtype.run(filecacheurl)
         else:
             fullname = configreq['jobtype']
             basename = os.path.basename(fullname).split('.')[0]
             plugin = addPlugin(fullname)[basename]
             pluginInst = plugin(*pluginParams)
-            inputfiles, jobconfig, isbchecksum = pluginInst.run(configreq)
+            inputfiles, jobconfig, isbchecksum = pluginInst.run()
 
         if configreq['publication']:
             non_edm_files = jobconfig['tfileoutfiles'] + jobconfig['addoutputfiles']

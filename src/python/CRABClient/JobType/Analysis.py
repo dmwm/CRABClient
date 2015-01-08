@@ -24,7 +24,7 @@ class Analysis(BasicJobType):
     """
 
 
-    def run(self, requestConfig):
+    def run(self, filecacheurl = None):
         """
         Override run() for JobType
         """
@@ -53,8 +53,6 @@ class Analysis(BasicJobType):
             _dummy, tarFilename   = tempfile.mkstemp(suffix='.tgz')
             _dummy, cfgOutputName = tempfile.mkstemp(suffix='_cfg.py')
 
-        #configArguments['userisburl'] = 'https://'+ self.config.General.ufccacheUrl + '/crabcache/file?hashkey=' + uploadResults['hashkey']#XXX hardcoded
-        #configArguments['userisburl'] = 'INSERTuserisburl'#XXX hardcoded
         if getattr(self.config.Data, 'inputDataset', None):
             configArguments['inputdata'] = self.config.Data.inputDataset
 #        configArguments['ProcessingVersion'] = getattr(self.config.Data, 'processingVersion', None)
@@ -82,12 +80,12 @@ class Analysis(BasicJobType):
             inputFiles = [re.sub(r'^file:', '', file) for file in getattr(self.config.JobType, 'inputFiles', [])]
             tb.addFiles(userFiles=inputFiles, cfgOutputName=cfgOutputName)
             configArguments['adduserfiles'] = [os.path.basename(f) for f in inputFiles]
-            uploadResults = tb.upload()
+            uploadResults = tb.upload(filecacheurl = filecacheurl)
 
         self.logger.debug("Result uploading input files: %s " % str(uploadResults))
-        configArguments['cachefilename'] = uploadResults[1]
-        configArguments['cacheurl'] = uploadResults[0]
-        isbchecksum = uploadResults[2]
+        configArguments['cacheurl'] = filecacheurl
+        configArguments['cachefilename'] = uploadResults[0]
+        isbchecksum = uploadResults[1]
 
         # Upload list of user-defined input files to process as the primary input
         userFileName = getattr(self.config.Data, 'userInputFile', None)

@@ -13,11 +13,11 @@ class PrivateMC(Analysis):
     PrivateMC job type plug-in
     """
 
-    def run(self, requestConfig):
+    def run(self, **kwargs):
         """
         Override run() for JobType
         """
-        tarFilename, configArguments, isbchecksum = super(PrivateMC, self).run(requestConfig)
+        tarFilename, configArguments, isbchecksum = super(PrivateMC, self).run(**kwargs)
         configArguments['jobtype'] = 'PrivateMC'
         primDS = getattr(self.config.Data, 'primaryDataset', None)
         if primDS:
