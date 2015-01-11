@@ -13,7 +13,11 @@ class getoutput(getcommand):
     visible = True #overwrite getcommand
 
     def __call__(self):
-        return getcommand.__call__(self, subresource = 'data')
+        returndict = getcommand.__call__(self, subresource = 'data')
+        if not returndict.get('success', {}) and not returndict.get('failed', {}):
+            msg = "This is normal behavior if General.transferOutputs=False is present in the task configuration."
+            self.logger.info(msg)
+        return returndict
 
     def setOptions(self):
         """
