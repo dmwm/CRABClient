@@ -86,7 +86,6 @@ class remote_copy(SubCommand):
         successfiles = manager.dict()
         failedfiles = manager.dict()
 
-
         self.logger.debug("Starting ChildProcess with %s ChildProcess" % nsubprocess)
         inputq, processarray = self.startchildproc(self.processWorker,nsubprocess, successfiles, failedfiles)
 
@@ -245,7 +244,6 @@ class remote_copy(SubCommand):
                     except Exception, ex:
                         self.logger.debug("%sWarning%s: Cannot remove the file because of: %s" % (colors.RED, colors.NORMAL, ex))
                 time.sleep(60)
-                return
             else:
                 self.logger.info("%sSuccess%s: Success in retrieving %s " % (colors.GREEN, colors.NORMAL, fileid))
             if not url_input and hasattr(myfile, 'checksum'):
