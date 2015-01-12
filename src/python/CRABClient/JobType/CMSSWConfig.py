@@ -110,7 +110,9 @@ class CMSSWConfig(object):
         outputModules = set()
         for n,o in process.outputModules_().iteritems():
             if n in modulesOnEndPaths and hasattr(o, 'fileName'):
-                edmfiles.append(re.sub(r'^file:', '', o.fileName.value()))
+                edmfile = re.sub(r'^file:', '', o.fileName.value())
+                edmfile = os.path.basename(edmfile)
+                edmfiles.append(edmfile)
                 outputModules.add(o)
 
         ## If there are multiple output modules, make sure they have dataset.filterName set.
@@ -128,6 +130,8 @@ class CMSSWConfig(object):
         if process.services.has_key('TFileService'):
             tFileService = process.services['TFileService']
             if "fileName" in tFileService.parameterNames_():
-                tfiles.append(re.sub(r'^file:', '', getattr(tFileService, 'fileName').value()))
+                tfile = re.sub(r'^file:', '', getattr(tFileService, 'fileName').value())
+                tfile = os.path.basename(tfile)
+                tfiles.append(tfile)
 
         return edmfiles, tfiles
