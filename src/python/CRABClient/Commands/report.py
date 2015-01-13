@@ -57,16 +57,21 @@ class report(SubCommand):
                     for rep in val:
                         pfiles = pfiles.union(set(literal_eval(rep['parents'])))
                 return len(pfiles)
-            self.logger.info("%d files have been processed" % _getNumFiles(poolInOnlyRes))
+            numFilesProcessed = _getNumFiles(poolInOnlyRes)
+            self.logger.info("%d file%s been processed" % (numFilesProcessed, " has" if numFilesProcessed == 1 else "s have"))
             def _getNumEvents(jobs, type):
                 for jn, val in jobs.iteritems():
                     yield sum([ x['events'] for x in val if x['type'] == type])
-            self.logger.info("%d events have been read" % sum(_getNumEvents(dictresult['result'][0]['runsAndLumis'], 'POOLIN')))
-            self.logger.info("%d events have been written" % sum(_getNumEvents(dictresult['result'][0]['runsAndLumis'], 'EDM')))
+            numEventsRead = sum(_getNumEvents(dictresult['result'][0]['runsAndLumis'], 'POOLIN'))
+            self.logger.info("%d event%s been read" % (numEventsRead, " has" if numEventsRead == 1 else "s have"))
+            numEventsWritten = sum(_getNumEvents(dictresult['result'][0]['runsAndLumis'], 'EDM'))
+            self.logger.info("%d event%s been written" % (numEventsWritten, " has" if numEventsWritten == 1 else "s have"))
         else:
             analyzed, diff, doublelumis = BasicJobType.subtractLumis(dictresult['result'][0]['dbsInLumilist'], dictresult['result'][0]['dbsOutLumilist'])
-            self.logger.info("%d files have been processed" % dictresult['result'][0]['dbsNumFiles'])
-            self.logger.info("%d events have been written" % dictresult['result'][0]['dbsNumEvents'])
+            numFilesProcessed = dictresult['result'][0]['dbsNumFiles']
+            self.logger.info("%d file%s been processed" % (numFilesProcessed, " has" if numFilesProcessed == 1 else "s have"))
+            numEventsWritten = dictresult['result'][0]['dbsNumEvents']
+            self.logger.info("%d event%s been written" % (numEventsWritten, " has" if numEventsWritten == 1 else "s have"))
         returndict = {}
         if self.outdir:
             if not os.path.exists(self.outdir):
@@ -79,13 +84,13 @@ class report(SubCommand):
             with open(os.path.join(jsonFileDir, 'lumiSummary.json'), 'w') as jsonFile:
                 json.dump(analyzed, os.path.join(jsonFile))
                 jsonFile.write("\n")
-                self.logger.info("Analyzed lumi written to %s/lumiSummary.json" % jsonFileDir)
+                self.logger.info("Analyzed luminosity sections written to %s/lumiSummary.json" % jsonFileDir)
                 returndict['analyzed'] = analyzed
         if diff:
             with open(os.path.join(jsonFileDir, 'missingLumiSummary.json'), 'w') as jsonFile:
                 json.dump(diff, jsonFile)
                 jsonFile.write("\n")
-                self.logger.info("%sWarning%s: Not Analyzed lumi written to %s/missingLumiSummary.json" % (colors.RED, colors.NORMAL, jsonFileDir))
+                self.logger.info("%sWarning%s: Not analyzed luminosity sections written to %s/missingLumiSummary.json" % (colors.RED, colors.NORMAL, jsonFileDir))
                 returndict['missingLumi']= diff
         if doublelumis:
             with open(os.path.join(jsonFileDir, 'double.json'), 'w') as jsonFile:

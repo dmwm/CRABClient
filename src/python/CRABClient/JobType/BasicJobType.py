@@ -7,6 +7,8 @@ Conventions:
 from ast import literal_eval
 from WMCore.Configuration import Configuration
 from WMCore.DataStructs.LumiList import LumiList
+from CRABClient.client_exceptions import ConfigurationException
+
 
 class BasicJobType(object):
     """
@@ -17,15 +19,16 @@ class BasicJobType(object):
 
     def __init__(self, config, logger, workingdir):
         self.logger = logger
-        ## Before everything checking if the config is ok
+        ## Before everything, check if the config is ok.
         if config:
-            result, msg = self.validateConfig( config )
-            if result:
+            valid, msg = self.validateConfig(config)
+            if valid:
                 self.config  = config
                 self.workdir = workingdir
             else:
-                ## the config was not ok, returning a proper message
-                raise Exception( msg )
+                msg += "\nThe documentation about the CRAB configuration file can be found in"
+                msg += " https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3ConfigurationFile."
+                raise ConfigurationException(msg)
 
 
     def run(self):
@@ -44,7 +47,7 @@ class BasicJobType(object):
         Allows to have a basic validation of the needed parameters
         """
         ## (boolean with the result of the validation, eventual error message)
-        return (True, '')
+        return True, "Valid configuration"
 
 
     @staticmethod
@@ -77,6 +80,7 @@ class BasicJobType(object):
 
         #get the compact list using CMSSW framework
         return mergedLumis.getCompactList(), (LumiList(compactList=lumimask) - mergedLumis).getCompactList(), doubleLumis.getCompactList()
+
 
     @staticmethod
     def subtractLumis(input, output):

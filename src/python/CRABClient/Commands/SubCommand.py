@@ -7,6 +7,7 @@ from ast import literal_eval
 
 from CRABClient.client_utilities import loadCache, getWorkArea, server_info, createWorkArea
 from CRABClient.client_utilities import BASEURL, SERVICE_INSTANCES
+from CRABClient import SpellChecker
 import CRABClient.Emulator
 from CRABClient.client_exceptions import ConfigurationException, MissingOptionException, EnvironmentException, UnknownOptionException
 from CRABClient.ClientMapping import parameters_mapping, commands_configuration
@@ -30,17 +31,19 @@ class ConfigCommand:
         """
         Load the configuration file
         """
-        #The configuration is alredy an object and don't need to be loaded from the file
+        ## If the configuration is alredy an object it doesn't need to be loaded from the file.
         if isinstance(configname, Configuration):
             self.configuration = configname
             valid, configmsg = self.validateConfig()
             if not valid:
+                configmsg += "\nThe documentation about the CRAB configuration file can be found in"
+                configmsg += " https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3ConfigurationFile"
                 raise ConfigurationException(configmsg)
             return
 
         if not os.path.isfile(configname):
-            raise ConfigurationException("Configuration file '%s' not found" % configname)
-        self.logger.info('Will use configuration file %s' % configname)
+            raise ConfigurationException("Configuration file '%s' not found." % configname)
+        self.logger.info('Will use configuration file %s.' % configname)
         try:
             self.logger.debug('Loading configuration')
             self.configuration = loadConfigurationFile(os.path.abspath(configname))
@@ -49,17 +52,17 @@ class ConfigCommand:
                 for singlearg in overrideargs:
                     if singlearg == configname: continue
                     if len(singlearg.split('=',1)) == 1:
-                        self.logger.info('Wrong format in command-line argument \'%s\'. Expected format is <section-name>.<parameter-name>=<parameter-value>.' % singlearg)
+                        self.logger.info("Wrong format in command-line argument '%s'. Expected format is <section-name>.<parameter-name>=<parameter-value>." % (singlearg))
                         if len(singlearg) > 1 and singlearg[0] == '-':
-                            self.logger.info('If the argument \'%s\' is an option to the %s command, try \'crab %s %s [value for %s option (if required)] [arguments]\'.' \
+                            self.logger.info("If the argument '%s' is an option to the %s command, try 'crab %s %s [value for %s option (if required)] [arguments]'." \
                                              % (singlearg, self.__class__.__name__, self.__class__.__name__, singlearg, singlearg))
-                        raise ConfigurationException('ERROR: Wrong command-line format.')
+                        raise ConfigurationException("ERROR: Wrong command-line format.")
                     fullparname, parval = singlearg.split('=',1)
                     # now supporting just one sub params, eg: Data.inputFiles, User.email, ...
                     parnames = fullparname.split('.', 1)
                     if len(parnames) == 1:
-                        self.logger.info('Wrong format in command-line argument \'%s\'. Expected format is <section-name>.<parameter-name>=<parameter-value>' % singlearg)
-                        raise ConfigurationException('ERROR: Wrong command-line format.')
+                        self.logger.info("Wrong format in command-line argument '%s'. Expected format is <section-name>.<parameter-name>=<parameter-value>." % (singlearg))
+                        raise ConfigurationException("ERROR: Wrong command-line format.")
                     self.configuration.section_(parnames[0])
                     type = 'undefined'
                     for k in parameters_mapping['on-server'].keys():
@@ -68,17 +71,22 @@ class ConfigCommand:
                             break
                     if type in ['undefined','StringType']:
                         setattr(getattr(self.configuration, parnames[0]), parnames[1], literal_eval("\'%s\'" % parval))
-                        self.logger.debug('Overriden parameter %s with \'%s\'' % (fullparname, parval))
+                        self.logger.debug("Overriden parameter %s with '%s'" % (fullparname, parval))
                     else:
                         setattr(getattr(self.configuration, parnames[0]), parnames[1], literal_eval("%s" % parval))
-                        self.logger.debug('Overriden parameter %s with %s' % (fullparname, parval))
-            valid, configmsg = self.validateConfig() #subclasses of SubCommand overrhide this if needed
+                        self.logger.debug("Overriden parameter %s with %s" % (fullparname, parval))
+            valid, configmsg = self.validateConfig() ## Subclasses of SubCommand overwrite this method if needed.
         except RuntimeError, re:
-            msg = self._extractReason(configname, re)
-            raise ConfigurationException("Configuration syntax error:\n%s\nPlease refer to https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3CommonErrors#Configuration_syntax_error\nSee the ./crab.log file for more details" % msg)
+            configmsg  = "Configuration syntax error:\n%s" % (self._extractReason(configname, re))
+            configmsg += "\nPlease refer to https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3CommonErrors#Configuration_syntax_error."
+            configmsg += "\nSee the ./crab.log file for more details."
+            configmsg += "\nThe documentation about the CRAB configuration file can be found in"
+            configmsg += " https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3ConfigurationFile."
+            raise ConfigurationException(configmsg)
         else:
-            ## file is there, check if it is ok
             if not valid:
+                configmsg += "\nThe documentation about the CRAB configuration file can be found in"
+                configmsg += " https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3ConfigurationFile."
                 raise ConfigurationException(configmsg)
 
 
@@ -109,9 +117,24 @@ class ConfigCommand:
         """
         __validateConfig__
 
-        Checking if needed input parameters are there
-        Not all the commands requires a configuration
+        Checking if needed input parameters are there.
+        Not all the commands require a configuration.
         """
+        ## Check if there are unknown parameters (and try to suggest the correct parameter name).
+        all_config_params = [x for x in parameters_mapping['other-config-params']]
+        for _, val in parameters_mapping['on-server'].iteritems():
+            if val['config']:
+                all_config_params.extend(val['config'])
+        SpellChecker.DICTIONARY = SpellChecker.train(all_config_params)
+        for section in self.configuration.listSections_():
+            for attr in getattr(self.configuration, section).listSections_():
+                param = (section + '.' + attr)
+                if not SpellChecker.is_correct(param):
+                    msg  = "Invalid CRAB configuration: Parameter %s is not known." % (param)
+                    if SpellChecker.correct(param) != param:
+                        msg += " Maybe you mean %s?" % (SpellChecker.correct(param))
+                    return False, msg
+ 
         ## Check that each parameter specified in the configuration file is of the 
         ## type specified in the configuration map.
         ## Check that, if a parameter is a required one and it has no default value,
@@ -122,7 +145,7 @@ class ConfigCommand:
                 try:
                     required_type = getattr(types, required_type_name)
                 except AttributeError, ex:
-                    msg = "Invalid type %s specified in client configuration mapping for server parameter %s" % (required_type_name, param)
+                    msg = "Invalid type %s specified in client configuration mapping for server parameter %s." % (required_type_name, param)
                     return False, msg
                 attrs = param_full_config_name.split('.')
                 obj = self.configuration
@@ -130,12 +153,12 @@ class ConfigCommand:
                     obj = getattr(obj, attrs.pop(0), None)
                 if obj is not None:
                     if type(obj) != required_type:
-                        msg = "Crab configuration problem: Invalid type %s for parameter %s; it is needed a %s" \
-                              % (str(type(obj)), param_full_config_name, str(required_type))
+                        msg = "Invalid CRAB configuration: Parameter %s requires a value of type %s (while a value of type %s was given)." \
+                              % (param_full_config_name, str(required_type), str(type(obj)))
                         return False, msg
                 else:
                     if parameters_mapping['on-server'][param].get('default') is None and parameters_mapping['on-server'][param].get('required', False):
-                        msg = "Crab configuration problem: Parameter %s is missing" % param_full_config_name
+                        msg = "Invalid CRAB configuration: Parameter %s is missing." % (param_full_config_name)
                         return False, msg
 
         return True, "Valid configuration"
@@ -281,9 +304,9 @@ class SubCommand(ConfigCommand):
         #Will be use to print available instances
         available_instances = ', '.join(SERVICE_INSTANCES)
 
-        if hasattr(self.options, 'instance') and not self.options.instance is None:
-            if hasattr(self, 'configuration') and hasattr(self.configuration.General, 'instance') and not self.configuration.General.instance is None:
-                self.logger.info('%sWarning%s: Instance value in configuration file is overwritten by the option command, %s intance will be use ' % (colors.RED, colors.NORMAL, self.options.instance))
+        if hasattr(self.options, 'instance') and self.options.instance is not None:
+            if hasattr(self, 'configuration') and hasattr(self.configuration.General, 'instance') and self.configuration.General.instance is not None:
+                self.logger.info('%sWarning%s: Instance value in configuration file is overwritten by the option command, %s intance will be used' % (colors.RED, colors.NORMAL, self.options.instance))
 
             if self.options.instance in SERVICE_INSTANCES.keys():
                 instance = self.options.instance
@@ -291,7 +314,7 @@ class SubCommand(ConfigCommand):
             else:
                 instance = 'private'
                 serverurl = self.options.instance
-        elif hasattr(self, 'configuration') and hasattr(self.configuration.General, 'instance') and not self.configuration.General.instance is None:
+        elif hasattr(self, 'configuration') and hasattr(self.configuration.General, 'instance') and self.configuration.General.instance is not None:
             if self.configuration.General.instance in SERVICE_INSTANCES.keys():
                 instance = self.configuration.General.instance
                 serverurl = SERVICE_INSTANCES[instance]

@@ -139,44 +139,44 @@ class Analysis(BasicJobType):
     def validateConfig(self, config):
         """
         Validate the CMSSW portion of the config file making sure
-        required values are there and optional values don't conflict
+        required values are there and optional values don't conflict.
         """
 
         valid, reason = self.validateBasicConfig(config)
         if not valid:
-            return (valid, reason)
+            return valid, reason
 
         if not getattr(config.Data, 'inputDataset', None) and not getattr(config.Data, 'userInputFile', None):
-            valid = False
-            reason += 'Crab configuration problem: missing or null input dataset name. '
+            msg  = "Invalid CRAB configuration: Analysis job type requires an input dataset (or a set of user input files) to run on."
+            msg += "\nTo specify an input dataset (or a set of user input files) use the parameter Data.inputDataset (or Data.userInputFile)."
+            return False, msg
+
+        if getattr(config.Data, 'primaryDataset', None):
+            msg  = "Invalid CRAB configuration: Analysis job type does not need a primary dataset name to be specified."
+            msg += "\nPlease remove the parameter Data.primaryDataset."
+            return False, msg
 
         if self.splitAlgo == 'EventBased':
-            valid = False
-            reason += 'Analysis JobType does not support EventBased Splitting.'
+            msg  = "Invalid CRAB configuration: Analysis job type does not support event-based splitting."
+            msg += "\nPlease set Data.splitting = 'FileBased' or 'LumiBased'."
+            return False, msg
 
-        return (valid, reason)
+        return True, "Valid configuration"
 
 
     def validateBasicConfig(self, config):
         """
         Validate the common portion of the config for data and MC making sure
-        required values are there and optional values don't conflict
+        required values are there and optional values don't conflict.
         """
-
-        valid = True
-        reason = ''
-
-        if not getattr(config, 'Data', None):
-            valid = False
-            reason += 'Crab configuration problem: missing Data section. '
 
         self.splitAlgo = getattr(config.Data, 'splitting', None)
         if not self.splitAlgo:
-            valid = False
-            reason += 'Crab configuration problem: missing or null splitting algorithm. '
+            msg = "Invalid CRAB configuration: Parameter Data.splitting not specified."
+            return False, msg
 
         if not getattr(config.JobType, 'psetName', None):
-            valid = False
-            reason += 'Crab configuration problem: missing or null CMSSW config file name. '
+            msg = "Invalid CRAB configuration: Parameter JobType.psetName not specified."
+            return False, msg
 
-        return (valid, reason)
+        return True, "Valid configuration"
