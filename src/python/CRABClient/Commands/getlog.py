@@ -16,8 +16,11 @@ class getlog(getcommand):
     visible = True #overwrite getcommand
 
     def __call__(self):
-        return getcommand.__call__(self, subresource = 'logs')
-
+        returndict = getcommand.__call__(self, subresource = 'logs')
+        if not returndict.get('success', {}) and not returndict.get('failed', {}):
+            msg = "This is normal behavior unless General.transferLogs=True is present in the task configuration."
+            self.logger.info(msg)
+        return returndict
 
     def setOptions(self):
         """
