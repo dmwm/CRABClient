@@ -52,11 +52,12 @@ class report(SubCommand):
         if not self.usedbs:
             analyzed, diff, doublelumis = BasicJobType.mergeLumis(poolInOnlyRes, dictresult['result'][0]['lumiMask'])
             def _getNumFiles(jobs):
-                pfiles = set() # parent files
+                infiles = set()
                 for jn, val in jobs.iteritems():
                     for rep in val:
-                        pfiles = pfiles.union(set(literal_eval(rep['parents'])))
-                return len(pfiles)
+                        # the split is done to remove the jobnumber at the end of the input file lfn
+                        infiles.add(rep['lfn'].split('_')[:-1][0])
+                return len(infiles)
             numFilesProcessed = _getNumFiles(poolInOnlyRes)
             self.logger.info("%d file%s been processed" % (numFilesProcessed, " has" if numFilesProcessed == 1 else "s have"))
             def _getNumEvents(jobs, type):
