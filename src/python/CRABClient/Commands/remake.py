@@ -3,8 +3,8 @@ import pickle
 import os
 
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.client_utilities import colors
-from CRABClient.client_exceptions import MissingOptionException,ConfigurationException
+from CRABClient.ClientUtilities import colors
+from CRABClient.ClientExceptions import MissingOptionException,ConfigurationException
 
 class remake(SubCommand):
     """

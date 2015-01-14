@@ -13,7 +13,7 @@ import logging
 
 from PSetTweaks.WMTweak import makeTweak
 
-from CRABClient.client_exceptions import ConfigException
+from CRABClient.ClientExceptions import ConfigException
 
 configurationCache = {}
 

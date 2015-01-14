@@ -1,6 +1,6 @@
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.client_exceptions import ConfigurationException, RESTCommunicationException
-from CRABClient.client_utilities import validateJobids
+from CRABClient.ClientExceptions import ConfigurationException, RESTCommunicationException
+from CRABClient.ClientUtilities import validateJobids
 from CRABClient import __version__
 import CRABClient.Emulator
 

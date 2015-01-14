@@ -24,8 +24,8 @@ from optparse import OptionParser, OptionGroup
 from socket import error as SocketError
 
 from CRABClient import __version__ as client_version
-from CRABClient.client_utilities import getAvailCommands, logfilter , uploadlogfile, getLoggers
-from CRABClient.client_exceptions import ClientException
+from CRABClient.ClientUtilities import getAvailCommands, logfilter , uploadlogfile, getLoggers
+from CRABClient.ClientExceptions import ClientException
 from CRABClient.ClientMapping import parameters_mapping
 
 

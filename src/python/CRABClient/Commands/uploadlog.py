@@ -1,10 +1,8 @@
 from os import path
 from CRABClient.Commands.SubCommand import SubCommand
 from WMCore.Services.UserFileCache.UserFileCache import UserFileCache
-from CRABClient.client_utilities import colors
-from CRABClient.client_utilities import server_info
-from CRABClient.client_exceptions import ConfigurationException
-from CRABClient.client_utilities import uploadlogfile
+from CRABClient.ClientUtilities import colors, server_info, uploadlogfile
+from CRABClient.ClientExceptions import ConfigurationException
 
 import time
 

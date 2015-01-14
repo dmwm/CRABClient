@@ -18,10 +18,9 @@ import logging
 from WMCore.Configuration import loadConfigurationFile, Configuration
 import CRABClient.Emulator
 from WMCore.Services.UserFileCache.UserFileCache import UserFileCache
-from CRABClient.client_exceptions import EnvironmentException
+from CRABClient.ClientExceptions import EnvironmentException, InputFileNotFoundException, CachefileNotFoundException
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
-from CRABClient.client_exceptions import InputFileNotFoundException, CachefileNotFoundException
-from CRABClient.client_utilities import colors
+from CRABClient.ClientUtilities import colors
 
 class UserTarball(object):
     """

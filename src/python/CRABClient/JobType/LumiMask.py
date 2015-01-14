@@ -7,7 +7,7 @@ import urlparse
 from WMCore.Lexicon import jobrange
 from WMCore.DataStructs.LumiList import LumiList
 
-from CRABClient.client_exceptions import ConfigurationException
+from CRABClient.ClientExceptions import ConfigurationException
 
 
 def getLumiList(lumi_mask_name, logger = None):

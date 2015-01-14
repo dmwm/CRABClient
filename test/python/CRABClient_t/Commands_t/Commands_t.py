@@ -10,8 +10,8 @@ from CRABClient.Commands.kill import kill
 from CRABClient.Commands.postmortem import postmortem
 from CRABClient.Commands.resubmit import resubmit
 from CRABClient.Commands import CommandResult
-from CRABClient.client_utilities import createCache, createWorkArea
-from CRABClient.client_exceptions import TaskNotFoundException, CachefileNotFoundException
+from CRABClient.ClientUtilities import createCache, createWorkArea
+from CRABClient.ClientExceptions import TaskNotFoundException, CachefileNotFoundException
 
 import unittest
 import logging

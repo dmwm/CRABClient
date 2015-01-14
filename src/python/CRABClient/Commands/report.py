@@ -9,8 +9,8 @@ from CRABClient import __version__
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.JobType.BasicJobType import BasicJobType
 from CRABClient.Commands.request_type import request_type
-from CRABClient.client_utilities import getJobTypes, colors
-from CRABClient.client_exceptions import ConfigurationException
+from CRABClient.ClientUtilities import getJobTypes, colors
+from CRABClient.ClientExceptions import ConfigurationException
 
 class report(SubCommand):
     """

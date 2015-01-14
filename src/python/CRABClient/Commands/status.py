@@ -3,9 +3,9 @@ import urllib
 import math
 
 import CRABClient.Emulator
-from CRABClient.client_utilities import colors
+from CRABClient.ClientUtilities import colors
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.client_exceptions import RESTCommunicationException, ConfigurationException
+from CRABClient.ClientExceptions import RESTCommunicationException, ConfigurationException
 from CRABClient import __version__
 
 def to_hms(val):

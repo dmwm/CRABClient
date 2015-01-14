@@ -251,5 +251,5 @@ if __name__ == "__main__":
     print 'Convertion done!'
     printUnsupporterParams(configC2)
     if len(missingParams) > 0:
-        print "WARNING: Not all the mandatory parameters were found in the crab2 configuration file. Open the crab3 generated config file to know which."
+        print "Warning: Not all the mandatory parameters were found in the crab2 configuration file. Open the crab3 generated config file to know which."
 
