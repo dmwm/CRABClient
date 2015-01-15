@@ -175,7 +175,7 @@ class status(SubCommand):
             plural = 's' if len(dictresult['outdatasets']) > 1 else ''
             msg = 'Output dataset{0}:\t\t{1}'.format(plural, dictresult['outdatasets'][0])
             msg += '\n\t\t\t\t' + '\n\t\t\t\t'.join(dictresult['outdatasets'][1:]) + '\n\n'
-        if 'disabled' in dictresult['publication']:
+        if 'publication' in dictresult and 'disabled' in dictresult['publication']:
             self.logger.info(msg + "No publication information (publication has been disabled in the crab configuration file)")
             return
         if 'publication' not in dictresult or not dictresult['jobsPerStatus']:
