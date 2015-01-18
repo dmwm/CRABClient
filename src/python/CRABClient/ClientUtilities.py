@@ -81,12 +81,13 @@ def getLoggers(loglevel):
     logger.setLevel(logging.DEBUG)
     tblogger.setLevel(logging.DEBUG)
 
-    # Set up console output to stdout at appropriate level
-    console_format = '%(message)s'
-    console = logging.StreamHandler(sys.stdout)
-    console.setFormatter(logging.Formatter(console_format))
-    console.setLevel(loglevel)
-    logger.addHandler(console)
+    if not logger.handlers:
+        # Set up console output to stdout at appropriate level
+        console_format = '%(message)s'
+        console = logging.StreamHandler(sys.stdout)
+        console.setFormatter(logging.Formatter(console_format))
+        console.setLevel(loglevel)
+        logger.addHandler(console)
 
     #setting up a temporary memory logging, the flush level is set to 60, the highest logging level is 50 (.CRITICAL)
     #so any reasonable logging level should not cause any sudden flush
@@ -453,7 +454,7 @@ def getUsernameFromSiteDB_wrapped(logger, quiet = False):
         msg = "%sError%s: %s" % (colors.RED, colors.NORMAL, ex)
         if quiet:
             logger.debug(msg)
-        else:        
+        else:
             logger.error(msg)
     except UsernameException, ex:
         msg = "%sError%s: %s" % (colors.RED, colors.NORMAL, ex)

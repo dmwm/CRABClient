@@ -109,20 +109,19 @@ class UserTarball(object):
         self.calculateChecksum()
         return self.tarfile.close()
 
-    def upload(self):
+    def upload(self, filecacheurl=None):
         """
         Upload the tarball to the File Cache
         """
         self.close()
         archiveName = self.tarfile.name
-        serverUrl = ""
         self.logger.debug(" uploading archive to cache %s " % archiveName)
-        ufc = CRABClient.Emulator.getEmulator('ufc')({'endpoint' : self.config.JobType.filecacheurl})
+        ufc = CRABClient.Emulator.getEmulator('ufc')({'endpoint' : filecacheurl})
         result = ufc.upload(archiveName)
         if 'hashkey' not in result:
             self.logger.error("Failed to upload source files: %s" % str(result))
             raise CachefileNotFoundException
-        return self.config.JobType.filecacheurl, str(result['hashkey']) + '.tar.gz', self.checksum
+        return str(result['hashkey']) + '.tar.gz', self.checksum
 
 
     def calculateChecksum(self):

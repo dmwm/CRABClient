@@ -4,14 +4,32 @@
 """
 import CRABAPI
 import logging
+from CRABClient.client_utilities import getLoggers
+
+
+# NOTE: Not included in unittests
+def cmdexec(command, *args, **kwargs):
+    """ cmdexec - executes a given command with certain arguments and returns
+                  the raw result back from the client. Arguments are...
+    """
+    #Converting all arguments to a list. Adding '--' and '='
+    arguments = []
+    for key, val in kwargs.iteritems():
+        arguments.append('--'+str(key))
+        arguments.append(val)
+    arguments.extend(list(args))
+
+    return execRaw(command, arguments)
+
 
 # NOTE: Not included in unittests
 def execRaw(command, args):
     """
         execRaw - executes a given command with certain arguments and returns
-                  the raw result back from the client
+                  the raw result back from the client. args is a python list,
+                  the same python list parsed by the optparse module
     """
-    logger = logging.getLogger('CRAB3')
+    logger, _ = getLoggers(logging.INFO)
 
     try:
         mod = __import__('CRABClient.Commands.%s' % command, fromlist=command)
