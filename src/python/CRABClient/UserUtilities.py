@@ -17,6 +17,20 @@ from WMCore.Configuration import Configuration
 from CRABClient.ClientExceptions import ClientException, UsernameException, ProxyException
 
 
+def config():
+    """
+    Return a Configuration object containing all the sections that CRAB recognizes.
+    """
+    config = Configuration()
+    config.section_("General")
+    config.section_("JobType")
+    config.section_("Data")
+    config.section_("Site")
+    config.section_("User")
+    config.section_("Debug")
+    return config
+
+
 def getUsernameFromSiteDB():
     """
     Retrieve username from SiteDB by doing a query to
@@ -62,20 +76,6 @@ def getUsernameFromSiteDB():
     if username == 'null':
         username = None
     return username
-
-
-def basicConfig():
-    """
-    Return a Configuration object containing all the sections that CRAB recognizes.
-    """
-    config = Configuration()
-    config.section_("General")
-    config.section_("JobType")
-    config.section_("Data")
-    config.section_("Site")
-    config.section_("User")
-    config.section_("Debug")    
-    return config
 
 
 def getFileFromURL(url, filename = None):
