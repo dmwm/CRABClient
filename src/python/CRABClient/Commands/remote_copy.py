@@ -245,7 +245,6 @@ class remote_copy(SubCommand):
                     except Exception, ex:
                         self.logger.debug("%sWarning%s: Cannot remove the file because of: %s" % (colors.RED, colors.NORMAL, ex))
                 time.sleep(60)
-                return
             else:
                 self.logger.info("%sSuccess%s: Success in retrieving %s " % (colors.GREEN, colors.NORMAL, fileid))
             if not url_input and hasattr(myfile, 'checksum'):
