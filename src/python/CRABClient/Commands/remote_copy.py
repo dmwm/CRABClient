@@ -11,7 +11,7 @@ from WMCore.FwkJobReport.FileInfo import readAdler32, readCksum
 
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.CredentialInteractions import CredentialInteractions
-from CRABClient.client_utilities import colors, cmd_exist
+from CRABClient.ClientUtilities import colors, cmd_exist
 
 
 class remote_copy(SubCommand):

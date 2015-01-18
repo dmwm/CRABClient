@@ -6,8 +6,8 @@ import os
 
 from WMCore.Credential.Proxy import Proxy, CredentialException
 from WMCore.Services.SiteDB.SiteDB import SiteDBJSON
-from CRABClient.client_exceptions import ProxyCreationException, EnvironmentException
-from CRABClient.client_utilities import colors
+from CRABClient.ClientExceptions import ProxyCreationException, EnvironmentException
+from CRABClient.ClientUtilities import colors
 
 
 class CredentialInteractions(object):

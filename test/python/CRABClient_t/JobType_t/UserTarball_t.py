@@ -14,7 +14,7 @@ import unittest
 
 from CRABClient.JobType.UserTarball import UserTarball
 from WMCore.Configuration import Configuration
-from CRABClient.client_exceptions import InputFileNotFoundException
+from CRABClient.ClientExceptions import InputFileNotFoundException
 
 testWMConfig = Configuration()
 

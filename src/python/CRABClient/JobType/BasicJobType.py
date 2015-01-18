@@ -7,7 +7,7 @@ Conventions:
 from ast import literal_eval
 from WMCore.Configuration import Configuration
 from WMCore.DataStructs.LumiList import LumiList
-from CRABClient.client_exceptions import ConfigurationException
+from CRABClient.ClientExceptions import ConfigurationException
 
 
 class BasicJobType(object):

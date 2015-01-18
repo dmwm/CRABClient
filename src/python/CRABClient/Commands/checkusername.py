@@ -1,5 +1,5 @@
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.client_utilities import colors, getUserDNandUsernameFromSiteDB
+from CRABClient.ClientUtilities import colors, getUserDNandUsernameFromSiteDB
 
 
 class checkusername(SubCommand):

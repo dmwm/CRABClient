@@ -11,8 +11,8 @@ import time
 import CRABClient.Emulator
 
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.client_exceptions import MissingOptionException, ConfigurationException, RESTCommunicationException
-from CRABClient.client_utilities import getJobTypes, createCache, addPlugin, server_info, colors, getUrl
+from CRABClient.ClientExceptions import MissingOptionException, ConfigurationException, RESTCommunicationException
+from CRABClient.ClientUtilities import getJobTypes, createCache, addPlugin, server_info, colors, getUrl
 
 from CRABClient.ClientMapping import parameters_mapping, renamed_params, getParamDefaultValue
 from CRABClient import __version__
@@ -118,7 +118,7 @@ class submit(SubCommand):
         if configreq['publication']:
             non_edm_files = jobconfig['tfileoutfiles'] + jobconfig['addoutputfiles']
             if non_edm_files:
-                msg = "%sWARNING%s: The following output files will not be published, as they are not EDM files: %s" % (colors.RED, colors.NORMAL, non_edm_files)
+                msg = "%sWarning%s: The following output files will not be published, as they are not EDM files: %s" % (colors.RED, colors.NORMAL, non_edm_files)
                 self.logger.warning(msg)
 
         if not configreq['publishname']:
@@ -285,9 +285,9 @@ class submit(SubCommand):
                 msg = "Invalid CRAB configuration: Parameter JobType.pluginName has an invalid value ('%s')." % (crab_plugin_name)
                 msg += "\nAllowed values are: %s." % (", ".join(['%s' % job_type for job_type in crab_job_types.keys()]))
                 return False, msg
-            msg  = "Will use CRAB plugin %s" % ("Analysis" if upper(crab_plugin_name) == 'ANALYSIS' else "PrivateMC")
+            msg  = "Will use CRAB %s plugin" % ("Analysis" if upper(crab_plugin_name) == 'ANALYSIS' else "PrivateMC")
             msg += " (i.e. will run %s job type)." % ("an analysis" if upper(crab_plugin_name) == 'ANALYSIS' else "a MC generation")
-            self.logger.info(msg)
+            self.logger.debug(msg)
 
         ## Check that the particular combination (Data.publication = True, General.transferOutputs = False) is not specified.
         if getattr(self.configuration.Data, 'publication', getParamDefaultValue('Data.publication')) and \

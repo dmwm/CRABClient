@@ -1,9 +1,7 @@
 from WMCore.Services.UserFileCache.UserFileCache  import UserFileCache
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.client_utilities import colors
-from CRABClient.client_utilities import server_info
-from CRABClient.client_utilities import getUrl
-from CRABClient.client_exceptions import ConfigurationException, ConfigException, RESTCommunicationException
+from CRABClient.ClientUtilities import colors, server_info, getUrl
+from CRABClient.ClientExceptions import ConfigurationException, ConfigException, RESTCommunicationException
 from httplib import HTTPException
 import CRABClient.Emulator
 from CRABClient import __version__

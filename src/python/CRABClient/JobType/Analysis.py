@@ -16,7 +16,7 @@ from CRABClient.JobType.CMSSWConfig import CMSSWConfig
 from CRABClient.JobType.LumiMask import getLumiList, getRunList
 from CRABClient.JobType.UserTarball import UserTarball
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
-from CRABClient.client_exceptions import EnvironmentException, ConfigurationException
+from CRABClient.ClientExceptions import EnvironmentException, ConfigurationException
 
 class Analysis(BasicJobType):
     """

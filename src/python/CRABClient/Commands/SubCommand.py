@@ -5,15 +5,15 @@ import types
 from optparse import OptionParser
 from ast import literal_eval
 
-from CRABClient.client_utilities import loadCache, getWorkArea, server_info, createWorkArea
-from CRABClient.client_utilities import BASEURL, SERVICE_INSTANCES
+from CRABClient.ClientUtilities import loadCache, getWorkArea, server_info, createWorkArea
+from CRABClient.ClientUtilities import BASEURL, SERVICE_INSTANCES
 from CRABClient import SpellChecker
 import CRABClient.Emulator
-from CRABClient.client_exceptions import ConfigurationException, MissingOptionException, EnvironmentException, UnknownOptionException
+from CRABClient.ClientExceptions import ConfigurationException, MissingOptionException, EnvironmentException, UnknownOptionException
 from CRABClient.ClientMapping import parameters_mapping, commands_configuration
 from CRABClient.CredentialInteractions import CredentialInteractions
 from CRABClient.__init__ import __version__
-from CRABClient.client_utilities import colors
+from CRABClient.ClientUtilities import colors
 from WMCore.Credential.Proxy import Proxy
 
 from WMCore.Configuration import loadConfigurationFile, Configuration
@@ -333,7 +333,7 @@ class SubCommand(ConfigCommand):
         if __version__ in compatibleversion:
             self.logger.debug("CRABClient version: %s Compatible"  % __version__)
         else:
-            self.logger.info("%sWARNING%s: Incompatible CRABClient version \"%s\" " % (colors.RED, colors.NORMAL , __version__ ))
+            self.logger.info("%sWarning%s: Incompatible CRABClient version \"%s\" " % (colors.RED, colors.NORMAL , __version__ ))
             self.logger.info("Server is saying that compatible versions are: %s"  % compatibleversion)
 
 

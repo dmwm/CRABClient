@@ -3,9 +3,9 @@ from os import path, remove
 import datetime
 
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.client_utilities import colors, getUserDNandUsernameFromSiteDB, cmd_exist
+from CRABClient.ClientUtilities import colors, getUserDNandUsernameFromSiteDB, cmd_exist
 from WMCore.Services.PhEDEx.PhEDEx import PhEDEx
-from CRABClient.client_exceptions import MissingOptionException, ConfigurationException
+from CRABClient.ClientExceptions import MissingOptionException, ConfigurationException
 from httplib import HTTPException
 
 
