@@ -7,7 +7,7 @@ from CRABClient.ClientUtilities import colors, getUserDNandUsernameFromSiteDB, c
 from WMCore.Services.PhEDEx.PhEDEx import PhEDEx
 from CRABClient.ClientExceptions import MissingOptionException, ConfigurationException
 from httplib import HTTPException
-
+from ServerUtilities import checkOutLFN
 
 class checkwrite(SubCommand):
     """
@@ -24,7 +24,7 @@ class checkwrite(SubCommand):
 
 
     def __call__(self):
-
+        username = None
         if hasattr(self.options, 'userlfn') and self.options.userlfn != None:
             self.lfnsaddprefix = self.options.userlfn
         else:
@@ -37,6 +37,21 @@ class checkwrite(SubCommand):
                 self.lfnsaddprefix = '/store/user/' + username
             else:
                 return {'status': 'FAILED'}
+
+        ## Check that the location where we want to check write permission
+        ## is one where the user will be allowed to stageout.
+        self.logger.info("Validating LFN %s..." % (self.lfnsaddprefix))
+        msg  = "Refusing to check write permission in %s, because this is not an allowed LFN for stageout." % (self.lfnsaddprefix)
+        msg += "\nThe LFN must start with either '/store/user/<username>/', '/store/group/<groupname>[/<subgroupname>]*/<username>/' or '/store/local/<dirname>',"
+        msg += " where username is your username as registered in SiteDB (i.e. the username of your CERN primary account)."
+        msg += "\nLFN %s is not valid." % (self.lfnsaddprefix)
+        if not username:
+            username = getUserDNandUsernameFromSiteDB(self.logger).get('username')
+        if not checkOutLFN(self.lfnsaddprefix, username):
+            self.logger.info(msg)
+            return {'status': 'FAILED'}
+        else:
+            self.logger.info("LFN %s is valid." % (self.lfnsaddprefix))
 
         cp_cmd = ""
         del_cmd = ""
