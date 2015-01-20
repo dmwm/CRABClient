@@ -173,6 +173,12 @@ class status(SubCommand):
         if 'publication' not in dictresult or not dictresult['publication'] or not dictresult['jobsPerStatus']:
             self.logger.info("No publication information available yet")
             return
+        # Needed for backward compatability. As we get CRABClient a bit later than
+        # CMSWeb deployment happens. We should make sure that older CRABClient
+        # will not break with new CRABServer
+        if 'publication' in dictresult and 'disabled' in dictresult['publication']:
+            self.logger.info("No publication information (publication has been disabled in the crab configuration file)")
+            return
 
         states = dictresult['publication']
 
