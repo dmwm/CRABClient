@@ -14,11 +14,11 @@ class PrivateMC(Analysis):
     PrivateMC job type plug-in
     """
 
-    def run(self, **kwargs):
+    def run(self, *args, **kwargs):
         """
         Override run() for JobType
         """
-        tarFilename, configArguments, isbchecksum = super(PrivateMC, self).run(**kwargs)
+        tarFilename, configArguments, isbchecksum = super(PrivateMC, self).run(*args, **kwargs)
         configArguments['jobtype'] = 'PrivateMC'
         if hasattr(self.config.Data, 'primaryDataset'):
             configArguments['inputdata'] = "/" + self.config.Data.primaryDataset
@@ -57,7 +57,7 @@ class PrivateMC(Analysis):
             msg += " It must be a natural number."
             return False, msg
 
-        if self.splitAlgo != 'EventBased':  
+        if self.splitAlgo != 'EventBased':
             msg  = "Invalid CRAB configuration: MC generation job type only supports event-based splitting (i.e. Data.splitting = 'EventBased')."
             return False, msg
 
