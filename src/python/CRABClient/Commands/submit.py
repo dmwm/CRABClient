@@ -103,7 +103,7 @@ class submit(SubCommand):
         crab_job_types = getJobTypes()
         if upper(configreq['jobtype']) in crab_job_types:
             plugjobtype = crab_job_types[upper(configreq['jobtype'])](*pluginParams)
-            inputfiles, jobconfig, isbchecksum = plugjobtype.run(filecacheurl)
+            inputfiles, jobconfig, isbchecksum = plugjobtype.run(filecacheurl = filecacheurl)
         else:
             fullname = configreq['jobtype']
             basename = os.path.basename(fullname).split('.')[0]
