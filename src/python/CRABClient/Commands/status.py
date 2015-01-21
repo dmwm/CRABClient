@@ -181,26 +181,35 @@ class status(SubCommand):
         if 'publication' not in dictresult or not dictresult['jobsPerStatus']:
             self.logger.info(msg + "No publication information available yet")
             return
-
         states = dictresult['publication']
-
         if 'error' in states:
             self.logger.info("Publication status:\t\t%s" % states['error'])
-        elif states:
-            #removing states that has 0 value 
-            newstate = states.copy()
+        elif states and dictresult.get('outdatasets'):
+            ## Don't consider publication states for which 0 files are in this state.
+            states_tmp = states.copy()
             for status in states:
-                if states[status] == 0 : del newstate[status]
-            states = newstate.copy()
-            total = sum(states.values())
-            states['unsubmitted'] = sum(dictresult['jobsPerStatus'].values()) - total
-            total = sum(dictresult['jobsPerStatus'].values())
-            state_list=sorted(states)
-            self.logger.info("Publication status:\t\t{0} {1}".format(self._printState(state_list[0], 13), self._percentageString(state_list[0], states[state_list[0]], total)))
-            for status in  state_list[1:]:
+                if states[status] == 0:
+                    del states_tmp[status]
+            states = states_tmp.copy()
+            ## Count the total number of files to publish. For this we count the number of
+            ## jobs and the number of files to publish per job (which is equal to the number
+            ## of output datasets produced by the task, because, when multiple EDM files are
+            ## produced, each EDM file goes into a different output dataset).
+            numJobs = sum(dictresult['jobsPerStatus'].values())
+            numOutputDatasets = len(dictresult['outdatasets'])
+            numFilesToPublish = numJobs * numOutputDatasets
+            ## Count how many of these files have already started the publication process.
+            numSubmittedFiles = sum(states.values())
+            ## Substract the above two numbers to obtain how many files have not yet been
+            ## considered for publication.
+            states['unsubmitted'] = numFilesToPublish - numSubmittedFiles
+            ## Print the publication status.
+            statesList = sorted(states)
+            self.logger.info("Publication status:\t\t{0} {1}".format(self._printState(statesList[0], 13), self._percentageString(statesList[0], states[statesList[0]], numFilesToPublish)))
+            for status in statesList[1:]:
                 if states[status]:
-                    self.logger.info("\t\t\t\t{0} {1}".format(self._printState(status, 13), self._percentageString(status, states[status], total)))
-        if 'outdatasets' in dictresult and dictresult['outdatasets']:
+                    self.logger.info("\t\t\t\t{0} {1}".format(self._printState(status, 13), self._percentageString(status, states[status], numFilesToPublish)))
+        if dictresult.get('outdatasets'):
             info = '\nOutput dataset:\t\t\t{0}'\
                    '\nOutput dataset url:\t\thttps://cmsweb.cern.ch/das/request?input={1}&instance=prod%2Fphys03'
             self.logger.info(''.join([info.format(o, urllib.quote(o, '')) for o in dictresult['outdatasets']]))
@@ -511,7 +520,7 @@ class status(SubCommand):
 
     def validateOptions(self):
         SubCommand.validateOptions(self)
-        if self.options.idle and (self.options.long or self.options.summary ):
+        if self.options.idle and (self.options.long or self.options.summary):
             raise ConfigurationException("Idle option (-i) conflicts with -u, and -l")
         self.json = self.options.json
         self.summary = self.options.summary
