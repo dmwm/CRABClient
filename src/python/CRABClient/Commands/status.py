@@ -251,7 +251,7 @@ class status(SubCommand):
     def printLong(self, dictresult):
         sortdict = {}
         self.logger.info("\nExtended Job Status Table\n")
-        self.logger.info("%4s %-12s %-20s %10s %10s %10s %10s %10s" % ("Job", "State", "Most Recent Site", "Runtime", "Mem (MB)", "CPU %", "Retries", "Waste"))
+        self.logger.info("%4s %-12s %-20s %10s %10s %10s %10s %10s %10s" % ("Job", "State", "Most Recent Site", "Runtime", "Mem (MB)", "CPU %", "Retries", "Waste", "Exit Code"))
         mem_cnt = 0
         mem_min = -1
         mem_max = 0
@@ -305,10 +305,16 @@ class status(SubCommand):
                 if (cpu_min == -1) or cpu < cpu_min: cpu_min = cpu
                 if cpu > cpu_max: cpu_max = cpu
                 cpu = "%.0f" % cpu
-            sortdict[str(i)] = {'state' : state , 'site' : site , 'runtime' : wall_str , 'memory' : mem , 'cpu' : cpu , 'retries' : info.get('Retries', 0) , 'waste' : waste}
-            self.logger.info("%4d %-12s %-20s %10s %10s %10s %10s %10s" % (i, state, site, wall_str, mem, cpu, info.get('Retries', 0) + info.get('Restarts', 0), waste))
+            ec = 'unknown'
+            if 'Error' in info:
+                ec = str(info['Error'][0]) #exit code of this failed job
+            elif state in ['finished']:
+                ec = '0'
+            sortdict[str(i)] = {'state' : state , 'site' : site , 'runtime' : wall_str , 'memory' : mem , 'cpu' : cpu , 'retries' : info.get('Retries', 0) , 'waste' : waste, 'exitcode' : ec}
+            self.logger.info("%4d %-12s %-20s %10s %10s %10s %10s %10s %10s" % (i, state, site, wall_str, mem, cpu, info.get('Retries', 0) + info.get('Restarts', 0), waste, ec))
 
-        if hasattr(self, 'sort') and  self.sort != None: self.printSort(sortdict,self.sort)
+        if hasattr(self, 'sort') and  self.sort != None:
+            self.printSort(sortdict,self.sort)
 
         self.logger.info("\nSummary:")
         if mem_cnt:
@@ -431,7 +437,7 @@ class status(SubCommand):
         valuedict ={}
         self.logger.info('')
         for id in sortdict:
-            if sortby in ['state' , 'site']:
+            if sortby in ['state' , 'site', 'exitcode']:
                 value = sortdict[id][sortby]
                 if not value in valuedict:
                     valuedict[value] = str(id)
@@ -440,7 +446,8 @@ class status(SubCommand):
             elif sortby in ['memory', 'cpu' , 'retries']:
                 if not sortdict[id][sortby] == 'Unknown':
                     value = int(sortdict[id][sortby])
-                else: value = 9999
+                else:
+                    value = 9999
                 sortmatrix.append((value,id))
                 sortmatrix.sort()
             elif sortby in ['runtime' ,'waste']:
@@ -507,7 +514,7 @@ class status(SubCommand):
         self.parser.add_option( "--sort",
                                 dest = "sort",
                                 default = None,
-                                help = 'Only use with option long, availble sorting: "state", "site", "runtime", "memory", "cpu", "retries" and "waste"')
+                                help = 'Only use with option long, availble sorting: "state", "site", "runtime", "memory", "cpu", "retries", "waste" and "exitcode"')
 
     def validateOptions(self):
         SubCommand.validateOptions(self)
@@ -518,12 +525,12 @@ class status(SubCommand):
         self.idle = self.options.idle
         self.long = self.options.long
 
-        acceptedsort = ["state", "site", "runtime", "memory", "cpu", "retries", "waste"]
+        acceptedsort = ["state", "site", "runtime", "memory", "cpu", "retries", "waste", "exitcode"]
         if hasattr(self.options , 'sort') and self.options.sort != None:
             if not self.long:
                 raise ConfigurationException('%sError%s: Please use option --long together with --sort' % (colors.RED, colors.NORMAL))
             elif not self.options.sort in acceptedsort:
-                raise ConfigurationException('%sError%s: Only this value accepted for crab status sort: %s' % (colors.RED, colors.NORMAL, acceptedsort))
+                raise ConfigurationException('%sError%s: Only these values are accepted for crab status --sort option: %s' % (colors.RED, colors.NORMAL, acceptedsort))
             else:
                 self.sort = self.options.sort
 
