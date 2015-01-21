@@ -32,7 +32,7 @@ parameters_mapping = {
                   'publishname'    : {'default': '',         'config': ['Data.publishDataName'],            'type': 'StringType',  'required': False},
                   'jobtype'        : {'default': 'Analysis', 'config': ['JobType.pluginName',
                                                                         'JobType.externalPluginFile'],      'type': 'StringType',  'required': False},
-                  'generator'      : {'default': None,       'config': ['JobType.generator'],               'type': 'StringType',  'required': False},
+                  'generator'      : {'default': 'pythia',   'config': ['JobType.generator'],               'type': 'StringType',  'required': False},
                   'eventsperlumi'  : {'default': None,       'config': ['JobType.eventsPerLumi'],           'type': 'IntType',     'required': False},
                   'adduserfiles'   : {'default': [],         'config': ['JobType.inputFiles'],              'type': 'ListType',    'required': False},
                   'addoutputfiles' : {'default': [],         'config': ['JobType.outputFiles'],             'type': 'ListType',    'required': False},
