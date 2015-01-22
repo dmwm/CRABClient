@@ -4,7 +4,7 @@
 """
 import CRABAPI
 import logging
-from CRABClient.client_utilities import getLoggers
+from CRABClient.ClientUtilities import getLoggers
 
 
 # NOTE: Not included in unittests
