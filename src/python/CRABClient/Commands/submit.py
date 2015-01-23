@@ -13,11 +13,9 @@ import CRABClient.Emulator
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import MissingOptionException, ConfigurationException, RESTCommunicationException
 from CRABClient.ClientUtilities import getJobTypes, createCache, addPlugin, server_info, colors, getUrl
-
-from CRABClient.ClientMapping import parameters_mapping, renamed_params, getParamDefaultValue
+from CRABClient.ClientMapping import parameters_mapping, getParamDefaultValue
 from CRABClient import __version__
 
-from WMCore.Configuration import Configuration
 
 DBSURLS = {'reader': {'global': 'https://cmsweb.cern.ch/dbs/prod/global/DBSReader',
                       'phys01': 'https://cmsweb.cern.ch/dbs/prod/phys01/DBSReader',
@@ -226,33 +224,6 @@ class submit(SubCommand):
         valid, msg = SubCommand.validateConfig(self)
         if not valid:
             return False, msg
-
-        ## Check that the configuration object has the sections we expect it to have.
-        ## (WMCore already checks that attributes added to the configuration object are of type ConfigSection.)
-        ## Even if not all configuration sections need to be there, we anyway request
-        ## the user to add all the sections in the configuration file.
-        if not hasattr(self.configuration, 'General'):
-            msg = "Invalid CRAB configuration: Section 'General' is missing."
-            return False, msg
-        if not hasattr(self.configuration, 'JobType'):
-            msg = "Invalid CRAB configuration: Section 'JobType' is missing."
-            return False, msg
-        if not hasattr(self.configuration, 'Data'):
-            msg = "Invalid CRAB configuration: Section 'Data' is missing."
-            return False, msg
-        if not hasattr(self.configuration, 'Site'):
-            msg = "Invalid CRAB configuration: Section 'Site' is missing."
-            return False, msg
-
-        ## Some parameters may have been renamed. Check here if the configuration file has an old
-        ## parameter defined, and in that case tell the user what is the new parameter name.
-        for old_param, new_param in renamed_params.iteritems():
-            if len(old_param.split('.')) != 2 or len(new_param.split('.')) != 2:
-                continue
-            old_param_section, old_param_name = old_param.split('.')
-            if hasattr(self.configuration, old_param_section) and hasattr(getattr(self.configuration, old_param_section), old_param_name):
-                msg = "Invalid CRAB configuration: Parameter %s has been renamed to %s; please change your configuration file accordingly." % (old_param, new_param)
-                return False, msg
 
         ## Check that Data.unitsPerjob is specified.
         if hasattr(self.configuration.Data, 'unitsPerJob'):

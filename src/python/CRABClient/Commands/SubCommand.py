@@ -10,7 +10,7 @@ from CRABClient.ClientUtilities import BASEURL, SERVICE_INSTANCES
 from CRABClient import SpellChecker
 import CRABClient.Emulator
 from CRABClient.ClientExceptions import ConfigurationException, MissingOptionException, EnvironmentException, UnknownOptionException
-from CRABClient.ClientMapping import parameters_mapping, commands_configuration
+from CRABClient.ClientMapping import parameters_mapping, renamed_params, commands_configuration
 from CRABClient.CredentialInteractions import CredentialInteractions
 from CRABClient.__init__ import __version__
 from CRABClient.ClientUtilities import colors
@@ -120,6 +120,33 @@ class ConfigCommand:
         Checking if needed input parameters are there.
         Not all the commands require a configuration.
         """
+        ## Check that the configuration object has the sections we expect it to have.
+        ## (WMCore already checks that attributes added to the configuration object are of type ConfigSection.)
+        ## Even if not all configuration sections need to be there, we anyway request
+        ## the user to add all the sections in the configuration file.
+        if not hasattr(self.configuration, 'General'):
+            msg = "Invalid CRAB configuration: Section 'General' is missing."
+            return False, msg
+        if not hasattr(self.configuration, 'JobType'):
+            msg = "Invalid CRAB configuration: Section 'JobType' is missing."
+            return False, msg
+        if not hasattr(self.configuration, 'Data'):
+            msg = "Invalid CRAB configuration: Section 'Data' is missing."
+            return False, msg
+        if not hasattr(self.configuration, 'Site'):
+            msg = "Invalid CRAB configuration: Section 'Site' is missing."
+            return False, msg
+
+        ## Some parameters may have been renamed. Check here if the configuration file has an old
+        ## parameter defined, and in that case tell the user what is the new parameter name.
+        for old_param, new_param in renamed_params.iteritems():
+            if len(old_param.split('.')) != 2 or len(new_param.split('.')) != 2:
+                continue
+            old_param_section, old_param_name = old_param.split('.')
+            if hasattr(self.configuration, old_param_section) and hasattr(getattr(self.configuration, old_param_section), old_param_name):
+                msg = "Invalid CRAB configuration: Parameter %s has been renamed to %s; please change your configuration file accordingly." % (old_param, new_param)
+                return False, msg
+
         ## Check if there are unknown parameters (and try to suggest the correct parameter name).
         all_config_params = [x for x in parameters_mapping['other-config-params']]
         for _, val in parameters_mapping['on-server'].iteritems():
