@@ -33,7 +33,7 @@ _UseCrab ()
 		getlog)
 		case "$cur" in
 			-*)
-			COMPREPLY=( $(compgen -W '--help --quantity --parallel --wait --outputpath --dump --xrootd --jobids --proxy --task --voRole --voGroup --instance' -- $cur) )
+			COMPREPLY=( $(compgen -W '--help --quantity --parallel --wait --outputpath --dump --xrootd --jobids --proxy --dir --voRole --voGroup --instance' -- $cur) )
 			;;
 			*)
 			COMPREPLY=( $(compgen -f ${cur}) )
@@ -43,7 +43,7 @@ _UseCrab ()
 		getoutput)
 		case "$cur" in
 			-*)
-			COMPREPLY=( $(compgen -W '--help --quantity --parallel --wait --outputpath --dump --xrootd --jobids --proxy --task --voRole --voGroup --instance' -- $cur) )
+			COMPREPLY=( $(compgen -W '--help --quantity --parallel --wait --outputpath --dump --xrootd --jobids --proxy --dir --voRole --voGroup --instance' -- $cur) )
 			;;
 			*)
 			COMPREPLY=( $(compgen -f ${cur}) )
@@ -53,7 +53,7 @@ _UseCrab ()
 		kill)
 		case "$cur" in
 			-*)
-			COMPREPLY=( $(compgen -W '--help --jobids --proxy --task --voRole --voGroup --instance' -- $cur) )
+			COMPREPLY=( $(compgen -W '--help --jobids --proxy --dir --voRole --voGroup --instance' -- $cur) )
 			;;
 			*)
 			COMPREPLY=( $(compgen -f ${cur}) )
@@ -63,7 +63,7 @@ _UseCrab ()
 		purge)
 		case "$cur" in
 			-*)
-			COMPREPLY=( $(compgen -W '--help --schedd --cache --proxy --task --voRole --voGroup --instance' -- $cur) )
+			COMPREPLY=( $(compgen -W '--help --schedd --cache --proxy --dir --voRole --voGroup --instance' -- $cur) )
 			;;
 			*)
 			COMPREPLY=( $(compgen -f ${cur}) )
@@ -83,7 +83,7 @@ _UseCrab ()
 		report)
 		case "$cur" in
 			-*)
-			COMPREPLY=( $(compgen -W '--help --outputdir --dbs --proxy --task --voRole --voGroup --instance' -- $cur) )
+			COMPREPLY=( $(compgen -W '--help --outputdir --dbs --proxy --dir --voRole --voGroup --instance' -- $cur) )
 			;;
 			*)
 			COMPREPLY=( $(compgen -f ${cur}) )
@@ -93,7 +93,7 @@ _UseCrab ()
 		resubmit)
 		case "$cur" in
 			-*)
-			COMPREPLY=( $(compgen -W '--help --blacklist --whitelist --memory --cores --priority --wall --jobids --proxy --task --voRole --voGroup --instance' -- $cur) )
+			COMPREPLY=( $(compgen -W '--help --blacklist --whitelist --memory --cores --priority --wall --jobids --proxy --dir --voRole --voGroup --instance' -- $cur) )
 			;;
 			*)
 			COMPREPLY=( $(compgen -f ${cur}) )
@@ -103,7 +103,7 @@ _UseCrab ()
 		status)
 		case "$cur" in
 			-*)
-			COMPREPLY=( $(compgen -W '--help --long --json --summary --idle --sort --proxy --task --voRole --voGroup --instance' -- $cur) )
+			COMPREPLY=( $(compgen -W '--help --long --json --summary --idle --sort --proxy --dir --voRole --voGroup --instance' -- $cur) )
 			;;
 			*)
 			COMPREPLY=( $(compgen -f ${cur}) )
@@ -133,7 +133,7 @@ _UseCrab ()
 		uploadlog)
 		case "$cur" in
 			-*)
-			COMPREPLY=( $(compgen -W '--help --logpath --task --proxy --voRole --voGroup --instance' -- $cur) )
+			COMPREPLY=( $(compgen -W '--help --logpath --dirk --proxy --voRole --voGroup --instance' -- $cur) )
 			;;
 			*)
 			COMPREPLY=( $(compgen -f ${cur}) )
