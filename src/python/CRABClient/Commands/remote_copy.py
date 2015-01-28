@@ -68,11 +68,17 @@ class remote_copy(SubCommand):
 
         command = ""
         if cmd_exist("gfal-copy"):
+            self.logger.info("Will use `gfal-copy` command for file transfers")
             command = "env -i gfal-copy -v "
             command += " -T "
-        else:
+        elif cmd_exist("lcg-cp"):
+            self.logger.info("Will use `lcg-cp` command for file transfers")
             command = "lcg-cp --connect-timeout 20 --verbose -b -D srmv2"
             command += " --sendreceive-timeout "
+        else:
+            # This should not happen. If it happens, Site Admin have to install GFAL2 (yum install gfal2-util gfal2-all)
+            self.logger.info("%sError%s: Can`t find command `gfal-copy` or `lcg-ls`, Please contact the site administrator." % (colors.RED, colors.NORMAL))
+            return [], []
 
         command += "1800" if self.options.waittime == None else str(1800 + int(self.options.waittime))
 
@@ -245,6 +251,7 @@ class remote_copy(SubCommand):
                     except Exception, ex:
                         self.logger.debug("%sWarning%s: Cannot remove the file because of: %s" % (colors.RED, colors.NORMAL, ex))
                 time.sleep(60)
+                continue
             else:
                 self.logger.info("%sSuccess%s: Success in retrieving %s " % (colors.GREEN, colors.NORMAL, fileid))
             if not url_input and hasattr(myfile, 'checksum'):
