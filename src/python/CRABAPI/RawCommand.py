@@ -8,9 +8,9 @@ from CRABClient.ClientUtilities import getLoggers
 
 
 # NOTE: Not included in unittests
-def cmdexec(command, *args, **kwargs):
-    """ cmdexec - executes a given command with certain arguments and returns
-                  the raw result back from the client. Arguments are...
+def crabComand(command, *args, **kwargs):
+    """ crabComand - executes a given command with certain arguments and returns
+                     the raw result back from the client. Arguments are...
     """
     #Converting all arguments to a list. Adding '--' and '='
     arguments = []
