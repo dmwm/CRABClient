@@ -112,21 +112,27 @@ class status(SubCommand):
         elif dictresult['taskFailureMsg']:
             self.logger.error("%sError during task information retrieval:%s\t%s." % (colors.RED, colors.NORMAL, dictresult['taskFailureMsg']))
             logJDefErr(jdef=dictresult)
-        elif self.cachedinfo['RequestName'] == dictresult['jobSetID']:
+        else:
             if dictresult['taskWarningMsg']:
-                for item in dictresult['taskWarningMsg']:
-                    self.logger.warning("%sWarning:%s\t\t\t%s." % (colors.RED, colors.NORMAL, item))
-            # CRAB3-HTCondor
-            taskname = urllib.quote(dictresult['jobSetID'])
-            self.logger.info("Glidemon monitoring URL:\thttp://glidemon.web.cern.ch/glidemon/jobs.php?taskname=%s" % taskname)
-            dashurl = 'http://dashb-cms-job.cern.ch/dashboard/templates/task-analysis/#user=' \
-                      + username + '&refresh=0&table=Jobs&p=1&records=25&activemenu=2&status=&site=&tid='+taskname
-            self.logger.info("Dashboard monitoring URL:\t%s" % dashurl)
-
-        elif dictresult['jobSetID']:
-            self.logger.info("Panda url:\t\t\thttp://pandamon-cms-dev.cern.ch/jobinfo?jobtype=*&jobsetID=%s&prodUserName=%s" % (dictresult['jobSetID'], username))
-            # We have cases where the job def errors are there but we have a job def id
-            logJDefErr(jdef=dictresult)
+                ## We should make sure the server always returns a list of warning messages,
+                ## and in that case we will not need to catch if the taskWarningMsg is a string.
+                ## Currently there is at least one case when taskWarningMsg is a string ("Task has not yet bootstrapped").
+                if isinstance(dictresult['taskWarningMsg'], str):
+                    self.logger.warning("%sWarning:%s\t\t\t%s" % (colors.RED, colors.NORMAL, dictresult['taskWarningMsg']))
+                else:
+                    for item in dictresult['taskWarningMsg']:
+                        self.logger.warning("%sWarning:%s\t\t\t%s" % (colors.RED, colors.NORMAL, item))
+            if self.cachedinfo['RequestName'] == dictresult['jobSetID']:
+                # CRAB3-HTCondor
+                taskname = urllib.quote(dictresult['jobSetID'])
+                self.logger.info("Glidemon monitoring URL:\thttp://glidemon.web.cern.ch/glidemon/jobs.php?taskname=%s" % taskname)
+                dashurl = 'http://dashb-cms-job.cern.ch/dashboard/templates/task-analysis/#user=' \
+                          + username + '&refresh=0&table=Jobs&p=1&records=25&activemenu=2&status=&site=&tid='+taskname
+                self.logger.info("Dashboard monitoring URL:\t%s" % dashurl)
+            elif dictresult['jobSetID']:
+                self.logger.info("Panda url:\t\t\thttp://pandamon-cms-dev.cern.ch/jobinfo?jobtype=*&jobsetID=%s&prodUserName=%s" % (dictresult['jobSetID'], username))
+                # We have cases where the job def errors are there but we have a job def id
+                logJDefErr(jdef=dictresult)
 
         #Print information about jobs
         states = dictresult['jobsPerStatus']
