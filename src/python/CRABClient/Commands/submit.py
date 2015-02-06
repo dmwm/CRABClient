@@ -13,7 +13,7 @@ import CRABClient.Emulator
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import MissingOptionException, ConfigurationException, RESTCommunicationException
 from CRABClient.ClientUtilities import getJobTypes, createCache, addPlugin, server_info, colors, getUrl
-from CRABClient.ClientMapping import parameters_mapping, getParamDefaultValue
+from CRABClient.ClientMapping import parametersMapping, getParamDefaultValue
 from CRABClient import __version__
 
 
@@ -43,16 +43,15 @@ class submit(SubCommand):
         self.logger.debug("Started submission")
         serverFactory = CRABClient.Emulator.getEmulator('rest')
 
-
         uniquerequestname = None
 
         self.logger.debug("Working on %s" % str(self.requestarea))
 
         configreq = {}
-        for param in parameters_mapping['on-server']:
-            mustbetype = getattr(types, parameters_mapping['on-server'][param]['type'])
-            default = parameters_mapping['on-server'][param]['default']
-            config_params = parameters_mapping['on-server'][param]['config']
+        for param in parametersMapping['on-server']:
+            mustbetype = getattr(types, parametersMapping['on-server'][param]['type'])
+            default = parametersMapping['on-server'][param]['default']
+            config_params = parametersMapping['on-server'][param]['config']
             for config_param in config_params:
                 attrs = config_param.split('.')
                 temp = self.configuration

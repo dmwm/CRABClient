@@ -10,7 +10,7 @@ from CRABClient.ClientUtilities import BASEURL, SERVICE_INSTANCES
 from CRABClient import SpellChecker
 import CRABClient.Emulator
 from CRABClient.ClientExceptions import ConfigurationException, MissingOptionException, EnvironmentException, UnknownOptionException
-from CRABClient.ClientMapping import parameters_mapping, renamed_params, commands_configuration
+from CRABClient.ClientMapping import renamedParams, commandsConfiguration, configParametersInfo, getParamDefaultValue
 from CRABClient.CredentialInteractions import CredentialInteractions
 from CRABClient.__init__ import __version__
 from CRABClient.ClientUtilities import colors
@@ -64,12 +64,8 @@ class ConfigCommand:
                         self.logger.info("Wrong format in command-line argument '%s'. Expected format is <section-name>.<parameter-name>=<parameter-value>." % (singlearg))
                         raise ConfigurationException("ERROR: Wrong command-line format.")
                     self.configuration.section_(parnames[0])
-                    type = 'undefined'
-                    for k in parameters_mapping['on-server'].keys():
-                        if fullparname in parameters_mapping['on-server'][k]['config']:
-                            type = parameters_mapping['on-server'][k]['type']
-                            break
-                    if type in ['undefined','StringType']:
+                    type = configParametersInfo.get(fullparname, {}).get('type', 'undefined')
+                    if type in ['undefined', 'StringType']:
                         setattr(getattr(self.configuration, parnames[0]), parnames[1], literal_eval("\'%s\'" % parval))
                         self.logger.debug("Overriden parameter %s with '%s'" % (fullparname, parval))
                     else:
@@ -139,7 +135,7 @@ class ConfigCommand:
 
         ## Some parameters may have been renamed. Check here if the configuration file has an old
         ## parameter defined, and in that case tell the user what is the new parameter name.
-        for old_param, new_param in renamed_params.iteritems():
+        for old_param, new_param in renamedParams.iteritems():
             if len(old_param.split('.')) != 2 or len(new_param.split('.')) != 2:
                 continue
             old_param_section, old_param_name = old_param.split('.')
@@ -148,10 +144,7 @@ class ConfigCommand:
                 return False, msg
 
         ## Check if there are unknown parameters (and try to suggest the correct parameter name).
-        all_config_params = [x for x in parameters_mapping['other-config-params']]
-        for _, val in parameters_mapping['on-server'].iteritems():
-            if val['config']:
-                all_config_params.extend(val['config'])
+        all_config_params = configParametersInfo.keys()
         SpellChecker.DICTIONARY = SpellChecker.train(all_config_params)
         for section in self.configuration.listSections_():
             for attr in getattr(self.configuration, section).listSections_():
@@ -166,27 +159,25 @@ class ConfigCommand:
         ## type specified in the configuration map.
         ## Check that, if a parameter is a required one and it has no default value,
         ## then it must be specified in the configuration file.
-        for param in parameters_mapping['on-server']:
-            for param_full_config_name in parameters_mapping['on-server'][param]['config']:
-                required_type_name = parameters_mapping['on-server'][param].get('type', 'undefined')
-                try:
-                    required_type = getattr(types, required_type_name)
-                except AttributeError, ex:
-                    msg = "Invalid type %s specified in client configuration mapping for server parameter %s." % (required_type_name, param)
+        for paramName, paramInfo in configParametersInfo.iteritems():
+            requiredTypeName = paramInfo['type']
+            try:
+                requiredType = getattr(types, requiredTypeName)
+            except AttributeError, ex:
+                msg = "Invalid type %s specified in CRABClient configuration mapping for parameter %s." % (requiredTypeName, paramName)
+                return False, msg
+            attrs = paramName.split('.')
+            obj = self.configuration
+            while attrs and obj is not None:
+                obj = getattr(obj, attrs.pop(0), None)
+            if obj is not None:
+                if type(obj) != requiredType:
+                    msg = "Invalid CRAB configuration: Parameter %s requires a value of type %s (while a value of type %s was given)." \
+                          % (paramName, str(requiredType), str(type(obj)))
                     return False, msg
-                attrs = param_full_config_name.split('.')
-                obj = self.configuration
-                while attrs and obj is not None:
-                    obj = getattr(obj, attrs.pop(0), None)
-                if obj is not None:
-                    if type(obj) != required_type:
-                        msg = "Invalid CRAB configuration: Parameter %s requires a value of type %s (while a value of type %s was given)." \
-                              % (param_full_config_name, str(required_type), str(type(obj)))
-                        return False, msg
-                else:
-                    if parameters_mapping['on-server'][param].get('default') is None and parameters_mapping['on-server'][param].get('required', False):
-                        msg = "Invalid CRAB configuration: Parameter %s is missing." % (param_full_config_name)
-                        return False, msg
+            elif getParamDefaultValue(paramName) is None and paramInfo['required']:
+                msg = "Invalid CRAB configuration: Parameter %s is missing." % (paramName)
+                return False, msg
 
         return True, "Valid configuration"
 
@@ -227,7 +218,7 @@ class SubCommand(ConfigCommand):
 
         self.proxy = None
         self.restClass = CRABClient.Emulator.getEmulator('rest')
-        self.cmdconf = commands_configuration.get(self.name)
+        self.cmdconf = commandsConfiguration.get(self.name)
         self.crab3dic = self.getConfiDict()
 
         self.parser = OptionParser(description = self.__doc__, usage = self.usage, add_help_option = True)
@@ -333,8 +324,9 @@ class SubCommand(ConfigCommand):
 
         if hasattr(self.options, 'instance') and self.options.instance is not None:
             if hasattr(self, 'configuration') and hasattr(self.configuration.General, 'instance') and self.configuration.General.instance is not None:
-                self.logger.info('%sWarning%s: Instance value in configuration file is overwritten by the option command, %s intance will be used' % (colors.RED, colors.NORMAL, self.options.instance))
-
+                msg  = "%sWarning%s: CRAB configuration parameter General.instance is overwritten by the command option --instance;" % (colors.RED, colors.NORMAL)
+                msg += " %s intance will be used." % (self.options.instance)
+                self.logger.info(msg)
             if self.options.instance in SERVICE_INSTANCES.keys():
                 instance = self.options.instance
                 serverurl = SERVICE_INSTANCES[instance]
@@ -349,7 +341,7 @@ class SubCommand(ConfigCommand):
                 instance = 'private'
                 serverurl = self.configuration.General.instance
         else:
-            instance = 'prod'
+            instance = getParamDefaultValue('General.instance')
             serverurl = SERVICE_INSTANCES[instance]
 
         return instance, serverurl
