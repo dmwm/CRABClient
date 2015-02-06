@@ -8,7 +8,7 @@ from CRABClient.ClientUtilities import getLoggers
 
 
 # NOTE: Not included in unittests
-def crabComand(command, *args, **kwargs):
+def crabCommand(command, *args, **kwargs):
     """ crabComand - executes a given command with certain arguments and returns
                      the raw result back from the client. Arguments are...
     """
