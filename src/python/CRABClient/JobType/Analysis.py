@@ -76,6 +76,10 @@ class Analysis(BasicJobType):
         # Write out CMSSW config
         cmsswCfg.writeFile(cfgOutputName)
 
+        ## UserTarball calls ScramEnvironment which can raise EnvironmentException.
+        ## Since ScramEnvironment is already called above and the exception is not
+        ## handled, we are sure that if we reached this point it will not raise EnvironmentException.
+        ## But otherwise we should take this into account.
         with UserTarball(name=tarFilename, logger=self.logger, config=self.config) as tb:
             inputFiles = [re.sub(r'^file:', '', file) for file in getattr(self.config.JobType, 'inputFiles', [])]
             tb.addFiles(userFiles=inputFiles, cfgOutputName=cfgOutputName)
