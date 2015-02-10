@@ -45,7 +45,7 @@ class UserTarball(object):
         """
         Add the necessary files to the tarball
         """
-        directories = ['lib', 'module']
+        directories = ['lib', 'module', 'python']
         dataDirs    = ['data']
         userFiles = userFiles or []
 
