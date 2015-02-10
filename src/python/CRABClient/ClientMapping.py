@@ -6,12 +6,14 @@ This allows to have an agnostic client.
 For each client command it is possible to define the path of the REST request, the map between
 the client configuration and the final request to send to the server. It includes type of the
 parameter so that the client can do a basic sanity check on the input data type.
-For each server parameter, there can be more than one parameters in the CRAB configuration file.
-If that is the case then the meaning is that any of the parameters in the CRAB configuration
+For each server parameter, there can be more than one parameter in the CRAB configuration file.
+If that is the case, then the meaning is that any of the parameters in the CRAB configuration
 file is used to set the same server parameter.
 """
 
-parameters_mapping = {
+## In this dictionary, the definitions of 'type', 'required' and 'default'
+## refer to the parameters in the CRAB configuration file.
+parametersMapping = {
     'on-server': {'workflow'       : {'default': None,       'config': ['General.requestName'],             'type': 'StringType',  'required': False},
                   'activity'       : {'default': None,       'config': ['General.activity'],                'type': 'StringType',  'required': False},
                   'saveoutput'     : {'default': True,       'config': ['General.transferOutputs'],         'type': 'BooleanType', 'required': False},
@@ -54,20 +56,27 @@ parameters_mapping = {
                   'extrajdl'       : {'default': None,       'config': ['Debug.extraJDL'],                  'type': 'ListType',    'required': False},
                   'collector'      : {'default': None,       'config': ['Debug.collector'],                 'type': 'StringType',  'required': False},
                  },
-    'other-config-params': ['General.workArea', 'General.instance', 'Data.lumiMask', 'Data.runRange', 'JobType.psetName', 'JobType.pyCfgParams']
+    'other-config-params': [         {'default': None,       'config': ['General.workArea'],                'type': 'StringType',  'required': False},
+                                     {'default': 'prod',     'config': ['General.instance'],                'type': 'StringType',  'required': True },
+                                     {'default': None,       'config': ['Data.lumiMask'],                   'type': 'StringType',  'required': False},
+                                     {'default': None,       'config': ['Data.runRange'],                   'type': 'StringType',  'required': False},
+                                     {'default': None,       'config': ['JobType.psetName'],                'type': 'StringType',  'required': False},
+                                     {'default': None,       'config': ['JobType.pyCfgParams'],             'type': 'ListType',    'required': False},
+                           ]
 }
 
-renamed_params = {'General.transferOutput' : 'General.transferOutputs',
-                  'General.saveLogs'       : 'General.transferLogs',
-                  'Data.outlfn'            : 'Data.outLFN',
-                  'Data.dbsUrl'            : 'Data.inputDBS',
-                  'Data.publishDbsUrl'     : 'Data.publishDBS',
-                  'JobType.numcores'       : 'JobType.numCores',
-                  'JobType.maxmemory'      : 'JobType.maxMemoryMB',
-                  'JobType.maxjobruntime'  : 'JobType.maxJobRuntimeMin'
+renamedParams = {
+    'General.transferOutput' : 'General.transferOutputs',
+    'General.saveLogs'       : 'General.transferLogs',
+    'Data.outlfn'            : 'Data.outLFN',
+    'Data.dbsUrl'            : 'Data.inputDBS',
+    'Data.publishDbsUrl'     : 'Data.publishDBS',
+    'JobType.numcores'       : 'JobType.numCores',
+    'JobType.maxmemory'      : 'JobType.maxMemoryMB',
+    'JobType.maxjobruntime'  : 'JobType.maxJobRuntimeMin'
 }
 
-commands_configuration = {
+commandsConfiguration = {
     'submit'        : {'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': False, 'useCache': False},
     'checkusername' : {'requiresREST': False, 'initializeProxy': True,  'requiresTaskOption': False, 'useCache': False},
     'checkwrite'    : {'requiresREST': False, 'initializeProxy': True,  'requiresTaskOption': False, 'useCache': False},
@@ -86,16 +95,36 @@ commands_configuration = {
 }
 
 
-def getParamServerName(param_config_name):
-    for param_server_name in parameters_mapping['on-server'].keys():
-        if param_config_name in parameters_mapping['on-server'][param_server_name]['config']:
-            return param_server_name
-    return None
+def revertParamsMapping():
+    import copy
+    revertedMapping = {}
+    for serverParamName, paramInfo in parametersMapping['on-server'].iteritems():
+        info = copy.deepcopy(paramInfo)
+        info.pop('config')
+        for clientParamName in paramInfo['config']:
+            revertedMapping[clientParamName] = {'server': serverParamName}
+            revertedMapping[clientParamName].update(info)
+    for paramInfo in parametersMapping['other-config-params']:
+        info = copy.deepcopy(paramInfo)
+        info.pop('config')
+        for clientParamName in paramInfo['config']:
+            revertedMapping[clientParamName] = {'server': None}
+            revertedMapping[clientParamName].update(info)
+    return revertedMapping
+
+## This mapping looks like this:
+## {'General.requestName'     : {'server': 'workflow',   'default': None,  'type': 'StringType',  'required': False},
+##  'General.activity'        : {'server': 'activity',   'default': None,  'type': 'StringType',  'required': False},
+##  'General.transferOutputs' : {'server': 'saveoutput', 'default': True,  'type': 'BooleanType', 'required': False},
+##  etc, for all CRAB configuration parameters
+## }
+configParametersInfo = revertParamsMapping()
 
 
-def getParamDefaultValue(param_config_name):
-    param_server_name = getParamServerName(param_config_name)
-    if param_server_name:
-        return parameters_mapping['on-server'][param_server_name]['default']
-    return None
+def getParamServerName(paramName):
+    return configParametersInfo.get(paramName, {}).get('server')
+
+
+def getParamDefaultValue(paramName):
+    return configParametersInfo.get(paramName, {}).get('default')
 

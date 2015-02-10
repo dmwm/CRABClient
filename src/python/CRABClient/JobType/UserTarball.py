@@ -92,8 +92,6 @@ class UserTarball(object):
         configtmp.write(str(self.config))
         configtmp.flush()
         psetfilename = getattr(self.config.JobType, 'psetName', None)
-
-
         if not psetfilename == None:
             self.tarfile.add(psetfilename,'/debug/originalPSet.py')
         else:
