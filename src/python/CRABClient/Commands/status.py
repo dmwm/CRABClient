@@ -99,34 +99,33 @@ class status(SubCommand):
         def logJDefErr(jdef):
             """Printing job def failures if any"""
             if jdef['jobdefErrors']:
-                self.logger.error("%sFailed to inject %s\t%s out of %s:" %(colors.RED, colors.NORMAL,\
-                                                                           jdef['failedJobdefs'], jdef['totalJobdefs']))
+                self.logger.error("%sFailed to inject %s\t%s out of %s:" % (colors.RED, colors.NORMAL, \
+                                                                            jdef['failedJobdefs'], jdef['totalJobdefs']))
                 for error in jdef['jobdefErrors']:
                     self.logger.info("\t%s" % error)
 
-        #Print the url of the panda monitor
-        if dictresult['taskFailureMsg'] and dictresult['status'] == "FAILED":
-            self.logger.error("%sError during task injection:%s\t%s" % (colors.RED,colors.NORMAL,dictresult['taskFailureMsg']))
+        if dictresult['taskFailureMsg']:
+            if dictresult['status'] == "FAILED":
+                self.logger.error("%sError during task injection:%s\t%s" % (colors.RED,colors.NORMAL, dictresult['taskFailureMsg']))
+            else:
+                self.logger.error("%sError during task information retrieval:%s\t%s." % (colors.RED, colors.NORMAL, dictresult['taskFailureMsg']))
             # We might also have more information in the job def errors
             logJDefErr(jdef=dictresult)
-        elif dictresult['taskFailureMsg']:
-            self.logger.error("%sError during task information retrieval:%s\t%s." % (colors.RED, colors.NORMAL, dictresult['taskFailureMsg']))
-            logJDefErr(jdef=dictresult)
-        elif self.cachedinfo['RequestName'] == dictresult['jobSetID']:
+        else:
+            ## Print the warning messages (these are the warnings in the Task DB,
+            ## and/or maybe some warning added by the REST Interface to the status result).
             if dictresult['taskWarningMsg']:
-                for item in dictresult['taskWarningMsg']:
-                    self.logger.warning("%sWarning:%s\t\t\t%s." % (colors.RED, colors.NORMAL, item))
-            # CRAB3-HTCondor
-            taskname = urllib.quote(dictresult['jobSetID'])
-            self.logger.info("Glidemon monitoring URL:\thttp://glidemon.web.cern.ch/glidemon/jobs.php?taskname=%s" % taskname)
-            dashurl = 'http://dashb-cms-job.cern.ch/dashboard/templates/task-analysis/#user=' \
-                      + username + '&refresh=0&table=Jobs&p=1&records=25&activemenu=2&status=&site=&tid='+taskname
-            self.logger.info("Dashboard monitoring URL:\t%s" % dashurl)
-
-        elif dictresult['jobSetID']:
-            self.logger.info("Panda url:\t\t\thttp://pandamon-cms-dev.cern.ch/jobinfo?jobtype=*&jobsetID=%s&prodUserName=%s" % (dictresult['jobSetID'], username))
-            # We have cases where the job def errors are there but we have a job def id
-            logJDefErr(jdef=dictresult)
+                for warningMsg in dictresult['taskWarningMsg']:
+                    self.logger.warning("%sWarning:%s\t\t\t%s." % (colors.RED, colors.NORMAL, warningMsg))
+            ## The REST Interface can return dictresult['jobSetID'] = '' or dictresult['jobSetID'] = task name.
+            if self.cachedinfo['RequestName'] == dictresult['jobSetID']:
+                ## Print the Dashboard and GlideMon monitoring URLs for this task.
+                taskname = urllib.quote(dictresult['jobSetID'])
+                glidemonURL = "http://glidemon.web.cern.ch/glidemon/jobs.php?taskname=" + taskname
+                dashboardURL = "http://dashb-cms-job.cern.ch/dashboard/templates/task-analysis/#user=" + username \
+                             + "&refresh=0&table=Jobs&p=1&records=25&activemenu=2&status=&site=&tid=" + taskname
+                self.logger.info("Glidemon monitoring URL:\t%s" % (glidemonURL))
+                self.logger.info("Dashboard monitoring URL:\t%s" % (dashboardURL))
 
         #Print information about jobs
         states = dictresult['jobsPerStatus']
