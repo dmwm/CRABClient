@@ -64,7 +64,7 @@ class checkwrite(SubCommand):
             cp_cmd = "lcg-cp -v -b -D srmv2 --connect-timeout 180 "
             del_cmd = "lcg-del --connect-timeout 180 -b -l -D srmv2 "
         else:
-            self.logger.info("Neither gfal or lcg command was found")
+            self.logger.info("Neither gfal nor lcg command was found")
             return {'status': 'FAILED'}
 
 

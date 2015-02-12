@@ -7,13 +7,14 @@ import re
 import datetime
 import logging
 import logging.handlers
-import commands, string
+import string
 import time
 import pkgutil
 import sys
 import cPickle
 import logging
 import subprocess
+import traceback
 from string import upper
 from urlparse import urlparse
 from optparse import OptionValueError
@@ -56,7 +57,7 @@ class logfilter(logging.Filter):
         def removecolor(text):
             for color in colors.colordict.keys():
                 if colors.colordict[color] in text:
-                    text = text.replace(colors.colordict[color],'')
+                    text = text.replace(colors.colordict[color], '')
             return text
         # find color in record.msg
         if isinstance(record.msg, Exception):
@@ -394,15 +395,26 @@ def getUserDN():
     """
     scram_cmd = 'which scram >/dev/null 2>&1 && eval `scram unsetenv -sh`'
     ## Check if there is a proxy.
-    status, proxy_info = commands.getstatusoutput(scram_cmd+'; voms-proxy-info')
-    if status:
-        raise ProxyException(proxy_info)
-    ## Retrieve DN from proxy.
-    status, userdn = commands.getstatusoutput(scram_cmd+'; voms-proxy-info -identity 2>/dev/null')
-    if status or not userdn:
+    cmd = scram_cmd + "; voms-proxy-info"
+    process = subprocess.Popen(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
+    stdout, stderr = process.communicate()
+    if process.returncode or not stdout:
         msg  = "Unable to retrieve DN from proxy:"
-        msg += " Command 'voms-proxy-info -identity' returned status %s and output '%s'." % (status, userdn)
+        msg += "\nError executing command: %s" % (cmd)
+        msg += "\n  Stdout:\n    %s" % (str(stdout).replace('\n', '\n    '))
+        msg += "\n  Stderr:\n    %s" % (str(stderr).replace('\n', '\n    '))
         raise ProxyException(msg)
+    ## Retrieve DN from proxy.
+    cmd = scram_cmd + "; voms-proxy-info -identity"
+    process = subprocess.Popen(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
+    stdout, stderr = process.communicate()
+    if process.returncode or not stdout:
+        msg  = "Unable to retrieve DN from proxy:"
+        msg += "\nError executing command: %s" % (cmd)
+        msg += "\n  Stdout:\n    %s" % (str(stdout).replace('\n', '\n    '))
+        msg += "\n  Stderr:\n    %s" % (str(stderr).replace('\n', '\n    '))
+        raise ProxyException(msg)
+    userdn = str(stdout.replace('\n', ''))
     return userdn
 
 
@@ -418,11 +430,12 @@ def getUserDN_wrapped(logger):
     except ProxyException, ex:
         msg = "%sError%s: %s" % (colors.RED, colors.NORMAL, ex)
         logger.error(msg)
-    except:
-        msg = "%Error%s: Unable to retrieve DN from proxy." % (colors.RED, colors.NORMAL)
+    except Exception:
+        msg  = "%Error%s: Failed to retrieve DN from proxy." % (colors.RED, colors.NORMAL)
+        msg += "\n%s" % (traceback.format_exc())
         logger.error(msg)
     else:
-        logger.info('DN is: %s' % userdn)
+        logger.info('DN is: %s' % (userdn))
     return userdn
 
 
@@ -443,13 +456,6 @@ def getUsernameFromSiteDB_wrapped(logger, quiet = False):
     infomsg += " For instructions on how to map a certificate in SiteDB, see https://twiki.cern.ch/twiki/bin/viewauth/CMS/SiteDBForCRAB."
     try:
         username = getUsernameFromSiteDB()
-        if not username:
-            raise
-        msg = "Username is: %s" % (username)
-        if quiet:
-            logger.debug(msg)
-        else:
-            logger.info(msg)
     except ProxyException, ex:
         msg = "%sError%s: %s" % (colors.RED, colors.NORMAL, ex)
         if quiet:
@@ -457,19 +463,25 @@ def getUsernameFromSiteDB_wrapped(logger, quiet = False):
         else:
             logger.error(msg)
     except UsernameException, ex:
-        msg = "%sError%s: %s" % (colors.RED, colors.NORMAL, ex)
+        msg  = "%sError%s: %s" % (colors.RED, colors.NORMAL, ex)
         msg += infomsg
         if quiet:
             logger.debug(msg)
         else:
             logger.error(msg)
-    except:
-        msg = "%sError%s: Unable to retrieve username from SiteDB." % (colors.RED, colors.NORMAL)
-        msg += infomsg
+    except Exception:
+        msg  = "%sError%s: Failed to retrieve username from SiteDB." % (colors.RED, colors.NORMAL)
+        msg += "\n%s" % (traceback.format_exc()) 
         if quiet:
             logger.debug(msg)
         else:
             logger.error(msg)
+    else:
+        msg = "Username is: %s" % (username)
+        if quiet:
+            logger.debug(msg)
+        else:
+            logger.info(msg)
     return username
 
 
