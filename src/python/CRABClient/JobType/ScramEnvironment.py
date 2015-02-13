@@ -4,6 +4,7 @@ ScramEnvironment class
 
 import os
 import subprocess
+from CRABClient.ClientExceptions import EnvironmentException
 
 class ScramEnvironment(object):
 
@@ -26,13 +27,21 @@ class ScramEnvironment(object):
                                               stdout=subprocess.PIPE)\
                              .communicate()[0].strip()
 
-        self.cmsswBase        = os.environ["CMSSW_BASE"]
-        self.cmsswReleaseBase = os.environ["CMSSW_RELEASE_BASE"]
-        self.cmsswVersion     = os.environ["CMSSW_VERSION"]
-        self.localRT          = os.environ["LOCALRT"]
+        try:
+            self.cmsswBase        = os.environ["CMSSW_BASE"]
+            self.cmsswReleaseBase = os.environ["CMSSW_RELEASE_BASE"]
+            self.cmsswVersion     = os.environ["CMSSW_VERSION"]
+            self.localRT          = os.environ["LOCALRT"]
+        except KeyError:
+            self.cmsswBase        = None
+            self.cmsswReleaseBase = None
+            self.cmsswVersion     = None
+            self.localRT          = None
+            msg = "Please make sure you have setup the CMS enviroment (cmsenv)."
+            msg += "\nPlease refer to https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookCRAB3Tutorial#CMS_environment for how to setup the CMS enviroment."
+            raise EnvironmentException(msg)
 
-        self.logger.debug("Found %s for %s with base %s" % (self.cmsswVersion,
-                           self.scramArch, self.cmsswBase))
+        self.logger.debug("Found %s for %s with base %s" % (self.cmsswVersion, self.scramArch, self.cmsswBase))
 
 
     def getCmsswBase(self):
