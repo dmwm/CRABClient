@@ -409,6 +409,6 @@ class submit(SubCommand):
                 waittime=currenttime-starttime
                 self.logger.debug("Wait time:%s" % waittime)
                 break
-
+        print '\a' #Generate audio bell
         self.logger.debug("Ended submission process")
 
