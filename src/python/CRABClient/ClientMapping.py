@@ -61,6 +61,7 @@ parametersMapping = {
                                      {'default': None,       'config': ['Data.lumiMask'],                   'type': 'StringType',  'required': False},
                                      {'default': None,       'config': ['Data.runRange'],                   'type': 'StringType',  'required': False},
                                      {'default': None,       'config': ['JobType.psetName'],                'type': 'StringType',  'required': False},
+                                     {'default': False,      'config': ['JobType.sendPythonFolder'],        'type': 'BooleanType', 'required': False},
                                      {'default': None,       'config': ['JobType.pyCfgParams'],             'type': 'ListType',    'required': False},
                            ]
 }

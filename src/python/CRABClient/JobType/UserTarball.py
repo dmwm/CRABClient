@@ -4,23 +4,18 @@
     UserTarball class, a subclass of TarFile
 """
 
-import commands
-import glob
-import json
 import os
+import glob
+import hashlib
 import tarfile
 import tempfile
-import hashlib
-import sys
-import logging
 
-
-from WMCore.Configuration import loadConfigurationFile, Configuration
 import CRABClient.Emulator
-from WMCore.Services.UserFileCache.UserFileCache import UserFileCache
-from CRABClient.ClientExceptions import EnvironmentException, InputFileNotFoundException, CachefileNotFoundException
-from CRABClient.JobType.ScramEnvironment import ScramEnvironment
 from CRABClient.ClientUtilities import colors
+from CRABClient.ClientMapping import configParametersInfo
+from CRABClient.JobType.ScramEnvironment import ScramEnvironment
+from CRABClient.ClientExceptions import EnvironmentException, InputFileNotFoundException, CachefileNotFoundException
+
 
 class UserTarball(object):
     """
@@ -45,7 +40,9 @@ class UserTarball(object):
         """
         Add the necessary files to the tarball
         """
-        directories = ['lib', 'module', 'python']
+        directories = ['lib', 'module']
+        if getattr(self.config.JobType, 'sendPythonFolder', configParametersInfo['JobType.sendPythonFolder']['default']):
+            directories.append('python')
         dataDirs    = ['data']
         userFiles = userFiles or []
 
@@ -86,7 +83,6 @@ class UserTarball(object):
         if cfgOutputName:
             self.tarfile.add(cfgOutputName, arcname='PSet.py')
             self.tarfile.add(os.path.splitext(cfgOutputName)[0]+'.pkl', arcname='PSet.pkl')
-        currentPath = os.getcwd()
 
         configtmp = tempfile.NamedTemporaryFile(delete=True)
         configtmp.write(str(self.config))
@@ -143,17 +139,16 @@ class UserTarball(object):
                 #sha256sum.update(chunkdata)
         #sha256sum.hexdigest()
 
-    def checkdirectory(self,dir):
-
+    def checkdirectory(self, dir_):
         #checking for infinite symbolic link loop
-        try :
-            for root , _ , files in os.walk(dir, followlinks = True ):
-                for file in files:
-                    os.stat(os.path.join(root, file ))
+        try:
+            for root , _ , files in os.walk(dir_, followlinks = True ):
+                for file_ in files:
+                    os.stat(os.path.join(root, file_ ))
 
         except OSError , msg :
             err = '%sError %s:Infinite directory loop found in: %s \nStderr: %s' % \
-                    (colors.RED, colors.NORMAL, dir , msg)
+                    (colors.RED, colors.NORMAL, dir_ , msg)
             raise EnvironmentException(err)
 
     def __getattr__(self, *args):
