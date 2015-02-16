@@ -96,7 +96,6 @@ def getUsernameFromSiteDB():
         msg += "\n  Stdout:\n    %s" % (str(stdout).replace('\n', '\n    '))
         raise UsernameException(msg)
     username = dictresult['result'][0]['login']
-    username = string.strip(username)
     if username == "null" or not username:
         msg  = "SiteDB returned %s login username." % ("'null'" if username == "null" else "no")
         msg += "\nExecuted command: %s" % (cmd)
