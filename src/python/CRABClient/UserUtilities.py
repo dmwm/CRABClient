@@ -5,10 +5,11 @@ This module contains the utility methods available for users.
 import os
 import logging
 import logging.handlers
-import commands
 import string
 import urllib
+import subprocess
 from urlparse import urlparse
+from ast import literal_eval
 
 ## WMCore dependencies
 from WMCore.Configuration import Configuration
@@ -37,44 +38,70 @@ def getUsernameFromSiteDB():
     https://cmsweb.cern.ch/sitedb/data/prod/whoami
     using the users proxy.
     """
-    scram_cmd = 'which scram >/dev/null 2>&1 && eval `scram unsetenv -sh`'
+    scram_cmd = "which scram >/dev/null 2>&1 && eval `scram unsetenv -sh`"
     ## Check if there is a proxy.
-    status, proxy_info = commands.getstatusoutput(scram_cmd+'; voms-proxy-info')
-    if status:
-        raise ProxyException(proxy_info)
-    ## Check if proxy is valid.
-    status, proxy_time_left = commands.getstatusoutput(scram_cmd+'; voms-proxy-info -timeleft')
-    if status or not proxy_time_left:
-        msg  = "Aborting the attempt to retrieve username from SiteDB:"
-        msg += " Command 'voms-proxy-info -timeleft' returned status %s and output '%s'." % (status, proxy_time_left)
+    cmd = scram_cmd + "; voms-proxy-info"
+    process = subprocess.Popen(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
+    stdout, stderr = process.communicate()
+    if process.returncode or not stdout:
+        msg  = "Aborting the attempt to retrieve username from SiteDB."
+        msg += "\nError executing command: %s" % (cmd)
+        msg += "\n  Stdout:\n    %s" % (str(stdout).replace('\n', '\n    '))
+        msg += "\n  Stderr:\n    %s" % (str(stderr).replace('\n', '\n    '))
         raise ProxyException(msg)
-    if int(proxy_time_left) < 60:
-        msg  = "Aborting the attempt to retrieve username from SiteDB:"
-        msg += " Proxy not valid or valid for less than 60 seconds."
+    ## Check if proxy is valid.
+    #proxyTimeLeft = [x[x.find(':')+2:] for x in stdout.split('\n') if 'timeleft' in x][0]
+    cmd = scram_cmd + "; voms-proxy-info -timeleft"
+    process = subprocess.Popen(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
+    stdout, stderr = process.communicate()
+    if process.returncode or not stdout:
+        msg  = "Aborting the attempt to retrieve username from SiteDB."
+        msg += "\nError executing command: %s" % (cmd)
+        msg += "\n  Stdout:\n    %s" % (str(stdout).replace('\n', '\n    '))
+        msg += "\n  Stderr:\n    %s" % (str(stderr).replace('\n', '\n    '))
+        raise ProxyException(msg)
+    proxyTimeLeft = stdout.replace('\n','')
+    if int(proxyTimeLeft) < 60:
+        msg  = "Aborting the attempt to retrieve username from SiteDB."
+        msg += "\nProxy time left = %s seconds. Please renew your proxy." % (proxyTimeLeft)
         raise ProxyException(msg)
     ## Retrieve proxy file location.
-    ## (Redirect stderr from voms-proxy-* to dev/null to avoid stupid Java messages)
-    status, proxy_file_name = commands.getstatusoutput(scram_cmd+'; voms-proxy-info -path 2>/dev/null')
-    if status or not proxy_file_name:
-        msg  = "Aborting the attempt to retrieve username from SiteDB:"
-        msg += " Command 'voms-proxy-info -path' returned status %s and output '%s'." % (status, proxy_file_name)
+    cmd = scram_cmd + "; voms-proxy-info -path"
+    process = subprocess.Popen(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
+    stdout, stderr = process.communicate()
+    if process.returncode or not stdout:
+        msg  = "Aborting the attempt to retrieve username from SiteDB."
+        msg += "\nError executing command: %s" % (cmd)
+        msg += "\n  Stdout:\n    %s" % (str(stdout).replace('\n', '\n    '))
+        msg += "\n  Stderr:\n    %s" % (str(stderr).replace('\n', '\n    '))
         raise ProxyException(msg)
+    proxyFileName = stdout.replace('\n','')
     ## Path to certificates.
-    capath = os.environ['X509_CERT_DIR'] if 'X509_CERT_DIR' in os.environ else '/etc/grid-security/certificates'
-    ## Prepare command to query username from SiteDB.
-    cmd  = "curl -s --capath %s --cert %s --key %s 'https://cmsweb.cern.ch/sitedb/data/prod/whoami'" % (capath, proxy_file_name, proxy_file_name)
-    cmd += " | tr ':,' '\n'"
-    cmd += " | grep -A1 login"
-    cmd += " | tail -1"
-    ## Execute the command.
-    status, username = commands.getstatusoutput(cmd)
-    if status or not username:
-        msg  = "Unable to retrieve username from SiteDB:" ## don't change this message, or change also checkusername.py
-        msg += " Command '%s' returned status %s and output '%s'." % (cmd.replace('\n', '\\n'), status, username)
+    capath = os.environ['X509_CERT_DIR'] if 'X509_CERT_DIR' in os.environ else "/etc/grid-security/certificates"
+    ## Retrieve user info from SiteDB.
+    cmd = "curl -s --capath %s --cert %s --key %s 'https://cmsweb.cern.ch/sitedb/data/prod/whoami'" % (capath, proxyFileName, proxyFileName)
+    process = subprocess.Popen(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
+    stdout, stderr = process.communicate()
+    if process.returncode or not stdout:
+        msg  = "Unable to retrieve username from SiteDB."
+        msg += "\nError executing command: %s" % (cmd)
+        msg += "\n  Stdout:\n    %s" % (str(stdout).replace('\n', '\n    '))
+        msg += "\n  Stderr:\n    %s" % (str(stderr).replace('\n', '\n    '))
         raise UsernameException(msg)
-    username = string.strip(username).replace('"','')
-    if username == 'null':
-        username = None
+    ## Extract the username from the above command output.
+    dictresult = literal_eval(stdout.replace('\n',''))
+    if len(dictresult.get('result', [])) != 1 or 'login' not in dictresult['result'][0]:
+        msg  = "Unable to extract username from SiteDB."
+        msg += "\nUnexpected output format from command: %s" % (cmd)
+        msg += "\n  Stdout:\n    %s" % (str(stdout).replace('\n', '\n    '))
+        raise UsernameException(msg)
+    username = dictresult['result'][0]['login']
+    username = string.strip(username)
+    if username == "null" or not username:
+        msg  = "SiteDB returned %s login username." % ("'null'" if username == "null" else "no")
+        msg += "\nExecuted command: %s" % (cmd)
+        msg += "\n  Stdout:\n    %s" % (str(stdout).replace('\n', '\n    '))
+        raise UsernameException(msg)
     return username
 
 
