@@ -4,6 +4,7 @@ CMSSW job type plug-in
 
 import os
 import tempfile
+import string
 import re
 
 from WMCore.DataStructs.LumiList import LumiList
@@ -11,6 +12,7 @@ from WMCore.DataStructs.LumiList import LumiList
 import PandaServerInterface as PandaInterface
 
 from WMCore.Lexicon import lfnParts
+from CRABClient.ClientUtilities import colors
 from CRABClient.JobType.BasicJobType import BasicJobType
 from CRABClient.JobType.CMSSWConfig import CMSSWConfig
 from CRABClient.JobType.LumiMask import getLumiList, getRunList
@@ -92,14 +94,15 @@ class Analysis(BasicJobType):
         isbchecksum = uploadResults[1]
 
         # Upload list of user-defined input files to process as the primary input
-        userFileName = getattr(self.config.Data, 'userInputFile', None)
-        if userFileName:
-            self.logger.debug("Attaching a list of user-specified primary input files from %s." % userFileName)
-            fnames = []
-            for fname in open(userFileName).readlines():
-                fnames.append(fname.strip())
-            configArguments['userfiles'] = filter(lambda x: x, fnames) #removing whitelines and empty objects
-
+        userFilesList = getattr(self.config.Data, 'userInputFiles', None)
+        if userFilesList:
+            self.logger.debug("Attaching list of user-specified primary input files.")
+            userFilesList = map(string.strip, userFilesList)
+            if not len(userFilesList) == len(set(userFilesList)):
+                self.logger.warning("%sWarning%s: There is a duplicated file in the files list. \nCRAB will remove the duplicated file before submitting." % (colors.RED, colors.NORMAL))    
+                userFilesList = set(userFilesList)
+            configArguments['userfiles'] = userFilesList
+             
             primDS = getattr(self.config.Data, 'primaryDataset', None)
             if primDS:
                 # Normalizes "foo/bar" and "/foo/bar" to "/foo/bar"
@@ -148,9 +151,9 @@ class Analysis(BasicJobType):
         if not valid:
             return valid, reason
 
-        if not getattr(config.Data, 'inputDataset', None) and not getattr(config.Data, 'userInputFile', None):
+        if not getattr(config.Data, 'inputDataset', None) and not getattr(config.Data, 'userInputFiles', None):
             msg  = "Invalid CRAB configuration: Analysis job type requires an input dataset (or a set of user input files) to run on."
-            msg += "\nTo specify an input dataset (or a set of user input files) use the parameter Data.inputDataset (or Data.userInputFile)."
+            msg += "\nTo specify an input dataset (or a set of user input files) use the parameter Data.inputDataset (or Data.userInputFiles)."
             return False, msg
 
         if getattr(config.Data, 'primaryDataset', None):
