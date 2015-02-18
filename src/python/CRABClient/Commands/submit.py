@@ -47,7 +47,7 @@ class submit(SubCommand):
 
         self.logger.debug("Working on %s" % str(self.requestarea))
 
-        configreq = {}
+        configreq = {'dryrun': 1 if self.options.dry_run else 0}
         for param in parametersMapping['on-server']:
             mustbetype = getattr(types, parametersMapping['on-server'][param]['type'])
             default = parametersMapping['on-server'][param]['default']
@@ -147,12 +147,25 @@ class submit(SubCommand):
                     originalConfig = self.configuration)
 
         self.logger.info("%sSuccess%s: Your task has been delivered to the CRAB3 server." %(colors.GREEN, colors.NORMAL))
-        if not self.options.wait:
+        if not (self.options.wait or self.options.dry_run):
             self.logger.info("Task name: %s" % uniquerequestname)
-            self.logger.info("Please use 'crab status' to check how the submission process proceed")
+            self.logger.info("Please use 'crab status' to check how the submission process proceeds")
 
         if self.options.wait:
-            self.checkStatusLoop(server,uniquerequestname)
+            self.checkStatusLoop(server, uniquerequestname, 'SUBMITTED')
+
+        if self.options.dry_run:
+            self.checkStatusLoop(server, uniquerequestname, 'INITIALIZED')
+            result, status, reason = server.get(self.uri, data={'workflow': uniquerequestname, 'subresource': 'report'})
+            s = result['result'][0]['splittingSummary']
+
+            msg = "\nTask created %i jobs"\
+                  "\nThe lowest number of lumis to be processed by any job is %i"\
+                  "\nThe lowest number of events to be processed by any job is %i"\
+                  "\nThe highest number of lumis to be processed by any job is %i"\
+                  "\nThe highest number of events to be processed by any job is %i"\
+                  "\nDry run requested: task paused in INITIALIZED state. To continue processing, use 'crab proceed'.\n"
+            self.logger.info(msg % (s['total_jobs'], s['min_lumis'], s['min_events'], s['max_lumis'], s['max_events']))
 
         self.logger.debug("About to return")
 
@@ -175,7 +188,13 @@ class submit(SubCommand):
         self.parser.add_option( "--wait,",
                                 action="store_true",
                                 dest="wait",
-                                help="Continuously checking for job status after submitting.",
+                                help="Check job status continuously after submitting.",
+                                default=False )
+
+        self.parser.add_option( "--dryrun,",
+                                action="store_true",
+                                dest="dry_run",
+                                help="Do not actually submit task; return how many jobs this task would create instead.",
                                 default=False )
 
 
@@ -349,7 +368,7 @@ class submit(SubCommand):
         return str(encoded)
 
 
-    def checkStatusLoop(self,server,uniquerequestname):
+    def checkStatusLoop(self, server, uniquerequestname, targetstatus):
 
         self.logger.info("Waiting for task to be processed")
 
@@ -383,25 +402,26 @@ class submit(SubCommand):
                 msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(uniquerequestname), str(dictresult), str(reason))
                 raise RESTCommunicationException(msg)
 
-            self.logger.debug("Query Time:%s Task status:%s" %(querytimestring, dictresult['status']))
+            self.logger.debug("Query Time: %s Task status: %s" %(querytimestring, dictresult['status']))
 
             if  dictresult['status'] != tmpresult:
-                self.logger.info("Task status:%s" % dictresult['status'])
+                self.logger.info("Task status: %s" % dictresult['status'])
                 tmpresult = dictresult['status']
 
                 if dictresult['status'] == 'FAILED':
                     continuecheck = False
                     self.logger.info(self.logger.info("%sError%s: The submission of your task failed. Please use 'crab status -d <crab project directory>' to get the error message" %(colors.RED, colors.NORMAL)))
-                elif dictresult['status'] == 'SUBMITTED' or dictresult['status'] == 'UNKNOWN': #untile the node_state file is available status is unknown
+                elif dictresult['status'] == targetstatus or dictresult['status'] == 'UNKNOWN': #untile the node_state file is available status is unknown
                     continuecheck = False
-                    self.logger.info("%sSuccess%s: Your task has been processed and your jobs have been submitted successfully" % (colors.GREEN, colors.NORMAL))
-                elif dictresult['status'] in ['NEW','HOLDING','QUEUED']:
+                    if targetstatus == 'SUBMITTED':
+                        self.logger.info("%sSuccess%s: Your task has been processed and your jobs have been submitted successfully" % (colors.GREEN, colors.NORMAL))
+                elif dictresult['status'] in ['NEW', 'HOLDING', 'QUEUED', 'INITIALIZED']:
                     self.logger.info("Please wait...")
                     time.sleep(30) #the original 60 second query time is too long
                 else:
                     continuecheck = False
                     self.logger.info("Please check crab.log ")
-                    self.logger.debug("CRABS Status other than FAILED,SUBMITTED,NEW,HOLDING,QUEUED")
+                    self.logger.debug('CRAB status other than FAILED, SUBMITTED, NEW, HOLDING, QUEUED, INITIALIZED')
 
             if currenttime > endtime:
                 continuecheck = False
@@ -411,4 +431,3 @@ class submit(SubCommand):
                 break
         print '\a' #Generate audio bell
         self.logger.debug("Ended submission process")
-

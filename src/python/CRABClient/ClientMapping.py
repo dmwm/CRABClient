@@ -92,7 +92,8 @@ commandsConfiguration = {
     'resubmit'      : {'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True },
     'status'        : {'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True },
     'uploadlog'     : {'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': False, 'useCache': False},
-    'tasks'         : {'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': False, 'useCache': False}
+    'tasks'         : {'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': False, 'useCache': False},
+    'proceed'       : {'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True, 'useCache': True}
 }
 
 
