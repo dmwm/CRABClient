@@ -72,6 +72,7 @@ renamedParams = {
     'Data.outlfn'            : 'Data.outLFN',
     'Data.dbsUrl'            : 'Data.inputDBS',
     'Data.publishDbsUrl'     : 'Data.publishDBS',
+    'Data.userInputFile'     : 'Data.userInputFiles',
     'JobType.numcores'       : 'JobType.numCores',
     'JobType.maxmemory'      : 'JobType.maxMemoryMB',
     'JobType.maxjobruntime'  : 'JobType.maxJobRuntimeMin'
