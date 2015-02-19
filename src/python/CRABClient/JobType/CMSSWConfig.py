@@ -13,6 +13,8 @@ import logging
 
 from PSetTweaks.WMTweak import makeTweak
 
+from CRABClient.ClientUtilities import bootstrapDone
+from CRABClient.ClientUtilities import BOOTSTRAP_INFOFILE
 from CRABClient.ClientExceptions import ConfigurationException
 
 configurationCache = {}
@@ -24,11 +26,10 @@ class CMSSWConfig(object):
     def __init__(self, config, userConfig=None, logger=None):
         global configurationCache
         self.config = config
-        self.logger = logger
+        self.logger = logger if logger else logging
 
         self.fullConfig = None
         self.outputFile = None
-        #TODO: Deal with user parameters (pycfg_params)
 
         if userConfig:
             cfgBaseName = os.path.basename(userConfig).replace(".py", "")
@@ -51,19 +52,21 @@ class CMSSWConfig(object):
             if cacheLine in configurationCache:
                 self.fullConfig = configurationCache[cacheLine]
                 file.close()
-            else:
+            elif not bootstrapDone():
                 sys.path.append(os.getcwd())
                 try:
+                    oldstdout = sys.stdout
+                    sys.stdout = open(logger.logfile, 'a')
                     self.fullConfig = imp.load_module(cfgBaseName, file, pathname, description)
                 finally:
+                    sys.stdout.close()
+                    sys.stdout = oldstdout
                     file.close()
                 configurationCache[cacheLine] = self.fullConfig
             sys.argv = originalArgv
 
-            self.tweakJson = makeTweak(self.fullConfig.process).jsonise()
 
-
-    def writeFile(self, filename= 'CMSSW.py'):
+    def writeFile(self, filename = 'CMSSW.py'):
         """
         Persist fully expanded _cfg.py file
         """
@@ -92,10 +95,19 @@ class CMSSWConfig(object):
         Returns a tuple containing a bool to indicate usage of an
         LHESource and an integer for the number of input files.
         """
-        source = self.fullConfig.process.source
+        if bootstrapDone():
+            self.logger.debug("Getting lhe info from bootstrap cachefile.")
+            info = self.getCfgInfo()
+            return info['lheinfo']
 
-        lhe = str(source.type_()) == 'LHESource'
-        files = len(source.fileNames) if lhe else 0
+        lhe = False
+        files = 0
+
+        if hasattr(self.fullConfig.process, 'source'):
+            source = self.fullConfig.process.source
+
+            lhe = str(source.type_()) == 'LHESource'
+            files = len(source.fileNames) if lhe else 0
 
         return lhe, files
 
@@ -105,6 +117,11 @@ class CMSSWConfig(object):
         Returns a tuple of lists of output files. First element is PoolOutput files,
         second is TFileService files.
         """
+        if bootstrapDone():
+            self.logger.debug("Getting output files from bootstrap cachefile.")
+            info = self.getCfgInfo()
+            return info['outfiles']
+
         edmfiles = []
         process = self.fullConfig.process
 
@@ -149,3 +166,13 @@ class CMSSWConfig(object):
                 tfiles.append(tfile)
 
         return edmfiles, tfiles
+
+
+    def getCfgInfo(self):
+        bootFilename = os.path.join(os.environ['CRAB3_BOOTSTRAP_DIR'], BOOTSTRAP_INFOFILE)
+        if not os.path.isfile(bootFilename):
+            msg = "The CRAB3_BOOTSTRAP_DIR environment variable is set, but I could not find %s" % bootFilename
+            raise EnvironmentException(msg)
+        else:
+            with open(bootFilename) as fd:
+                return json.load(fd)

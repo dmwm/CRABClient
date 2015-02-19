@@ -60,7 +60,7 @@ class CRABOptParser(OptionParser):
 
 class CRABCmdOptParser(OptionParser):
     """ A class that extract the pieces for parsing the command line arguments
-        of the CRAB commands. 
+        of the CRAB commands.
 
     """
 

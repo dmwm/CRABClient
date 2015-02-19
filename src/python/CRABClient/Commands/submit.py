@@ -1,23 +1,24 @@
 """
 This is simply taking care of job submission
 """
-import json, os
-from string import upper
-import types
+import os
 import imp
-import urllib
+import json
 import time
+import types
+import shutil
+import urllib
 import tarfile
 import tempfile
 import subprocess
-import shutil
+from string import upper
 
 import CRABClient.Emulator
-from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ClientExceptions import ClientException, MissingOptionException, ConfigurationException, RESTCommunicationException
-from CRABClient.ClientUtilities import getJobTypes, createCache, addPlugin, server_info, colors, getUrl, checkStatusLoop
-from CRABClient.ClientMapping import parametersMapping, getParamDefaultValue
 from CRABClient import __version__
+from CRABClient.Commands.SubCommand import SubCommand
+from CRABClient.ClientMapping import parametersMapping, getParamDefaultValue
+from CRABClient.ClientExceptions import ClientException, MissingOptionException, RESTCommunicationException
+from CRABClient.ClientUtilities import getJobTypes, createCache, addPlugin, server_info, colors, getUrl, setSubmitParserOptions, validateSubmitOptions, checkStatusLoop
 
 
 DBSURLS = {'reader': {'global': 'https://cmsweb.cern.ch/dbs/prod/global/DBSReader',
@@ -171,23 +172,7 @@ class submit(SubCommand):
 
         This allows to set specific command options
         """
-        self.parser.add_option('-c', '--config',
-                               dest = 'config',
-                               default = None,
-                               help = "CRAB configuration file.",
-                               metavar = 'FILE')
-
-        self.parser.add_option('--wait',
-                               dest = 'wait',
-                               default = False,
-                               action = 'store_true',
-                               help = "Continuously check the task status after submission.")
-
-        self.parser.add_option('--dryrun',
-                               dest = 'dryrun',
-                               default = False,
-                               action = 'store_true',
-                               help = "Do not actually submit the task; instead, return how many jobs this task would create, along with processing time estimates.")
+        setSubmitParserOptions(self.parser)
 
 
     def validateOptions(self):
@@ -198,30 +183,7 @@ class submit(SubCommand):
         ## First do the basic validation in the SubCommand.
         SubCommand.validateOptions(self)
 
-        ## If no configuration file was passed as an option, try to extract it from the arguments.
-        ## Assume that the arguments can only be:
-        ##     1) the configuration file name, and
-        ##     2) parameters to override in the configuration file.
-        ## The last ones should all contain an '=' sign, so these are not candidates to be the
-        ## configuration file argument. Also, the configuration file name should end with '.py'.
-        ## If can not find a configuration file candidate, use the default 'crabConfig.py'.
-        ## If find more than one candidate, raise ConfigurationException.
-        if self.options.config is None:
-            useDefault = True
-            if len(self.args):
-                configCandidates = [(arg, i) for i, arg in enumerate(self.args) if '=' not in arg and arg[-3:] == '.py']
-                configCandidateNames = set([configCandidateName for (configCandidateName, _) in configCandidates])
-                if len(configCandidateNames) == 1:
-                    self.options.config = configCandidates[0][0]
-                    del self.args[configCandidates[0][1]]
-                    useDefault = False
-                elif len(configCandidateNames) > 1:
-                    msg  = "Unable to unambiguously extract the CRAB configuration file name from the command arguments."
-                    msg += " Possible candidates are: %s" % (list(configCandidateNames))
-                    self.logger.info(msg)
-                    raise ConfigurationException("ERROR: Unable to extract CRAB configuration file name from command arguments.")
-            if useDefault:
-                self.options.config = 'crabConfig.py'
+        validateSubmitOptions(self.options, self.args, self.logger)
 
 
     def validateConfig(self):
@@ -343,6 +305,7 @@ class submit(SubCommand):
                 if DBSURLS[dbs_type][alias] == arg.rstrip('/'):
                     return DBSURLS[dbs_type][alias], alias
         return None, None
+
 
     ## TODO: This method is shared with resubmit. Put it in a common place.
     def _encodeRequest(self, configreq, listParams):
