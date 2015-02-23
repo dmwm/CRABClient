@@ -1,5 +1,6 @@
 import os
-import imp
+import re
+import imp 
 import json
 import types
 from optparse import OptionParser
@@ -349,11 +350,15 @@ class SubCommand(ConfigCommand):
 
     def checkversion(self, baseurl = None):
         compatibleversion = server_info('version', self.serverurl, self.proxyfilename, baseurl)
-        if __version__ in compatibleversion:
-            self.logger.debug("CRABClient version: %s Compatible"  % __version__)
-        else:
+        compatible = False
+        for item in compatibleversion:
+            if re.match(item, __version__):
+                self.logger.debug("CRABClient version: %s Compatible"  % __version__)
+                compatible = True
+                break 
+        if not compatible:
             self.logger.info("%sWarning%s: Incompatible CRABClient version \"%s\" " % (colors.RED, colors.NORMAL , __version__ ))
-            self.logger.info("Server is saying that compatible versions are: %s"  % compatibleversion)
+            self.logger.info("Server is saying that compatible versions are: %s"  % [v.replace("\\", "") for v in compatibleversion])
 
 
     def handleProxy(self):
