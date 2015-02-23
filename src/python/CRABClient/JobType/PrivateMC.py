@@ -5,6 +5,8 @@ PrivateMC job type plug-in
 import os
 import re
 
+from WMCore.Lexicon import lfnParts
+
 from CRABClient.JobType.Analysis import Analysis
 from CRABClient.ClientMapping import getParamDefaultValue
 
@@ -20,10 +22,13 @@ class PrivateMC(Analysis):
         """
         tarFilename, configArguments, isbchecksum = super(PrivateMC, self).run(*args, **kwargs)
         configArguments['jobtype'] = 'PrivateMC'
-        if hasattr(self.config.Data, 'primaryDataset'):
-            configArguments['inputdata'] = "/" + self.config.Data.primaryDataset
-        else:
-            configArguments['inputdata'] = "/CRAB_PrivateMC"
+        ## Get the user-specified primary dataset name.
+        primaryDataset = getattr(self.config.Data, 'primaryDataset', 'CRAB_PrivateMC')
+        # Normalizes "foo/bar" and "/foo/bar" to "/foo/bar"
+        primaryDataset = "/" + os.path.join(*primaryDataset.split("/"))
+        if not re.match("/%(primDS)s.*" % (lfnParts), primaryDataset):
+            self.logger.warning("Invalid primary dataset name %s; publication may fail." % (primaryDataset))
+        configArguments['inputdata'] = primaryDataset
         return tarFilename, configArguments, isbchecksum
 
     def validateConfig(self, config):

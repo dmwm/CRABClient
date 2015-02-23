@@ -7,11 +7,11 @@ import tempfile
 import string
 import re
 
+from WMCore.Lexicon import lfnParts
 from WMCore.DataStructs.LumiList import LumiList
 
 import PandaServerInterface as PandaInterface
 
-from WMCore.Lexicon import lfnParts
 from CRABClient.ClientUtilities import colors
 from CRABClient.JobType.BasicJobType import BasicJobType
 from CRABClient.JobType.CMSSWConfig import CMSSWConfig
@@ -19,6 +19,7 @@ from CRABClient.JobType.LumiMask import getLumiList, getRunList
 from CRABClient.JobType.UserTarball import UserTarball
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
 from CRABClient.ClientExceptions import EnvironmentException, ConfigurationException
+
 
 class Analysis(BasicJobType):
     """
@@ -98,20 +99,19 @@ class Analysis(BasicJobType):
         if userFilesList:
             self.logger.debug("Attaching list of user-specified primary input files.")
             userFilesList = map(string.strip, userFilesList)
-            if not len(userFilesList) == len(set(userFilesList)):
-                self.logger.warning("%sWarning%s: There is a duplicated file in the files list. \nCRAB will remove the duplicated file before submitting." % (colors.RED, colors.NORMAL))    
-                userFilesList = set(userFilesList)
-            configArguments['userfiles'] = userFilesList
-             
-            primDS = getattr(self.config.Data, 'primaryDataset', None)
-            if primDS:
-                # Normalizes "foo/bar" and "/foo/bar" to "/foo/bar"
-                primDS = "/" + os.path.join(*primDS.split("/"))
-                if not re.match("/%(primDS)s.*" % lfnParts, primDS):
-                    self.logger.warning("Invalid primary dataset name %s for private MC; publishing may fail" % primDS)
-                configArguments['inputdata'] = primDS
-            else:
-                configArguments['inputdata'] = getattr(self.config.Data, 'inputDataset', '/CRAB_UserFiles')
+            userFilesList = [file for file in userFilesList if file]
+            if len(userFilesList) != len(set(userFilesList)):
+                msg  = "%sWarning%s: CRAB configuration parameter Data.userInputFiles contains duplicated entries." % (colors.RED, colors.NORMAL)
+                msg += " Duplicated entries will be removed."    
+                self.logger.warning(msg)
+            configArguments['userfiles'] = set(userFilesList)
+            ## Get the user-specified primary dataset name.
+            primaryDataset = getattr(self.config.Data, 'primaryDataset', 'CRAB_UserFiles')
+            # Normalizes "foo/bar" and "/foo/bar" to "/foo/bar"
+            primaryDataset = "/" + os.path.join(*primaryDataset.split("/"))
+            if not re.match("/%(primDS)s.*" % (lfnParts), primaryDataset):
+                self.logger.warning("Invalid primary dataset name %s; publication may fail." % (primaryDataset))
+            configArguments['inputdata'] = primaryDataset
 
         lumi_mask_name = getattr(self.config.Data, 'lumiMask', None)
         lumi_list = None
@@ -151,19 +151,39 @@ class Analysis(BasicJobType):
         if not valid:
             return valid, reason
 
+        ## Make sure only one of the two parameters Data.inputDataset and Data.userInputFiles
+        ## was specified.
+        if hasattr(config.Data, 'inputDataset') and hasattr(config.Data, 'userInputFiles'):
+            msg  = "Invalid CRAB configuration: Analysis job type accepts either an input dataset or a set of user input files to run on, but not both."
+            msg += "\nSuggestion: Specify only one of the two parameters, Data.inputDataset or Data.userInputFiles, but not both."
+            return False, msg
+
+        ## Make sure at least one of the two parameters Data.inputDataset and Data.userInputFiles
+        ## was specified.
         if not getattr(config.Data, 'inputDataset', None) and not getattr(config.Data, 'userInputFiles', None):
-            msg  = "Invalid CRAB configuration: Analysis job type requires an input dataset (or a set of user input files) to run on."
-            msg += "\nTo specify an input dataset (or a set of user input files) use the parameter Data.inputDataset (or Data.userInputFiles)."
+            msg  = "Invalid CRAB configuration: Analysis job type requires an input dataset or a set of user input files to run on."
+            msg += "\nSuggestion: To specify an input dataset use the parameter Data.inputDataset."
+            msg += " To specify a set of user input files use the parameter Data.userInputFiles."
             return False, msg
 
-        if getattr(config.Data, 'primaryDataset', None):
-            msg  = "Invalid CRAB configuration: Analysis job type does not need a primary dataset name to be specified."
-            msg += "\nPlease remove the parameter Data.primaryDataset."
+        ## When running over an input dataset, we don't accept that the user specifies a
+        ## primary dataset name, because the primary dataset name will already be extracted
+        ## from the input dataset name.
+        if getattr(config.Data, 'inputDataset', None) and getattr(config.Data, 'primaryDataset', None):
+            msg  = "Invalid CRAB configuration: Analysis job type with input dataset does not accept a primary dataset name to be specified."
+            msg += "\nSuggestion: Remove the parameter Data.primaryDataset."
             return False, msg
 
+        ## When running over user input files, make sure the splitting mode is 'FileBased'.
+        if getattr(config.Data, 'userInputFiles', None) and self.splitAlgo != 'FileBased':
+            msg  = "Invalid CRAB configuration: Analysis job type with user input files only supports file-based splitting."
+            msg += "\nSuggestion: Set Data.splitting = 'FileBased'."
+            return False, msg
+
+        ## Make sure splitting mode is not 'EventBased'.
         if self.splitAlgo == 'EventBased':
             msg  = "Invalid CRAB configuration: Analysis job type does not support event-based splitting."
-            msg += "\nPlease set Data.splitting = 'FileBased' or 'LumiBased'."
+            msg += "\nSuggestion: Set Data.splitting = 'FileBased' or 'LumiBased'."
             return False, msg
 
         return True, "Valid configuration"

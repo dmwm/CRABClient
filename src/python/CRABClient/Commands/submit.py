@@ -149,7 +149,7 @@ class submit(SubCommand):
         self.logger.info("%sSuccess%s: Your task has been delivered to the CRAB3 server." %(colors.GREEN, colors.NORMAL))
         if not self.options.wait:
             self.logger.info("Task name: %s" % uniquerequestname)
-            self.logger.info("Please use 'crab status' to check how the submission process proceed")
+            self.logger.info("Please use 'crab status' to check how the submission process proceeds.")
 
         if self.options.wait:
             self.checkStatusLoop(server,uniquerequestname)
