@@ -70,12 +70,12 @@ class status(SubCommand):
             raise RESTCommunicationException(msg)
 
         self.printShort(dictresult, user)
-        self.printPublication(dictresult)
-        self.printErrors(dictresult)
 
         if 'jobs' not in dictresult:
             self.logger.info("\nNo jobs created yet!")
         else:
+            self.printPublication(dictresult)
+            self.printErrors(dictresult)
             # Note several options could be combined
             if self.summary:
                 self.printSummary(dictresult)
@@ -112,7 +112,7 @@ class status(SubCommand):
             # We might also have more information in the job def errors
             logJDefErr(jdef=dictresult)
         else:
-            ## Print the warning messages (these are the warnings in the Task DB,
+            ## Print the warning messages (these are the warnings in the Tasks DB,
             ## and/or maybe some warning added by the REST Interface to the status result).
             if dictresult['taskWarningMsg']:
                 for warningMsg in dictresult['taskWarningMsg']:
@@ -146,16 +146,15 @@ class status(SubCommand):
         ec_error = {}   #a map containint the exit code as key and the exit message as value (the last one we found)
         unknown = 0
         are_failed_jobs = False
-        if 'jobs' in dictresult:
-            for jobid, status in dictresult['jobs'].iteritems():
-                if status['State'] == 'failed':
-                    are_failed_jobs = True
-                    if 'Error' in status:
-                        ec = status['Error'][0] #exit code of this failed job
-                        ec_numjobs[ec] = ec_numjobs.setdefault(ec, 0) + 1
-                        ec_error[ec] = status['Error'][1]
-                    else:
-                        unknown += 1
+        for jobid, status in dictresult['jobs'].iteritems():
+            if status['State'] == 'failed':
+                are_failed_jobs = True
+                if 'Error' in status:
+                    ec = status['Error'][0] #exit code of this failed job
+                    ec_numjobs[ec] = ec_numjobs.setdefault(ec, 0) + 1
+                    ec_error[ec] = status['Error'][1]
+                else:
+                    unknown += 1
         if are_failed_jobs:
             msg = "\nError summary:"
             for ec, count in ec_numjobs.iteritems():
@@ -168,22 +167,47 @@ class status(SubCommand):
 
 
     def printPublication(self, dictresult):
-        self.logger.info("")
-        msg = ''
-        if 'outdatasets' in dictresult and dictresult['outdatasets']:
-            plural = 's' if len(dictresult['outdatasets']) > 1 else ''
-            msg = 'Output dataset{0}:\t\t{1}'.format(plural, dictresult['outdatasets'][0])
-            msg += '\n\t\t\t\t' + '\n\t\t\t\t'.join(dictresult['outdatasets'][1:]) + '\n\n'
+        """
+        Print information about the publication of the output files in DBS.
+        """
+        ## If publication was disabled, print a pertinent message and return.
         if 'publication' in dictresult and 'disabled' in dictresult['publication']:
-            self.logger.info(msg + "No publication information (publication has been disabled in the crab configuration file)")
+            msg = "\nNo publication information (publication has been disabled in the crab configuration file)"
+            self.logger.info(msg)
             return
+        ## List of output datasets that are going to be (or are already) published. This
+        ## list is written into the Tasks DB by the post-job when it does the upload of
+        ## the output files metadata. This means that the list will be empty until one
+        ## of the post-jobs will finish executing.
+        outputDatasets = dictresult.get('outdatasets')
+        ## Function to print the list of output datasets (with or without the DAS URL).
+        def printOutputDatasets(includeDASURL = False):
+            if outputDatasets:
+                msg = ""
+                if includeDASURL:
+                    for outputDataset in outputDatasets:
+                        msg += "\nOutput dataset:\t\t\t%s" % (outputDataset)
+                       	msg += "\nOutput dataset DAS URL:\t\thttps://cmsweb.cern.ch/das/request?input={0}&instance=prod%2Fphys03".format(urllib.quote(outputDataset, ''))
+                else:
+                    plural = "s" if len(outputDatasets) > 1 else ""
+                    extratab = "\t" if not plural else ""
+                    msg += "\nOutput dataset%s:\t\t%s%s" % (plural, extratab, outputDatasets[0])
+                    for outputDataset in outputDatasets[1:]:
+                        msg += "\n\t\t\t\t%s%s" % (extratab, outputDataset)
+                self.logger.info(msg)
+        ## If publication information is not available yet, print a pertinent message
+        ## (print first the list of output datasets, without the DAS URL) and return.
         if 'publication' not in dictresult or not dictresult['jobsPerStatus']:
-            self.logger.info(msg + "No publication information available yet")
+            printOutputDatasets()
+            msg = "\nNo publication information available yet"
+            self.logger.info(msg)
             return
-        states = dictresult['publication']
-        if 'error' in states:
-            self.logger.info("Publication status:\t\t%s" % states['error'])
-        elif states and dictresult.get('outdatasets'):
+        ## Case in which there was an error in retrieving the publication status.
+        if 'error' in dictresult['publication']:
+            msg = "\nPublication status:\t\t%s" % (dictresult['publication']['error'])
+            self.logger.info(msg)
+        elif dictresult['publication'] and outputDatasets:
+            states = dictresult['publication']
             ## Don't consider publication states for which 0 files are in this state.
             states_tmp = states.copy()
             for status in states:
@@ -195,7 +219,7 @@ class status(SubCommand):
             ## of output datasets produced by the task, because, when multiple EDM files are
             ## produced, each EDM file goes into a different output dataset).
             numJobs = sum(dictresult['jobsPerStatus'].values())
-            numOutputDatasets = len(dictresult['outdatasets'])
+            numOutputDatasets = len(outputDatasets)
             numFilesToPublish = numJobs * numOutputDatasets
             ## Count how many of these files have already started the publication process.
             numSubmittedFiles = sum(states.values())
@@ -204,14 +228,15 @@ class status(SubCommand):
             states['unsubmitted'] = numFilesToPublish - numSubmittedFiles
             ## Print the publication status.
             statesList = sorted(states)
-            self.logger.info("Publication status:\t\t{0} {1}".format(self._printState(statesList[0], 13), self._percentageString(statesList[0], states[statesList[0]], numFilesToPublish)))
+            msg = "\nPublication status:\t\t{0} {1}".format(self._printState(statesList[0], 13), \
+                                                            self._percentageString(statesList[0], states[statesList[0]], numFilesToPublish))
             for status in statesList[1:]:
                 if states[status]:
-                    self.logger.info("\t\t\t\t{0} {1}".format(self._printState(status, 13), self._percentageString(status, states[status], numFilesToPublish)))
-        if dictresult.get('outdatasets'):
-            info = '\nOutput dataset:\t\t\t{0}'\
-                   '\nOutput dataset url:\t\thttps://cmsweb.cern.ch/das/request?input={1}&instance=prod%2Fphys03'
-            self.logger.info(''.join([info.format(o, urllib.quote(o, '')) for o in dictresult['outdatasets']]))
+                    msg += "\n\t\t\t\t{0} {1}".format(self._printState(status, 13), \
+                                                      self._percentageString(status, states[status], numFilesToPublish))
+            self.logger.info(msg)
+        ## Print the output datasets with the corresponding DAS URL.
+        printOutputDatasets(includeDASURL = True)
 
 
     def printSummary(self, dictresult):
@@ -313,7 +338,7 @@ class status(SubCommand):
                 if (cpu_min == -1) or cpu < cpu_min: cpu_min = cpu
                 if cpu > cpu_max: cpu_max = cpu
                 cpu = "%.0f" % cpu
-            ec = 'unknown'
+            ec = 'Unknown'
             if 'Error' in info:
                 ec = str(info['Error'][0]) #exit code of this failed job
             elif state in ['finished']:
