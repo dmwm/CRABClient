@@ -58,7 +58,7 @@ class remake(SubCommand):
 
         if not hasattr(self.options, 'cmptask') or  self.options.cmptask == None :
             raise MissingOptionException("%sError%s: Please use the --task option to specify the complete task name "% (colors.RED,colors.NORMAL))
-        elif not re.match('^\d{6}_\d{6}_([^\:\,]+)\:[a-zA-Z]+_crab_.+' ,self.options.cmptask):
+        elif not re.match('^\d{6}_\d{6}_([^\:\,]+)\:[a-zA-Z-]+_(crab_)?.+' ,self.options.cmptask):
             raise  ConfigurationException('%sError%s: Task name given did not meet regular expression citeria' % (colors.RED, colors.NORMAL))
 
 
