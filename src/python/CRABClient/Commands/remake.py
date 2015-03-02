@@ -6,11 +6,12 @@ from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientUtilities import colors
 from CRABClient.ClientExceptions import MissingOptionException,ConfigurationException
 
+
 class remake(SubCommand):
     """
-      remake the .requestcache
+    Remake the .requestcache
     """
-    name ='remake'
+    name = 'remake'
     shortnames = ['rmk']
 
     def __call__(self):
@@ -18,30 +19,25 @@ class remake(SubCommand):
         return self.remakecache(''.join(self.options.cmptask.split()))
 
     def remakecache(self,taskname):
-        #checking and making the request area if does not exist
-
-        username = taskname.split("_")[2].split(":")[-1]
-        requestare = taskname.split(username+'_')[1]
-
-        cachepath = os.path.join(requestare , '.requestcache')
-
+        requestarea = taskname.split(":", 1)[1].split("_", 1)[1]
+        cachepath = os.path.join(requestarea, '.requestcache')
         if os.path.exists(cachepath):
-            self.logger.info("%sError%s: %s is not created because it is already existing" % (colors.RED,colors.NORMAL,cachepath))
-        elif not os.path.exists(requestare):
-            self.logger.info('Remaking %s folder' %requestare)
+            self.logger.info("%sError%s: %s not created, because it already exists." % (colors.RED, colors.NORMAL, cachepath))
+        elif not os.path.exists(requestarea):
+            self.logger.info('Remaking %s folder.' % (requestarea))
             try:
-                os.mkdir(requestare)
-                os.mkdir(os.path.join(requestare, 'results'))
-                os.mkdir(os.path.join(requestare, 'inputs'))
+                os.mkdir(requestarea)
+                os.mkdir(os.path.join(requestarea, 'results'))
+                os.mkdir(os.path.join(requestarea, 'inputs'))
             except IOError:
-                self.logger.info('%sWarning%s: Failed to make a requestare' % (colors.RED, colors.NORMAL))
-
-            self.logger.info('Remaking the .requestcache for %s' % taskname)
+                self.logger.info("%sWarning%s: Failed to make a request area." % (colors.RED, colors.NORMAL))
+            self.logger.info("Remaking .requestcache file.")
             dumpfile = open(cachepath , 'w')
-            pickle.dump({'voGroup': '', 'Server': self.serverurl , 'instance': self.instance,'RequestName': taskname, 'voRole': '', 'Port': ''}, dumpfile)
+            pickle.dump({'voGroup': '', 'Server': self.serverurl , 'instance': self.instance, 'RequestName': taskname, 'voRole': '', 'Port': ''}, dumpfile)
             dumpfile.close()
-            self.logger.info('%sSuccess%s: Finish making %s ' % (colors.GREEN, colors.NORMAL, cachepath))
+            self.logger.info("%sSuccess%s: Finished remaking project directory %s." % (colors.GREEN, colors.NORMAL, requestarea))
             return 0
+
 
     def setOptions(self):
         """
@@ -49,16 +45,17 @@ class remake(SubCommand):
 
         This allows to set specific command options
         """
-        self.parser.add_option( '--task',
-                                dest = 'cmptask',
-                                default = None,
-                                help = 'The complete task name from glidemon or dashboard.')
+        self.parser.add_option("--task",
+                               dest = "cmptask",
+                               default = None,
+                               help = "The complete task name. Can be taken from 'crab status' output, or from glidemon or dashboard.")
+
 
     def validateOptions(self):
-
-        if not hasattr(self.options, 'cmptask') or  self.options.cmptask == None :
-            raise MissingOptionException("%sError%s: Please use the --task option to specify the complete task name "% (colors.RED,colors.NORMAL))
-        elif not re.match('^\d{6}_\d{6}_([^\:\,]+)\:[a-zA-Z-]+_(crab_)?.+' ,self.options.cmptask):
-            raise  ConfigurationException('%sError%s: Task name given did not meet regular expression citeria' % (colors.RED, colors.NORMAL))
-
-
+        if self.options.cmptask is None:
+            raise MissingOptionException("%sError%s: Please use the --task option to specify the task name." % (colors.RED, colors.NORMAL))
+        else:
+            regex = "^\d{6}_\d{6}_?([^\:]*)\:[a-zA-Z-]+_(crab_)?.+"
+            if not re.match(regex, self.options.cmptask):
+                msg = "%sError%s: Task name does not match the regular expression '%s'." % (colors.RED, colors.NORMAL, regex)
+                raise ConfigurationException(msg)
