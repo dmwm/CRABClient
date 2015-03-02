@@ -113,6 +113,7 @@ def getFileFromURL(url, filename = None):
         filename = os.path.basename(path)
     try:
         socket = urllib.urlopen(url)
+        status = socket.getcode()
         filestr = socket.read()
     except IOError, ioex:
         tblogger = logging.getLogger('CRAB3')
@@ -123,8 +124,10 @@ def getFileFromURL(url, filename = None):
     except Exception, ex:
         tblogger = logging.getLogger('CRAB3')
         tblogger.exception(ex)
-        msg = 'Unexpected error while trying to retrieve file from %s: %s' % (url, ex)
+        msg = "Unexpected error while trying to retrieve file from %s: %s" % (url, ex)
         raise ClientException(msg)
+    if status != 200:
+        raise ClientException("Unable to retieve the file from %s. HTTP status code %s. HTTP content: %s" % (url, status, socket.info()))
     with open(filename, 'w') as f:
         f.write(filestr)
     return filename
