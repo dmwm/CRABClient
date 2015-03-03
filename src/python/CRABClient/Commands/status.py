@@ -24,6 +24,7 @@ PUBLICATION_STATES = {
     'publishing': 'running',
 }
 
+
 class status(SubCommand):
     """
     Query the status of your tasks, or detailed information of one or more tasks
@@ -32,6 +33,7 @@ class status(SubCommand):
 
     shortnames = ['st']
     states = ['submitted', 'failure', 'queued', 'success']
+
 
     def _stateColor(self, state):
         if state == 'failed':
@@ -43,15 +45,18 @@ class status(SubCommand):
         else:
             return colors.NORMAL
 
+
     def _percentageString(self, state, value, total):
         state = PUBLICATION_STATES.get(state, state)
         digit_count = int(math.ceil(math.log(max(value, total)+1, 10)))
         format_str = "%5.1f%% (%s%" + str(digit_count) + "d%s/%" + str(digit_count) + "d)"
         return format_str % ((value*100/total), self._stateColor(state), value, colors.NORMAL, total)
 
+
     def _printState(self, state, ljust):
         state = PUBLICATION_STATES.get(state, state)
         return ('{0}{1:<' + str(ljust) + '}{2}').format(self._stateColor(state), state, colors.NORMAL)
+
 
     def __call__(self):
         serverFactory = CRABClient.Emulator.getEmulator('rest')
@@ -88,8 +93,8 @@ class status(SubCommand):
 
         return dictresult
 
-    def printShort(self, dictresult, username):
 
+    def printShort(self, dictresult, username):
         self.logger.debug(dictresult) #should be something like {u'result': [[123, u'ciao'], [456, u'ciao']]}
 
         self.logger.info("Task name:\t\t\t%s" % self.cachedinfo['RequestName'])
@@ -281,6 +286,7 @@ class status(SubCommand):
 
         self.logger.info("")
 
+
     def printLong(self, dictresult):
         sortdict = {}
         self.logger.info("\nExtended Job Status Table\n")
@@ -360,6 +366,7 @@ class status(SubCommand):
             waste = wall_sum - run_sum
             self.logger.info(" * Waste: %s (%.0f%% of total)" % (to_hms(waste), (waste / float(wall_sum))*100))
         self.logger.info("")
+
 
     def printIdle(self, dictresult, task_user):
         sites = {}
@@ -464,8 +471,8 @@ class status(SubCommand):
                 self.logger.info("%-20s %13s" % (site, sites[site]['Pending']))
             self.logger.info("")
 
-    def printSort(self, sortdict, sortby):
 
+    def printSort(self, sortdict, sortby):
         sortmatrix = []
         valuedict ={}
         self.logger.info('')
@@ -566,7 +573,3 @@ class status(SubCommand):
                 raise ConfigurationException('%sError%s: Only these values are accepted for crab status --sort option: %s' % (colors.RED, colors.NORMAL, acceptedsort))
             else:
                 self.sort = self.options.sort
-
-
-
-

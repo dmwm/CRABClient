@@ -55,9 +55,11 @@ class colors:
 class logfilter(logging.Filter):
     def filter(self, record):
         def removecolor(text):
-            for color in colors.colordict.keys():
-                if colors.colordict[color] in text:
-                    text = text.replace(colors.colordict[color], '')
+            if not text:
+                return text
+            for color, colorval in colors.colordict.iteritems():
+                if colorval in text:
+                    text = text.replace(colorval, '')
             return text
         # find color in record.msg
         if isinstance(record.msg, Exception):
@@ -68,14 +70,14 @@ class logfilter(logging.Filter):
 
 
 def getLoggers(loglevel):
-    '''
+    """
     Logging is using the hierarchy system, the CRAB3.all log inherit everything from CRAB3. So everything that is
     logged to CRAB3.all will also go to CRAB3, however thing that logged using CRAB3 will not go to CRAB3.all.
     CRAB3 logger usess memory handler, which then will be flushed to a filehandler in the 'finally' stage. So
 
     CRAB3.all -> screen + file
     CRAB3     -> file
-    '''
+    """
     # Set up the logger and exception handling
     logger = logging.getLogger('CRAB3.all')
     tblogger = logging.getLogger('CRAB3')

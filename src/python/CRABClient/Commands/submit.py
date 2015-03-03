@@ -152,7 +152,7 @@ class submit(SubCommand):
             self.logger.info("Please use 'crab status' to check how the submission process proceeds.")
 
         if self.options.wait:
-            self.checkStatusLoop(server,uniquerequestname)
+            self.checkStatusLoop(server, uniquerequestname)
 
         self.logger.debug("About to return")
 
@@ -350,7 +350,6 @@ class submit(SubCommand):
 
 
     def checkStatusLoop(self,server,uniquerequestname):
-
         self.logger.info("Waiting for task to be processed")
 
         maxwaittime= 900 #in second, changed to 15 minute max wait time, the original 1 hour is too long
@@ -391,7 +390,7 @@ class submit(SubCommand):
 
                 if dictresult['status'] == 'FAILED':
                     continuecheck = False
-                    self.logger.info(self.logger.info("%sError%s: The submission of your task failed. Please use 'crab status -d <crab project directory>' to get the error message" %(colors.RED, colors.NORMAL)))
+                    self.logger.info("%sError%s: The submission of your task failed. Please use 'crab status -d <crab project directory>' to get the error message" % (colors.RED, colors.NORMAL))
                 elif dictresult['status'] == 'SUBMITTED' or dictresult['status'] == 'UNKNOWN': #untile the node_state file is available status is unknown
                     continuecheck = False
                     self.logger.info("%sSuccess%s: Your task has been processed and your jobs have been submitted successfully" % (colors.GREEN, colors.NORMAL))
