@@ -8,6 +8,7 @@ import logging.handlers
 import string
 import urllib
 import subprocess
+import traceback
 from urlparse import urlparse
 from ast import literal_eval
 
@@ -60,7 +61,7 @@ def getUsernameFromSiteDB():
         msg += "\n  Stdout:\n    %s" % (str(stdout).replace('\n', '\n    '))
         msg += "\n  Stderr:\n    %s" % (str(stderr).replace('\n', '\n    '))
         raise ProxyException(msg)
-    proxyTimeLeft = stdout.replace('\n','')
+    proxyTimeLeft = str(stdout).replace('\n','')
     if int(proxyTimeLeft) < 60:
         msg  = "Aborting the attempt to retrieve username from SiteDB."
         msg += "\nProxy time left = %s seconds. Please renew your proxy." % (proxyTimeLeft)
@@ -75,7 +76,7 @@ def getUsernameFromSiteDB():
         msg += "\n  Stdout:\n    %s" % (str(stdout).replace('\n', '\n    '))
         msg += "\n  Stderr:\n    %s" % (str(stderr).replace('\n', '\n    '))
         raise ProxyException(msg)
-    proxyFileName = stdout.replace('\n','')
+    proxyFileName = str(stdout).replace('\n','')
     ## Path to certificates.
     capath = os.environ['X509_CERT_DIR'] if 'X509_CERT_DIR' in os.environ else "/etc/grid-security/certificates"
     ## Retrieve user info from SiteDB.
@@ -89,7 +90,16 @@ def getUsernameFromSiteDB():
         msg += "\n  Stderr:\n    %s" % (str(stderr).replace('\n', '\n    '))
         raise UsernameException(msg)
     ## Extract the username from the above command output.
-    dictresult = literal_eval(stdout.replace('\n',''))
+    try:
+        dictresult = literal_eval(str(stdout).replace('\n',''))
+    except Exception, ex:
+        msg  = "Unable to retrieve username from SiteDB: %s" % (ex)
+        msg += "\nExecuted command: %s" % (cmd)
+        msg += "\n  Stdout:\n    %s" % (str(stdout).replace('\n', '\n    '))
+        msg += "\n  Stderr:\n    %s" % (str(stderr).replace('\n', '\n    '))
+        msg += "\nFailure occurred executing literal_eval(str(stdout).replace('\\n','')):"
+        msg += "\n%s" % (traceback.format_exc())
+        raise UsernameException(msg)
     if len(dictresult.get('result', [])) != 1 or 'login' not in dictresult['result'][0]:
         msg  = "Unable to extract username from SiteDB."
         msg += "\nUnexpected output format from command: %s" % (cmd)
