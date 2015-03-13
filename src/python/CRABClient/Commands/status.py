@@ -290,7 +290,7 @@ class status(SubCommand):
     def printLong(self, dictresult):
         sortdict = {}
         self.logger.info("\nExtended Job Status Table\n")
-        self.logger.info("%4s %-12s %-20s %10s %10s %10s %10s %10s %10s" % ("Job", "State", "Most Recent Site", "Runtime", "Mem (MB)", "CPU %", "Retries", "Waste", "Exit Code"))
+        self.logger.info("%4s %-12s %-20s %10s %10s %10s %10s %10s %10s %10s" % ("Job", "State", "Most Recent Site", "Runtime", "Mem (MB)", "CPU %", "Retries", "Restarts", "Waste", "Exit Code"))
         mem_cnt = 0
         mem_min = -1
         mem_max = 0
@@ -349,8 +349,8 @@ class status(SubCommand):
                 ec = str(info['Error'][0]) #exit code of this failed job
             elif state in ['finished']:
                 ec = '0'
-            sortdict[str(i)] = {'state' : state , 'site' : site , 'runtime' : wall_str , 'memory' : mem , 'cpu' : cpu , 'retries' : info.get('Retries', 0) , 'waste' : waste, 'exitcode' : ec}
-            self.logger.info("%4d %-12s %-20s %10s %10s %10s %10s %10s %10s" % (i, state, site, wall_str, mem, cpu, info.get('Retries', 0) + info.get('Restarts', 0), waste, ec))
+            sortdict[str(i)] = {'state' : state , 'site' : site , 'runtime' : wall_str , 'memory' : mem , 'cpu' : cpu , 'retries' : info.get('Retries', 0) , 'restarts' : info.get('Restarts', 0) , 'waste' : waste, 'exitcode' : ec}
+            self.logger.info("%4d %-12s %-20s %10s %10s %10s %10s %10s %10s %10s" % (i, state, site, wall_str, mem, cpu, info.get('Retries', 0), info.get('Restarts', 0), waste, ec))
         self.logger.debug("")
         self.logger.debug("%4s %-10s" % ("Job", "Cluster Id"))
         for i in range(1, len(dictresult['jobs'])+1):
