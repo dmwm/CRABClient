@@ -7,7 +7,7 @@ import os
 from WMCore.Credential.Proxy import Proxy, CredentialException
 from WMCore.Services.SiteDB.SiteDB import SiteDBJSON
 from CRABClient.ClientExceptions import ProxyCreationException, EnvironmentException
-from CRABClient.ClientUtilities import colors
+from CRABClient.ClientUtilities import colors, StopExecution
 
 
 class CredentialInteractions(object):
@@ -88,7 +88,7 @@ class CredentialInteractions(object):
 
     def getUsernameFromSiteDB(self):
         """
-        Return a the client hypernews name
+        Retrieve the user's username as it appears in SiteDB.
         """
         proxy = self.proxy()
         userdn = proxy.getSubjectFromCert(self.certLocation)
@@ -120,7 +120,6 @@ class CredentialInteractions(object):
 
 
     def createNewVomsProxySimple(self, timeLeftThreshold = 0):
-        proxyCreated = False
         proxy = self.proxy()
         self.logger.debug("Checking credentials")
         proxyFileName = proxy.getProxyFilename()
@@ -133,23 +132,29 @@ class CredentialInteractions(object):
             proxyTimeLeft = proxy.getTimeLeft()
             hours, minutes, seconds = int(proxyTimeLeft/3600), int((proxyTimeLeft%3600)/60), int((proxyTimeLeft%3600)%60)
             self.logger.debug("Proxy valid for %02d:%02d:%02d hours" % (hours, minutes, seconds))
+        ## Create a new proxy if the current one is expired or if we were instructed
+        ## to change the proxy for a new one.
+        proxyCreated = False
         if proxyTimeLeft < timeLeftThreshold:
-            msg = "Creating proxy for %s hours with VO role '%s' and VO group '%s'" \
-                  % (self.defaultDelegation['proxyValidity'], self.defaultDelegation['role'], self.defaultDelegation['group'])
+            msg  = "Creating new proxy for %s hours" % (self.defaultDelegation['proxyValidity'])
+            msg += " with VO group '%s' and VO role '%s'." % (self.defaultDelegation['group'], self.defaultDelegation['role'])
             self.logger.debug(msg)
+            ## Create the proxy.
             proxy.create()
+            ## Check that the created proxy has the expected VO group and role (what we have
+            ## set in the defaultDelegation dictionary).
             proxyTimeLeft = proxy.getTimeLeft()
             group, role = proxy.getUserGroupAndRoleFromProxy(proxy.getProxyFilename())
             if proxyTimeLeft > 0 and group == self.defaultDelegation['group'] and role == self.defaultDelegation['role']:
-                self.logger.debug("Proxy created")
+                self.logger.debug("Proxy created.")
                 proxyCreated = True
             else:
-                raise ProxyCreationException("Problems creating proxy")
+                raise ProxyCreationException("Problems creating proxy.")
            
         return proxyCreated
 
 
-    def createNewVomsProxy(self, timeLeftThreshold = 0, proxyCreatedByCRAB = False):
+    def createNewVomsProxy(self, timeLeftThreshold = 0, doProxyGroupRoleCheck = False, proxyCreatedByCRAB = False, proxyOptsSetPlace = None):
         """
         Handles the proxy creation:
            - checks if a valid proxy still exists
@@ -157,6 +162,7 @@ class CredentialInteractions(object):
         """
         ## TODO add the change to have user-cert/key defined in the config.
         proxy = self.proxy()
+        ## Not sure if proxy.userDN is used. We don't have this in createNewVomsProxySimple...
         proxy.userDN = proxy.getSubjectFromCert(self.certLocation)
         self.logger.debug("Checking credentials")
         proxyFileName = proxy.getProxyFilename()
@@ -170,28 +176,94 @@ class CredentialInteractions(object):
             hours, minutes, seconds = int(proxyTimeLeft/3600), int((proxyTimeLeft%3600)/60), int((proxyTimeLeft%3600)%60)
             self.logger.debug("Proxy valid for %02d:%02d:%02d hours" % (hours, minutes, seconds))
 
-        ## If the proxy is not expired, we check if role and/or group are changed.
-        if proxyTimeLeft > timeLeftThreshold and self.defaultDelegation['role'] != None and self.defaultDelegation['group'] != None and not proxyCreatedByCRAB:
+        if doProxyGroupRoleCheck:
+            ## Get the VO group and role in the proxy.
             group, role = proxy.getUserGroupAndRoleFromProxy(proxyFileName)
-            if group != self.defaultDelegation['group'] or role != self.defaultDelegation['role']:
-                ## Ask the user what he wants to do. Keep it or leave it?
-                while True:
-                    self.logger.info(("Proxy file %s exists with VO group = '%s' and VO role = '%s', but you have specified to use VO group = '%s' and VO role = '%s'." +
-                                      "\nDo you want to overwrite the proxy (Y/N)?") \
-                                      % (proxyFileName, group, role, self.defaultDelegation['group'], self.defaultDelegation['role']))
-                    res=raw_input()
-                    if res in ['y','Y','n','N']: break
-                ## If he wants to overwrite the proxy then we do it, otherwise we exit asking to modify the config.
-                if res.upper() == 'Y':
-                    self.proxyChanged = True
-                else:
-                    raise ProxyCreationException("Please modify the User.voRole and User.voGroup parameters in your configuration file to match the existing proxy")
+            proxyAttrs = {'group': group, 'role': role}
+            ## Make sure proxyOptsSetPlace is a dictionary and has the expected keys.
+            if type(proxyOptsSetPlace) != dict:
+                proxyOptsSetPlace = {}
+            proxyOptsSetPlace.setdefault('set_in', {})
+            proxyOptsSetPlace['set_in'].setdefault('group', "")
+            proxyOptsSetPlace['set_in'].setdefault('role', "")
+            proxyOptsSetPlace.setdefault('for_set_use', "")
+            ## If the proxy (not created by CRAB) is not expired, ...
+            if (proxyTimeLeft > timeLeftThreshold) and not proxyCreatedByCRAB and \
+               (self.defaultDelegation['group'] != None and self.defaultDelegation['role'] != None):
+                ## ... we check if the VO group and VO role in the proxy are the same as the
+                ## ones in defaultDelegation (which were either specified by the user in the
+                ## CRAB configuration file or in the command options, or were taken from the
+                ## request cache, or otherwise were given default values).
+                if (group != self.defaultDelegation['group'] or role != self.defaultDelegation['role']):
+                    ## If they are not the same, force the user to either create a new proxy with
+                    ## the same VO group and VO role as in defaultDelegation, or to change the VO
+                    ## group/role in the configuration file (or in the command options, whatever
+                    ## corresponds).
+                    msgadd1, msgadd2, previous = [], [], ""
+                    for attr in ['group', 'role']:
+                        msgadd1.append("VO %s '%s'" % (attr, proxyAttrs[attr]))
+                        if proxyAttrs[attr] != self.defaultDelegation[attr]:
+                            if proxyOptsSetPlace['set_in'][attr] == previous:
+                                if proxyOptsSetPlace['set_in'][attr] in ["config", "cmdopts", "cache"]:
+                                    msgadd2.append("VO %s '%s'" % (attr, self.defaultDelegation[attr]))
+                                else:
+                                    msgadd2.append("VO %s '%s'" % (attr, proxyAttrs[attr]))
+                            else:
+                                previous = proxyOptsSetPlace['set_in'][attr]
+                                if proxyOptsSetPlace['set_in'][attr] == "config":
+                                    msgadd2.append("in the CRAB configuration file you have specified to use " + \
+                                                   "VO %s '%s'" % (attr, self.defaultDelegation[attr]))
+                                elif proxyOptsSetPlace['set_in'][attr] == "cmdopts":
+                                    msgadd2.append("in the crab command options you have specified to use " + \
+                                                   "VO %s '%s'" % (attr, self.defaultDelegation[attr]))
+                                elif proxyOptsSetPlace['set_in'][attr] == "cache":
+                                    msgadd2.append("in the .requestcache file, inside the given CRAB project directory, it says that this task used " + \
+                                                   "VO %s '%s'" % (attr, self.defaultDelegation[attr]))
+                                else:
+                                    setmsg = ""
+                                    if proxyOptsSetPlace['for_set_use'] == "config":
+                                        setmsg = "(in the CRAB configuration file) "
+                                    elif proxyOptsSetPlace['for_set_use'] == "cmdopts":
+                                        setmsg = "(in the crab command options) "
+                                    msgadd2.append("you have not explicitely specified %sto use " % (setmsg) + \
+                                                   "VO %s '%s'" % (attr, proxyAttrs[attr]))
+                    msg = "Proxy file %s exists with %s, but %s." % (proxyFileName, " and ".join(msgadd1), " and ".join(msgadd2))
+                    self.logger.info(msg)
+                    while True:
+                        msg = "Do you want to overwrite the proxy (Y/N)?"
+                        self.logger.info(msg)
+                        answer = raw_input()
+                        if answer in ['y', 'Y', 'n', 'N']:
+                            msg = "Answer was: %s" % (answer)
+                            self.logger.debug(msg)
+                            break
+                    if answer.upper() == 'Y':
+                        self.proxyChanged = True
+                    if answer.upper() == 'N':
+                        if proxyOptsSetPlace['for_set_use'] == "config":
+                            msg  = "Then please modify the CRAB configuration file"
+                            msg += " in order to match the existing proxy."
+                        elif proxyOptsSetPlace['for_set_use'] == "cmdopts":
+                            msg  = "Then please specify the crab command options --voGroup and/or --voRole"
+                            msg += " in order to match the existing proxy."
+                            msg += "\nNote: If the options --voGroup/--voRole are not specified,"
+                            msg += " the defaults ''/'NULL' are assumed."
+                        else: ## Should never get into this branch of the if, but just in case.
+                            msg  = "Then please modify the VO group and/or VO role in the place"
+                            msg += " you have specified them in order to match the existing proxy."
+                        self.logger.info(msg)
+                        raise StopExecution
 
-        ## If the proxy is expired, or we changed role and/or group, we need to create a new proxy.
+        ## Create a new proxy if the current one is expired or if we were instructed
+        ## to change the proxy for a new one.
         if proxyTimeLeft < timeLeftThreshold or self.proxyChanged:
+            msg  = "Creating new proxy for %s hours" % (self.defaultDelegation['proxyValidity'])
+            msg += " with VO group '%s' and VO role '%s'." % (self.defaultDelegation['group'], self.defaultDelegation['role'])
+            self.logger.debug(msg)
             ## Create the proxy.
-            self.logger.debug("Creating new proxy for %s hours" % self.defaultDelegation['proxyValidity'] )
             proxy.create()
+            ## Check that the created proxy has the expected VO group and role (what
+            ## we have set in the defaultDelegation dictionary).
             proxyTimeLeft = proxy.getTimeLeft()
             group, role = proxy.getUserGroupAndRoleFromProxy(proxy.getProxyFilename())
             if proxyTimeLeft > 0 and group == self.defaultDelegation['group'] and role == self.defaultDelegation['role']:
@@ -199,7 +271,7 @@ class CredentialInteractions(object):
             else:
                 raise ProxyCreationException("Problems creating proxy.")
 
-        return proxy.userDN, proxy.getProxyFilename()
+        return proxy.getProxyFilename()
 
 
     def createNewMyProxy(self, timeleftthreshold=0, nokey=False):
