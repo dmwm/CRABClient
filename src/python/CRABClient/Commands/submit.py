@@ -7,11 +7,14 @@ import types
 import imp
 import urllib
 import time
+import tarfile
+import tempfile
+import subprocess
+import shutil
 
 import CRABClient.Emulator
-
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ClientExceptions import MissingOptionException, ConfigurationException, RESTCommunicationException
+from CRABClient.ClientExceptions import ClientException, MissingOptionException, ConfigurationException, RESTCommunicationException
 from CRABClient.ClientUtilities import getJobTypes, createCache, addPlugin, server_info, colors, getUrl
 from CRABClient.ClientMapping import parametersMapping, getParamDefaultValue
 from CRABClient import __version__
@@ -47,7 +50,7 @@ class submit(SubCommand):
 
         self.logger.debug("Working on %s" % str(self.requestarea))
 
-        configreq = {}
+        configreq = {'dryrun': 1 if self.options.dryrun else 0}
         for param in parametersMapping['on-server']:
             mustbetype = getattr(types, parametersMapping['on-server'][param]['type'])
             default = parametersMapping['on-server'][param]['default']
@@ -147,12 +150,16 @@ class submit(SubCommand):
                     originalConfig = self.configuration)
 
         self.logger.info("%sSuccess%s: Your task has been delivered to the CRAB3 server." %(colors.GREEN, colors.NORMAL))
-        if not self.options.wait:
+        if not (self.options.wait or self.options.dryrun):
             self.logger.info("Task name: %s" % uniquerequestname)
-            self.logger.info("Please use 'crab status' to check how the submission process proceeds.")
+            self.logger.info("Please use 'crab status' to check how the submission process proceeds")
 
         if self.options.wait:
-            self.checkStatusLoop(server, uniquerequestname)
+            self.checkStatusLoop(server, uniquerequestname, 'SUBMITTED')
+
+        if self.options.dryrun:
+            self.checkStatusLoop(server, uniquerequestname, 'UPLOADED')
+            self.printDryRunResults(*self.executeTestRun(uniquerequestname, filecacheurl))
 
         self.logger.debug("About to return")
 
@@ -175,7 +182,13 @@ class submit(SubCommand):
         self.parser.add_option( "--wait,",
                                 action="store_true",
                                 dest="wait",
-                                help="Continuously checking for job status after submitting.",
+                                help="Check job status continuously after submitting.",
+                                default=False )
+
+        self.parser.add_option( "--dryrun,",
+                                action="store_true",
+                                dest="dryrun",
+                                help="Do not actually submit task; instead, return how many jobs this task would create, along with processing time estimates.",
                                 default=False )
 
 
@@ -349,7 +362,7 @@ class submit(SubCommand):
         return str(encoded)
 
 
-    def checkStatusLoop(self,server,uniquerequestname):
+    def checkStatusLoop(self, server, uniquerequestname, targetstatus):
         self.logger.info("Waiting for task to be processed")
 
         maxwaittime= 900 #in second, changed to 15 minute max wait time, the original 1 hour is too long
@@ -382,10 +395,10 @@ class submit(SubCommand):
                 msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(uniquerequestname), str(dictresult), str(reason))
                 raise RESTCommunicationException(msg)
 
-            self.logger.debug("Query Time:%s Task status:%s" %(querytimestring, dictresult['status']))
+            self.logger.debug("Query Time: %s Task status: %s" %(querytimestring, dictresult['status']))
 
-            if  dictresult['status'] != tmpresult:
-                self.logger.info("Task status:%s" % dictresult['status'])
+            if dictresult['status'] != tmpresult:
+                self.logger.info("Task status: %s" % dictresult['status'])
                 tmpresult = dictresult['status']
 
                 if dictresult['status'] == 'FAILED':
@@ -393,14 +406,15 @@ class submit(SubCommand):
                     self.logger.info("%sError%s: The submission of your task failed. Please use 'crab status -d <crab project directory>' to get the error message" % (colors.RED, colors.NORMAL))
                 elif dictresult['status'] == 'SUBMITTED' or dictresult['status'] == 'UNKNOWN': #untile the node_state file is available status is unknown
                     continuecheck = False
+                if targetstatus == 'SUBMITTED':
                     self.logger.info("%sSuccess%s: Your task has been processed and your jobs have been submitted successfully" % (colors.GREEN, colors.NORMAL))
-                elif dictresult['status'] in ['NEW','HOLDING','QUEUED']:
-                    self.logger.info("Please wait...")
-                    time.sleep(30) #the original 60 second query time is too long
-                else:
-                    continuecheck = False
-                    self.logger.info("Please check crab.log ")
-                    self.logger.debug("CRABS Status other than FAILED,SUBMITTED,NEW,HOLDING,QUEUED")
+            elif dictresult['status'] in ['NEW', 'HOLDING', 'QUEUED']:
+                self.logger.info("Please wait...")
+                time.sleep(30) #the original 60 second query time is too long
+            else:
+                continuecheck = False
+                self.logger.info("Please check crab.log ")
+                self.logger.debug('CRAB status other than FAILED, SUBMITTED, NEW, HOLDING, QUEUED, UPLOADED')
 
             if currenttime > endtime:
                 continuecheck = False
@@ -410,4 +424,88 @@ class submit(SubCommand):
                 break
         print '\a' #Generate audio bell
         self.logger.debug("Ended submission process")
+
+    def executeTestRun(self, filecacheurl):
+        """
+        Downloads the dry run tarball from the User File Cache and unpacks it in a temporary directory.
+        Runs a 10 event trial to obtain the performance report.
+        """
+
+        ufc = CRABClient.Emulator.getEmulator('ufc')({'endpoint' : filecacheurl})
+        cwd = os.getcwd()
+        try:
+            tmpDir = tempfile.mkdtemp()
+            os.chdir(tmpDir)
+            self.logger.info('Creating temporary directory for local test run (needed for timing estimates) in %s' % tmpDir)
+            self.logger.info('Executing test, please wait...')
+            ufc.downloadLog('dry-run-sandbox.tar.gz', output=os.path.join(tmpDir, 'dry-run-sandbox.tar.gz'))
+            for name in ['dry-run-sandbox.tar.gz', 'CMSRunAnalysis.tar.gz', 'sandbox.tar.gz']:
+                tf = tarfile.open(os.path.join(tmpDir, name))
+                tf.extractall(tmpDir)
+                tf.close()
+            env = os.environ.update({'CRAB3_RUNTIME_DEBUG': 'True', '_CONDOR_JOB_AD': 'Job.submit'})
+            opts = getDryRunOpts('Job.submit', 'RunJobs.dag')
+            s = subprocess.Popen(['sh', 'CMSRunAnalysis.sh'] + opts, env=env, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+            out, err = s.communicate()
+            self.logger.debug(out)
+            if s.returncode != 0:
+                raise ClientException('Dry run failed to execute local test run: %s' % err)
+            with open('splitting-summary.json') as f:
+                splitting = json.load(f)
+            with open('jobReport.json') as f:
+                report = json.load(f)['steps']['cmsRun']['performance']
+        finally:
+            os.chdir(cwd)
+            shutil.rmtree(tmpDir)
+
+        return splitting, report
+
+    def printDryRunResults(self, splitting, report):
+        """
+        Calculate the estimated total job length from the splitting results and performance report
+        and print the results.
+        """
+
+        self.logger.info("Using %s splitting" % splitting['algo'])
+        quantities = {}
+        for x in ['total', 'max', 'min', 'avg']:
+            if (splitting['algo'] == 'LumiBased') or (splitting['algo'] == 'EventAwareLumiBased'):
+                quantities[x] = "%i lumis" % splitting['%s_lumis' % x]
+            else:
+                quantities[x] = "%i events" % splitting['%s_events' % x]
+        msg = "\nTask consists of %i jobs to process %s"\
+            "\nThe estimated memory requirement is %.0f MB"\
+            "\nThe longest job will process %s, with an estimated processing time of %i minutes"\
+            "\nThe average job will process %s, with an estimated processing time of %i minutes"\
+            "\nThe shortest job will process %s, with an estimated processing time of %i minutes"
+        self.logger.info(msg % (splitting['total_jobs'], quantities['total'], float(report['memory']['PeakValueVsize']), #TODO: Use PeakValueRss?
+            quantities['max'], (float(report['cpu']['AvgEventTime']) * splitting['max_events'] / 60),
+            quantities['avg'], (float(report['cpu']['AvgEventTime']) * splitting['avg_events'] / 60),
+            quantities['min'], (float(report['cpu']['AvgEventTime']) * splitting['min_events'] / 60)))
+
+        self.logger.info("\nDry run requested: task paused\nTo continue processing, use 'crab proceed'\n")
+
+def getDryRunOpts(ad, dag):
+    """
+    Parse the job ad to obtain the arguments that were passed to condor.
+    """
+
+    info = {}
+    with open(ad) as f:
+        for key, val in [line.split('=', 1) for line in f if len(line.split('=', 1)) == 2]:
+            val = val.strip().strip('"').strip("'")
+            info[key.strip().replace('+', '')] = val
+    with open(dag) as f:
+        for line in f:
+            if line.startswith('VARS Job1'):
+                break
+        for entry in line.strip().replace(r'\"\"', '"').replace('", "', '","').split():
+            parts = entry.split('=')
+            if len(parts) == 2:
+                info[parts[0]] = parts[1].strip('"')
+
+    info.update({'CRAB_Id': '0', 'firstEvent': '0', 'lastEvent': '10'})
+
+    return [x.strip("'") % info for x in info['Arguments'].replace('$', '%').replace(')', ')s').split()]
+
 

@@ -34,7 +34,7 @@ class resubmit(SubCommand):
         msg = "Requesting resubmission for failed jobs in task %s" % (self.cachedinfo['RequestName'])
         self.logger.debug(msg)
 
-        configreq = {'workflow': self.cachedinfo['RequestName']}
+        configreq = {'workflow': self.cachedinfo['RequestName'], 'subresource': 'resubmit'}
         for attr_name in ['jobids', 'sitewhitelist', 'siteblacklist', 'maxjobruntime', 'maxmemory', 'numcores', 'priority']:
             attr_value = getattr(self, attr_name)
             if attr_value:
