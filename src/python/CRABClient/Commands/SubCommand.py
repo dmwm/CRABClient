@@ -234,7 +234,6 @@ class SubCommand(ConfigCommand):
         ## The options parser.
         self.usage = "usage: %prog " + self.name + " [options] [args]"
         self.parser = OptionParser(description = self.__doc__, usage = self.usage, add_help_option = True)
-        ## TODO: check on self.name should be removed (creating another abstraction in between or refactoring this)
         if disable_interspersed_args:
             self.parser.disable_interspersed_args()
 
@@ -268,7 +267,7 @@ class SubCommand(ConfigCommand):
         if not self.options.proxy and self.cmdconf['initializeProxy']:
             self.proxyCreated = self.proxy.createNewVomsProxySimple(timeLeftThreshold = 720)
 
-        ## If we get an input configuration file:
+        ## If there is an input configuration file:
         if hasattr(self.options, 'config') and self.options.config is not None:
             ## Load the configuration file and validate it.
             self.loadConfig(self.options.config, self.args)
@@ -364,16 +363,16 @@ class SubCommand(ConfigCommand):
 
 
     def checkversion(self, baseurl = None):
-        compatibleversion = server_info('version', self.serverurl, self.proxyfilename, baseurl)
-        compatible = False
-        for item in compatibleversion:
+        compatibleVersions = server_info('version', self.serverurl, self.proxyfilename, baseurl)
+        for item in compatibleVersions:
             if re.match(item, __version__):
-                self.logger.debug("CRABClient version: %s Compatible"  % __version__)
-                compatible = True
+                self.logger.debug("CRABClient version: %s." % (__version__))
                 break 
-        if not compatible:
-            self.logger.info("%sWarning%s: Incompatible CRABClient version \"%s\" " % (colors.RED, colors.NORMAL , __version__ ))
-            self.logger.info("Server is saying that compatible versions are: %s"  % [v.replace("\\", "") for v in compatibleversion])
+        else:
+            msg  = "%sWarning%s:" % (colors.RED, colors.NORMAL)
+            msg += " Incompatible CRABClient version %s." % (__version__ )
+            msg += "\nServer is saying that compatible versions are: %s" % [v.replace("\\", "") for v in compatibleVersions]
+            self.logger.info(msg)
 
 
     def handleProxy(self):
@@ -431,20 +430,23 @@ class SubCommand(ConfigCommand):
             with open(crab3fdir, 'r') as fd:
                 configdict = json.load(fd)
         except ValueError:
-            msg  = "%sError%s: Error loading CRAB cache file." % (colors.RED, colors.NORMAL)
+            msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
+            msg += " Error loading CRAB cache file."
             msg += " Try to do 'rm -rf ~/.crab3' and run the crab command again."
-            self.logger.info(msg)
-            raise ConfigurationException
+            raise ConfigurationException(msg)
         return configdict
 
 
     def crabcachepath(self):
 
-         if 'CRAB3_CACHE_FILE' in os.environ and os.path.isabs(os.environ['CRAB3_CACHE_FILE']):
-             return os.environ['CRAB3_CACHE_FILE']
-         elif 'CRAB3_CACHE_FILE' in os.environ and not os.path.isabs(os.environ['CRAB3_CACHE_FILE']):
-             msg = '%sError%s: An invalid path is use for CRAB3_CACHE_FILE, please export a valid full path' % (colors.RED, colors.NORMAL)
-             raise EnvironmentException(msg)
+         if 'CRAB3_CACHE_FILE' in os.environ:
+             if os.path.isabs(os.environ['CRAB3_CACHE_FILE']):
+                 return os.environ['CRAB3_CACHE_FILE']
+             else:
+                 msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
+                 msg += " Invalid path in environment variable CRAB3_CACHE_FILE: %s" % (os.environ['CRAB3_CACHE_FILE'])
+                 msg += " Please export a valid full path."
+                 raise EnvironmentException(msg)
          else:
              return str(os.path.expanduser('~')) + '/.crab3'
 
@@ -507,12 +509,12 @@ class SubCommand(ConfigCommand):
         self.parser.add_option("--voGroup",
                                dest = "voGroup",
                                default = None)
-        if self.cmdconf['requiresREST']:
 
+        if self.cmdconf['requiresREST']:
             self.parser.add_option("--instance",
                                    dest = "instance",
                                    type = "string",
-                                   help = "Running instance of CRAB service. Valid values are %s." %str(SERVICE_INSTANCES.keys()))
+                                   help = "Running instance of CRAB service. Valid values are %s." % str(SERVICE_INSTANCES.keys()))
 
 
     def validateOptions(self):
@@ -524,16 +526,31 @@ class SubCommand(ConfigCommand):
         """
 
         if self.cmdconf['requiresTaskOption'] and self.options.oldtask is not None:
-            msg = "CRAB command line option error: the option -t/--task has been renamed to -d/--dir."
+            msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
+            msg += " Command option -t/--task has been renamed to -d/--dir."
             raise UnknownOptionException(msg)
 
         if self.cmdconf['requiresTaskOption'] and self.options.task is None:
-            if len(self.args) == 1 and self.args[0]:
-                self.options.task = self.args[0]
-            elif self.cmdconf['useCache'] and self.crab3dic['taskname'] != None:
-                self.options.task = self.crab3dic['taskname']
+            if len(self.args) > 1:
+                msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
+                msg += " 'crab %s' command accepts at most 1 argument (a path to a CRAB project directory), %d given." % (self.name, len(self.args))
+                raise ConfigurationException(msg)
+            elif len(self.args) == 1 and self.args[0]:
+                self.options.task = self.args.pop(0)
+            elif self.cmdconf['useCache'] and self.crab3dic.get('taskname'):
+                self.options.task = str(self.crab3dic['taskname'])
             if self.options.task is None:
                 msg = "%sError%s: Directory option is required." % (colors.RED, colors.NORMAL)
                 ex = MissingOptionException(msg)
                 ex.missingOption = "task"
                 raise ex
+
+        ## If the command does not take any arguments, but some arguments were passed,
+        ## clear the arguments list and give a warning message saying that the given
+        ## arguments will be ignored.
+        if not self.cmdconf['acceptsArguments'] and len(self.args):
+            msg  = "%sWarning%s:" % (colors.RED, colors.NORMAL)
+            msg += " 'crab %s' command takes no arguments, %d given." % (self.name, len(self.args))
+            msg += " Ignoring arguments %s." % (self.args)
+            self.logger.warning(msg)
+            self.args = []

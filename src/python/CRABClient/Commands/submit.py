@@ -198,9 +198,9 @@ class submit(SubCommand):
         After doing the general options validation from the parent SubCommand class,
         do the validation of options that are specific to the submit command.
         """
-
-        ## First call validateOptions() from the SubCommand class.
+        ## First do the basic validation in the SubCommand.
         SubCommand.validateOptions(self)
+
         ## If no configuration file was passed as an option, try to extract it from the arguments.
         ## Assume that the arguments can only be:
         ##     1) the configuration file name, and
@@ -209,7 +209,6 @@ class submit(SubCommand):
         ## configuration file argument. Also, the configuration file name should end with '.py'.
         ## If can not find a configuration file candidate, use the default 'crabConfig.py'.
         ## If find more than one candidate, raise ConfigurationException.
-
         if self.options.config is None:
             useDefault = True
             if len(self.args):

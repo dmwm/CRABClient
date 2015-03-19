@@ -78,23 +78,44 @@ renamedParams = {
     'JobType.maxjobruntime'  : 'JobType.maxJobRuntimeMin'
 }
 
+
+"""
+---------------------------------------------------------------------------------------------------------------
+Parameter Name      |   Parameter Meaning
+---------------------------------------------------------------------------------------------------------------
+requiresTaskOption  -  Whether the command requires a CRAB project directory as input.
+useCache            -  Whether to use the CRAB cache file (~/.crab3).
+                       Currently only used to get the CRAB project directory in case the command requires it
+                       but no directory was given in the -d/--dir option.
+requiresREST        -  Whether the command has to contact the CRAB Server REST Interface.
+acceptsArguments    -  Whether the command accepts arguments. (To not confuse with options.)
+                       For commands requiring the task option, which can be actually given as an argument,
+                       do not count it here as an argument. Same thing for the 'submit' command which can take
+                       the CRAB configuration file name from the arguments.
+initializeProxy     -  Whether the command needs to create a proxy if there is not a (valid) one already.
+---------------------------------------------------------------------------------------------------------------
+WARNING: Don't set at the same time acceptsArguments = True and requiresTaskOption = True. This is because
+         we don't have a way to distinghish the CRAB project directory  name from the other arguments,
+         so there is a protection when requiresTaskOption = True to not accept more that 1 argument.
+---------------------------------------------------------------------------------------------------------------
+"""
 commandsConfiguration = {
-    'submit'        : {'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': False, 'useCache': False},
-    'checkusername' : {'requiresREST': False, 'initializeProxy': True,  'requiresTaskOption': False, 'useCache': False},
-    'checkwrite'    : {'requiresREST': False, 'initializeProxy': True,  'requiresTaskOption': False, 'useCache': False},
-    'getlog'        : {'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True },
-    'getoutput'     : {'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True },
-    'kill'          : {'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': False},
-    'purge'         : {'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': False},
-    'remake'        : {'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': False, 'useCache': False},
-    'remote_copy'   : {'requiresREST': True,  'initializeProxy': False, 'requiresTaskOption': True,  'useCache': True },
-    'report'        : {'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True },
-    'request_type'  : {'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True },
-    'resubmit'      : {'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True },
-    'status'        : {'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True },
-    'uploadlog'     : {'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True },
-    'tasks'         : {'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': False, 'useCache': False},
-    'proceed'       : {'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True}
+    'checkusername' : {'acceptsArguments': False, 'requiresREST': False, 'initializeProxy': True,  'requiresTaskOption': False, 'useCache': False},
+    'checkwrite'    : {'acceptsArguments': False, 'requiresREST': False, 'initializeProxy': True,  'requiresTaskOption': False, 'useCache': False},
+    'getlog'        : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True },
+    'getoutput'     : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True },
+    'kill'          : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': False},
+    'proceed'       : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True },
+    'purge'         : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': False},
+    'remake'        : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': False, 'useCache': False},
+    'remote_copy'   : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': False, 'requiresTaskOption': True,  'useCache': True },
+    'report'        : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True },
+    'request_type'  : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True },
+    'resubmit'      : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True },
+    'status'        : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True },
+    'submit'        : {'acceptsArguments': True,  'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': False, 'useCache': False},
+    'tasks'         : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': False, 'useCache': False},
+    'uploadlog'     : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True }
 }
 
 
