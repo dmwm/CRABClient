@@ -406,8 +406,6 @@ class submit(SubCommand):
                     self.logger.info("%sError%s: The submission of your task failed. Please use 'crab status -d <crab project directory>' to get the error message" % (colors.RED, colors.NORMAL))
                 elif dictresult['status'] == 'SUBMITTED' or dictresult['status'] == 'UNKNOWN': #untile the node_state file is available status is unknown
                     continuecheck = False
-                if targetstatus == 'SUBMITTED':
-                    self.logger.info("%sSuccess%s: Your task has been processed and your jobs have been submitted successfully" % (colors.GREEN, colors.NORMAL))
             elif dictresult['status'] in ['NEW', 'HOLDING', 'QUEUED']:
                 self.logger.info("Please wait...")
                 time.sleep(30) #the original 60 second query time is too long
@@ -422,6 +420,14 @@ class submit(SubCommand):
                 waittime=currenttime-starttime
                 self.logger.debug("Wait time:%s" % waittime)
                 break
+
+        if targetstatus == 'SUBMITTED':
+            if tmpresult == 'SUBMITTED':
+                self.logger.info("%sSuccess%s: Your task has been processed and your jobs have been submitted successfully" % (colors.GREEN, colors.NORMAL))
+            else: #UNKNOWN
+                self.logger.info(("The CRAB3 server backend finished processing your task. Use crab status -d <crab project directory> so see"
+                                  " if your jobs jobs have been submitted successfully"))
+
         print '\a' #Generate audio bell
         self.logger.debug("Ended submission process")
 
