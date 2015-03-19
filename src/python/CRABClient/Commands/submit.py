@@ -159,7 +159,7 @@ class submit(SubCommand):
 
         if self.options.dryrun:
             self.checkStatusLoop(server, uniquerequestname, 'UPLOADED')
-            self.printDryRunResults(*self.executeTestRun(uniquerequestname, filecacheurl))
+            self.printDryRunResults(*self.executeTestRun(filecacheurl))
 
         self.logger.debug("About to return")
 
@@ -431,6 +431,7 @@ class submit(SubCommand):
         print '\a' #Generate audio bell
         self.logger.debug("Ended submission process")
 
+
     def executeTestRun(self, filecacheurl):
         """
         Downloads the dry run tarball from the User File Cache and unpacks it in a temporary directory.
@@ -465,6 +466,7 @@ class submit(SubCommand):
             shutil.rmtree(tmpDir)
 
         return splitting, report
+
 
     def printDryRunResults(self, splitting, report):
         """
