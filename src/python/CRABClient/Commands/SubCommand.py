@@ -293,8 +293,8 @@ class SubCommand(ConfigCommand):
         elif not self.cmdconf['requiresREST']:
             self.instance, self.serverurl = None, None
 
-        ## Update (or create) the .crab3 cache file.
-        self.updateCrab3()
+        ## Update (or create) the CRAB cache file.
+        self.updateCRABCacheFile()
 
         ## At this point there should be a valid proxy, because we have already checked that and
         ## eventually created a new one. If the proxy was not created by CRAB, we check that the
@@ -393,7 +393,7 @@ class SubCommand(ConfigCommand):
         """ 
         Loads the client cache and set up the server url
         """
-        self.requestarea, self.requestname = getWorkArea( self.options.task )
+        self.requestarea, self.requestname = getWorkArea(self.options.task)
         self.cachedinfo, self.logfile = loadCache(self.requestarea, self.logger)
         port = ':' + self.cachedinfo['Port'] if self.cachedinfo['Port'] else ''
         self.instance = self.cachedinfo['instance']
@@ -436,13 +436,16 @@ class SubCommand(ConfigCommand):
              return str(os.path.expanduser('~')) + '/.crab3'
 
 
-    def updateCrab3(self):
-        if self.cmdconf['requiresTaskOption'] or hasattr(self,'requestname') and self.requestname != None:
-            crab3fdir=self.crabcachepath()
-            crab3f = open(crab3fdir, 'w')
+    def updateCRABCacheFile(self):
+        """
+        Update the CRAB cache file.
+        So far this file contains only the path of the last used CRAB project directory.
+        """
+        if self.cmdconf['requiresTaskOption'] or getattr(self, 'requestarea', None):
             self.crab3dic['taskname'] = self.requestarea
-            json.dump(self.crab3dic, crab3f)
-            crab3f.close()
+            crab3fdir = self.crabcachepath()
+            with open(crab3fdir, 'w') as fd:
+                json.dump(self.crab3dic, fd)
 
 
     def __call__(self):
