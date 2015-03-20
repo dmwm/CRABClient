@@ -6,7 +6,6 @@ from httplib import HTTPException
 from CRABClient import __version__
 from RESTInteractions import HTTPRequests
 from CRABClient.UserUtilities import getFileFromURL
-from CRABClient.Commands.remote_copy import remote_copy
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.Commands.getcommand import getcommand
 from CRABClient.ClientUtilities import colors
