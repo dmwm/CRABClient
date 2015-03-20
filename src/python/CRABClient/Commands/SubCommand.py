@@ -316,6 +316,7 @@ class SubCommand(ConfigCommand):
         if self.cmdconf['requiresREST']:
             self.logger.debug("Command url %s" %(self.uri))
 
+
     def serverInstance(self):
         """
         Deriving the correct instance to use and the server url. Client is allowed to propagate the instance name and corresponding url
@@ -389,6 +390,7 @@ class SubCommand(ConfigCommand):
             os.environ['X509_USER_PROXY'] = self.options.proxy
             self.logger.debug('Skipping proxy creation')
 
+
     def loadLocalCache(self, serverurl = None):
         """ 
         Loads the client cache and set up the server url
@@ -403,26 +405,27 @@ class SubCommand(ConfigCommand):
 
 
     def getConfiDict(self):
-
+        """
+        Load the CRAB cache file (~/.crab3). If it doesn't exist, create one.
+        """
         crab3fdir = self.crabcachepath()
         if not os.path.isfile(crab3fdir):
-            self.logger.debug("Could not find %s file; creating a new one" % crab3fdir)
-            crab3f = open(crab3fdir,'w')
-            #creating a user dict, do add for future use
-            configdict = { "taskname" : None }
-            json.dump(configdict,crab3f)
-            crab3f.close()
+            self.logger.debug("Could not find CRAB cache file %s; creating a new one." % (crab3fdir))
+            configdict = {'taskname': ''}
+            with open(crab3fdir, 'w') as fd:
+                json.dump(configdict, fd)
             return configdict
-        else:
-            try :
-                self.logger.debug("Found %s file" % crab3fdir)
-                crab3f = open(crab3fdir,'r')
-                configdict = json.load(crab3f)
-                crab3f.close()
-            except ValueError:
-                self.logger.info('%sError%s: Error in reading json file\nTry to do "rm -rf ~/.crab3", and run the crab command again'% (colors.RED, colors.NORMAL))
-                raise ConfigurationException
-            return configdict
+
+        try:
+            self.logger.debug("Found CRAB cache file %s." % (crab3fdir))
+            with open(crab3fdir, 'r') as fd:
+                configdict = json.load(fd)
+        except ValueError:
+            msg  = "%sError%s: Error loading CRAB cache file." % (colors.RED, colors.NORMAL)
+            msg += " Try to do 'rm -rf ~/.crab3' and run the crab command again."
+            self.logger.info(msg)
+            raise ConfigurationException
+        return configdict
 
 
     def crabcachepath(self):
