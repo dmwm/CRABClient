@@ -9,7 +9,7 @@ from CRABClient.UserUtilities import getFileFromURL
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.Commands.getcommand import getcommand
 from CRABClient.ClientUtilities import colors
-from CRABClient.ClientExceptions import ConfigurationException, RESTCommunicationException, ClientException
+from CRABClient.ClientExceptions import ConfigurationException, RESTCommunicationException, ClientException, MissingOptionException
 import CRABClient.Emulator
 
 
