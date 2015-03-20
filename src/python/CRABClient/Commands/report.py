@@ -86,7 +86,7 @@ class report(SubCommand):
             jsonFileDir = os.path.join(self.requestarea, 'results')
         if analyzed:
             with open(os.path.join(jsonFileDir, 'lumiSummary.json'), 'w') as jsonFile:
-                json.dump(analyzed, os.path.join(jsonFile))
+                json.dump(analyzed, jsonFile)
                 jsonFile.write("\n")
                 self.logger.info("Analyzed luminosity sections written to %s/lumiSummary.json" % jsonFileDir)
                 returndict['analyzedLumis'] = analyzed
