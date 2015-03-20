@@ -53,7 +53,11 @@ class remake(SubCommand):
 
     def validateOptions(self):
         if self.options.cmptask is None:
-            raise MissingOptionException("%sError%s: Please use the --task option to specify the task name." % (colors.RED, colors.NORMAL))
+            msg  = "%sError%s: Please specify the task name for which to remake a CRAB project directory." % (colors.RED, colors.NORMAL)
+            msg += " Use the --task option."
+            ex = MissingOptionException(msg)
+            ex.missingOption = "cmptask"
+            raise ex
         else:
             regex = "^\d{6}_\d{6}_?([^\:]*)\:[a-zA-Z-]+_(crab_)?.+"
             if not re.match(regex, self.options.cmptask):

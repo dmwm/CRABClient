@@ -99,5 +99,9 @@ class getlog(getcommand):
     def validateOptions(self):
         getcommand.validateOptions(self)
         if self.options.short:
-            if self.options.jobids == None:
-                raise MissingOptionException('Please specify the jobs with --jobids to retrieve the short log files')
+            if self.options.jobids is None:
+                msg  = "%sError%s: Please specify the job ids for which to retrieve the logs." % (colors.GREEN, colors.NORMAL)
+                msg += " Use the --jobids option."
+                ex = MissingOptionException(msg)
+                ex.missingOption = "jobids"
+                raise ex

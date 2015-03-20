@@ -218,15 +218,20 @@ class checkwrite(SubCommand):
         """
         self.parser.add_option('--site',
                                dest = 'sitename',
+                               default = None,
                                help = 'The PhEDEx node name of the site to be checked.')
         self.parser.add_option('--lfn',
                                dest = 'userlfn',
+                               default = None,
                                help = 'A user lfn address.')
 
 
     def validateOptions(self):
         SubCommand.validateOptions(self)
 
-        if not hasattr(self.options, 'sitename') or self.options.sitename is None:
-            self.logger.info("Missing site name, use '--site' option")
-            raise MissingOptionException
+        if self.options.sitename is None:
+            msg  = "%sError%s: Please specify the site where to check the write permissions." % (colors.RED, colors.NORMAL)
+            msg += " Use the --site option."
+            ex = MissingOptionException(msg)
+            ex.missingOption = "sitename"
+            raise ex
