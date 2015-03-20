@@ -254,9 +254,9 @@ class SubCommand(ConfigCommand):
         ## user doesn't expect the proxy to have different VO role/group than those specified
         ## in the configuration file, but this check is done later in handleProxy() after we
         ## load the configuration file.
-        self.proxy_created = False
+        self.proxyCreated = False
         if not self.options.proxy and self.cmdconf['initializeProxy']:
-            self.proxy_created = self.proxy.createNewVomsProxySimple(time_left_threshold = 720)
+            self.proxyCreated = self.proxy.createNewVomsProxySimple(timeLeftThreshold = 720)
 
         ## If we get an input configuration file:
         if hasattr(self.options, 'config') and self.options.config is not None:
@@ -374,7 +374,7 @@ class SubCommand(ConfigCommand):
             if self.cmdconf['initializeProxy']:
                 self.proxy.setVOGroupVORole(self.voGroup, self.voRole)
                 self.proxy.setMyProxyAccount(self.serverurl)
-                _, self.proxyfilename = self.proxy.createNewVomsProxy(time_left_threshold = 720, proxy_created_by_crab = self.proxy_created)
+                _, self.proxyfilename = self.proxy.createNewVomsProxy(timeLeftThreshold = 720, proxyCreatedByCRAB = self.proxyCreated)
                 if self.cmdconf['requiresREST']: ## If the command doesn't contact the REST, we can't delegate the proxy.
                     self.proxy.myproxyAccount = self.serverurl
                     baseurl = self.getUrl(self.instance, resource = 'info')
