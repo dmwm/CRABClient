@@ -42,6 +42,7 @@ class MissingOptionException(ConfigurationException):
     Raised when a mandatory option is not found in the command line.
     """
     exitcode = 3008
+    missingOption = None
 
 class RESTCommunicationException(ClientException):
     """
