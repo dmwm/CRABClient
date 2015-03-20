@@ -211,19 +211,19 @@ class submit(SubCommand):
         ## If find more than one candidate, raise ConfigurationException.
 
         if self.options.config is None:
-            use_default = True
+            useDefault = True
             if len(self.args):
-                config_candidates = [(arg,i) for i,arg in enumerate(self.args) if '=' not in arg and arg[-3:] == '.py']
-                config_candidate_names = set([config_candidate_name for (config_candidate_name,_) in config_candidates])
-                if len(config_candidate_names) == 1:
-                    self.options.config = config_candidates[0][0]
-                    del self.args[config_candidates[0][1]]
-                    use_default = False
-                elif len(config_candidate_names) > 1:
+                configCandidates = [(arg, i) for i, arg in enumerate(self.args) if '=' not in arg and arg[-3:] == '.py']
+                configCandidateNames = set([configCandidateName for (configCandidateName, _) in configCandidates])
+                if len(configCandidateNames) == 1:
+                    self.options.config = configCandidates[0][0]
+                    del self.args[configCandidates[0][1]]
+                    useDefault = False
+                elif len(configCandidateNames) > 1:
                     self.logger.info('Unable to unambiguously extract the configuration file from the command-line arguments.')
-                    self.logger.info('Possible candidates are: %s' % list(config_candidate_names))
+                    self.logger.info('Possible candidates are: %s' % list(configCandidateNames))
                     raise ConfigurationException('ERROR: Unable to extract configuration file from command-line arguments.')
-            if use_default:
+            if useDefault:
                 self.options.config = 'crabConfig.py'
 
 
