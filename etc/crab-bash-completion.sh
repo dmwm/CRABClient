@@ -133,7 +133,7 @@ _UseCrab ()
 		uploadlog)
 		case "$cur" in
 			-*)
-			COMPREPLY=( $(compgen -W '--help --logpath --dirk --proxy --voRole --voGroup --instance' -- $cur) )
+			COMPREPLY=( $(compgen -W '--help --logpath --dir --proxy --voRole --voGroup --instance' -- $cur) )
 			;;
 			*)
 			COMPREPLY=( $(compgen -f ${cur}) )
@@ -153,6 +153,7 @@ _UseCrab ()
 					getoutput \
 					help \
 					kill \
+					proceed \
 					purge \
 					remake \
 					report \
