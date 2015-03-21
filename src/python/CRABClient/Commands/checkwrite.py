@@ -45,7 +45,7 @@ class checkwrite(SubCommand):
         msg += "\nThe LFN must start with either '/store/user/<username>/', '/store/group/<groupname>[/<subgroupname>]*/<username>/' or '/store/local/<dirname>',"
         msg += " where username is your username as registered in SiteDB (i.e. the username of your CERN primary account)."
         msg += "\nLFN %s is not valid." % (self.lfnsaddprefix)
-        if not username:
+        if not username and self.lfnsaddprefix.startswith('/store/user/'):
             username = getUserDNandUsernameFromSiteDB(self.logger).get('username')
         if not checkOutLFN(self.lfnsaddprefix, username):
             self.logger.info(msg)
