@@ -216,29 +216,39 @@ class SubCommand(ConfigCommand):
         """
         if not hasattr(self, 'name'):
             self.name = self.__class__.__name__
-        self.usage = "usage: %prog " + self.name + " [options] [args]"
+
+        ## The command logger.
         self.logger = logger
         self.logfile = self.logger.logfile
         self.logger.debug("Executing command: '%s'" % str(self.name))
 
         self.proxy = None
         self.restClass = CRABClient.Emulator.getEmulator('rest')
+
+        ## Get the command configuration.
         self.cmdconf = commandsConfiguration.get(self.name)
+
+        ## Get the CRAB cache file.
         self.crab3dic = self.getConfiDict()
 
+        ## The options parser.
+        self.usage = "usage: %prog " + self.name + " [options] [args]"
         self.parser = OptionParser(description = self.__doc__, usage = self.usage, add_help_option = True)
         ## TODO: check on self.name should be removed (creating another abstraction in between or refactoring this)
         if disable_interspersed_args:
             self.parser.disable_interspersed_args()
+
+        ## Define the command options.
         self.setSuperOptions()
-        ## Parse the command line parameters.
+
+        ## Parse the command options/arguments.
         cmdargs = cmdargs or []
         (self.options, self.args) = self.parser.parse_args(cmdargs)
 
-        ## Validate the command line parameters before initializing the proxy.
+        ## Validate the command options.
         self.validateOptions()
 
-        ## Retrieve VO role/group from the command line parameters.
+        ## Retrieve VO role/group from the command options.
         self.voRole  = self.options.voRole  if self.options.voRole  is not None else ''
         self.voGroup = self.options.voGroup if self.options.voGroup is not None else ''
 
@@ -284,7 +294,7 @@ class SubCommand(ConfigCommand):
                 self.logger.info(msg % self.voGroup)
 
         ## If we get an input task, we load the cache and set the server URL and VO role/group from it.
-        if hasattr(self.options, 'task') and self.options.task:
+        if self.cmdconf['requiresTaskOption']:
             self.loadLocalCache()
 
         ## If the server url isn't already set, we check the args and then the config.
@@ -522,5 +532,8 @@ class SubCommand(ConfigCommand):
                 self.options.task = self.args[0]
             elif self.cmdconf['useCache'] and self.crab3dic['taskname'] != None:
                 self.options.task = self.crab3dic['taskname']
-            else:
-                raise MissingOptionException('ERROR: Task option is required.')
+            if self.options.task is None:
+                msg = "%sError%s: Directory option is required." % (colors.RED, colors.NORMAL)
+                ex = MissingOptionException(msg)
+                ex.missingOption = "task"
+                raise ex
