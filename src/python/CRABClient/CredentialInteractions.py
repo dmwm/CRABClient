@@ -243,7 +243,7 @@ class CredentialInteractions(object):
             #if the certificate is going to expire print a warning. This is going to bre printed at every command if
             #the myproxytimeleft is inferior to the timeleftthreshold
             if usercertDaysLeft < self.myproxyDesiredValidity:
-                self.logger.info("%sYour user certificate is going to expire in %s days. Please request a new certificate here https://gridca.cern.ch/gridca/ and see https://ca.cern.ch/ca/Help/?kbid=024010 %s"\
+                self.logger.info("%sYour user certificate is going to expire in %s days.  https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookStartingGrid#ObtainingCert %s"\
                                  % (colors.RED, usercertDaysLeft, colors.NORMAL) )
                 #check if usercertDaysLeft ~= myproxytimeleft which means we already delegated the proxy for as long as we could
                 if abs(usercertDaysLeft*60*60*24 - myproxytimeleft) < 60*60*24 and not trustRetrListChanged: #less than one day between usercertDaysLeft and myproxytimeleft
