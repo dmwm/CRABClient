@@ -79,7 +79,8 @@ class status(SubCommand):
         if 'jobs' not in dictresult:
             self.logger.info("\nNo jobs created yet!")
         else:
-            self.printPublication(dictresult)
+            if 'publication' in dictresult:
+                self.printPublication(dictresult)
             self.printErrors(dictresult)
             # Note several options could be combined
             if self.summary:
@@ -176,8 +177,8 @@ class status(SubCommand):
         Print information about the publication of the output files in DBS.
         """
         ## If publication was disabled, print a pertinent message and return.
-        if 'publication' in dictresult and 'disabled' in dictresult['publication']:
-            msg = "\nNo publication information (publication has been disabled in the crab configuration file)"
+        if 'disabled' in dictresult['publication']:
+            msg = "\nNo publication information (publication has been disabled in the CRAB configuration file)"
             self.logger.info(msg)
             return
         ## List of output datasets that are going to be (or are already) published. This
@@ -202,7 +203,7 @@ class status(SubCommand):
                 self.logger.info(msg)
         ## If publication information is not available yet, print a pertinent message
         ## (print first the list of output datasets, without the DAS URL) and return.
-        if 'publication' not in dictresult or not dictresult['jobsPerStatus']:
+        if not dictresult['publication']:
             printOutputDatasets()
             msg = "\nNo publication information available yet"
             self.logger.info(msg)
