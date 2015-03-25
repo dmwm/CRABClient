@@ -172,25 +172,23 @@ class submit(SubCommand):
 
         This allows to set specific command options
         """
+        self.parser.add_option('-c', '--config',
+                               dest = 'config',
+                               default = None,
+                               help = "CRAB configuration file.",
+                               metavar = 'FILE')
 
-        self.parser.add_option( "-c","--config",
-                                 dest = "config",
-                                 default = None,
-                                 help = "CRAB configuration file.",
-                                 metavar = "FILE" )
+        self.parser.add_option('--wait',
+                               dest = 'wait',
+                               default = False,
+                               action = 'store_true',
+                               help = "Continuously check the task status after submission.")
 
-        self.parser.add_option( "--wait,",
-                                action="store_true",
-                                dest="wait",
-                                help="Check job status continuously after submitting.",
-                                default=False )
-
-        self.parser.add_option( "--dryrun,",
-                                action="store_true",
-                                dest="dryrun",
-                                help="Do not actually submit task; instead, return how many jobs this task would create, along with processing time estimates.",
-                                default=False )
-
+        self.parser.add_option('--dryrun',
+                               dest = 'dryrun',
+                               default = False,
+                               action = 'store_true',
+                               help = "Do not actually submit the task; instead, return how many jobs this task would create, along with processing time estimates.")
 
 
     def validateOptions(self):
