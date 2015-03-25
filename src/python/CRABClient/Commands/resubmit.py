@@ -155,7 +155,7 @@ class resubmit(SubCommand):
         for sitelist in ['sitewhitelist', 'siteblacklist']:
             if getattr(self.options, sitelist) is not None:
                 for i, site_name in enumerate(getattr(self.options, sitelist).split(',')):
-                    if not sn_rec.match(site_name):
+                    if '*' not in site_name and not sn_rec.match(site_name):
                         msg  = "The site name %s does not look like a valid CMS site name" % (site_name)
                         msg += " (it is not matching the regular expression %s)." % (sn_re)
                         raise ConfigurationException(msg)
