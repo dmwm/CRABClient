@@ -42,8 +42,11 @@ class checkwrite(SubCommand):
         ## is one where the user will be allowed to stageout.
         self.logger.info("Validating LFN %s..." % (self.lfnsaddprefix))
         msg  = "Refusing to check write permission in %s, because this is not an allowed LFN for stageout." % (self.lfnsaddprefix)
-        msg += "\nThe LFN must start with either '/store/user/<username>/', '/store/group/<groupname>[/<subgroupname>]*/<username>/' or '/store/local/<dirname>',"
-        msg += " where username is your username as registered in SiteDB (i.e. the username of your CERN primary account)."
+        msg += "\nThe LFN must start with either"
+        msg += " '/store/user/<username>/' or '/store/group/<groupname>/'"
+        msg += " (or '/store/local/<something>/' if publication is off),"
+        msg += " where username is your username as registered in SiteDB"
+        msg += " (i.e. the username of your CERN primary account)."
         msg += "\nLFN %s is not valid." % (self.lfnsaddprefix)
         if not username and self.lfnsaddprefix.startswith('/store/user/'):
             username = getUserDNandUsernameFromSiteDB(self.logger).get('username')

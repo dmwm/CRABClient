@@ -35,7 +35,7 @@ class remake(SubCommand):
             dumpfile = open(cachepath , 'w')
             pickle.dump({'voGroup': '', 'Server': self.serverurl , 'instance': self.instance, 'RequestName': taskname, 'voRole': '', 'Port': ''}, dumpfile)
             dumpfile.close()
-            self.logger.info("%sSuccess%s: Finished remaking project directory %s." % (colors.GREEN, colors.NORMAL, requestarea))
+            self.logger.info("%sSuccess%s: Finished remaking project directory %s" % (colors.GREEN, colors.NORMAL, requestarea))
             return 0
 
 
