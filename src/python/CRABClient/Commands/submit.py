@@ -152,7 +152,7 @@ class submit(SubCommand):
         self.logger.info("%sSuccess%s: Your task has been delivered to the CRAB3 server." %(colors.GREEN, colors.NORMAL))
         if not (self.options.wait or self.options.dryrun):
             self.logger.info("Task name: %s" % uniquerequestname)
-            self.logger.info("Please use 'crab status' to check how the submission process proceeds")
+            self.logger.info("Please use 'crab status' to check how the submission process proceeds.")
 
         if self.options.wait:
             self.checkStatusLoop(server, uniquerequestname, 'SUBMITTED')
@@ -217,9 +217,10 @@ class submit(SubCommand):
                     del self.args[configCandidates[0][1]]
                     useDefault = False
                 elif len(configCandidateNames) > 1:
-                    self.logger.info('Unable to unambiguously extract the configuration file from the command-line arguments.')
-                    self.logger.info('Possible candidates are: %s' % list(configCandidateNames))
-                    raise ConfigurationException('ERROR: Unable to extract configuration file from command-line arguments.')
+                    msg  = "Unable to unambiguously extract the CRAB configuration file name from the command arguments."
+                    msg += " Possible candidates are: %s" % (list(configCandidateNames))
+                    self.logger.info(msg)
+                    raise ConfigurationException("ERROR: Unable to extract CRAB configuration file name from command arguments.")
             if useDefault:
                 self.options.config = 'crabConfig.py'
 
@@ -379,8 +380,8 @@ class submit(SubCommand):
         self.logger.info("Checking task status")
 
         while continuecheck:
-            currenttime=time.time()
-            querytimestring=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(currenttime))
+            currenttime = time.time()
+            querytimestring = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(currenttime))
 
             self.logger.debug('Looking up detailed status of task %s' % uniquerequestname)
 
@@ -388,7 +389,9 @@ class submit(SubCommand):
             dictresult = dictresult['result'][0]
 
             if status != 200:
-                self.logger.info("The task has been submitted, \nImpossible to check task status now. \nPlease check again later by using: crab status -d <crab project directory>")
+                msg  = "Error when trying to check the task status."
+                msg += " Please check the task status later using 'crab status'."
+                self.logger.info(msg)
                 msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(uniquerequestname), str(dictresult), str(reason))
                 raise RESTCommunicationException(msg)
 
@@ -400,30 +403,36 @@ class submit(SubCommand):
 
                 if dictresult['status'] == 'FAILED':
                     continuecheck = False
-                    self.logger.info("%sError%s: The submission of your task failed. Please use 'crab status -d <crab project directory>' to get the error message" % (colors.RED, colors.NORMAL))
-                elif dictresult['status'] == 'SUBMITTED' or dictresult['status'] == 'UNKNOWN': #untile the node_state file is available status is unknown
+                    msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
+                    msg += " The submission of your task has failed."
+                    msg += " You can do 'crab status' to get the error message."
+                    self.logger.info(msg)
+                elif dictresult['status'] == 'SUBMITTED' or dictresult['status'] == 'UNKNOWN': #until the node_state file is available status is unknown
                     continuecheck = False
             elif dictresult['status'] in ['NEW', 'HOLDING', 'QUEUED']:
                 self.logger.info("Please wait...")
                 time.sleep(30) #the original 60 second query time is too long
             else:
                 continuecheck = False
-                self.logger.info("Please check crab.log ")
+                self.logger.info("Please check crab.log")
                 self.logger.debug('CRAB status other than FAILED, SUBMITTED, NEW, HOLDING, QUEUED, UPLOADED')
 
             if currenttime > endtime:
                 continuecheck = False
-                self.logger.info("Exceed maximum query time \n Please check again later by using: crab status -d <crab project directory>")
-                waittime=currenttime-starttime
-                self.logger.debug("Wait time:%s" % waittime)
+                msg  = "Maximum query time exceeded."
+                msg += " Please check the status of the submission later using 'crab status'."
+                self.logger.info(msg)
+                waittime = currenttime - starttime
+                self.logger.debug("Wait time: %s" % (waittime))
                 break
 
         if targetstatus == 'SUBMITTED':
             if tmpresult == 'SUBMITTED':
                 self.logger.info("%sSuccess%s: Your task has been processed and your jobs have been submitted successfully" % (colors.GREEN, colors.NORMAL))
             else: #UNKNOWN
-                self.logger.info(("The CRAB3 server backend finished processing your task. Use crab status -d <crab project directory> so see"
-                                  " if your jobs jobs have been submitted successfully"))
+                msg  = "The CRAB3 server finished processing your task."
+                msg += " Use 'crab status' to see if your jobs have been submitted successfully."
+                self.logger.info(msg)
 
         print '\a' #Generate audio bell
         self.logger.debug("Ended submission process")

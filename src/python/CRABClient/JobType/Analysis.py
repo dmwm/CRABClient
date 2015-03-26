@@ -61,8 +61,8 @@ class Analysis(BasicJobType):
 #        configArguments['ProcessingVersion'] = getattr(self.config.Data, 'processingVersion', None)
 
         ## Create CMSSW config.
-        self.logger.debug("self.config: %s" % self.config)
-        self.logger.debug("self.config.JobType.psetName: %s" % self.config.JobType.psetName)
+        self.logger.debug("self.config: %s" % (self.config))
+        self.logger.debug("self.config.JobType.psetName: %s" % (self.config.JobType.psetName))
         ## The loading of a CMSSW pset in the CMSSWConfig constructor is not idempotent
         ## in the sense that a second loading of the same pset may not produce the same
         ## result. Therefore there is a cache in CMSSWConfig to avoid loading any CMSSW
@@ -110,7 +110,8 @@ class Analysis(BasicJobType):
             userFilesList = map(string.strip, userFilesList)
             userFilesList = [file for file in userFilesList if file]
             if len(userFilesList) != len(set(userFilesList)):
-                msg  = "%sWarning%s: CRAB configuration parameter Data.userInputFiles contains duplicated entries." % (colors.RED, colors.NORMAL)
+                msg  = "%sWarning%s:" % (colors.RED, colors.NORMAL)
+                msg += " CRAB configuration parameter Data.userInputFiles contains duplicated entries."
                 msg += " Duplicated entries will be removed."    
                 self.logger.warning(msg)
             configArguments['userfiles'] = set(userFilesList)
@@ -125,7 +126,7 @@ class Analysis(BasicJobType):
         lumi_mask_name = getattr(self.config.Data, 'lumiMask', None)
         lumi_list = None
         if lumi_mask_name:
-            self.logger.debug("Attaching lumi mask %s to the request" % lumi_mask_name)
+            self.logger.debug("Attaching lumi mask %s to the request" % (lumi_mask_name))
             lumi_list = getLumiList(lumi_mask_name, logger = self.logger)
         run_ranges = getattr(self.config.Data, 'runRange', None)
         run_ranges_is_valid = run_ranges is not None and isinstance(run_ranges, str) and re.match('^\d+((?!(-\d+-))(\,|\-)\d+)*$', run_ranges)
@@ -135,7 +136,7 @@ class Analysis(BasicJobType):
                 lumi_list.selectRuns(run_list)
             else:
                 if len(run_list) > 50000:
-                    msg  = "Data.runRange includes %s runs." % str(len(run_list))
+                    msg  = "CRAB configuration parameter Data.runRange includes %s runs." % str(len(run_list))
                     msg += " When Data.lumiMask is not specified, Data.runRange can not include more than 50000 runs."
                     raise ConfigurationException(msg)
                 lumi_list = LumiList(runs = run_list)

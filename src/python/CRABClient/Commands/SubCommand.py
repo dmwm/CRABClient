@@ -44,10 +44,10 @@ class ConfigCommand:
             return
 
         if not os.path.isfile(configname):
-            raise ConfigurationException("Configuration file '%s' not found." % configname)
-        self.logger.info('Will use configuration file %s.' % configname)
+            raise ConfigurationException("CRAB configuration file %s not found." % (configname))
+        self.logger.info("Will use CRAB configuration file %s" % (configname))
         try:
-            self.logger.debug('Loading configuration')
+            self.logger.debug("Loading CRAB configuration file.")
             self.configuration = loadConfigurationFile(os.path.abspath(configname))
             ## Overwrite configuration parameters passed as arguments in the command line. 
             if overrideargs:
@@ -75,11 +75,11 @@ class ConfigCommand:
                         self.logger.debug("Overriden parameter %s with %s" % (fullparname, parval))
             valid, configmsg = self.validateConfig() ## Subclasses of SubCommand overwrite this method if needed.
         except RuntimeError, re:
-            configmsg  = "Configuration syntax error:\n%s" % (self._extractReason(configname, re))
-            configmsg += "\nPlease refer to https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3CommonErrors#Configuration_syntax_error."
+            configmsg  = "Syntax error in CRAB configuration file:\n%s" % (self._extractReason(configname, re))
+            configmsg += "\nPlease refer to https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3CommonErrors#Syntax_error_in_CRAB_configurati"
             configmsg += "\nSee the ./crab.log file for more details."
             configmsg += "\nThe documentation about the CRAB configuration file can be found in"
-            configmsg += " https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3ConfigurationFile."
+            configmsg += " https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3ConfigurationFile"
             raise ConfigurationException(configmsg)
         else:
             if not valid:
@@ -208,7 +208,7 @@ class SubCommand(ConfigCommand):
             return BASEURL + instance + '/' + resource
         elif instance == 'private':
             return BASEURL + 'dev' + '/' + resource
-        raise ConfigurationException('Error: only %s instances can be used.' %str(SERVICE_INSTANCES.keys()))
+        raise ConfigurationException('Error: only %s instances can be used.' % str(SERVICE_INSTANCES.keys()))
 
 
     def __init__(self, logger, cmdargs = None, disable_interspersed_args = False):
@@ -379,11 +379,11 @@ class SubCommand(ConfigCommand):
         compatibleVersions = server_info('version', self.serverurl, self.proxyfilename, baseurl)
         for item in compatibleVersions:
             if re.match(item, __version__):
-                self.logger.debug("CRABClient version: %s." % (__version__))
+                self.logger.debug("CRABClient version: %s" % (__version__))
                 break 
         else:
             msg  = "%sWarning%s:" % (colors.RED, colors.NORMAL)
-            msg += " Incompatible CRABClient version %s." % (__version__ )
+            msg += " Incompatible CRABClient version %s" % (__version__ )
             msg += "\nServer is saying that compatible versions are: %s" % [v.replace("\\", "") for v in compatibleVersions]
             self.logger.info(msg)
 
@@ -452,7 +452,7 @@ class SubCommand(ConfigCommand):
             return configdict
 
         try:
-            self.logger.debug("Found CRAB cache file %s." % (crab3fdir))
+            self.logger.debug("Found CRAB cache file %s" % (crab3fdir))
             with open(crab3fdir, 'r') as fd:
                 configdict = json.load(fd)
         except ValueError:
