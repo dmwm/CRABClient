@@ -81,18 +81,26 @@ renamedParams = {
 
 """
 ---------------------------------------------------------------------------------------------------------------
-Parameter Name      |   Parameter Meaning
+Parameter Name          |  Parameter Meaning
 ---------------------------------------------------------------------------------------------------------------
-requiresTaskOption  -  Whether the command requires a CRAB project directory as input.
-useCache            -  Whether to use the CRAB cache file (~/.crab3).
-                       Currently only used to get the CRAB project directory in case the command requires it
-                       but no directory was given in the -d/--dir option.
-requiresREST        -  Whether the command has to contact the CRAB Server REST Interface.
-acceptsArguments    -  Whether the command accepts arguments. (To not confuse with options.)
-                       For commands requiring the task option, which can be actually given as an argument,
-                       do not count it here as an argument. Same thing for the 'submit' command which can take
-                       the CRAB configuration file name from the arguments.
-initializeProxy     -  Whether the command needs to create a proxy if there is not a (valid) one already.
+requiresTaskOption      -  Whether the command requires the -d/--dir option or not (in the end, if the command
+                           requiresa CRAB project directory as input). For the uploadlog command, we set this
+                           to True even if the command accepts a path to a log file via the --logpath option
+                           (in which case a CRAB project directory is not needed) and if the --logpath option
+                           was given we set requiresTaskOption to False on the fly.
+useCache                -  Whether to use the CRAB cache file (~/.crab3).
+                           Currently only used to get the CRAB project directory in case the command requires
+                           it but no directory was given in the -d/--dir option.
+requiresREST            -  Whether the command has to contact the CRAB Server REST Interface.
+acceptsArguments        -  Whether the command accepts arguments. (To not confuse with options.)
+                           For commands requiring the task option, which can be actually given as an argument,
+                           do not count it here as an argument. Same thing for the 'submit' command which can
+                           take the CRAB configuration file name from the arguments.
+initializeProxy         -  Whether the command needs to create a proxy if there is not a (valid) one already.
+requiresProxyVOOptions  -  Whether the command requires the --voGroup and --voRole options or not.
+doProxyGroupRoleCheck   -  Whether to check if the VO group and VO role in the proxy are the same as what has
+                           been specified either in the CRAB configuration file or in the command options
+                           --voGroup/--voRole (or with what is written in the request cache).
 ---------------------------------------------------------------------------------------------------------------
 WARNING: Don't set at the same time acceptsArguments = True and requiresTaskOption = True. This is because
          we don't have a way to distinghish the CRAB project directory  name from the other arguments,
@@ -100,22 +108,22 @@ WARNING: Don't set at the same time acceptsArguments = True and requiresTaskOpti
 ---------------------------------------------------------------------------------------------------------------
 """
 commandsConfiguration = {
-    'checkusername' : {'acceptsArguments': False, 'requiresREST': False, 'initializeProxy': True,  'requiresTaskOption': False, 'useCache': False},
-    'checkwrite'    : {'acceptsArguments': False, 'requiresREST': False, 'initializeProxy': True,  'requiresTaskOption': False, 'useCache': False},
-    'getlog'        : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True },
-    'getoutput'     : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True },
-    'kill'          : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': False},
-    'proceed'       : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True },
-    'purge'         : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': False},
-    'remake'        : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': False, 'useCache': False},
-    'remote_copy'   : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': False, 'requiresTaskOption': True,  'useCache': True },
-    'report'        : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True },
-    'request_type'  : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True },
-    'resubmit'      : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True },
-    'status'        : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True },
-    'submit'        : {'acceptsArguments': True,  'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': False, 'useCache': False},
-    'tasks'         : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': False, 'useCache': False},
-    'uploadlog'     : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True }
+    'checkusername' : {'acceptsArguments': False, 'requiresREST': False, 'initializeProxy': True,  'requiresTaskOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False},
+    'checkwrite'    : {'acceptsArguments': False, 'requiresREST': False, 'initializeProxy': True,  'requiresTaskOption': False, 'useCache': False, 'requiresProxyVOOptions': True,  'doProxyGroupRoleCheck': True },
+    'getlog'        : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True,  'requiresProxyVOOptions': True,  'doProxyGroupRoleCheck': True },
+    'getoutput'     : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True,  'requiresProxyVOOptions': True,  'doProxyGroupRoleCheck': True },
+    'kill'          : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': False, 'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False},
+    'proceed'       : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False},
+    'purge'         : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': False, 'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False},
+    'remake'        : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False},
+    'remote_copy'   : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': False, 'requiresTaskOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False},
+    'report'        : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False},
+    'request_type'  : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False},
+    'resubmit'      : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False},
+    'status'        : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False},
+    'submit'        : {'acceptsArguments': True,  'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': True },
+    'tasks'         : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False},
+    'uploadlog'     : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresTaskOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False}
 }
 
 

@@ -24,7 +24,7 @@ from optparse import OptionParser, OptionGroup
 from socket import error as SocketError
 
 from CRABClient import __version__ as client_version
-from CRABClient.ClientUtilities import getAvailCommands, logfilter , uploadlogfile, getLoggers
+from CRABClient.ClientUtilities import getAvailCommands, logfilter , uploadlogfile, getLoggers, StopExecution
 from CRABClient.ClientExceptions import ClientException
 from CRABClient.ClientMapping import parametersMapping
 
@@ -228,6 +228,8 @@ if __name__ == "__main__":
         exitcode = ce.exitcode
     except KeyboardInterrupt:
         client.logger.error('Keyboard Interrupted')
+    except StopExecution:
+        exitcode = 0
     finally:
 
         # the command crab --version do not have a logger instance

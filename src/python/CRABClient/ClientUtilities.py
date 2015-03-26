@@ -52,6 +52,12 @@ class colors:
         RED, GREEN, BLUE, GRAY, NORMAL, BOLD = '', '', '', '', '', ''
 
 
+class StopExecution():
+    """
+    Raise it to stop a client command execution without an error.
+    """
+
+
 class logfilter(logging.Filter):
     def filter(self, record):
         def removecolor(text):
@@ -351,7 +357,7 @@ def createCache(requestarea, host, port, uniquerequestname, voRole, voGroup, ins
                       "Server" : host,
                       "Port" : port,
                       "RequestName" : uniquerequestname,
-                      "voRole" : voRole,
+                      "voRole" : voRole if voRole != '' else 'NULL',
                       "voGroup" : voGroup,
                       "instance" : instance,
                       "OriginalConfig" : originalConfig
