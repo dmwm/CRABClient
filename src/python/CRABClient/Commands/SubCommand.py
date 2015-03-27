@@ -3,20 +3,21 @@ import re
 import imp 
 import json
 import types
-from optparse import OptionParser
 from ast import literal_eval
+from optparse import OptionParser
 
-from CRABClient.ClientUtilities import loadCache, getWorkArea, server_info, createWorkArea
-from CRABClient.ClientUtilities import BASEURL, SERVICE_INSTANCES
-from CRABClient import SpellChecker
 import CRABClient.Emulator
-from CRABClient.ClientExceptions import ConfigurationException, MissingOptionException, EnvironmentException, UnknownOptionException
-from CRABClient.ClientMapping import renamedParams, commandsConfiguration, configParametersInfo, getParamDefaultValue
-from CRABClient.CredentialInteractions import CredentialInteractions
+from CRABClient import SpellChecker
 from CRABClient.__init__ import __version__
 from CRABClient.ClientUtilities import colors
-from WMCore.Credential.Proxy import Proxy
+from CRABClient.CRABOptParser import CRABCmdOptParser
+from CRABClient.ClientUtilities import BASEURL, SERVICE_INSTANCES
+from CRABClient.CredentialInteractions import CredentialInteractions
+from CRABClient.ClientUtilities import loadCache, getWorkArea, server_info, createWorkArea
+from CRABClient.ClientMapping import renamedParams, commandsConfiguration, configParametersInfo, getParamDefaultValue
+from CRABClient.ClientExceptions import ConfigurationException, MissingOptionException, EnvironmentException, UnknownOptionException
 
+from WMCore.Credential.Proxy import Proxy
 from WMCore.Configuration import loadConfigurationFile, Configuration
 
 #if certificates in myproxy expires in less than RENEW_MYPROXY_THRESHOLD days renew them
@@ -106,7 +107,7 @@ class ConfigCommand:
                                      modPath[1], modPath[2])
         except Exception, ex:
             msg = str(ex)
-            
+
         return msg
 
 
@@ -232,10 +233,7 @@ class SubCommand(ConfigCommand):
         self.crab3dic = self.getConfiDict()
 
         ## The options parser.
-        self.usage = "usage: %prog " + self.name + " [options] [args]"
-        self.parser = OptionParser(description = self.__doc__, usage = self.usage, add_help_option = True)
-        if disable_interspersed_args:
-            self.parser.disable_interspersed_args()
+        self.parser = CRABCmdOptParser(self.name, self.__doc__,  disable_interspersed_args)
 
         ## Define the command options.
         self.setSuperOptions()
@@ -511,38 +509,12 @@ class SubCommand(ConfigCommand):
 
     def setSuperOptions(self):
         try:
+            #add command related options
             self.setOptions()
         except NotImplementedError:
             pass
 
-        self.parser.add_option("--proxy",
-                               dest = "proxy",
-                               default = False,
-                               help = "Use the given proxy. Skip Grid proxy creation and myproxy delegation.")
-
-        if self.cmdconf['requiresTaskOption']:
-            self.parser.add_option("-d", "--dir",
-                                   dest = "task",
-                                   default = None,
-                                   help = "Path to the CRAB project directory for which the crab command should be executed.")
-            self.parser.add_option("-t", "--task",
-                                   dest = "oldtask",
-                                   default = None,
-                                   help = "Deprecated option renamed to -d/--dir in CRAB v3.3.12.")
-
-        if self.cmdconf['requiresProxyVOOptions']:
-            self.parser.add_option("--voRole",
-                                   dest = "voRole",
-                                   default = None)
-            self.parser.add_option("--voGroup",
-                                   dest = "voGroup",
-                                   default = None)
-
-        if self.cmdconf['requiresREST']:
-            self.parser.add_option("--instance",
-                                   dest = "instance",
-                                   type = "string",
-                                   help = "Running instance of CRAB service. Valid values are %s." % str(SERVICE_INSTANCES.keys()))
+        self.parser.addCommonOptions(self.cmdconf)
 
 
     def validateOptions(self):
