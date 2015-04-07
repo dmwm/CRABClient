@@ -63,6 +63,7 @@ parametersMapping = {
                                      {'default': None,       'config': ['JobType.psetName'],                'type': 'StringType',  'required': False},
                                      {'default': False,      'config': ['JobType.sendPythonFolder'],        'type': 'BooleanType', 'required': False},
                                      {'default': None,       'config': ['JobType.pyCfgParams'],             'type': 'ListType',    'required': False},
+                                     {'default': False,      'config': ['JobType.disableAutomaticOutputCollection'],'type': 'BooleanType', 'required': False},
                            ]
 }
 
