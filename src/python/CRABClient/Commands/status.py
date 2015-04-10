@@ -149,7 +149,7 @@ class status(SubCommand):
             and group the errors per exit code counting how many jobs exited with a certain exit code, and print the summary
         """
         ec_numjobs = {} #a map containing the exit code as key and the number of jobs with this exit code as value
-        ec_error = {}   #a map containint the exit code as key and the exit message as value (the last one we found)
+        ec_errors = {}  #a map containint the exit code as key and the exit message as value (the last one we found)
         unknown = 0
         are_failed_jobs = False
         for jobid, status in dictresult['jobs'].iteritems():
@@ -157,18 +157,54 @@ class status(SubCommand):
                 are_failed_jobs = True
                 if 'Error' in status:
                     ec = status['Error'][0] #exit code of this failed job
-                    ec_numjobs[ec] = ec_numjobs.setdefault(ec, 0) + 1
-                    ec_error[ec] = status['Error'][1]
+                    em = status['Error'][1] #exit message of this failed job
+                    if ec not in ec_errors:
+                        ec_errors[ec] = []
+                    if ec not in ec_numjobs:
+                        ec_numjobs[ec] = []
+                    try:
+                        i = ec_errors[ec].index(em)
+                        ec_numjobs[ec][i][0] += 1
+                    except ValueError:
+                        ec_numjobs[ec].append((1, len(ec_errors[ec])))
+                        ec_errors[ec].append(em)
                 else:
                     unknown += 1
         if are_failed_jobs:
             msg = "\nError summary:"
-            for ec, count in ec_numjobs.iteritems():
-                msg += "\n%s jobs failed with exit code %s:" % (count, ec)
-                msg += '\n\t'+'\n\t'.join(ec_error[ec].split('\n'))
+            for ec, numjobs in ec_numjobs.iteritems():
+                ## Sort the error messages for this exit code from most frequent one to less
+                ## frequent one.
+                numjobs.sort()
+                numjobs.reverse()
+                ## Count the total number of failed jobs with this exit code.
+                count = 0
+                for nj, i in numjobs:
+                    count += nj
+                ## Exit code 99999 means failure in post-processing stage.
+                if ec == 99999:
+                    msg += "\n%s jobs failed in post-processing stage:" % (count)
+                else:
+                    msg += "\n%s jobs failed with exit code %s:" % (count, ec)
+                ## Costumize the message depending on whether there is only one error message or
+                ## more than one.
+                if len(ec_errors[ec]) == 1:
+                    msg += "\n\t" + "\n\t".join(ec_errors[ec][0].split('\n'))
+                else:
+                    ## Show up to three different error messages.
+                    remainder = count
+                    if len(ec_errors[ec]) > 3:
+                        msg += "\n\t(Showing only the 3 most frequent errors messages for this exit code)"
+                    for nj, i in numjobs[:3]:
+                        msg += "\n\t%s jobs failed with following error message:" % (nj)
+                        msg += "\n\t\t" + "\n\t\t".join(ec_errors[ec][i].split('\n'))
+                        remainder -= nj
+                    if remainder > 0:
+                        msg += "\n\tFor the error messages of the other %s jobs," % (remainder)
+                        msg += " please have a look at the task monitoring web pages."
             if unknown:
                 msg += "\nCould not find exit code details for %s jobs" % (unknown)
-            msg += "\nHave a look at https://twiki.cern.ch/twiki/bin/viewauth/CMSPublic/JobExitCodes for a description of the exit codes"
+            msg += "\nHave a look at https://twiki.cern.ch/twiki/bin/viewauth/CMSPublic/JobExitCodes for a description of the exit codes."
             self.logger.info(msg)
 
 
