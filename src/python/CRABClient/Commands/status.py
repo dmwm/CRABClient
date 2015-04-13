@@ -98,8 +98,8 @@ class status(SubCommand):
     def printShort(self, dictresult, username):
         self.logger.debug(dictresult) #should be something like {u'result': [[123, u'ciao'], [456, u'ciao']]}
 
+        self.logger.info("CRAB project directory:\t\t%s" % (self.requestarea))
         self.logger.info("Task name:\t\t\t%s" % self.cachedinfo['RequestName'])
-
         self.logger.info("Task status:\t\t\t%s" % dictresult['status'])
 
         def logJDefErr(jdef):
