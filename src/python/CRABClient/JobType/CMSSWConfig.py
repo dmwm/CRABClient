@@ -86,19 +86,6 @@ class CMSSWConfig(object):
         return
 
 
-    def hasLHESource(self):
-        """
-        Returns a tuple containing a bool to indicate usage of an
-        LHESource and an integer for the number of input files.
-        """
-        source = self.fullConfig.process.source
-
-        lhe = str(source.type_()) == 'LHESource'
-        files = len(source.fileNames) if lhe else 0
-
-        return lhe, files
-
-
     def outputFiles(self):
         """
         Returns a tuple of lists of output files. First element is PoolOutput files,

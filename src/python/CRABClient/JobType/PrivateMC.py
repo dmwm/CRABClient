@@ -8,9 +8,7 @@ import re
 from WMCore.Lexicon import lfnParts
 
 from CRABClient.JobType.Analysis import Analysis
-from CRABClient.JobType.CMSSWConfig import CMSSWConfig
 from CRABClient.ClientMapping import getParamDefaultValue
-from CRABClient.ClientUtilities import colors
 
 
 class PrivateMC(Analysis):
@@ -24,18 +22,6 @@ class PrivateMC(Analysis):
         """
         tarFilename, configArguments, isbchecksum = super(PrivateMC, self).run(*args, **kwargs)
         configArguments['jobtype'] = 'PrivateMC'
-
-        cmsswCfg = CMSSWConfig(config=self.config, logger=self.logger,
-                               userConfig=self.config.JobType.psetName)
-        lhe, nfiles = cmsswCfg.hasLHESource()
-        if lhe:
-            configArguments['generator'] = getattr(self.config.JobType, 'generator', 'lhe')
-            if nfiles > 1:
-                msg = "{0}Warning{1}: Using an LHESource with ".format(colors.RED, colors.NORMAL)
-                msg += "more than one input file may not be supported by the CMSSW version used. "
-                msg += "Consider merging the LHE input files to guarantee complete processing."
-                self.logger.warning(msg)
-
         ## Get the user-specified primary dataset name.
         primaryDataset = getattr(self.config.Data, 'primaryDataset', 'CRAB_PrivateMC')
         # Normalizes "foo/bar" and "/foo/bar" to "/foo/bar"
