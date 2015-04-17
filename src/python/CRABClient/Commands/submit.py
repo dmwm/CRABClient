@@ -153,12 +153,11 @@ class submit(SubCommand):
         if not (self.options.wait or self.options.dryrun):
             self.logger.info("Task name: %s" % uniquerequestname)
             self.logger.info("Please use 'crab status' to check how the submission process proceeds.")
-
-        if self.options.wait:
-            self.checkStatusLoop(server, uniquerequestname, 'SUBMITTED')
+        else:
+            targetTaskStatus = 'UPLOADED' if self.options.dryrun else 'SUBMITTED'
+            self.checkStatusLoop(server, uniquerequestname, targetTaskStatus)
 
         if self.options.dryrun:
-            self.checkStatusLoop(server, uniquerequestname, 'UPLOADED')
             self.printDryRunResults(*self.executeTestRun(filecacheurl))
 
         self.logger.debug("About to return")
@@ -407,7 +406,7 @@ class submit(SubCommand):
                     msg += " The submission of your task has failed."
                     msg += " You can do 'crab status' to get the error message."
                     self.logger.info(msg)
-                elif dictresult['status'] == 'SUBMITTED' or dictresult['status'] == 'UNKNOWN': #until the node_state file is available status is unknown
+                elif dictresult['status'] in ['SUBMITTED', 'UPLOADED', 'UNKNOWN']: #until the node_state file is available status is unknown
                     continuecheck = False
             elif dictresult['status'] in ['NEW', 'HOLDING', 'QUEUED']:
                 self.logger.info("Please wait...")
