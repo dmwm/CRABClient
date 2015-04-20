@@ -60,11 +60,13 @@ class resubmit(SubCommand):
             msg = "Problem resubmitting the task to the server:\ninput:%s\noutput:%s\nreason:%s" \
                   % (str(data), str(dictresult), str(reason))
             raise RESTCommunicationException(msg)
-        msg = "Resubmit request successfuly sent to the CRAB3 server."
+        msg = "Resubmit request sent to the CRAB3 server."
+        self.logger.info(msg)
         if dictresult['result'][0]['result'] != 'ok':
-            msg += "\nServer responded with: '%s'" % (dictresult['result'][0]['result'])
+            msg = "Server responded with: '%s'" % (dictresult['result'][0]['result'])
             returndict = {'status': 'FAILED'}
         else:
+            msg = "Please use 'crab status' to check how the resubmission process proceeds."
             returndict = {'status': 'SUCCESS'}
         self.logger.info(msg)
 
