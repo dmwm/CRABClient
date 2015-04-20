@@ -446,7 +446,7 @@ class SubCommand(ConfigCommand):
         crab3fdir = self.crabcachepath()
         if not os.path.isfile(crab3fdir):
             self.logger.debug("Could not find CRAB cache file %s; creating a new one." % (crab3fdir))
-            configdict = {'taskname': ''}
+            configdict = {'crab_project_directory': ''}
             with open(crab3fdir, 'w') as fd:
                 json.dump(configdict, fd)
             return configdict
@@ -460,6 +460,10 @@ class SubCommand(ConfigCommand):
             msg += " Error loading CRAB cache file."
             msg += " Try to do 'rm -rf ~/.crab3' and run the crab command again."
             raise ConfigurationException(msg)
+        if 'crab_project_directory' not in configdict:
+            configdict['crab_project_directory'] = configdict.get('taskname', '')
+        if 'taskname' in configdict:
+            del configdict['taskname']
         return configdict
 
 
@@ -483,7 +487,7 @@ class SubCommand(ConfigCommand):
         So far this file contains only the path of the last used CRAB project directory.
         """
         if self.cmdconf['requiresTaskOption'] or getattr(self, 'requestarea', None):
-            self.crab3dic['taskname'] = self.requestarea
+            self.crab3dic['crab_project_directory'] = self.requestarea
             crab3fdir = self.crabcachepath()
             with open(crab3fdir, 'w') as fd:
                 json.dump(self.crab3dic, fd)
@@ -537,8 +541,8 @@ class SubCommand(ConfigCommand):
                 raise ConfigurationException(msg)
             elif len(self.args) == 1 and self.args[0]:
                 self.options.task = self.args.pop(0)
-            elif self.cmdconf['useCache'] and self.crab3dic.get('taskname'):
-                self.options.task = str(self.crab3dic['taskname'])
+            elif self.cmdconf['useCache'] and self.crab3dic.get('crab_project_directory'):
+                self.options.task = str(self.crab3dic['crab_project_directory'])
             if self.options.task is None:
                 msg = "%sError%s: Directory option is required." % (colors.RED, colors.NORMAL)
                 ex = MissingOptionException(msg)
