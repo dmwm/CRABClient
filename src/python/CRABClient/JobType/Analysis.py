@@ -19,6 +19,7 @@ from CRABClient.JobType.LumiMask import getLumiList, getRunList
 from CRABClient.JobType.UserTarball import UserTarball
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
 from CRABClient.ClientExceptions import EnvironmentException, ConfigurationException
+from CRABClient.ClientMapping import getParamDefaultValue
 
 
 class Analysis(BasicJobType):
@@ -75,8 +76,23 @@ class Analysis(BasicJobType):
         self.cmsswCfg = CMSSWConfig(config=self.config, logger=self.logger,
                                     userConfig=self.config.JobType.psetName)
 
-        ## Interogate CMSSW config and user config for output file names. For now no use for EDM files or TFiles here.
+        ## Interrogate the CMSSW pset for output files (only output files produced by
+        ## PoolOutputModule or TFileService are identified automatically). Do this
+        ## automatic detection even if JobType.disableAutomaticOutputCollection = True,
+        ## so that we can still classify the output files in EDM, TFile and additional
+        ## output files in the Task DB (and the job ad).
+        ## TODO: Do we really need this classification at all? cmscp and PostJob read
+        ## the FJR to know if an output file is EDM, TFile or other.
         edmfiles, tfiles = self.cmsswCfg.outputFiles()
+        ## If JobType.disableAutomaticOutputCollection = True, ignore the EDM and TFile
+        ## output files that are not listed in JobType.outputFiles.
+        if getattr(self.config.JobType, 'disableAutomaticOutputCollection', getParamDefaultValue('JobType.disableAutomaticOutputCollection')):
+            outputFiles = [re.sub(r'^file:', '', file) for file in getattr(self.config.JobType, 'outputFiles', [])]
+            edmfiles = [file for file in edmfiles if file in outputFiles]
+            tfiles = [file for file in tfiles if file in outputFiles]
+        ## Get the list of additional output files that have to be collected as given
+        ## in JobType.outputFiles, but remove duplicates listed already as EDM files or
+        ## TFiles.
         addoutputFiles = [re.sub(r'^file:', '', file) for file in getattr(self.config.JobType, 'outputFiles', []) if re.sub(r'^file:', '', file) not in edmfiles+tfiles]
         self.logger.debug("The following EDM output files will be collected: %s" % edmfiles)
         self.logger.debug("The following TFile output files will be collected: %s" % tfiles)
