@@ -527,7 +527,7 @@ class SubCommand(ConfigCommand):
 
         if self.cmdconf['requiresTaskOption'] and self.options.oldtask is not None:
             msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
-            msg += " Command option -t/--task has been renamed to -d/--dir."
+            msg += " Please indicate the CRAB project directory with --dir=<project-directory>."
             raise UnknownOptionException(msg)
 
         if self.cmdconf['requiresTaskOption'] and self.options.task is None:
