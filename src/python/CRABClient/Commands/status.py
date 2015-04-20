@@ -110,6 +110,11 @@ class status(SubCommand):
                 for error in jdef['jobdefErrors']:
                     self.logger.info("\t%s" % error)
 
+        ## Print the warning messages (these are the warnings in the Tasks DB,
+        ## and/or maybe some warning added by the REST Interface to the status result).
+        if dictresult['taskWarningMsg']:
+            for warningMsg in dictresult['taskWarningMsg']:
+                self.logger.warning("%sWarning:%s\t\t\t%s." % (colors.RED, colors.NORMAL, warningMsg))
         if dictresult['taskFailureMsg']:
             if dictresult['status'] == "FAILED":
                 self.logger.error("%sError during task injection:%s\t%s" % (colors.RED,colors.NORMAL, dictresult['taskFailureMsg']))
@@ -118,11 +123,6 @@ class status(SubCommand):
             # We might also have more information in the job def errors
             logJDefErr(jdef=dictresult)
         else:
-            ## Print the warning messages (these are the warnings in the Tasks DB,
-            ## and/or maybe some warning added by the REST Interface to the status result).
-            if dictresult['taskWarningMsg']:
-                for warningMsg in dictresult['taskWarningMsg']:
-                    self.logger.warning("%sWarning:%s\t\t\t%s." % (colors.RED, colors.NORMAL, warningMsg))
             ## The REST Interface can return dictresult['jobSetID'] = '' or dictresult['jobSetID'] = task name.
             if self.cachedinfo['RequestName'] == dictresult['jobSetID']:
                 ## Print the Dashboard and GlideMon monitoring URLs for this task.
