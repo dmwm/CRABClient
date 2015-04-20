@@ -140,8 +140,8 @@ if __name__ == "__main__":
         client()
         exitcode = 0 #no exceptions no errors
     except SocketError, se:
-        msg = 'Could not establish a connection with the server. '
-        msg += 'This may be a temporary problem, but if you see it repeatedly please notify AnaOps'
+        msg  = "Could not establish a connection with the server."
+        msg += " This may be a temporary problem, but if you see it repeatedly please send a message to hn-cms-computing-tools@cern.ch"
         client.logger.error(msg)
         logging.getLogger('CRAB3').exception('Caught exception')
         exitcode = 2
