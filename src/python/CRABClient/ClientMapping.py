@@ -28,7 +28,7 @@ parametersMapping = {
                   'splitalgo'      : {'default': None,       'config': ['Data.splitting'],                  'type': 'StringType',  'required': True },
                   'algoargs'       : {'default': None,       'config': ['Data.unitsPerJob'],                'type': 'IntType',     'required': True },
                   'totalunits'     : {'default': 0,          'config': ['Data.totalUnits'],                 'type': 'IntType',     'required': False},
-                  'lfn'            : {'default': None,       'config': ['Data.outLFN'],                     'type': 'StringType',  'required': False},
+                  'lfn'            : {'default': None,       'config': ['Data.outLFNDirBase'],              'type': 'StringType',  'required': False},
                   'publication'    : {'default': True,       'config': ['Data.publication'],                'type': 'BooleanType', 'required': False},
                   'publishdbsurl'  : {'default': 'phys03',   'config': ['Data.publishDBS'],                 'type': 'StringType',  'required': False},
                   'publishname'    : {'default': '',         'config': ['Data.publishDataName'],            'type': 'StringType',  'required': False},
@@ -42,7 +42,7 @@ parametersMapping = {
                   'numcores'       : {'default': None,       'config': ['JobType.numCores'],                'type': 'IntType',     'required': False},
                   'maxmemory'      : {'default': None,       'config': ['JobType.maxMemoryMB'],             'type': 'IntType',     'required': False},
                   'priority'       : {'default': None,       'config': ['JobType.priority'],                'type': 'IntType',     'required': False},
-                  'nonprodsw'      : {'default': False,      'config': ['JobType.allowNonProductionCMSSW'], 'type': 'BooleanType', 'required': False},
+                  'nonprodsw'      : {'default': False,      'config': ['JobType.allowUndistributedCMSSW'], 'type': 'BooleanType', 'required': False},
                   'scriptexe'      : {'default': None,       'config': ['JobType.scriptExe'],               'type': 'StringType',  'required': False},
                   'scriptargs'     : {'default': None,       'config': ['JobType.scriptArgs'],              'type': 'ListType',    'required': False},
                   'asyncdest'      : {'default': None,       'config': ['Site.storageSite'],                'type': 'StringType',  'required': False},
@@ -69,13 +69,15 @@ parametersMapping = {
 renamedParams = {
     'General.transferOutput' : 'General.transferOutputs',
     'General.saveLogs'       : 'General.transferLogs',
-    'Data.outlfn'            : 'Data.outLFN',
+    'Data.outlfn'            : 'Data.outLFNDirBase',
+    'Data.outLFN'            : 'Data.outLFNDirBase',
     'Data.dbsUrl'            : 'Data.inputDBS',
     'Data.publishDbsUrl'     : 'Data.publishDBS',
     'Data.userInputFile'     : 'Data.userInputFiles',
     'JobType.numcores'       : 'JobType.numCores',
     'JobType.maxmemory'      : 'JobType.maxMemoryMB',
-    'JobType.maxjobruntime'  : 'JobType.maxJobRuntimeMin'
+    'JobType.maxjobruntime'  : 'JobType.maxJobRuntimeMin',
+    'JobType.allowNonProductionCMSSW' : 'JobType.allowUndistributedCMSSW',
 }
 
 
