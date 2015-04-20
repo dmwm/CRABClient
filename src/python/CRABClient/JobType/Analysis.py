@@ -60,14 +60,23 @@ class Analysis(BasicJobType):
             configArguments['inputdata'] = self.config.Data.inputDataset
 #        configArguments['ProcessingVersion'] = getattr(self.config.Data, 'processingVersion', None)
 
-        # Create CMSSW config
+        ## Create CMSSW config.
         self.logger.debug("self.config: %s" % self.config)
         self.logger.debug("self.config.JobType.psetName: %s" % self.config.JobType.psetName)
-        cmsswCfg = CMSSWConfig(config=self.config, logger=self.logger,
-                               userConfig=self.config.JobType.psetName)
+        ## The loading of a CMSSW pset in the CMSSWConfig constructor is not idempotent
+        ## in the sense that a second loading of the same pset may not produce the same
+        ## result. Therefore there is a cache in CMSSWConfig to avoid loading any CMSSW
+        ## pset twice. However, some "complicated" psets seem to evade the caching.
+        ## Thus, to be safe, keep the CMSSWConfig instance in a class variable, so that
+        ## it can be reused later if wanted (for example, in PrivateMC when checking if
+        ## the pset has an LHE source) instead of having to load the pset again.
+        ## As for what does "complicated" psets mean, Daniel Riley said that there are
+        ## some psets where one module modifies the configuration from another module.
+        self.cmsswCfg = CMSSWConfig(config=self.config, logger=self.logger,
+                                    userConfig=self.config.JobType.psetName)
 
         ## Interogate CMSSW config and user config for output file names. For now no use for EDM files or TFiles here.
-        edmfiles, tfiles = cmsswCfg.outputFiles()
+        edmfiles, tfiles = self.cmsswCfg.outputFiles()
         addoutputFiles = [re.sub(r'^file:', '', file) for file in getattr(self.config.JobType, 'outputFiles', []) if re.sub(r'^file:', '', file) not in edmfiles+tfiles]
         self.logger.debug("The following EDM output files will be collected: %s" % edmfiles)
         self.logger.debug("The following TFile output files will be collected: %s" % tfiles)
@@ -77,7 +86,7 @@ class Analysis(BasicJobType):
         configArguments['addoutputfiles'].extend(addoutputFiles)
 
         # Write out CMSSW config
-        cmsswCfg.writeFile(cfgOutputName)
+        self.cmsswCfg.writeFile(cfgOutputName)
 
         ## UserTarball calls ScramEnvironment which can raise EnvironmentException.
         ## Since ScramEnvironment is already called above and the exception is not

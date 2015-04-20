@@ -25,9 +25,7 @@ class PrivateMC(Analysis):
         tarFilename, configArguments, isbchecksum = super(PrivateMC, self).run(*args, **kwargs)
         configArguments['jobtype'] = 'PrivateMC'
 
-        cmsswCfg = CMSSWConfig(config=self.config, logger=self.logger,
-                               userConfig=self.config.JobType.psetName)
-        lhe, nfiles = cmsswCfg.hasLHESource()
+        lhe, nfiles = self.cmsswCfg.hasLHESource()
         if lhe:
             configArguments['generator'] = getattr(self.config.JobType, 'generator', 'lhe')
             if nfiles > 1:
