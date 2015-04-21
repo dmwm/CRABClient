@@ -164,7 +164,7 @@ class status(SubCommand):
                         ec_numjobs[ec] = []
                     try:
                         i = ec_errors[ec].index(em)
-                        ec_numjobs[ec][i][0] += 1
+                        ec_numjobs[ec][i] = (ec_numjobs[ec][i][0] + 1, ec_numjobs[ec][i][1])
                     except ValueError:
                         ec_numjobs[ec].append((1, len(ec_errors[ec])))
                         ec_errors[ec].append(em)
