@@ -15,7 +15,7 @@ import shutil
 import CRABClient.Emulator
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ClientException, MissingOptionException, ConfigurationException, RESTCommunicationException
-from CRABClient.ClientUtilities import getJobTypes, createCache, addPlugin, server_info, colors, getUrl
+from CRABClient.ClientUtilities import getJobTypes, createCache, addPlugin, server_info, colors, getUrl, checkStatusLoop
 from CRABClient.ClientMapping import parametersMapping, getParamDefaultValue
 from CRABClient import __version__
 
@@ -155,7 +155,7 @@ class submit(SubCommand):
             self.logger.info("Please use 'crab status' to check how the submission process proceeds.")
         else:
             targetTaskStatus = 'UPLOADED' if self.options.dryrun else 'SUBMITTED'
-            self.checkStatusLoop(server, uniquerequestname, targetTaskStatus)
+            checkStatusLoop(self.logger, server, self.uri, uniquerequestname, targetTaskStatus, self.name)
 
         if self.options.dryrun:
             self.printDryRunResults(*self.executeTestRun(filecacheurl))
@@ -357,84 +357,6 @@ class submit(SubCommand):
                 del configreq[lparam]
         encoded = urllib.urlencode(configreq) + encodedLists
         return str(encoded)
-
-
-    def checkStatusLoop(self, server, uniquerequestname, targetstatus):
-        self.logger.info("Waiting for task to be processed")
-
-        maxwaittime= 900 #in second, changed to 15 minute max wait time, the original 1 hour is too long
-        starttime=currenttime=time.time()
-        endtime=currenttime+maxwaittime
-
-        startimestring=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(starttime))
-        endtimestring=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(endtime))
-
-        self.logger.debug("Start time:%s" % startimestring )
-        self.logger.debug("Max wait time: %s s until : %s" % (maxwaittime,endtimestring))
-
-        #self.logger.debug('Looking up detailed status of task %s' % uniquerequestname)
-
-        continuecheck=True
-        tmpresult=None
-        self.logger.info("Checking task status")
-
-        while continuecheck:
-            currenttime = time.time()
-            querytimestring = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(currenttime))
-
-            self.logger.debug('Looking up detailed status of task %s' % uniquerequestname)
-
-            dictresult, status, reason = server.get(self.uri, data = { 'workflow' : uniquerequestname})
-            dictresult = dictresult['result'][0]
-
-            if status != 200:
-                msg  = "Error when trying to check the task status."
-                msg += " Please check the task status later using 'crab status'."
-                self.logger.info(msg)
-                msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(uniquerequestname), str(dictresult), str(reason))
-                raise RESTCommunicationException(msg)
-
-            self.logger.debug("Query Time: %s Task status: %s" %(querytimestring, dictresult['status']))
-
-            if dictresult['status'] != tmpresult:
-                self.logger.info("Task status: %s" % dictresult['status'])
-                tmpresult = dictresult['status']
-
-                if dictresult['status'] == 'FAILED':
-                    continuecheck = False
-                    msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
-                    msg += " The submission of your task has failed."
-                    msg += " You can do 'crab status' to get the error message."
-                    self.logger.info(msg)
-                elif dictresult['status'] in ['SUBMITTED', 'UPLOADED', 'UNKNOWN']: #until the node_state file is available status is unknown
-                    continuecheck = False
-            elif dictresult['status'] in ['NEW', 'HOLDING', 'QUEUED']:
-                self.logger.info("Please wait...")
-                time.sleep(30) #the original 60 second query time is too long
-            else:
-                continuecheck = False
-                self.logger.info("Please check crab.log")
-                self.logger.debug('CRAB status other than FAILED, SUBMITTED, NEW, HOLDING, QUEUED, UPLOADED')
-
-            if currenttime > endtime:
-                continuecheck = False
-                msg  = "Maximum query time exceeded."
-                msg += " Please check the status of the submission later using 'crab status'."
-                self.logger.info(msg)
-                waittime = currenttime - starttime
-                self.logger.debug("Wait time: %s" % (waittime))
-                break
-
-        if targetstatus == 'SUBMITTED':
-            if tmpresult == 'SUBMITTED':
-                self.logger.info("%sSuccess%s: Your task has been processed and your jobs have been submitted successfully" % (colors.GREEN, colors.NORMAL))
-            else: #UNKNOWN
-                msg  = "The CRAB3 server finished processing your task."
-                msg += " Use 'crab status' to see if your jobs have been submitted successfully."
-                self.logger.info(msg)
-
-        print '\a' #Generate audio bell
-        self.logger.debug("Ended submission process")
 
 
     def executeTestRun(self, filecacheurl):
