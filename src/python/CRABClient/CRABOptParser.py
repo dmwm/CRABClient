@@ -84,9 +84,9 @@ class CRABCmdOptParser(OptionParser):
                                default = False,
                                help = "Use the given proxy. Skip Grid proxy creation and myproxy delegation.")
 
-        if cmdconf['requiresTaskOption']:
+        if cmdconf['requiresDirOption']:
             self.add_option("-d", "--dir",
-                                   dest = "task",
+                                   dest = "projdir",
                                    default = None,
                                    help = "Path to the CRAB project directory for which the crab command should be executed.")
 

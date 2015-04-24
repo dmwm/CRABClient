@@ -66,7 +66,7 @@ class uploadlog(SubCommand):
                 msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
                 msg += " Could not find the log file %s." % (self.options.logpath)
                 raise ConfigurationException(msg)
-            self.cmdconf['requiresTaskOption'] = False
+            self.cmdconf['requiresDirOption'] = False
 
         ## Do the options validation from SubCommand.
         try:

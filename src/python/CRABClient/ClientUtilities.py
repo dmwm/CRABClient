@@ -366,33 +366,31 @@ def createCache(requestarea, host, port, uniquerequestname, voRole, voGroup, ins
     touchfile.close()
 
 
-def getWorkArea(task):
+def getWorkArea(projdir):
     requestarea = ''
     requestname = ''
-    if os.path.isabs(task):
-        requestarea = task
+    if os.path.isabs(projdir):
+        requestarea = projdir
         requestname = os.path.split(os.path.normpath(requestarea))[1]
     else:
-        requestarea = os.path.abspath(task)
-        requestname = task
+        requestarea = os.path.abspath(projdir)
+        requestname = projdir
     return requestarea, requestname
 
 
-def loadCache(task, logger):
-    requestarea, requestname = getWorkArea(task)
+def loadCache(dir, logger):
+    requestarea, requestname = getWorkArea(dir)
     cachename = os.path.join(requestarea, '.requestcache')
-    taskName = task.split('/')[-1] #Contains only the taskname without the path
-    #Check if the task directory exists
+    #Check if the directory exists.
     if not os.path.isdir(requestarea):
-        msg = 'Working directory for task %s not found ' % taskName
+        msg = "%s is not a valid CRAB project directory." % (requestarea)
         raise TaskNotFoundException(msg)
     #If the .requestcache file exists open it!
     if os.path.isfile(cachename):
         loadfile = open(cachename, 'r')
     else:
-        msg = 'Cannot find .requestcache file inside the working directory for task %s' % taskName
+        msg = "Cannot find .requestcache file in CRAB project directory %s" % (requestarea)
         raise CachefileNotFoundException(msg)
-
     logfile = changeFileLogger(logger, workingpath = requestarea)
     return cPickle.load(loadfile), logfile
 
