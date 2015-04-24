@@ -138,11 +138,14 @@ class ConfigCommand:
         ## Some parameters may have been renamed. Check here if the configuration file has an old
         ## parameter defined, and in that case tell the user what is the new parameter name.
         for old_param, new_param in renamedParams.iteritems():
-            if len(old_param.split('.')) != 2 or len(new_param.split('.')) != 2:
+            if len(old_param.split('.')) != 2 or len(new_param['newParam'].split('.')) != 2:
                 continue
             old_param_section, old_param_name = old_param.split('.')
             if hasattr(self.configuration, old_param_section) and hasattr(getattr(self.configuration, old_param_section), old_param_name):
-                msg = "Invalid CRAB configuration: Parameter %s has been renamed to %s; please change your configuration file accordingly." % (old_param, new_param)
+                msg = "Invalid CRAB configuration: Parameter %s has been renamed to %s" % (old_param, new_param['newParam'])
+                if new_param['version'] != None:
+                    msg += " starting from CRAB %s" % (new_param['version'])
+                msg += "; please change your configuration file accordingly."
                 return False, msg
 
         ## Check if there are unknown parameters (and try to suggest the correct parameter name).

@@ -68,17 +68,17 @@ parametersMapping = {
 }
 
 renamedParams = {
-    'General.transferOutput' : 'General.transferOutputs',
-    'General.saveLogs'       : 'General.transferLogs',
-    'Data.outlfn'            : 'Data.outLFNDirBase',
-    'Data.outLFN'            : 'Data.outLFNDirBase',
-    'Data.dbsUrl'            : 'Data.inputDBS',
-    'Data.publishDbsUrl'     : 'Data.publishDBS',
-    'Data.userInputFile'     : 'Data.userInputFiles',
-    'JobType.numcores'       : 'JobType.numCores',
-    'JobType.maxmemory'      : 'JobType.maxMemoryMB',
-    'JobType.maxjobruntime'  : 'JobType.maxJobRuntimeMin',
-    'JobType.allowNonProductionCMSSW' : 'JobType.allowUndistributedCMSSW',
+    'General.transferOutput'          : {'newParam' : 'General.transferOutputs',         'version' : None},
+    'General.saveLogs'                : {'newParam' : 'General.transferLogs',            'version' : None},
+    'Data.outlfn'                     : {'newParam' : 'Data.outLFNDirBase',              'version' : 'v3.3.16'},
+    'Data.outLFN'                     : {'newParam' : 'Data.outLFNDirBase',              'version' : 'v3.3.16'},
+    'Data.dbsUrl'                     : {'newParam' : 'Data.inputDBS',                   'version' : None},
+    'Data.publishDbsUrl'              : {'newParam' : 'Data.publishDBS',                 'version' : None},
+    'Data.userInputFile'              : {'newParam' : 'Data.userInputFiles',             'version' : None},
+    'JobType.numcores'                : {'newParam' : 'JobType.numCores',                'version' : None},
+    'JobType.maxmemory'               : {'newParam' : 'JobType.maxMemoryMB',             'version' : None},
+    'JobType.maxjobruntime'           : {'newParam' : 'JobType.maxJobRuntimeMin',        'version' : None},
+    'JobType.allowNonProductionCMSSW' : {'newParam' : 'JobType.allowUndistributedCMSSW', 'version' : 'v3.3.16'},
 }
 
 
