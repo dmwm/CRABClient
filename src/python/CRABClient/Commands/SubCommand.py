@@ -15,7 +15,7 @@ from CRABClient.ClientUtilities import BASEURL, SERVICE_INSTANCES
 from CRABClient.CredentialInteractions import CredentialInteractions
 from CRABClient.ClientUtilities import loadCache, getWorkArea, server_info, createWorkArea
 from CRABClient.ClientMapping import renamedParams, commandsConfiguration, configParametersInfo, getParamDefaultValue
-from CRABClient.ClientExceptions import ConfigurationException, MissingOptionException, EnvironmentException, UnknownOptionException
+from CRABClient.ClientExceptions import ConfigurationException, MissingOptionException, EnvironmentException
 
 from WMCore.Credential.Proxy import Proxy
 from WMCore.Configuration import loadConfigurationFile, Configuration
@@ -528,11 +528,6 @@ class SubCommand(ConfigCommand):
         Validate the command line options of the command.
         Raise a ConfigurationException in case of error; don't do anything if ok.
         """
-
-        if self.cmdconf['requiresTaskOption'] and self.options.oldtask is not None:
-            msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
-            msg += " Please indicate the CRAB project directory with --dir=<project-directory>."
-            raise UnknownOptionException(msg)
 
         if self.cmdconf['requiresTaskOption'] and self.options.task is None:
             if len(self.args) > 1:

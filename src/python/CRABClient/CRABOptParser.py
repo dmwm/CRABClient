@@ -89,10 +89,6 @@ class CRABCmdOptParser(OptionParser):
                                    dest = "task",
                                    default = None,
                                    help = "Path to the CRAB project directory for which the crab command should be executed.")
-            self.add_option("-t", "--task",
-                                   dest = "oldtask",
-                                   default = None,
-                                   help = "Deprecated option renamed to -d/--dir in CRAB v3.3.12.")
 
         if cmdconf['requiresProxyVOOptions']:
             self.add_option("--voRole",
