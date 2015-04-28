@@ -64,8 +64,8 @@ class status(SubCommand):
 
         self.logger.debug('Looking up detailed status of task %s' % self.cachedinfo['RequestName'])
         user = self.cachedinfo['RequestName'].split("_")[2].split(":")[-1]
-        verbose = int(self.summary or self.long or self.json)
-        if self.idle:
+        verbose = int(self.options.summary or self.options.long or self.options.json)
+        if self.options.idle:
             verbose = 2
         dictresult, status, reason = server.get(self.uri, data = { 'workflow' : self.cachedinfo['RequestName'], 'verbose': verbose })
         dictresult = dictresult['result'][0] #take just the significant part
@@ -83,13 +83,15 @@ class status(SubCommand):
                 self.printPublication(dictresult)
             self.printErrors(dictresult)
             # Note several options could be combined
-            if self.summary:
+            if self.options.summary:
                 self.printSummary(dictresult)
-            if self.long:
-                self.printLong(dictresult)
-            if self.idle:
+            if self.options.long or self.options.sort:
+                sortdict = self.printLong(dictresult, quiet = (not self.options.long))
+                if self.options.sort:
+                    self.printSort(sortdict, self.options.sort)
+            if self.options.idle:
                 self.printIdle(dictresult, user)
-            if self.json:
+            if self.options.json:
                 self.logger.info(dictresult['jobs'])
 
         return dictresult
@@ -148,8 +150,47 @@ class status(SubCommand):
                 {'10': {'State': 'running'}, '1': {'State': 'failed', 'Error' : [10,'error message']}, '3': {'State': 'failed', 'Error' : [10,'error message']} ...
             and group the errors per exit code counting how many jobs exited with a certain exit code, and print the summary
         """
-        ec_numjobs = {} #a map containing the exit code as key and the number of jobs with this exit code as value
-        ec_errors = {}  #a map containint the exit code as key and the exit message as value (the last one we found)
+        ## In general, there are N_{ec}_{em} jobs that failed with exit code ec and
+        ## error message em.
+        ## Since there may be different error messages for a given exit code, we use a
+        ## map containing the exit code as key and as value a list with the different
+        ## exit messages. For example:
+        ## ec_errors = { '1040' : ["Failed due to bla", "Failed due to blabla"],
+        ##              '60302' : ["File X does not exist", "File Y does not exist"]
+        ##             }
+        ec_errors = {}
+        ## We also want a map containing again the exit code as key, but as value a list
+        ## with the lists of job ids that failed with given exit code and error message.
+        ## For example:
+        ## ec_jobids = { '1040' : [[1, 2, 3, 4, 5], [10, 12, 14]],
+        ##              '60302' : [[6, 7, 8, 9, 10], [11, 13, 15]]
+        ##             }
+        ## where jobs [1, 2, 3, 4, 5] failed with error message "Failed due to bla",
+        ## jobs [10, 12, 14] with "Failed due to blabla", jobs [6, 7, 8, 9, 10] with
+        ## "File X does not exist" and jobs [11, 13, 15] with "File Y does not exist".
+        ec_jobids = {}
+        ## We also want a map containing again the exit code as key, but as value a list
+        ## with the numbers N_{ec}_{em}. For example:
+        ## ec_numjobs = { '1040' : [N_{1040}_{"Failed due to bla"}, N_{1040}_{"Failed due to blabla"}],
+        ##               '60302' : [N_{60302}_{"File X does not exist"}, N_{60302}_{"File Y does not exist"}]
+        ##              }
+        ## Actually, for later convenience when sorting by most frequent error messages
+        ## for each exit code (i.e. sorting by N_{ec}_{em}), we add a second number
+        ## representing the position of the error message em in the corresponding list
+        ## in ec_errors[ec]. For example:
+        ## ec_numjobs = { '1040' : [(N_{1040}_{"Failed due to bla"}, 1), (N_{1040}_{"Failed due to blabla"}, 2)],
+        ##               '60302' : [(N_{60302}_{"File X does not exist"}, 1), (N_{60302}_{"File Y does not exist"}, 2)]
+        ##              }
+        ## We will later sort ec_numjobs[ec], which sorts according to the first number
+        ## in the 2-tuples. So the sorted ec_numjobs dictionary could be for example:
+        ## ec_numjobs = { '1040' : [(N_{1040}_{"Failed due to bla"}, 1), (N_{1040}_{"Failed due to blabla"}, 2)],
+        ##               '60302' : [(N_{60302}_{"File Y does not exist"}, 2), (N_{60302}_{"File X does not exist"}, 1)]
+        ##              }
+        ## The second number in the 2-tuples allows to get the error message from
+        ## ec_errors[ec]: given the sorted ec_numjobs dictionary, for each exit code
+        ## (i.e. for each key) ec in the dictionary, the most frequent error messages
+        ## are ec_errors[ec][ec_numjobs[ec][0][1]], ec_errors[ec][ec_numjobs[ec][1][1]], etc.
+        ec_numjobs = {}
         unknown = 0
         are_failed_jobs = False
         for jobid, status in dictresult['jobs'].iteritems():
@@ -160,51 +201,97 @@ class status(SubCommand):
                     em = status['Error'][1] #exit message of this failed job
                     if ec not in ec_errors:
                         ec_errors[ec] = []
+                    if ec not in ec_jobids:
+                        ec_jobids[ec] = []
                     if ec not in ec_numjobs:
                         ec_numjobs[ec] = []
-                    try:
-                        i = ec_errors[ec].index(em)
-                        ec_numjobs[ec][i] = (ec_numjobs[ec][i][0] + 1, ec_numjobs[ec][i][1])
-                    except ValueError:
+                    if em not in ec_errors[ec]:
                         ec_numjobs[ec].append((1, len(ec_errors[ec])))
                         ec_errors[ec].append(em)
+                        ec_jobids[ec].append([jobid])
+                    else:
+                        i = ec_errors[ec].index(em)
+                        ec_jobids[ec][i].append(jobid)
+                        ec_numjobs[ec][i] = (ec_numjobs[ec][i][0] + 1, ec_numjobs[ec][i][1])
                 else:
                     unknown += 1
         if are_failed_jobs:
-            msg = "\nError summary:"
-            for ec, numjobs in ec_numjobs.iteritems():
+            ## If option --sort=exitcodes was specified, show the error summary with the
+            ## exit codes sorted. Otherwise show it sorted from most frequent exit code to
+            ## less frequent.
+            exitCodes = []
+            if self.options.sort == "exitcode":
+                for ec in ec_numjobs.keys():
+                    if ec not in exitCodes:
+                        exitCodes.append(ec)
+                exitCodes.sort()
+            else:
+                numjobsec = []
+                for ec, numjobs in ec_numjobs.iteritems():
+                    count = 0
+                    for nj, _ in numjobs:
+                        count += nj
+                    numjobsec.append((count, ec))
+                numjobsec.sort()
+                numjobsec.reverse()
+                for _, ec in numjobsec:
+                    if ec not in exitCodes:
+                        exitCodes.append(ec)
+            ## Sort the job ids in ec_jobids. Remember that ec_jobids[ec] is a list of lists
+            ## of job ids, and that each job id is a string.
+            for ec in ec_jobids.keys():
+                for i in range(len(ec_jobids[ec])):
+                    ec_jobids[ec][i] = [str(y) for y in sorted([int(x) for x in ec_jobids[ec][i]])]
+            ## Error summary header.
+            msg = "\nError Summary:"
+            if not self.options.verboseErrors:
+                msg += " (use --verboseErrors for details about the errors)"
+            ## Auxiliary variable for the layout of the error summary messages.
+            totnumjobs = len(dictresult['jobs'])
+            ndigits = int(math.ceil(math.log(totnumjobs+1, 10)))
+            ## For each exit code:
+            for i, ec in enumerate(exitCodes):
+                numjobs = ec_numjobs[ec]
                 ## Sort the error messages for this exit code from most frequent one to less
                 ## frequent one.
                 numjobs.sort()
                 numjobs.reverse()
                 ## Count the total number of failed jobs with this exit code.
                 count = 0
-                for nj, i in numjobs:
+                for nj, _ in numjobs:
                     count += nj
-                ## Exit code 99999 means failure in post-processing stage.
-                if ec == 99999:
-                    msg += "\n%s jobs failed in post-processing stage:" % (count)
+                ## Exit code 90000 means failure in postprocessing stage.
+                if ec == 90000:
+                    msg += ("\n\n%" + str(ndigits) + "s jobs failed in postprocessing step%s") \
+                         % (count, ":" if self.options.verboseErrors else "")
                 else:
-                    msg += "\n%s jobs failed with exit code %s:" % (count, ec)
-                ## Costumize the message depending on whether there is only one error message or
-                ## more than one.
-                if len(ec_errors[ec]) == 1:
-                    msg += "\n\t" + "\n\t".join(ec_errors[ec][0].split('\n'))
-                else:
-                    ## Show up to three different error messages.
-                    remainder = count
-                    if len(ec_errors[ec]) > 3:
-                        msg += "\n\t(Showing only the 3 most frequent errors messages for this exit code)"
-                    for nj, i in numjobs[:3]:
-                        msg += "\n\t%s jobs failed with following error message:" % (nj)
-                        msg += "\n\t\t" + "\n\t\t".join(ec_errors[ec][i].split('\n'))
-                        remainder -= nj
-                    if remainder > 0:
-                        msg += "\n\tFor the error messages of the other %s jobs," % (remainder)
-                        msg += " please have a look at the task monitoring web pages."
+                    msg += ("\n\n%" + str(ndigits) + "s jobs failed with exit code %s%s") \
+                         % (count, ec, ":" if self.options.verboseErrors else "")
+                if self.options.verboseErrors:
+                    ## Costumize the message depending on whether there is only one error message or
+                    ## more than one.
+                    if len(ec_errors[ec]) == 1:
+                        error_msg = ec_errors[ec][0]
+                        msg += ("\n\n\t%" + str(ndigits) + "s jobs failed with following error message:") % (nj)
+                        msg += " (for example, job %s)" % (ec_jobids[ec][0][0])
+                        msg += "\n\n\t\t" + "\n\t\t".join([line for line in error_msg.split('\n') if line])
+                    else:
+                        ## Show up to three different error messages.
+                        remainder = count
+                        if len(ec_errors[ec]) > 3:
+                            msg += "\n\t(Showing only the 3 most frequent errors messages for this exit code)"
+                        for nj, i in numjobs[:3]:
+                            error_msg = ec_errors[ec][i]
+                            msg += ("\n\n\t%" + str(ndigits) + "s jobs failed with following error message:") % (nj)
+                            msg += " (for example, job %s)" % (ec_jobids[ec][i][0])
+                            msg += "\n\n\t\t" + "\n\t\t".join([line for line in error_msg.split('\n') if line])
+                            remainder -= nj
+                        if remainder > 0:
+                            msg += "\n\n\tFor the error messages of the other %s jobs," % (remainder)
+                            msg += " please have a look at the task monitoring web pages."
             if unknown:
-                msg += "\nCould not find exit code details for %s jobs" % (unknown)
-            msg += "\nHave a look at https://twiki.cern.ch/twiki/bin/viewauth/CMSPublic/JobExitCodes for a description of the exit codes."
+                msg += "\n\nCould not find exit code details for %s jobs." % (unknown)
+            msg += "\n\nHave a look at https://twiki.cern.ch/twiki/bin/viewauth/CMSPublic/JobExitCodes for a description of the exit codes."
             self.logger.info(msg)
 
 
@@ -231,9 +318,8 @@ class status(SubCommand):
                         msg += "\nOutput dataset:\t\t\t%s" % (outputDataset)
                        	msg += "\nOutput dataset DAS URL:\t\thttps://cmsweb.cern.ch/das/request?input={0}&instance=prod%2Fphys03".format(urllib.quote(outputDataset, ''))
                 else:
-                    plural = "s" if len(outputDatasets) > 1 else ""
-                    extratab = "\t" if not plural else ""
-                    msg += "\nOutput dataset%s:\t\t%s%s" % (plural, extratab, outputDatasets[0])
+                    extratab = "\t" if len(outputDatasets) == 1 else ""
+                    msg += "\nOutput dataset%s:\t\t%s%s" % ("s" if len(outputDatasets) > 1 else "", extratab, outputDatasets[0])
                     for outputDataset in outputDatasets[1:]:
                         msg += "\n\t\t\t\t%s%s" % (extratab, outputDataset)
                 self.logger.info(msg)
@@ -311,7 +397,7 @@ class status(SubCommand):
                 cur_info['Success'] += 1
                 cur_info['Runtime'] += walls[-1]
 
-        self.logger.info("\nSite Summary Table (including retries)\n")
+        self.logger.info("\nSite Summary Table (including retries):\n")
         self.logger.info("%-20s %10s %10s %10s %10s %10s %10s" % ("Site", "Runtime", "Waste", "Running", "Successful", "Stageout", "Failed"))
 
         sorted_sites = sites.keys()
@@ -324,10 +410,11 @@ class status(SubCommand):
         self.logger.info("")
 
 
-    def printLong(self, dictresult):
+    def printLong(self, dictresult, quiet = False):
         sortdict = {}
-        self.logger.info("\nExtended Job Status Table\n")
-        self.logger.info("%4s %-12s %-20s %10s %10s %10s %10s %10s %10s %10s" % ("Job", "State", "Most Recent Site", "Runtime", "Mem (MB)", "CPU %", "Retries", "Restarts", "Waste", "Exit Code"))
+        outputMsg  = "\nExtended Job Status Table:\n"
+        outputMsg += "\n%4s %-12s %-20s %10s %10s %10s %10s %10s %10s %15s" \
+                   % ("Job", "State", "Most Recent Site", "Runtime", "Mem (MB)", "CPU %", "Retries", "Restarts", "Waste", "Exit Code")
         mem_cnt = 0
         mem_min = -1
         mem_max = 0
@@ -340,11 +427,12 @@ class status(SubCommand):
         cpu_max = 0
         cpu_sum = 0
         wall_sum = 0
-        for i in range(1, len(dictresult['jobs'])+1):
-            info = dictresult['jobs'][str(i)]
+        for jobid in range(1, len(dictresult['jobs'])+1):
+            info = dictresult['jobs'][str(jobid)]
             state = info['State']
             site = ''
-            if info.get('SiteHistory'): site = info['SiteHistory'][-1]
+            if info.get('SiteHistory'):
+                site = info['SiteHistory'][-1]
             wall = 0
             if info.get('WallDurations'):
                 wall = info['WallDurations'][-1]
@@ -386,29 +474,38 @@ class status(SubCommand):
                 ec = str(info['Error'][0]) #exit code of this failed job
             elif state in ['finished']:
                 ec = '0'
-            sortdict[str(i)] = {'state' : state , 'site' : site , 'runtime' : wall_str , 'memory' : mem , 'cpu' : cpu , 'retries' : info.get('Retries', 0) , 'restarts' : info.get('Restarts', 0) , 'waste' : waste, 'exitcode' : ec}
-            self.logger.info("%4d %-12s %-20s %10s %10s %10s %10s %10s %10s %10s" % (i, state, site, wall_str, mem, cpu, info.get('Retries', 0), info.get('Restarts', 0), waste, ec))
-        self.logger.debug("")
-        self.logger.debug("%4s %-10s" % ("Job", "Cluster Id"))
-        for i in range(1, len(dictresult['jobs'])+1):
-            info = dictresult['jobs'][str(i)]
-            cluster = str(info.get('JobIds', 'Unknown'))
-            self.logger.debug("%4d %10s" % (i, cluster))
+            sortdict[str(jobid)] = {'state': state, 'site': site, 'runtime': wall_str, 'memory': mem, 'cpu': cpu, \
+                                    'retries': info.get('Retries', 0), 'restarts': info.get('Restarts', 0), 'waste': waste, 'exitcode': ec}
+            outputMsg += "\n%4d %-12s %-20s %10s %10s %10s %10s %10s %10s %15s" \
+                       % (jobid, state, site, wall_str, mem, cpu, info.get('Retries', 0), info.get('Restarts', 0), waste, ' Postprocessing failed' if ec == '90000' else ec)
+        if not quiet:
+            self.logger.info(outputMsg)
 
-        if hasattr(self, 'sort') and  self.sort != None:
-            self.printSort(sortdict,self.sort)
+        ## Print (to the log file) a table with the HTCondor cluster id for each job.
+        msg = "\n%4s %-10s" % ("Job", "Cluster Id")
+        for jobid in range(1, len(dictresult['jobs'])+1):
+            info = dictresult['jobs'][str(jobid)]
+            clusterid = str(info.get('JobIds', 'Unknown'))
+            msg += "\n%4d %10s" % (jobid, clusterid)
+        if not quiet:
+            self.logger.debug(msg)
 
-        self.logger.info("\nSummary:")
+        ## Print a summary with memory/cpu usage.
+        summaryMsg = "\nSummary:"
         if mem_cnt:
-            self.logger.info(" * Memory: %dMB min, %dMB max, %.0fMB ave" % (mem_min, mem_max, mem_sum/mem_cnt))
+            summaryMsg += "\n * Memory: %dMB min, %dMB max, %.0fMB ave" % (mem_min, mem_max, mem_sum/mem_cnt)
         if run_cnt:
-            self.logger.info(" * Runtime: %s min, %s max, %s ave" % (to_hms(run_min), to_hms(run_max), to_hms(run_sum/run_cnt)))
+            summaryMsg += "\n * Runtime: %s min, %s max, %s ave" % (to_hms(run_min), to_hms(run_max), to_hms(run_sum/run_cnt))
         if run_sum and cpu_min >= 0:
-            self.logger.info(" * CPU eff: %.0f%% min, %.0f%% max, %.0f%% ave" % (cpu_min, cpu_max, (cpu_sum / run_sum)*100))
+            summaryMsg += "\n * CPU eff: %.0f%% min, %.0f%% max, %.0f%% ave" % (cpu_min, cpu_max, (cpu_sum / run_sum)*100)
         if wall_sum or run_sum:
             waste = wall_sum - run_sum
-            self.logger.info(" * Waste: %s (%.0f%% of total)" % (to_hms(waste), (waste / float(wall_sum))*100))
-        self.logger.info("")
+            summaryMsg += "\n * Waste: %s (%.0f%% of total)" % (to_hms(waste), (waste / float(wall_sum))*100)
+        summaryMsg += "\n"
+        if not quiet:
+            self.logger.info(summaryMsg)
+
+        return sortdict
 
 
     def printIdle(self, dictresult, task_user):
@@ -517,55 +614,80 @@ class status(SubCommand):
 
     def printSort(self, sortdict, sortby):
         sortmatrix = []
-        valuedict ={}
+        valuedict = {}
         self.logger.info('')
-        for id in sortdict:
-            if sortby in ['state' , 'site', 'exitcode']:
-                value = sortdict[id][sortby]
-                if not value in valuedict:
-                    valuedict[value] = str(id)
+        for jobid in sortdict:
+            if sortby in ['exitcode']:
+                if sortdict[jobid][sortby] != 'Unknown':
+                    value = int(sortdict[jobid][sortby])
                 else:
-                    valuedict[value] = valuedict[value]+','+str(id)
-            elif sortby in ['memory', 'cpu' , 'retries']:
-                if not sortdict[id][sortby] == 'Unknown':
-                    value = int(sortdict[id][sortby])
-                else:
-                    value = 9999
-                sortmatrix.append((value,id))
+                    value = 999999
+                if value not in sortmatrix:
+                    sortmatrix.append(value)
                 sortmatrix.sort()
-            elif sortby in ['runtime' ,'waste']:
-                value = sortdict[id][sortby]
+                if value not in valuedict:
+                    valuedict[value] = [jobid]
+                else:
+                    valuedict[value].append(jobid)
+            elif sortby in ['state' , 'site']:
+                value = sortdict[jobid][sortby]
+                if value not in valuedict:
+                    valuedict[value] = [jobid]
+                else:
+                    valuedict[value].append(jobid)
+            elif sortby in ['memory', 'cpu', 'retries']:
+                if sortdict[jobid][sortby] != 'Unknown':
+                    value = int(sortdict[jobid][sortby])
+                else:
+                    value = 999999
+                sortmatrix.append((value, jobid))
+                sortmatrix.sort()
+            elif sortby in ['runtime', 'waste']:
+                value = sortdict[jobid][sortby]
                 realvaluematrix = value.split(':')
                 realvalue = 3600*int(realvaluematrix[0]) + 60*int(realvaluematrix[1]) + int(realvaluematrix[2])
-                sortmatrix.append((realvalue,value,id))
+                sortmatrix.append((realvalue, value, jobid))
                 sortmatrix.sort()
-
-        if sortby in ['state' , 'site']:
-            self.logger.info('Job sorted by %s: \n' % sortby)
-            self.logger.info('%-20s %-20s\n' % (sortby.title(), 'Job Id(s)'))
-            for value in valuedict:
-                self.logger.info('%-20s %-s' % (value,valuedict[value]))
-            self.logger.info('')
-        elif sortby in ['memory', 'cpu', 'retries']:
-            self.logger.info('Job sorted by %s used: \n' % sortby)
-            if sortby == 'memory':
-                self.logger.info('%-10s %-10s' % ('Memory (MB)'.center(10), 'Job Id'.center(10)))
-            elif sortby == 'cpu':
-                self.logger.info('%-10s %-10s' % ('CPU'.center(10), 'Job Id'.center(10)))
-            elif sortby == 'retries':
-                self.logger.info('%-10s %-10s' % ('Retries'.center(10), 'Job Id'.center(10)))
+        if sortby in ['exitcode']:
+            msg  = "Jobs sorted by exit code:\n"
+            msg += "\n%-20s %-20s\n" % ('Exit Code', 'Job Id(s)')
             for value in sortmatrix:
-                if value[0] == 9999:
+                if value == 999999:
                     esignvalue = 'Unknown'
-                else: esignvalue = value[0]
-                self.logger.info('%10s %10s' %(str(esignvalue).center(10),value[1].center(10)))
-            self.logger.info('')
-        elif sortby in ['runtime' ,'waste']:
-            self.logger.info('Job sorted by %s used: \n' % sortby)
-            self.logger.info('%-10s %-5s\n' % (sortby.title(), 'Job Id'))
+                else:
+                    esignvalue = str(value)
+                jobids = [str(jobid) for jobid in sorted([int(jobid) for jobid in valuedict[value]])]
+                msg += "\n%-20s %-s" % (esignvalue, ", ".join(jobids))
+            self.logger.info(msg)
+        elif sortby in ['state' , 'site']:
+            msg  = "Jobs sorted by %s:\n" % (sortby)
+            msg += "\n%-20s %-20s\n" % (sortby.title(), 'Job Id(s)')
+            for value in valuedict:
+                msg += "\n%-20s %-s" % (value, ", ".join(valuedict[value]))
+            self.logger.info(msg)
+        elif sortby in ['memory', 'cpu', 'retries']:
+            msg = "Jobs sorted by %s used:\n" % (sortby)
+            if sortby == 'memory':
+                msg += "%-10s %-10s" % ("Memory (MB)".center(10), "Job Id".center(10))
+            elif sortby == 'cpu':
+                msg += "%-10s %-10s" % ("CPU".center(10), "Job Id".center(10))
+            elif sortby == 'retries':
+                msg += "%-10s %-10s" % ("Retries".center(10), "Job Id".center(10))
             for value in sortmatrix:
-                self.logger.info('%-10s %-5s' % (value[1],value[2].center(5)))
-            self.logger.info('')
+                if value[0] == 999999:
+                    esignvalue = 'Unknown'
+                else:
+                    esignvalue = value[0]
+                msg += "%10s %10s" % (str(esignvalue).center(10), value[1].center(10))
+            self.logger.info(msg)
+        elif sortby in ['runtime' ,'waste']:
+            msg  = "Jobs sorted by %s used:\n" % (sortby)
+            msg += "%-10s %-5s\n" % (sortby.title(), "Job Id")
+            for value in sortmatrix:
+                msg += "%-10s %-5s" % (value[1], value[2].center(5))
+            self.logger.info(msg)
+        self.logger.info('')
+
 
     def setOptions(self):
         """
@@ -574,45 +696,45 @@ class status(SubCommand):
         This allows to set specific command options
         """
 
-        self.parser.add_option( '--long',
-                                dest = 'long',
-                                action = 'store_true',
-                                default = False,
-                                help = 'Print one status line per running job.')
-        self.parser.add_option( "--json",
-                                dest = "json",
-                                default = False,
-                                action = "store_true",
-                                help = "Print status results in JSON.")
-        self.parser.add_option( "--summary",
-                                dest = "summary",
-                                default = False,
-                                action = "store_true",
-                                help = "Print site summary.")
-        self.parser.add_option( "--idle",
-                                dest = "idle",
-                                default = False,
-                                action = "store_true",
-                                help = "Print idle job summary.")
-        self.parser.add_option( "--sort",
-                                dest = "sort",
-                                default = None,
-                                help = 'Only use with option long, availble sorting: "state", "site", "runtime", "memory", "cpu", "retries", "waste" and "exitcode"')
+        self.parser.add_option("--long",
+                               dest = "long",
+                               default = False,
+                               action = "store_true",
+                               help = "Print one status line per job.")
+        self.parser.add_option("--sort",
+                               dest = "sort",
+                               default = None,
+                               help = "Sort failed jobs by 'state', 'site', 'runtime', 'memory', 'cpu', 'retries', 'waste' or 'exitcode'.")
+        self.parser.add_option("--json",
+                               dest = "json",
+                               default = False,
+                               action = "store_true",
+                               help = "Print status results in JSON format.")
+        self.parser.add_option("--summary",
+                               dest = "summary",
+                               default = False,
+                               action = "store_true",
+                               help = "Print site summary.")
+        self.parser.add_option("--idle",
+                               dest = "idle",
+                               default = False,
+                               action = "store_true",
+                               help = "Print summary for idle jobs.")
+        self.parser.add_option("--verboseErrors",
+                               dest = "verboseErrors",
+                               default = False,
+                               action = "store_true",
+                               help = "Expand error summary, showing error messages for all failed jobs.")
+
 
     def validateOptions(self):
         SubCommand.validateOptions(self)
         if self.options.idle and (self.options.long or self.options.summary):
-            raise ConfigurationException("Idle option (-i) conflicts with -u, and -l")
-        self.json = self.options.json
-        self.summary = self.options.summary
-        self.idle = self.options.idle
-        self.long = self.options.long
-
-        acceptedsort = ["state", "site", "runtime", "memory", "cpu", "retries", "waste", "exitcode"]
-        if hasattr(self.options , 'sort') and self.options.sort != None:
-            if not self.long:
-                raise ConfigurationException('%sError%s: Please use option --long together with --sort' % (colors.RED, colors.NORMAL))
-            elif not self.options.sort in acceptedsort:
-                raise ConfigurationException('%sError%s: Only these values are accepted for crab status --sort option: %s' % (colors.RED, colors.NORMAL, acceptedsort))
-            else:
-                self.sort = self.options.sort
+            raise ConfigurationException("Option --idle conflicts with --summary and --long")
+        
+        if self.options.sort is not None:
+            sortOpts = ["state", "site", "runtime", "memory", "cpu", "retries", "waste", "exitcode"]
+            if self.options.sort not in sortOpts:
+                msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
+                msg += " Only the following values are accepted for --sort option: %s" % (sortOpts)
+                raise ConfigurationException(msg)
