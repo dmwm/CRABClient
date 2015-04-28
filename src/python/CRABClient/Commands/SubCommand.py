@@ -443,22 +443,25 @@ class SubCommand(ConfigCommand):
         """
         Load the CRAB cache file (~/.crab3). If it doesn't exist, create one.
         """
-        crab3fdir = self.crabcachepath()
-        if not os.path.isfile(crab3fdir):
-            self.logger.debug("Could not find CRAB cache file %s; creating a new one." % (crab3fdir))
+        crabCacheFileName = self.crabcachepath()
+        if not os.path.isfile(crabCacheFileName):
+            msg = "Could not find CRAB cache file %s; creating a new one." % (crabCacheFileName)
+            self.logger.debug(msg)
             configdict = {'crab_project_directory': ''}
-            with open(crab3fdir, 'w') as fd:
+            crabCacheFileName_tmp = "%s.%s" % (crabCacheFileName, os.getpid())
+            with open(crabCacheFileName_tmp, 'w') as fd:
                 json.dump(configdict, fd)
+            os.rename(crabCacheFileName_tmp, crabCacheFileName)
             return configdict
-
         try:
-            self.logger.debug("Found CRAB cache file %s" % (crab3fdir))
-            with open(crab3fdir, 'r') as fd:
+            msg = "Found CRAB cache file %s" % (crabCacheFileName)
+            self.logger.debug(msg)
+            with open(crabCacheFileName, 'r') as fd:
                 configdict = json.load(fd)
         except ValueError:
             msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
             msg += " Error loading CRAB cache file."
-            msg += " Try to do 'rm -rf ~/.crab3' and run the crab command again."
+            msg += " Try to do 'rm -rf %s' and run the crab command again." % (crabCacheFileName)
             raise ConfigurationException(msg)
         if 'crab_project_directory' not in configdict:
             configdict['crab_project_directory'] = configdict.get('taskname', '')
@@ -488,9 +491,11 @@ class SubCommand(ConfigCommand):
         """
         if self.cmdconf['requiresTaskOption'] or getattr(self, 'requestarea', None):
             self.crab3dic['crab_project_directory'] = self.requestarea
-            crab3fdir = self.crabcachepath()
-            with open(crab3fdir, 'w') as fd:
+            crabCacheFileName = self.crabcachepath()
+            crabCacheFileName_tmp = "%s.%s" % (crabCacheFileName, os.getpid())
+            with open(crabCacheFileName_tmp, 'w') as fd:
                 json.dump(self.crab3dic, fd)
+            os.rename(crabCacheFileName_tmp, crabCacheFileName)
 
 
     def __call__(self):
