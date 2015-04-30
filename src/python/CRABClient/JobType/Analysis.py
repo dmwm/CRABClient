@@ -143,24 +143,36 @@ class Analysis(BasicJobType):
         lumi_list = None
         if lumi_mask_name:
             self.logger.debug("Attaching lumi mask %s to the request" % (lumi_mask_name))
-            lumi_list = getLumiList(lumi_mask_name, logger = self.logger)
-        run_ranges = getattr(self.config.Data, 'runRange', None)
-        run_ranges_is_valid = run_ranges is not None and isinstance(run_ranges, str) and re.match('^\d+((?!(-\d+-))(\,|\-)\d+)*$', run_ranges)
-        if run_ranges_is_valid:
-            run_list = getRunList(run_ranges)
-            if lumi_list:
-                lumi_list.selectRuns(run_list)
+            try:
+                lumi_list = getLumiList(lumi_mask_name, logger = self.logger)
+            except ValueError, ex:
+                msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
+                msg += " Failed to load lumi mask %s : %s" % (lumi_mask_name, ex)
+                raise ConfigurationException(msg)
+        run_ranges = getattr(self.config.Data, 'runRange')
+        if run_ranges:
+            run_ranges_is_valid = re.match('^\d+((?!(-\d+-))(\,|\-)\d+)*$', run_ranges)
+            if run_ranges_is_valid:
+                run_list = getRunList(run_ranges)
+                if lumi_list:
+                    lumi_list.selectRuns(run_list)
+                else:
+                    if len(run_list) > 50000:
+                        msg  = "CRAB configuration parameter Data.runRange includes %s runs." % str(len(run_list))
+                        msg += " When Data.lumiMask is not specified, Data.runRange can not include more than 50000 runs."
+                        raise ConfigurationException(msg)
+                    lumi_list = LumiList(runs = run_list)
             else:
-                if len(run_list) > 50000:
-                    msg  = "CRAB configuration parameter Data.runRange includes %s runs." % str(len(run_list))
-                    msg += " When Data.lumiMask is not specified, Data.runRange can not include more than 50000 runs."
-                    raise ConfigurationException(msg)
-                lumi_list = LumiList(runs = run_list)
-        if lumi_list:
+                msg = "Invalid CRAB configuration: Parameter Data.runRange should be a comma separated list of integers or (inclusive) ranges. Example: '12345,99900-99910'"
+                raise ConfigurationException(msg)
+        if lumi_list != None:
             configArguments['runs'] = lumi_list.getRuns()
             ## For each run we encode the lumis as a string representing a list of integers: [[1,2],[5,5]] ==> '1,2,5,5'
             lumi_mask = lumi_list.getCompactList()
             configArguments['lumis'] = [str(reduce(lambda x,y: x+y, lumi_mask[run]))[1:-1].replace(' ','') for run in configArguments['runs']]
+            if not configArguments['runs'] and not configArguments['lumis']:
+                msg = "Data.runRange has filtered all the data from Data.lumiMask. No data to run."
+                raise ConfigurationException(msg)
 
         configArguments['jobtype'] = 'Analysis'
 
