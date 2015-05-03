@@ -100,6 +100,18 @@ class Analysis(BasicJobType):
         configArguments['edmoutfiles'] = edmfiles
         configArguments['tfileoutfiles'] = tfiles
         configArguments['addoutputfiles'].extend(addoutputFiles)
+        ## Give warning message in case no output file was detected in the CMSSW pset
+        ## nor was any specified in the CRAB configuration.
+        if not configArguments['edmoutfiles'] and not configArguments['tfileoutfiles'] and not configArguments['addoutputfiles']:
+            msg = "%sWarning%s:" % (colors.RED, colors.NORMAL)
+            if getattr(self.config.JobType, 'disableAutomaticOutputCollection', getParamDefaultValue('JobType.disableAutomaticOutputCollection')):
+                msg += " Automatic detection of output files in the CMSSW configuration is disabled from the CRAB configuration"
+                msg += " and no output file was explicitly specified in the CRAB configuration."
+            else:
+                msg += " CRAB could not detect any output file in the CMSSW configuration"
+                msg += " nor was any explicitly specified in the CRAB configuration."
+            msg += " Hence CRAB will not collect any output file from this task."
+            self.logger.warning(msg)
 
         # Write out CMSSW config
         self.cmsswCfg.writeFile(cfgOutputName)
