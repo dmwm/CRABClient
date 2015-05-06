@@ -74,7 +74,7 @@ class ConfigCommand:
                         setattr(getattr(self.configuration, parnames[0]), parnames[1], literal_eval("%s" % parval))
                         self.logger.debug("Overriden parameter %s with %s" % (fullparname, parval))
             valid, configmsg = self.validateConfig() ## Subclasses of SubCommand overwrite this method if needed.
-        except RuntimeError, re:
+        except RuntimeError as re:
             configmsg  = "Syntax error in CRAB configuration file:\n%s" % (self._extractReason(configname, re))
             configmsg += "\nPlease refer to https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3CommonErrors#Syntax_error_in_CRAB_configurati"
             configmsg += "\nSee the ./crab.log file for more details."
@@ -105,7 +105,7 @@ class ConfigCommand:
         try:
             modRef = imp.load_module(cfgBaseName, modPath[0],
                                      modPath[1], modPath[2])
-        except Exception, ex:
+        except Exception as ex:
             msg = str(ex)
 
         return msg
@@ -168,7 +168,7 @@ class ConfigCommand:
             requiredTypeName = paramInfo['type']
             try:
                 requiredType = getattr(types, requiredTypeName)
-            except AttributeError, ex:
+            except AttributeError as ex:
                 msg = "Invalid type %s specified in CRABClient configuration mapping for parameter %s." % (requiredTypeName, paramName)
                 return False, msg
             attrs = paramName.split('.')

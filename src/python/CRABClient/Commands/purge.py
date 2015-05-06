@@ -62,7 +62,7 @@ class purge(SubCommand):
 
             try:
                 ufcresult = ufc.removeFile(hashkey)
-            except HTTPException, re:
+            except HTTPException as re:
                 if re.headers.has_key('X-Error-Info') and 'Not such file' in re.headers['X-Error-Info']:
                     self.logger.info('%sError%s: Failed to find task file in crab server cache; the file might have been already purged' % (colors.RED,colors.NORMAL))
                     raise HTTPException , re
@@ -79,7 +79,7 @@ class purge(SubCommand):
             baseurl=self.getUrl(self.instance, resource='info')
             try:
                 scheddaddress = server_info('scheddaddress', self.serverurl, self.proxyfilename, baseurl, workflow = self.cachedinfo['RequestName'] )
-            except HTTPException, he:
+            except HTTPException as he:
                 self.logger.info('%sError%s: Failed to get schedd address' % (colors.RED, colors.NORMAL))
                 raise HTTPException,he
             self.logger.debug('%sSuccess%s: Successfully got schedd address' % (colors.GREEN, colors.NORMAL))

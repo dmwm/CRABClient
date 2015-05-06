@@ -57,7 +57,7 @@ class getlog(getcommand):
                         self.logger.info ('Retrieved %s' % (filename))
                         success.append(filename)
                         retry = retry + 1
-                except ClientException, ex:
+                except ClientException as ex:
                     self.logger.debug(str(ex))
                     failed.append(filename)
             if failed:

@@ -68,7 +68,7 @@ class CredentialInteractions(object):
     def proxy(self):
         try:
             proxy = Proxy(self.defaultDelegation)
-        except CredentialException, ex:
+        except CredentialException as ex:
             self.logger.debug(ex)
             raise EnvironmentException('Problem with Grid environment: %s ' % ex._message)
         return proxy
@@ -335,7 +335,7 @@ class CredentialInteractions(object):
                                                             "(it might simply you typed a wrong password)")
                 else:
                     self.logger.debug("My-proxy delegated.")
-            except Exception, ex:
+            except Exception as ex:
                 msg = ex._message if hasattr(ex, '_message') else str(ex)
                 raise ProxyCreationException("Problems delegating My-proxy. %s" % msg)
 

@@ -92,7 +92,7 @@ def getUsernameFromSiteDB():
     ## Extract the username from the above command output.
     try:
         dictresult = literal_eval(str(stdout).replace('\n',''))
-    except Exception, ex:
+    except Exception as ex:
         msg  = "Unable to retrieve username from SiteDB: %s" % (ex)
         msg += "\nExecuted command: %s" % (cmd)
         msg += "\n  Stdout:\n    %s" % (str(stdout).replace('\n', '\n    '))
@@ -125,13 +125,13 @@ def getFileFromURL(url, filename = None):
         socket = urllib.urlopen(url)
         status = socket.getcode()
         filestr = socket.read()
-    except IOError, ioex:
+    except IOError as ioex:
         tblogger = logging.getLogger('CRAB3')
         tblogger.exception(ioex)
         msg = "Error while trying to retrieve file from %s: %s" % (url, ioex)
         msg += "\nMake sure the URL is correct."
         raise ClientException(msg)
-    except Exception, ex:
+    except Exception as ex:
         tblogger = logging.getLogger('CRAB3')
         tblogger.exception(ex)
         msg = "Unexpected error while trying to retrieve file from %s: %s" % (url, ex)
