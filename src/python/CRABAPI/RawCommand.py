@@ -8,29 +8,38 @@ from CRABClient.ClientUtilities import getLoggers
 
 
 # NOTE: Not included in unittests
-def crabCommand(command, *args, **kwargs):
-    """ crabComand - executes a given command with certain arguments and returns
-                     the raw result back from the client. Arguments are...
-    """
-    #Converting all arguments to a list. Adding '--' and '='
-    arguments = []
-    for key, val in kwargs.iteritems():
-        arguments.append('--'+str(key))
-        arguments.append(val)
-    arguments.extend(list(args))
+class crabCommand:
 
-    return execRaw(command, arguments)
+    def __init__(self, command, *args, **kwargs):
+        """ crabComand - executes a given command with certain arguments and returns
+                         the raw result back from the client. Arguments are...
+        """
+        self.command = command
+        #Converting all arguments to a list. Adding '--' and '='
+        self.arguments = []
+        for key, val in kwargs.iteritems():
+            self.arguments.append('--'+str(key))
+            self.arguments.append(val)
+        self.arguments.extend(list(args))
+        self.logLevel = logging.INFO
 
+    def __call__(self):
+        return execRaw(self.command, self.arguments, self.logLevel)
+
+    def quiet(self):
+        self.logLevel = 60
+
+    def setLogLevel(self, logLevel):
+        self.logLevel = logLevel
 
 # NOTE: Not included in unittests
-def execRaw(command, args):
+def execRaw(command, args, logLevel = logging.INFO):
     """
         execRaw - executes a given command with certain arguments and returns
                   the raw result back from the client. args is a python list,
                   the same python list parsed by the optparse module
     """
-    logger, _ = getLoggers(logging.INFO)
-
+    logger, _ = getLoggers(logLevel)
     try:
         mod = __import__('CRABClient.Commands.%s' % command, fromlist=command)
     except ImportError:
