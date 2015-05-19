@@ -68,9 +68,11 @@ class getlog(getcommand):
             returndict = {'success': success, 'failed': failed}
         else:
             returndict = getcommand.__call__(self, subresource = 'logs')
-            if not returndict.get('success', {}) and not returndict.get('failed', {}):
-                msg = "This is normal behavior unless General.transferLogs=True is present in the task configuration."
+            if ('success' in returndict and not returndict['success']) or \
+               ('failed'  in returndict and returndict['failed']):
+                msg = "You can use the --short option to retrieve a short version of the log files from the Grid scheduler."
                 self.logger.info(msg)
+ 
         return returndict
 
     def setOptions(self):

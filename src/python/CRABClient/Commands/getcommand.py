@@ -1,7 +1,7 @@
 from CRABClient.Commands.remote_copy import remote_copy
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ConfigurationException , RESTCommunicationException
-from CRABClient.ClientUtilities import validateJobids
+from CRABClient.ClientUtilities import validateJobids, colors
 from CRABClient import __version__
 import CRABClient.Emulator
 
@@ -19,14 +19,54 @@ class getcommand(SubCommand):
 
 
     def __call__(self, **argv):
+        ## Retrieve the transferLogs parameter from the task database.
+        taskdbparam, configparam = '', ''
+        if argv.get('subresource') == 'logs':
+            taskdbparam = 'tm_save_logs'
+            configparam = "General.transferLogs"
+        elif argv.get('subresource') == 'data':
+            taskdbparam = 'tm_transfer_outputs'
+            configparam = "General.transferOutputs"
+        transferFlag = 'unknown'
+        inputlist = {'subresource': 'search', 'workflow': self.cachedinfo['RequestName']}
+        serverFactory = CRABClient.Emulator.getEmulator('rest')
+        server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
+        uri = self.getUrl(self.instance, resource = 'task')
+        dictresult, status, reason =  server.get(uri, data = inputlist)
+        self.logger.debug('Server result: %s' % dictresult)
+        dictresult = self.processServerResult(dictresult)
+        if status == 200:
+            if 'desc' in dictresult and 'columns' in dictresult['desc']:
+                position = dictresult['desc']['columns'].index(taskdbparam)    
+                transferFlag = dictresult['result'][position] #= 'T' or 'F'
+            else:
+                self.logger.debug("Unable to locate %s in server result." % (taskdbparam))
+        ## If transferFlag = False, there is nothing to retrieve.
+        if transferFlag == 'F':
+            msg = "No files to retrieve. Files not transferred to storage since task configuration parameter %s is False." % (configparam) 
+            self.logger.info(msg)
+            return {'success': {}, 'failed': {}}
 
+        ## Retrieve tm_edm_outfiles, tm_tfile_outfiles, tm_outfiles from the task database and check if it is empty.
+        if argv.get('subresource') == 'data' and status == 200:
+            if 'desc' in dictresult and 'columns' in dictresult['desc']:
+                position = dictresult['desc']['columns'].index('tm_edm_outfiles')
+                tm_edm_outfiles = dictresult['result'][position]
+                position = dictresult['desc']['columns'].index('tm_tfile_outfiles')
+                tm_tfile_outfiles = dictresult['result'][position]
+                position = dictresult['desc']['columns'].index('tm_outfiles')
+                tm_outfiles = dictresult['result'][position]
+            if tm_edm_outfiles == '[]' and tm_tfile_outfiles == '[]' and tm_outfiles == '[]':
+                msg = "%sWarning%s: No output can be retrieved because Crab could not detect any in the CMSSW configuration nor was any explicitly specified by user in crab configuration." % (colors.RED, colors.NORMAL) 
+                self.logger.warning(msg)
+ 
         #Retrieving output files location from the server
         self.logger.debug('Retrieving locations for task %s' % self.cachedinfo['RequestName'])
         inputlist =  [('workflow', self.cachedinfo['RequestName'])]
         inputlist.extend(list(argv.iteritems()))
         if getattr(self.options, 'quantity', None):
             self.logger.debug('Retrieving %s file locations' % self.options.quantity)
-            inputlist.append(('limit',self.options.quantity))
+            inputlist.append(('limit', self.options.quantity))
         else:
             self.logger.debug('Retrieving all file locations')
             inputlist.append(('limit', -1))
@@ -83,10 +123,14 @@ class getcommand(SubCommand):
                 #need to use deepcopy because successdict and faileddict are dict that is under the a manage dict, accessed multithreadly
                 returndict = {'success': copy.deepcopy(successdict) , 'failed': copy.deepcopy(faileddict)}
         if totalfiles == 0:
-            ## TODO: we should use an API to retrieve from the TaskDB what are the transfer flag values for the task.
-            ## If the corresponding transfer flag is False, the user should not expect to be able to retrieve the files.
             self.logger.info("No files to retrieve.")
             returndict = {'success': {} , 'failed': {}}
+
+        if transferFlag == 'unknown':
+            if ('success' in returndict and not returndict['success']) and \
+               ('failed'  in returndict and not returndict['failed']):
+                msg = "This is normal behavior if %s = False in the task configuration." % (configparam)
+                self.logger.info(msg)
 
         return returndict
 
