@@ -1,7 +1,8 @@
 import imp
 import optparse
 
-from CRABClient.ClientMapping import commands_configuration
+from CRABClient.CRABOptParser import CRABCmdOptParser
+from CRABClient.ClientMapping import commandsConfiguration
 
 template = """
 _UseCrab ()
@@ -20,13 +21,23 @@ _UseCrab ()
 
     prev=${{COMP_WORDS[$((COMP_CWORD - 1))]}}
 
+    if [ "x$sub" == "x$cur" ]; then
+        sub=""
+    fi
+
     case "$sub" in
         "")
-            if [ -z "$cur" ]; then
+            case "$cur" in
+            "")
                 COMPREPLY=( $(compgen -W '{topoptions} {topcommands}' -- $cur) )
-            else
+                ;;
+            -*)
                 COMPREPLY=( $(compgen -W '{topoptions}' -- $cur) )
-            fi
+                ;;
+            *)
+                COMPREPLY=( $(compgen -W '{topcommands}' -- $cur) )
+                ;;
+            esac
             ;;
 {commands}
         *)
@@ -65,6 +76,7 @@ logger = DummyLogger()
 # print template
 # sys.exit(0)
 
+longnames = []
 commands = {}
 options = []
 
@@ -72,12 +84,12 @@ for opt in client.parser.option_list:
     options.append(opt.get_opt_string())
     options += opt._short_opts
 
-for k, v in client.sub_commands.items():
+for k, v in client.subCommands.items():
     class DummyCmd(v):
         def __init__(self):
-            self.parser = optparse.OptionParser()
+            self.parser = CRABCmdOptParser(v.name, '', False)
             self.logger = DummyLogger()
-            self.cmdconf = commands_configuration.get(v.name)
+            self.cmdconf = commandsConfiguration.get(v.name)
 
     cmd = DummyCmd()
     cmd.setSuperOptions()
@@ -94,23 +106,14 @@ for k, v in client.sub_commands.items():
         else:
             opts += names
 
-    commands[cmd.name] = template_cmd.format(
-            cmd=cmd.name,
-            cmdflags=' '.join(flags),
-            cmdoptions=' '.join(opts))
-
-    # print cmd.name
-    # print cmd.parser.option_list
-    # print dir(cmd.parser.option_list[0])
-    # print cmd.parser.option_list[0].nargs
-    # print cmd
-    # print cmd.parser
-    # print dir(cmd.parser)
-    # print v.name
-    # cmd = v(logger, ['-h'])
-    # print dir(cmd)
+    longnames.append(cmd.name)
+    for c in [cmd.name] + cmd.shortnames:
+        commands[c] = template_cmd.format(
+                cmd=c,
+                cmdflags=' '.join(flags),
+                cmdoptions=' '.join(opts))
 
 print template.format(
-        topcommands=' '.join(commands.keys()),
+        topcommands=' '.join(longnames),
         topoptions=' '.join(options),
         commands=''.join(commands.values()))
