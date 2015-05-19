@@ -11,20 +11,17 @@ class tasks(SubCommand):
     """
     def __call__(self):
         server = HTTPRequests(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
-	
         dictresult, status, reason = server.get(self.uri, data = { 'timestamp' : self.date })
         dictresult = dictresult['result'] #take just the significant part
+        dictresult.sort()
+        dictresult.reverse()
 
         today = date.today() 
 
         self.logger.info ('\n')
-
         self.logger.info ('The list of tasks from %s until %s' %(self.date, today))
-
         self.logger.info ('='*80)
-	
         self.logger.info ('NAME\t\t\t\t\t\t\t\tSTATUS')
-		
         self.logger.info ('='*80)
 
         for item in dictresult:
