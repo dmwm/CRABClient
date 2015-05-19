@@ -34,14 +34,18 @@ class report(SubCommand):
 
         # check if we got the desired results
         if not self.usedbs and not dictresult['result'][0]['runsAndLumis']:
-            self.logger.info(('%sError%s: Cannot get the information we need from the CRAB server.'
-                              'Only job that in the FINISH state and the output has been transferred can be used.'
-                              'Notice, if your task has been submitted more than 30 days ago, then everything has been cleaned.'
-                              'If you published you can use --dbs=yes to get the some information') % (colors.RED,colors.NORMAL))
+            msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
+            msg += " Cannot get the needed information from the CRAB server."
+            msg += " Only jobs in 'finished' state and whose outputs have been transferred can be used."
+            msg += " Notice, if your task has been submitted more than 30 days ago, then everything has been cleaned."
+            msg += " If you published your outputs, you can use --dbs=yes to get some information."
+            self.logger.info(msg)
             return dictresult
         elif self.usedbs and not dictresult['result'][0]['dbsInLumilist'] and not dictresult['result'][0]['dbsOutLumilist']:
-            self.logger.info('%sError%s: Cannot get the information we need from DBS. Please check that the output (or input) datasets are not empty, the jobs have finished, and the publication'+\
-                             ' has been performed' % (colors.RED, colors.NORMAL))
+            msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
+            msg += " Cannot get the needed information from DBS."
+            msg += " Please check that the output (or input) datasets are not empty, the jobs have finished and the publication has been performed."
+            self.logger.info(msg)
             return dictresult
 
         # Keeping only EDM files
@@ -119,8 +123,8 @@ class report(SubCommand):
         self.parser.add_option( "--dbs",
                                  dest = "usedbs",
                                  default = 'no',
-                                 help = "Tell the server to use the information in DBS to build the input lumi lists and the output lumi lists."+\
-                                        "Allowed values are yes/no. Default is yes." )
+                                 help = "Use information in DBS to build the input lumi lists and the output lumi lists."+\
+                                        " Allowed values are yes/no. Default is no." )
 
     def validateOptions(self):
         """
