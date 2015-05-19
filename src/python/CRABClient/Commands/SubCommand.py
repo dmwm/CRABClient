@@ -159,7 +159,7 @@ class ConfigCommand:
                     if SpellChecker.correct(param) != param:
                         msg += " Maybe you mean %s?" % (SpellChecker.correct(param))
                     return False, msg
- 
+
         ## Check that each parameter specified in the configuration file is of the 
         ## type specified in the configuration map.
         ## Check that, if a parameter is a required one and it has no default value,
@@ -184,6 +184,10 @@ class ConfigCommand:
                         msg += " Previously it was taking the name of a local text file where the primary input files were listed."
                         msg += " One can still use a text file and convert its content into a python list by doing Data.userInputFiles = list(open('my_list_of_files.txt'))"
                     return False, msg
+                elif requiredType == list:
+                    if not all(isinstance(arg, str) for arg in obj):
+                        msg = "Invalid CRAB configuration: Parameter %s has to be a list of strings." % (paramName)
+                        return False, msg
             elif getParamDefaultValue(paramName) is None and paramInfo['required']:
                 msg = "Invalid CRAB configuration: Parameter %s is missing." % (paramName)
                 return False, msg
