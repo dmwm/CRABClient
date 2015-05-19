@@ -309,7 +309,7 @@ class SubCommand(ConfigCommand):
         ## If an input project directory was given, load the request cache and take the
         ## server URL from it. If the VO group/role was not given in the command options,
         ## take it also from the request cache.
-        if self.cmdconf['requiresTaskOption']:
+        if self.cmdconf['requiresDirOption']:
             self.loadLocalCache(proxyOptsSetPlace)
 
         ## If the server URL isn't already set, we check the args and then the config.
@@ -423,7 +423,7 @@ class SubCommand(ConfigCommand):
         """ 
         Loads the client cache and set up the server url
         """
-        self.requestarea, self.requestname = getWorkArea(self.options.task)
+        self.requestarea, self.requestname = getWorkArea(self.options.projdir)
         self.cachedinfo, self.logfile = loadCache(self.requestarea, self.logger)
         port = ':' + self.cachedinfo['Port'] if self.cachedinfo['Port'] else ''
         self.instance = self.cachedinfo['instance']
@@ -492,7 +492,7 @@ class SubCommand(ConfigCommand):
         Update the CRAB cache file.
         So far this file contains only the path of the last used CRAB project directory.
         """
-        if self.cmdconf['requiresTaskOption'] or getattr(self, 'requestarea', None):
+        if self.cmdconf['requiresDirOption'] or getattr(self, 'requestarea', None):
             self.crab3dic['crab_project_directory'] = self.requestarea
             crabCacheFileName = self.crabcachepath()
             crabCacheFileName_tmp = "%s.%s" % (crabCacheFileName, os.getpid())
@@ -537,20 +537,26 @@ class SubCommand(ConfigCommand):
         Raise a ConfigurationException in case of error; don't do anything if ok.
         """
 
-        if self.cmdconf['requiresTaskOption'] and self.options.task is None:
-            if len(self.args) > 1:
+        if self.cmdconf['requiresDirOption']:
+            if self.options.projdir is None:
+                if len(self.args) > 1:
+                    msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
+                    msg += " 'crab %s' command accepts at most 1 argument (a path to a CRAB project directory), %d given." % (self.name, len(self.args))
+                    raise ConfigurationException(msg)
+                elif len(self.args) == 1 and self.args[0]:
+                    self.options.projdir = self.args.pop(0)
+                elif self.cmdconf['useCache'] and self.crab3dic.get('crab_project_directory'):
+                    self.options.projdir = str(self.crab3dic['crab_project_directory'])
+            if self.options.projdir is None:
                 msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
-                msg += " 'crab %s' command accepts at most 1 argument (a path to a CRAB project directory), %d given." % (self.name, len(self.args))
-                raise ConfigurationException(msg)
-            elif len(self.args) == 1 and self.args[0]:
-                self.options.task = self.args.pop(0)
-            elif self.cmdconf['useCache'] and self.crab3dic.get('crab_project_directory'):
-                self.options.task = str(self.crab3dic['crab_project_directory'])
-            if self.options.task is None:
-                msg = "%sError%s: Directory option is required." % (colors.RED, colors.NORMAL)
+                msg += " Please indicate the CRAB project directory with --dir=<project-directory>."
                 ex = MissingOptionException(msg)
                 ex.missingOption = "task"
                 raise ex
+            if not os.path.isdir(self.options.projdir):
+                msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
+                msg += " %s is not a valid CRAB project directory." % (self.options.projdir)
+                raise ConfigurationException(msg)
 
         ## If the command does not take any arguments, but some arguments were passed,
         ## clear the arguments list and give a warning message saying that the given

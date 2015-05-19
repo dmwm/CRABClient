@@ -76,7 +76,7 @@ class getcommand(SubCommand):
                 returndict = {'pfn': [pfn for _, pfn, _ in jobid_pfn_lfn_list], 'lfn': [lfn for _, _, lfn in jobid_pfn_lfn_list]}
             else:
                 self.logger.info("Retrieving %s files" % (totalfiles))
-                arglist = ['--destination', self.dest, '--input', workflow, '--dir', self.options.task, \
+                arglist = ['--destination', self.dest, '--input', workflow, '--dir', self.options.projdir, \
                            '--proxy', self.proxyfilename, '--parallel', self.options.nparallel, '--wait', self.options.waittime]
                 copyoutput = remote_copy(self.logger, arglist)
                 successdict, faileddict = copyoutput()
