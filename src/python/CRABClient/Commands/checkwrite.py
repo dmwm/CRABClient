@@ -162,7 +162,7 @@ class checkwrite(SubCommand):
             if not pfn:
                 self.logger.info('%sError%s: Failed to get PFN from the site. Please check the site status' % (colors.RED, colors.NORMAL))
                 raise ConfigurationException
-        except HTTPException, errormsg:
+        except HTTPException as errormsg:
             self.logger.info('%sError%s: Failed to contact PhEDEx or wrong PhEDEx node name is used' % (colors.RED, colors.NORMAL))
             self.logger.info('Result: %s\nStatus :%s\nURL :%s' % (errormsg.result, errormsg.status, errormsg.url))
             raise HTTPException, errormsg

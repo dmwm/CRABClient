@@ -71,7 +71,7 @@ class uploadlog(SubCommand):
         ## Do the options validation from SubCommand.
         try:
             SubCommand.validateOptions(self)
-        except MissingOptionException, ex:
+        except MissingOptionException as ex:
             if ex.missingOption == "task":
                 msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
                 msg += " Please provide a path to a CRAB project directory (use the -d/--dir option)"

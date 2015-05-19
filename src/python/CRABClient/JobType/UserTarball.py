@@ -146,7 +146,7 @@ class UserTarball(object):
                 for file_ in files:
                     os.stat(os.path.join(root, file_ ))
 
-        except OSError , msg :
+        except OSError as msg :
             err = '%sError %s:Infinite directory loop found in: %s \nStderr: %s' % \
                     (colors.RED, colors.NORMAL, dir_ , msg)
             raise EnvironmentException(err)

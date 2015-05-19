@@ -118,7 +118,7 @@ class remote_copy(SubCommand):
                         self.logger.info("Removing %s as it is not complete: current size %s, expected size %s" % (fileid, size, \
                                                                                 myfile['size'] if 'size' in myfile else 'unknown'))
                         os.remove(localFilename)
-                    except Exception, ex:
+                    except Exception as ex:
                         self.logger.info("%sError%s: Cannot remove the file because of: %s" % (colors.RED, colors.NORMAL,ex))
 
             # if the file still exists skip it
@@ -248,7 +248,7 @@ class remote_copy(SubCommand):
                     self.logger.debug("File %s has the wrong size, deleting it" % fileid)
                     try:
                        os.remove(localFilename)
-                    except Exception, ex:
+                    except Exception as ex:
                         self.logger.debug("%sWarning%s: Cannot remove the file because of: %s" % (colors.RED, colors.NORMAL, ex))
                 time.sleep(60)
                 continue

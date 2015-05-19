@@ -40,7 +40,7 @@ def execRaw(command, args):
     try:
         cmdobj = getattr(mod, command)(logger, args)
         res = cmdobj()
-    except SystemExit, se:
+    except SystemExit as se:
         # most likely an error from the OptionParser in Subcommand.
         # CRABClient #4283 should make this less ugly
         if se.code == 2:

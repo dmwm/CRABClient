@@ -140,7 +140,7 @@ def uploadlogfile(logger, proxyfilename, logfilename = None, logpath = None, ins
         pipe = subprocess.Popen(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
         stdout, stderr = pipe.communicate()
         logger.debug('\n\n\nUSER ENVIROMENT\n%s' % stdout)
-    except Exception, se:
+    except Exception as se:
         logger.debug('Failed to get the user env\nException message: %s' % (se))
 
     if logpath != None:
@@ -433,7 +433,7 @@ def getUserDN_wrapped(logger):
     logger.info('Retrieving DN from proxy...')
     try:
         userdn = getUserDN()
-    except ProxyException, ex:
+    except ProxyException as ex:
         msg = "%sError%s: %s" % (colors.RED, colors.NORMAL, ex)
         logger.error(msg)
     except Exception:
@@ -462,13 +462,13 @@ def getUsernameFromSiteDB_wrapped(logger, quiet = False):
     infomsg += " For instructions on how to map a certificate in SiteDB, see https://twiki.cern.ch/twiki/bin/viewauth/CMS/SiteDBForCRAB."
     try:
         username = getUsernameFromSiteDB()
-    except ProxyException, ex:
+    except ProxyException as ex:
         msg = "%sError%s: %s" % (colors.RED, colors.NORMAL, ex)
         if quiet:
             logger.debug(msg)
         else:
             logger.error(msg)
-    except UsernameException, ex:
+    except UsernameException as ex:
         msg  = "%sError%s: %s" % (colors.RED, colors.NORMAL, ex)
         msg += infomsg
         if quiet:

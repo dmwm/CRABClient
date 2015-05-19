@@ -38,7 +38,7 @@ def getRunList(myrange):
         return []
     try:
         jobrange(myrange)
-    except AssertionError, ex:
+    except AssertionError as ex:
         raise ConfigurationException("Invalid runRange: %s" % myrange)
 
     myrange = myrange.split(',')
