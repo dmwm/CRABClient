@@ -5,7 +5,7 @@ import urllib
 import CRABClient.Emulator
 from CRABClient import __version__
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ClientUtilities import validateJobids
+from CRABClient.ClientUtilities import validateJobids, checkStatusLoop
 from CRABClient.ClientExceptions import ConfigurationException, RESTCommunicationException, UnknownOptionException
 
 
@@ -60,15 +60,19 @@ class resubmit(SubCommand):
             msg = "Problem resubmitting the task to the server:\ninput:%s\noutput:%s\nreason:%s" \
                   % (str(data), str(dictresult), str(reason))
             raise RESTCommunicationException(msg)
-        msg = "Resubmit request sent to the CRAB3 server."
-        self.logger.info(msg)
+        self.logger.info("Resubmit request sent to the CRAB3 server.")
         if dictresult['result'][0]['result'] != 'ok':
             msg = "Server responded with: '%s'" % (dictresult['result'][0]['result'])
+            self.logger.info(msg)
             returndict = {'status': 'FAILED'}
         else:
-            msg = "Please use 'crab status' to check how the resubmission process proceeds."
+            if not self.options.wait:
+                msg = "Please use 'crab status' to check how the resubmission process proceeds."
+                self.logger.info(msg)
+            else:
+                targetTaskStatus = 'SUBMITTED'
+                checkStatusLoop(self.logger, server, self.uri, self.cachedinfo['RequestName'], targetTaskStatus, self.name)
             returndict = {'status': 'SUCCESS'}
-        self.logger.info(msg)
 
         return returndict
 
@@ -165,6 +169,11 @@ class resubmit(SubCommand):
                                help = "Set the priority of this task compared to other tasks you own; tasks default to 10." + \
                                       " This does not improve your share compared to other users.")
 
+        self.parser.add_option('--wait',
+                               dest = 'wait',
+                               default = False,
+                               action = 'store_true',
+                               help = "Continuously check the task status after resubmission.")
 
     def validateOptions(self):
         """
