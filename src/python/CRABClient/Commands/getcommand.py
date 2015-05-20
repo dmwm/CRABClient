@@ -47,7 +47,7 @@ class getcommand(SubCommand):
             self.logger.info(msg)
             return {'success': {}, 'failed': {}}
 
-        ## Retrieve tm_edm_outfiles, tm_tfile_outfiles, tm_outfiles from the task database and check if it is empty.
+        ## Retrieve tm_edm_outfiles, tm_tfile_outfiles and tm_outfiles from the task database and check if they are empty.
         if argv.get('subresource') == 'data' and status == 200:
             if 'desc' in dictresult and 'columns' in dictresult['desc']:
                 position = dictresult['desc']['columns'].index('tm_edm_outfiles')
@@ -57,7 +57,9 @@ class getcommand(SubCommand):
                 position = dictresult['desc']['columns'].index('tm_outfiles')
                 tm_outfiles = dictresult['result'][position]
             if tm_edm_outfiles == '[]' and tm_tfile_outfiles == '[]' and tm_outfiles == '[]':
-                msg = "%sWarning%s: No output can be retrieved because Crab could not detect any in the CMSSW configuration nor was any explicitly specified by user in crab configuration." % (colors.RED, colors.NORMAL) 
+                msg  = "%sWarning%s:" % (colors.RED, colors.NORMAL)
+                msg += " There are no output files to retrieve, because CRAB could not detect any in the CMSSW configuration"
+                msg += " nor was any explicitly specified in the CRAB configuration." 
                 self.logger.warning(msg)
  
         #Retrieving output files location from the server
@@ -98,7 +100,7 @@ class getcommand(SubCommand):
                 xrootlfn = ["root://cms-xrd-global.cern.ch/%s" % link['lfn'] for link in workflow]
                 self.logger.info("\n".join(xrootlfn))
                 returndict = {'xrootd': xrootlfn}
-            elif self.dump:
+            elif self.options.dump:
                 jobid_pfn_lfn_list = map(lambda x: (x['jobid'], x['pfn'], x['lfn']), workflow)
                 jobid_pfn_lfn_list.sort()
                 lastjobid = -1
@@ -207,4 +209,3 @@ class getcommand(SubCommand):
         if getattr(self.options, 'jobids', None):
             self.options.jobids = validateJobids(self.options.jobids)
 
-        self.dump = self.options.dump
