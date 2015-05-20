@@ -3,9 +3,10 @@ CMSSW job type plug-in
 """
 
 import os
-import tempfile
-import string
 import re
+import shutil
+import string
+import tempfile
 
 from WMCore.Lexicon import lfnParts
 from WMCore.DataStructs.LumiList import LumiList
@@ -13,14 +14,14 @@ from WMCore.DataStructs.LumiList import LumiList
 import PandaServerInterface as PandaInterface
 
 from CRABClient.ClientUtilities import colors
-from CRABClient.JobType.BasicJobType import BasicJobType
-from CRABClient.JobType.CMSSWConfig import CMSSWConfig
-from CRABClient.JobType.LumiMask import getLumiList, getRunList
 from CRABClient.JobType.UserTarball import UserTarball
+from CRABClient.JobType.CMSSWConfig import CMSSWConfig
+from CRABClient.JobType.BasicJobType import BasicJobType
+from CRABClient.ClientMapping import getParamDefaultValue
+from CRABClient.JobType.LumiMask import getLumiList, getRunList
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
 from CRABClient.ClientExceptions import EnvironmentException, ConfigurationException
-from CRABClient.ClientMapping import getParamDefaultValue
-
+from CRABClient.ClientUtilities import bootstrapDone, BOOTSTRAP_CFGFILE, BOOTSTRAP_CFGFILE_PKL
 
 class Analysis(BasicJobType):
     """
@@ -41,8 +42,8 @@ class Analysis(BasicJobType):
         # Get SCRAM environment
         scram = ScramEnvironment(logger=self.logger)
 
-        configArguments.update({'jobarch'    : scram.scramArch,
-                                'jobsw' : scram.cmsswVersion, })
+        configArguments.update({'jobarch'    : scram.getScramArch(),
+                                'jobsw' : scram.getCmsswVersion(), })
 
         # Build tarball
         if self.workdir:
@@ -59,7 +60,6 @@ class Analysis(BasicJobType):
 
         if getattr(self.config.Data, 'inputDataset', None):
             configArguments['inputdata'] = self.config.Data.inputDataset
-#        configArguments['ProcessingVersion'] = getattr(self.config.Data, 'processingVersion', None)
 
         ## Create CMSSW config.
         self.logger.debug("self.config: %s" % (self.config))
@@ -75,6 +75,16 @@ class Analysis(BasicJobType):
         ## some psets where one module modifies the configuration from another module.
         self.cmsswCfg = CMSSWConfig(config=self.config, logger=self.logger,
                                     userConfig=self.config.JobType.psetName)
+
+        ## We need to put the pickled CMSSW configuration in the right place.
+        ## Here, we determine if the bootstrap script already run and prepared everything
+        ## for us. In such case we move the file, otherwise we pickle.dump the pset
+        if not bootstrapDone():
+            # Write out CMSSW config
+            self.cmsswCfg.writeFile(cfgOutputName)
+        else:
+            # Move the pickled configuration file created by the bootstrap script
+            self.moveCfgFile(cfgOutputName)
 
         ## Interrogate the CMSSW pset for output files (only output files produced by
         ## PoolOutputModule or TFileService are identified automatically). Do this
@@ -93,6 +103,7 @@ class Analysis(BasicJobType):
         ## Get the list of additional output files that have to be collected as given
         ## in JobType.outputFiles, but remove duplicates listed already as EDM files or
         ## TFiles.
+
         addoutputFiles = [re.sub(r'^file:', '', file) for file in getattr(self.config.JobType, 'outputFiles', []) if re.sub(r'^file:', '', file) not in edmfiles+tfiles]
         self.logger.debug("The following EDM output files will be collected: %s" % edmfiles)
         self.logger.debug("The following TFile output files will be collected: %s" % tfiles)
@@ -112,9 +123,6 @@ class Analysis(BasicJobType):
                 msg += " nor was any explicitly specified in the CRAB configuration."
             msg += " Hence CRAB will not collect any output file from this task."
             self.logger.warning(msg)
-
-        # Write out CMSSW config
-        self.cmsswCfg.writeFile(cfgOutputName)
 
         ## UserTarball calls ScramEnvironment which can raise EnvironmentException.
         ## Since ScramEnvironment is already called above and the exception is not
@@ -140,7 +148,7 @@ class Analysis(BasicJobType):
             if len(userFilesList) != len(set(userFilesList)):
                 msg  = "%sWarning%s:" % (colors.RED, colors.NORMAL)
                 msg += " CRAB configuration parameter Data.userInputFiles contains duplicated entries."
-                msg += " Duplicated entries will be removed."    
+                msg += " Duplicated entries will be removed."
                 self.logger.warning(msg)
             configArguments['userfiles'] = set(userFilesList)
             ## Get the user-specified primary dataset name.
@@ -255,3 +263,19 @@ class Analysis(BasicJobType):
             return False, msg
 
         return True, "Valid configuration"
+
+
+    def moveCfgFile(self, cfgOutputName):
+        bootCfgname = os.path.join(os.environ['CRAB3_BOOTSTRAP_DIR'], BOOTSTRAP_CFGFILE)
+        bootCfgPklname = os.path.join(os.environ['CRAB3_BOOTSTRAP_DIR'], BOOTSTRAP_CFGFILE_PKL)
+        if not os.path.isfile(bootCfgname) or not  os.path.isfile(bootCfgPklname):
+            msg = "The CRAB3_BOOTSTRAP_DIR environment variable is set, but I could not find %s or %s" % (bootCfgname, bootCfgPklname)
+            raise EnvironmentException(msg)
+        else:
+            try:
+                destination = os.path.dirname(cfgOutputName)
+                shutil.move(bootCfgname, destination)
+                shutil.move(bootCfgPklname, destination)
+            except Exception, ex:
+                msg = "Cannot move either %s or %s to %s. Error is:" % (bootCfgname, bootCfgPklname, destination, ex)
+                raise EnvironmentException(msg)

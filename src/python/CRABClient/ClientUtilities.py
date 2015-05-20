@@ -19,9 +19,6 @@ from string import upper
 from urlparse import urlparse
 from optparse import OptionValueError
 
-## WMCore dependencies
-from WMCore.Services.UserFileCache.UserFileCache import UserFileCache
-
 ## CRAB dependencies
 import CRABClient.Emulator
 from CRABClient.UserUtilities import getUsernameFromSiteDB
@@ -32,6 +29,10 @@ BASEURL = '/crabserver/'
 SERVICE_INSTANCES = {'prod': 'cmsweb.cern.ch',
                      'preprod': 'cmsweb-testbed.cern.ch',
                      'dev': 'cmsweb-dev.cern.ch'}
+BOOTSTRAP_ENVFILE = 'crab3env.json'
+BOOTSTRAP_INFOFILE = 'crab3info.json'
+BOOTSTRAP_CFGFILE = 'CMSSW_cfg.py'
+BOOTSTRAP_CFGFILE_PKL = 'CMSSW_cfg.pkl'
 
 class colors:
     colordict = {
@@ -79,10 +80,12 @@ def getLoggers(loglevel):
     """
     Logging is using the hierarchy system, the CRAB3.all log inherit everything from CRAB3. So everything that is
     logged to CRAB3.all will also go to CRAB3, however thing that logged using CRAB3 will not go to CRAB3.all.
-    CRAB3 logger usess memory handler, which then will be flushed to a filehandler in the 'finally' stage. So
+    CRAB3 logger uses memory handler, which then will be flushed to a filehandler in the 'finally' stage. So
 
     CRAB3.all -> screen + file
     CRAB3     -> file
+
+    The loglevel parameter indicates the level for the console handler
     """
     # Set up the logger and exception handling
     logger = logging.getLogger('CRAB3.all')
@@ -100,6 +103,8 @@ def getLoggers(loglevel):
 
     #setting up a temporary memory logging, the flush level is set to 60, the highest logging level is 50 (.CRITICAL)
     #so any reasonable logging level should not cause any sudden flush
+    #the reason for using a memory logger and flush later is that the logfile is only known when the project directory
+    #is discovered, so we want to keep in memory and flush the messages later when we know the file
     memhandler = logging.handlers.MemoryHandler(capacity = 1024*10, flushLevel= 60)
     ff = logging.Formatter("%(levelname)s %(asctime)s: \t %(message)s")
     memhandler.setFormatter(ff)
@@ -112,6 +117,18 @@ def getLoggers(loglevel):
     logger.logfile = os.path.join(os.getcwd(), 'crab.log')
 
     return logger, memhandler
+
+def flushMemoryLogger(logger, memhandler):
+    filehandler = logging.FileHandler(logger.logfile)
+    ff = logging.Formatter("%(levelname)s %(asctime)s: \t %(message)s")
+    filehandler.setFormatter(ff)
+    filehandler.setLevel(logging.DEBUG)
+    logging.getLogger('CRAB').addHandler(filehandler)
+
+    memhandler.setTarget(filehandler)
+    memhandler.flush()
+    memhandler.close()
+    logger.removeHandler(memhandler)
 
 
 def getUrl(instance='prod', resource='workflow'):
@@ -126,6 +143,8 @@ def getUrl(instance='prod', resource='workflow'):
 
 
 def uploadlogfile(logger, proxyfilename, logfilename = None, logpath = None, instance = 'prod', serverurl = None, username = None):
+    ## WMCore dependencies. Moved here to minimize dependencies in the bootstrap script
+    from WMCore.Services.UserFileCache.UserFileCache import UserFileCache
 
     doupload = True
 
@@ -546,6 +565,62 @@ def validateJobids(jobids):
         msg  = "The command line option --jobids takes a comma separated list of"
         msg += " integers or ranges, without whitespaces."
         raise ConfigurationException(msg)
+
+
+def bootstrapDone():
+    return 'CRAB3_BOOTSTRAP_DIR' in os.environ and os.environ['CRAB3_BOOTSTRAP_DIR']
+
+
+def setSubmitParserOptions(parser):
+    """ Set the option for the parser of the submit command.
+        Method put here in the utilities since it is shared between the submit command and the crab3bootstrap script.
+    """
+    parser.add_option('-c', '--config',
+                           dest = 'config',
+                           default = None,
+                           help = "CRAB configuration file.",
+                           metavar = 'FILE')
+
+    parser.add_option('--wait',
+                           dest = 'wait',
+                           default = False,
+                           action = 'store_true',
+                           help = "Continuously check the task status after submission.")
+
+    parser.add_option('--dryrun',
+                           dest = 'dryrun',
+                           default = False,
+                           action = 'store_true',
+                           help = "Do not actually submit the task; instead, return how many jobs this task would create, along with processing time estimates.")
+
+
+def validateSubmitOptions(options, args, logger):
+        """ If no configuration file was passed as an option, try to extract it from the arguments.
+            Assume that the arguments can only be:
+                1) the configuration file name, and
+                2) parameters to override in the configuration file.
+            The last ones should all contain an '=' sign, so these are not candidates to be the
+            configuration file argument. Also, the configuration file name should end with '.py'.
+            If can not find a configuration file candidate, use the default 'crabConfig.py'.
+            If find more than one candidate, raise ConfigurationException.
+        """
+
+        if options.config is None:
+            useDefault = True
+            if len(args):
+                configCandidates = [(arg, i) for i, arg in enumerate(args) if '=' not in arg and arg[-3:] == '.py']
+                configCandidateNames = set([configCandidateName for (configCandidateName, _) in configCandidates])
+                if len(configCandidateNames) == 1:
+                    options.config = configCandidates[0][0]
+                    del args[configCandidates[0][1]]
+                    useDefault = False
+                elif len(configCandidateNames) > 1:
+                    msg  = "Unable to unambiguously extract the CRAB configuration file name from the command arguments."
+                    msg += " Possible candidates are: %s" % (list(configCandidateNames))
+                    logger.info(msg)
+                    raise ConfigurationException("ERROR: Unable to extract CRAB configuration file name from command arguments.")
+            if useDefault:
+                options.config = 'crabConfig.py'
 
 
 #XXX Trying to do it as a Command causes a lot of headaches (and workaround code).

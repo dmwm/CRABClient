@@ -22,9 +22,10 @@ from httplib import HTTPException
 
 from CRABClient.CRABOptParser import CRABOptParser
 from CRABClient import __version__ as client_version
-from CRABClient.ClientUtilities import getAvailCommands, logfilter , uploadlogfile, getLoggers, StopExecution
-from CRABClient.ClientExceptions import ClientException
 from CRABClient.ClientMapping import parametersMapping
+from CRABClient.ClientExceptions import ClientException, FEEDBACKMAIL
+from CRABClient.ClientUtilities import getAvailCommands, logfilter , uploadlogfile, getLoggers, StopExecution, flushMemoryLogger
+
 
 
 class MyNullHandler(logging.Handler):
@@ -74,9 +75,6 @@ class CRABClient(object):
 
             Adapted from Doug Hellmann
             """
-            ## Feedback email address
-            feedbackemail = 'hn-cms-computing-tools@cern.ch'
-
             #adding a file handler
             clientinstance = self
             filehandler = logging.FileHandler(client.logger.logfile)
@@ -84,7 +82,7 @@ class CRABClient(object):
 
             ## This goes to the console.
             logging.getLogger('CRAB3.all').error("ERROR: %s: %s" % (exc_type.__name__, exc_value))
-            logging.getLogger('CRAB3.all').error("\n\tPlease email %s for support with the crab.log file or crab.log URL." % (feedbackemail))
+            logging.getLogger('CRAB3.all').error("\n\tPlease email %s for support with the crab.log file or crab.log URL." % (FEEDBACKMAIL))
             logging.getLogger('CRAB3.all').error("\tClient Version: %s" % client_version)
             ## This goes to the crab log file.
             tbLogger = logging.getLogger('CRAB3')
@@ -97,7 +95,7 @@ class CRABClient(object):
                     logurl = uploadlogfile(tbLogger, clientinstance.cmd.proxyfilename, logfilename = None, \
                                            logpath = str(client.logger.logfile), instance = 'prod')
                     msg  = "\tThe log file %s has been uploaded automatically." % (client.logger.logfile)
-                    msg += "\n\tPlease email the following URL '%s' to %s." % (logurl, feedbackemail)
+                    msg += "\n\tPlease email the following URL '%s' to %s if you need help from Analysis Operations." % (logurl, FEEDBACKMAIL)
                     logging.getLogger('CRAB3.all').error(msg)
                 except Exception:
                     logging.getLogger('CRAB3.all').debug('Failed to upload log file automatically')
@@ -132,7 +130,6 @@ if __name__ == "__main__":
     #  - do not want to expose known exception to the outside
     #  - exceptions thrown in the client should exit and set an approprate
     #    exit code, this is a safety net
-
     exitcode = 1
     client = CRABClient()
     try:
@@ -183,19 +180,9 @@ if __name__ == "__main__":
     except StopExecution:
         exitcode = 0
     finally:
-
         # the command crab --version do not have a logger instance
         if hasattr(client, 'logger'):
-            filehandler = logging.FileHandler(client.logger.logfile)
-            ff = logging.Formatter("%(levelname)s %(asctime)s: \t %(message)s")
-            filehandler.setFormatter(ff)
-            filehandler.setLevel(logging.DEBUG)
-            logging.getLogger('CRAB').addHandler(filehandler)
-
-            client.memhandler.setTarget(filehandler)
-            client.memhandler.flush()
-            client.memhandler.close()
-            client.logger.removeHandler(client.memhandler)
+            flushMemoryLogger(client.logger, client.memhandler)
 
     if hasattr(client, 'cmd'):
         client.cmd.terminate( exitcode )

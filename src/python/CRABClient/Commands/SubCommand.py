@@ -49,7 +49,7 @@ class ConfigCommand:
         try:
             self.logger.debug("Loading CRAB configuration file.")
             self.configuration = loadConfigurationFile(os.path.abspath(configname))
-            ## Overwrite configuration parameters passed as arguments in the command line. 
+            ## Overwrite configuration parameters passed as arguments in the command line.
             if overrideargs:
                 for singlearg in overrideargs:
                     if singlearg == configname: continue
@@ -160,7 +160,7 @@ class ConfigCommand:
                         msg += " Maybe you mean %s?" % (SpellChecker.correct(param))
                     return False, msg
 
-        ## Check that each parameter specified in the configuration file is of the 
+        ## Check that each parameter specified in the configuration file is of the
         ## type specified in the configuration map.
         ## Check that, if a parameter is a required one and it has no default value,
         ## then it must be specified in the configuration file.
