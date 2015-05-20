@@ -27,7 +27,7 @@ class BasicJobType(object):
                 self.workdir = workingdir
             else:
                 msg += "\nThe documentation about the CRAB configuration file can be found in"
-                msg += " https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3ConfigurationFile."
+                msg += " https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3ConfigurationFile"
                 raise ConfigurationException(msg)
 
 

@@ -74,8 +74,11 @@ class PrivateMC(Analysis):
             msg += " It must be a natural number."
             return False, msg
 
-        if self.splitAlgo != 'EventBased':
-            msg  = "Invalid CRAB configuration: MC generation job type only supports event-based splitting (i.e. Data.splitting = 'EventBased')."
+        ## Make sure the splitting algorithm is valid.
+        allowedSplitAlgos = ['EventBased']
+        if self.splitAlgo not in allowedSplitAlgos:
+            msg  = "Invalid CRAB configuration: Parameter Data.splitting has an invalid value ('%s')." % (self.splitAlgo)
+            msg += "\nMC generation job type only supports the following splitting algorithms: %s." % (allowedSplitAlgos)
             return False, msg
 
         return True, "Valid configuration"

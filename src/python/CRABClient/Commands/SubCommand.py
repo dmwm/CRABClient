@@ -84,7 +84,7 @@ class ConfigCommand:
         else:
             if not valid:
                 configmsg += "\nThe documentation about the CRAB configuration file can be found in"
-                configmsg += " https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3ConfigurationFile."
+                configmsg += " https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3ConfigurationFile"
                 raise ConfigurationException(configmsg)
 
 
