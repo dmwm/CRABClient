@@ -22,10 +22,6 @@ class resubmit(SubCommand):
         self.jobids        = None
         self.sitewhitelist = None
         self.siteblacklist = None
-        self.maxjobruntime = None
-        self.maxmemory     = None
-        self.numcores      = None
-        self.priority      = None
 
         SubCommand.__init__(self, logger, cmdargs)
 
@@ -42,12 +38,17 @@ class resubmit(SubCommand):
         self.logger.debug(msg)
 
         configreq = {'workflow': self.cachedinfo['RequestName'], 'subresource': 'resubmit'}
-        for attr_name in ['jobids', 'sitewhitelist', 'siteblacklist', 'maxjobruntime', 'maxmemory', 'numcores', 'priority']:
+        for attr_name in ['jobids', 'sitewhitelist', 'siteblacklist']:
             attr_value = getattr(self, attr_name)
             ## For 'jobids', 'sitewhitelist' and 'siteblacklist', attr_value is either a list of strings or None.
+            if attr_value is not None:
+                configreq[attr_name] = attr_value
+        for attr_name in ['maxjobruntime', 'maxmemory', 'numcores', 'priority']:
+            attr_value = getattr(self.options, attr_name)
             ## For 'maxjobruntime', 'maxmemory', 'numcores', and 'priority', attr_value is either an integer or None.
             if attr_value is not None:
                 configreq[attr_name] = attr_value
+        configreq['force'] = 1 if self.options.force else 0
 
         self.logger.info("Sending the request to the server")
         self.logger.debug("Submitting %s " % str(configreq))
@@ -175,6 +176,13 @@ class resubmit(SubCommand):
                                action = 'store_true',
                                help = "Continuously check the task status after resubmission.")
 
+        self.parser.add_option('--force',
+                               dest = 'force',
+                               default = False,
+                               action = 'store_true',
+                               help = "Force resubmission of successful jobs indicated in --jobids option.")
+
+
     def validateOptions(self):
         """
         Check if the sitelist parameter is a comma separater list of cms sitenames,
@@ -208,9 +216,15 @@ class resubmit(SubCommand):
         ## successfully completed jobs can be resubmitted.
 
         ## Check the format of the jobids option.
-        if getattr(self.options, 'jobids'):
+        if self.options.jobids:
             jobidstuple = validateJobids(self.options.jobids)
             self.jobids = [str(jobid) for (_, jobid) in jobidstuple]
+
+        ## The --force option should not be accepted unless combined with a user-given
+        ## list of job ids via --jobids.
+        if self.options.force and not self.jobids:
+            msg = "Option --force can only be used in combination with option --jobids."
+            raise ConfigurationException(msg)
 
         ## Covention used for the job parameters that the user can set when doing job
         ## resubmission (i.e. siteblacklist, sitewhitelist, maxjobruntime, maxmemory,
@@ -252,23 +266,19 @@ class resubmit(SubCommand):
             if self.options.maxjobruntime < 60 or self.options.maxjobruntime > 336*60:
                 msg = "The requested maximum job runtime (%d minutes) must be between 60 and 20160 minutes." % (self.options.maxjobruntime)
                 raise ConfigurationException(msg)
-            self.maxjobruntime = self.options.maxjobruntime
 
         if self.options.maxmemory is not None:
             if self.options.maxmemory < 30 or self.options.maxmemory > 1024*30:
                 msg = "The requested per-job memory (%d MB) must be between 30 and 30720 MB." % (self.options.maxmemory)
                 raise ConfigurationException(msg)
-            self.maxmemory = self.options.maxmemory
 
         if self.options.numcores is not None:
             if self.options.numcores < 1 or self.options.numcores > 128:
                 msg = "The requested number of cores (%d) must be between 1 and 128." % (self.options.numcores)
                 raise ConfigurationException(msg)
-            self.numcores = self.options.numcores
 
         if self.options.priority is not None:
             if self.options.priority < 1:
                 msg = "The requested priority (%d) must be greater than 0." % (self.options.priority)
                 raise ConfigurationException(msg)
-            self.priority = self.options.priority
 
