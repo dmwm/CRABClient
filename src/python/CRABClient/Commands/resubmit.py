@@ -6,7 +6,7 @@ import CRABClient.Emulator
 from CRABClient import __version__
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientUtilities import validateJobids, checkStatusLoop
-from CRABClient.ClientExceptions import ConfigurationException, RESTCommunicationException, UnknownOptionException
+from CRABClient.ClientExceptions import ConfigurationException, RESTCommunicationException
 
 
 class resubmit(SubCommand):
@@ -112,20 +112,12 @@ class resubmit(SubCommand):
                                default = None,
                                help = "Set the sites you want to whitelist for the resubmission." + \
                                       " Comma separated list of CMS site names (e.g.: T2_ES_CIEMAT,T2_IT_Rome[...]).")
-        self.parser.add_option('--whitelist',
-                               dest = 'oldsitewhitelist',
-                               default = None,
-                               help = "Deprecated option renamed to --sitewhitelist in CRAB v3.3.15.")
 
         self.parser.add_option('--siteblacklist',
                                dest = 'siteblacklist',
                                default = None,
                                help = "Set the sites you want to blacklist for the resubmission." + \
                                       " Comma separated list of CMS site names (e.g.: T2_ES_CIEMAT,T2_IT_Rome[...]).")
-        self.parser.add_option('--blacklist',
-                               dest = 'oldsiteblacklist',
-                               default = None,
-                               help = "Deprecated option renamed to --siteblacklist in CRAB v3.3.15.")
 
         self.parser.add_option('--maxjobruntime',
                                dest = 'maxjobruntime',
@@ -133,11 +125,6 @@ class resubmit(SubCommand):
                                type = 'int',
                                help = "Set the maximum time (in minutes) jobs in this task are allowed to run." + \
                                       " Default is 1315 (21 hours 50 minutes).")
-        self.parser.add_option('--walltime',
-                               dest = 'oldmaxjobruntime',
-                               default = None,
-                               type = 'int',
-                               help = "Deprecated option renamed to --maxjobruntime in CRAB v3.3.15.")
 
         self.parser.add_option('--maxmemory',
                                dest = 'maxmemory',
@@ -145,11 +132,6 @@ class resubmit(SubCommand):
                                type = 'int',
                                help = "Set the maximum memory (in MB) used per job in this task." + \
                                       " Default is 2000.")
-        self.parser.add_option('--memory',
-                               dest = 'oldmaxmemory',
-                               default = None,
-                               type = 'int',
-                               help = "Deprecated option renamed to --maxmemory in CRAB v3.3.15.")
 
         self.parser.add_option('--numcores',
                                dest = 'numcores',
@@ -157,11 +139,6 @@ class resubmit(SubCommand):
                                type = 'int',
                                help = "Set the number of cores used per job in this task." + \
                                       " (e.g.: 1 for single-threaded applications).")
-        self.parser.add_option('--cores',
-                               dest = 'oldnumcores',
-                               default = None,
-                               type = 'int',
-                               help = "Deprecated option renamed to --numcores in CRAB v3.3.15.")
 
         self.parser.add_option('--priority',
                                dest = 'priority',
@@ -189,26 +166,6 @@ class resubmit(SubCommand):
         and put the strings to be passed to the server to self
         """
         SubCommand.validateOptions(self)
-
-        if self.options.oldsitewhitelist is not None:
-            msg = "CRAB command option error: the option --whitelist has been renamed to --sitewhitelist."
-            raise UnknownOptionException(msg)
-
-        if self.options.oldsiteblacklist is not None:
-            msg = "CRAB command option error: the option --blacklist has been renamed to --siteblacklist."
-            raise UnknownOptionException(msg)
-
-        if self.options.oldmaxjobruntime is not None:
-            msg = "CRAB command option error: the option --walltime has been renamed to --maxjobruntime."
-            raise UnknownOptionException(msg)
-
-        if self.options.oldmaxmemory is not None:
-            msg = "CRAB command option error: the option --memory has been renamed to --maxmemory."
-            raise UnknownOptionException(msg)
-
-        if self.options.oldnumcores is not None:
-            msg = "CRAB command option error: the option --cores has been renamed to --numcores."
-            raise UnknownOptionException(msg)
 
         ## The --jobids option indicates which jobs have to be resubmitted. If it is not
         ## given, then all jobs in the task that are not running or successfully
