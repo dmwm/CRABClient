@@ -103,7 +103,6 @@ class Analysis(BasicJobType):
         ## Get the list of additional output files that have to be collected as given
         ## in JobType.outputFiles, but remove duplicates listed already as EDM files or
         ## TFiles.
-
         addoutputFiles = [re.sub(r'^file:', '', file) for file in getattr(self.config.JobType, 'outputFiles', []) if re.sub(r'^file:', '', file) not in edmfiles+tfiles]
         self.logger.debug("The following EDM output files will be collected: %s" % edmfiles)
         self.logger.debug("The following TFile output files will be collected: %s" % tfiles)
@@ -268,7 +267,7 @@ class Analysis(BasicJobType):
     def moveCfgFile(self, cfgOutputName):
         bootCfgname = os.path.join(os.environ['CRAB3_BOOTSTRAP_DIR'], BOOTSTRAP_CFGFILE)
         bootCfgPklname = os.path.join(os.environ['CRAB3_BOOTSTRAP_DIR'], BOOTSTRAP_CFGFILE_PKL)
-        if not os.path.isfile(bootCfgname) or not  os.path.isfile(bootCfgPklname):
+        if not os.path.isfile(bootCfgname) or not os.path.isfile(bootCfgPklname):
             msg = "The CRAB3_BOOTSTRAP_DIR environment variable is set, but I could not find %s or %s" % (bootCfgname, bootCfgPklname)
             raise EnvironmentException(msg)
         else:
@@ -276,6 +275,6 @@ class Analysis(BasicJobType):
                 destination = os.path.dirname(cfgOutputName)
                 shutil.move(bootCfgname, destination)
                 shutil.move(bootCfgPklname, destination)
-            except Exception, ex:
-                msg = "Cannot move either %s or %s to %s. Error is:" % (bootCfgname, bootCfgPklname, destination, ex)
+            except Exception as ex:
+                msg = "Cannot move either %s or %s to %s. Error is: %s" % (bootCfgname, bootCfgPklname, destination, ex)
                 raise EnvironmentException(msg)
