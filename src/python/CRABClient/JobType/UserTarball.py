@@ -40,7 +40,7 @@ class UserTarball(object):
         """
         Add the necessary files to the tarball
         """
-        directories = ['lib', 'module']
+        directories = ['lib', 'biglib', 'module']
         if getattr(self.config.JobType, 'sendPythonFolder', configParametersInfo['JobType.sendPythonFolder']['default']):
             directories.append('python')
         dataDirs    = ['data']
@@ -142,12 +142,11 @@ class UserTarball(object):
     def checkdirectory(self, dir_):
         #checking for infinite symbolic link loop
         try:
-            for root , _ , files in os.walk(dir_, followlinks = True ):
+            for root , _ , files in os.walk(dir_, followlinks = True):
                 for file_ in files:
                     os.stat(os.path.join(root, file_ ))
-
-        except OSError as msg :
-            err = '%sError %s:Infinite directory loop found in: %s \nStderr: %s' % \
+        except OSError as msg:
+            err = '%sError%s: Infinite directory loop found in: %s \nStderr: %s' % \
                     (colors.RED, colors.NORMAL, dir_ , msg)
             raise EnvironmentException(err)
 
