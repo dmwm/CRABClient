@@ -346,7 +346,7 @@ class submit(SubCommand):
             out, err = s.communicate()
             self.logger.debug(out)
             if s.returncode != 0:
-                raise ClientException('Dry run failed to execute local test run: %s' % err)
+                raise ClientException('Dry run failed to execute local test run:\n StdOut: %s\n StdErr: %s' % (err, out))
             with open('splitting-summary.json') as f:
                 splitting = json.load(f)
             with open('jobReport.json') as f:
@@ -402,7 +402,7 @@ def getDryRunOpts(ad, dag):
             if len(parts) == 2:
                 info[parts[0]] = parts[1].strip('"')
 
-    info.update({'CRAB_Id': '0', 'firstEvent': '0', 'lastEvent': '10'})
+    info.update({'CRAB_Id': '0', 'firstEvent': '1', 'lastEvent': '11'})
 
     return [x.strip("'") % info for x in info['Arguments'].replace('$', '%').replace(')', ')s').split()]
 

@@ -6,6 +6,7 @@ class ClientException(Exception):
     Each subclass must define the command line exit code associated with the exception
     exitcode > 3000 does not print logfile at the end of the command.
     """
+    exitcode = 3001
     pass
 
 
