@@ -65,11 +65,10 @@ class remote_copy(SubCommand):
         if nsubprocess <= 0 or nsubprocess > 20:
             self.logger.info("Inappropriate number of parallel download, must between 0 to 20 ")
             return -1
-
         command = ""
         if cmd_exist("gfal-copy"):
             self.logger.info("Will use `gfal-copy` command for file transfers")
-            command = "env -i gfal-copy -v "
+            command = "env -i X509_USER_PROXY=%s gfal-copy -v " % os.path.abspath(self.proxyfilename)
             command += " -T "
         elif cmd_exist("lcg-cp"):
             self.logger.info("Will use `lcg-cp` command for file transfers")

@@ -60,8 +60,8 @@ class checkwrite(SubCommand):
         del_cmd = ""
         if cmd_exist("gfal-copy") and cmd_exist("gfal-rm"):
             self.logger.info("Will use `gfal-copy`, `gfal-rm` commands for checking write permissions")
-            cp_cmd = "env -i gfal-copy -v -t 180 "
-            del_cmd = "env -i gfal-rm -v -t 180 "
+            cp_cmd = "env -i X509_USER_PROXY=%s gfal-copy -v -t 180 " % os.path.abspath(self.proxyfilename)
+            del_cmd = "env -i X509_USER_PROXY=%s gfal-rm -v -t 180 " % os.path.abspath(self.proxyfilename)
         elif cmd_exist("lcg-cp") and cmd_exist("lcg-del"):
             self.logger.info("Will use `lcg-cp`, `lcg-del` commands for checking write permissions")
             cp_cmd = "lcg-cp -v -b -D srmv2 --connect-timeout 180 "
