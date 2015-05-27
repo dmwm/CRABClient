@@ -237,10 +237,11 @@ class Analysis(BasicJobType):
             msg += "\nSuggestion: Set Data.splitting = 'FileBased'."
             return False, msg
 
-        ## Make sure splitting mode is not 'EventBased'.
-        if self.splitAlgo == 'EventBased':
-            msg  = "Invalid CRAB configuration: Analysis job type does not support event-based splitting."
-            msg += "\nSuggestion: Set Data.splitting = 'FileBased' or 'LumiBased'."
+        ## Make sure the splitting algorithm is valid.
+        allowedSplitAlgos = ['FileBased', 'LumiBased', 'EventAwareLumiBased']
+        if self.splitAlgo not in allowedSplitAlgos:
+            msg  = "Invalid CRAB configuration: Parameter Data.splitting has an invalid value ('%s')." % (self.splitAlgo)
+            msg += "\nAnalysis job type only supports the following splitting algorithms: %s." % (allowedSplitAlgos)
             return False, msg
 
         return True, "Valid configuration"
