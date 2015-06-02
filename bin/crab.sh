@@ -1,7 +1,9 @@
-#!/bin/bash
-CRAB_SOURCE_SCRIPT="/cvmfs/cms.cern.ch/crab3/crab.sh"
+#!/usr/bin/env bash
+if [ -z "$CRAB_SOURCE_SCRIPT" ]; then
+    CRAB_SOURCE_SCRIPT="/cvmfs/cms.cern.ch/crab3/crab.sh"
+fi
 
-## Determine if this is a submit command
+## Determine if this is a submit command.
 SUBMIT=false;
 for i in "$@"; do
     if [ "$i" = "submit" ] || [ "$i" = "sub" ]; then
@@ -31,8 +33,8 @@ if [ "$SUBMIT" = true ]; then
     ## Set two temporary variable for PATH and PYTHONPATH. They are going to be expanded BEFORE running the following sh command
     export PYTHONPATH_TMP=$PYTHONPATH:$CRAB3_PY_ROOT
     export PATH_TMP=$PATH:$CRAB3_BIN_ROOT
-
-    BOOTSTRAP_OUT=$(sh -c "export PATH=$PATH_TMP:$PATH; export PYTHONPATH=$PYTHONPATH_TMP:$PYTHONPATH; crab3bootstrap "$@"; \
+    PARAMS=$@
+    BOOTSTRAP_OUT=$(sh -c "export PATH=$PATH_TMP:$PATH; export PYTHONPATH=$PYTHONPATH_TMP:$PYTHONPATH; crab3bootstrap $PARAMS; \
                                     if [ \$? -ne 0 ]; then exit 1; fi")
     #if the script does not exit with 0 then the output is the error message.
     if [ $? -ne 0 ]; then
