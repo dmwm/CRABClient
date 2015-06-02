@@ -1,6 +1,6 @@
-import subprocess
-from os import path, remove
+import os
 import datetime
+import subprocess
 
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientUtilities import colors, getUserDNandUsernameFromSiteDB, cmd_exist
@@ -135,7 +135,7 @@ class checkwrite(SubCommand):
 
     def createFile(self):
 
-        abspath = path.abspath(self.filename)
+        abspath = os.path.abspath(self.filename)
         try:
             with open(abspath, 'w') as fd:
                 fd.write('This is a dummy file created by the crab checkwrite command on %s' % str(datetime.datetime.now().strftime('%d/%m/%Y at %H:%M:%S')))
@@ -146,9 +146,9 @@ class checkwrite(SubCommand):
 
     def removeFile(self):
 
-        abspath = path.abspath(self.filename)
+        abspath = os.path.abspath(self.filename)
         try:
-            remove(abspath)
+            os.remove(abspath)
         except:
             self.logger.info('%sWarning%s: Failed to delete file %s' % (colors.RED, colors.NORMAL, self.filename))
 
@@ -172,7 +172,7 @@ class checkwrite(SubCommand):
 
     def cp(self, pfn, command):
 
-        abspath = path.abspath(self.filename)
+        abspath = os.path.abspath(self.filename)
         if cmd_exist("gfal-copy"):
             abspath = "file://" + abspath
         cpcmd = command + abspath + " '" + pfn + "'"
