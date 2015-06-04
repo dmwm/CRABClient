@@ -23,7 +23,7 @@ class UserTarball(object):
 
             A subclass of TarFile for the user code tarballs. By default
             creates a new tarball with the user libraries from lib, module,
-            and the data/ sections of the src/ area.
+            and the data/ and interface/ sections of the src/ area.
 
             Also adds user specified files in the right place.
     """
@@ -43,7 +43,9 @@ class UserTarball(object):
         directories = ['lib', 'biglib', 'module']
         if getattr(self.config.JobType, 'sendPythonFolder', configParametersInfo['JobType.sendPythonFolder']['default']):
             directories.append('python')
-        dataDirs    = ['data']
+        # /data/ subdirs contain data files needed by the code
+        # /interface/ subdirs contain C++ header files needed e.g. by ROOT6
+        dataDirs    = ['data','interface']
         userFiles = userFiles or []
 
         # Tar up whole directories
