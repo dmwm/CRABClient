@@ -593,6 +593,10 @@ def setSubmitParserOptions(parser):
                            action = 'store_true',
                            help = "Do not actually submit the task; instead, return how many jobs this task would create, along with processing time estimates.")
 
+    parser.add_option('--overrideconfig',
+                           dest = 'overrideconfig',
+                           default = None,
+                           help = "Override CRAB configuration parameters. Comma separated list of parameters (e.g.: General.instance='nizam.cern.ch',Data.publication=False[...]).")
 
 def validateSubmitOptions(options, args, logger):
         """ If no configuration file was passed as an option, try to extract it from the arguments.
@@ -622,6 +626,12 @@ def validateSubmitOptions(options, args, logger):
             if useDefault:
                 options.config = 'crabConfig.py'
 
+        if len(args):
+            oldoverride = None
+            oldoverride = [(arg, i) for i, arg in enumerate(args) if '=' in arg]
+            if oldoverride:
+                msg = "Please use --overrideconfig option to override CRAB configuration parameter."
+                raise ConfigurationException(msg)
 
 #XXX Trying to do it as a Command causes a lot of headaches (and workaround code).
 #Since server_info class needs SubCommand, and SubCommand needs server_info for
