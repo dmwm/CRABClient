@@ -4,7 +4,7 @@
 """
 import CRABAPI
 import logging
-from CRABClient.ClientUtilities import getLoggers
+from CRABClient.ClientUtilities import initLoggers
 
 
 # NOTE: Not included in unittests
@@ -29,7 +29,7 @@ def execRaw(command, args):
                   the raw result back from the client. args is a python list,
                   the same python list parsed by the optparse module
     """
-    logger, _ = getLoggers(logging.INFO)
+    logger, _ = initLoggers()
 
     try:
         mod = __import__('CRABClient.Commands.%s' % command, fromlist=command)
