@@ -4,7 +4,8 @@
 """
 import CRABAPI
 import logging
-from CRABClient.ClientUtilities import initLoggers
+
+from CRABClient.ClientUtilities import initLoggers, flushMemoryLogger, removeLoggerHandlers
 
 
 # NOTE: Not included in unittests
@@ -29,7 +30,7 @@ def execRaw(command, args):
                   the raw result back from the client. args is a python list,
                   the same python list parsed by the optparse module
     """
-    logger, _ = initLoggers()
+    tblogger, logger, memhandler = initLoggers()
 
     try:
         mod = __import__('CRABClient.Commands.%s' % command, fromlist=command)
@@ -45,4 +46,8 @@ def execRaw(command, args):
         # CRABClient #4283 should make this less ugly
         if se.code == 2:
             raise CRABAPI.BadArgumentException
+    finally:
+        flushMemoryLogger(tblogger, memhandler, logger.logfile)
+        removeLoggerHandlers(tblogger)
+        removeLoggerHandlers(logger)
     return res
