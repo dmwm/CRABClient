@@ -32,10 +32,6 @@ class submit(SubCommand):
     """
     Perform the submission to the CRABServer
     """
-
-    shortnames = ['sub']
-
-
     def __init__(self, logger, cmdargs = None):
         SubCommand.__init__(self, logger, cmdargs, disable_interspersed_args = True)
 

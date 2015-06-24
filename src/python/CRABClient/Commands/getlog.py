@@ -20,7 +20,6 @@ class getlog(getcommand):
     collected by the LogCollect job are returned. The task is identified by the -d/--dir option.
     """
     name = 'getlog'
-    shortnames = ['log']
     visible = True #overwrite getcommand
 
     def __call__(self):

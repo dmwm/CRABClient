@@ -12,7 +12,6 @@ class remake(SubCommand):
     Remake the .requestcache
     """
     name = 'remake'
-    shortnames = ['rmk']
 
     def __call__(self):
 

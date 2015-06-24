@@ -22,7 +22,6 @@ class uploadlog(SubCommand):
       * crab uploadlog --logpath=<path-to-a-log-file>
     """
     name = 'uploadlog'
-    shortnames = ['uplog']
 
     def __call__(self):
         self.logger.debug("uploadlog started")
