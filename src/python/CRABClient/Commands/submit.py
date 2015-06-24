@@ -78,7 +78,7 @@ class submit(SubCommand):
                 if mustbetype == type(self.requestname):
                     configreq['workflow'] = self.requestname
             ## Translate boolean flags into integers.
-            elif param in ['savelogsflag', 'publication', 'publishgroupname', 'nonprodsw', 'useparent', 'ignorelocality', 'saveoutput', 'oneEventMode']:
+            elif param in ['savelogsflag', 'publication', 'publishgroupname', 'nonprodsw', 'useparent', 'ignorelocality', 'saveoutput', 'oneEventMode', 'nonvaliddata']:
                 configreq[param] = 1 if temp else 0
             ## Translate DBS URL aliases into DBS URLs.
             elif param in ['dbsurl', 'publishdbsurl']:
