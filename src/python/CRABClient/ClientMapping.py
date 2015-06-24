@@ -32,6 +32,7 @@ parametersMapping = {
                   'publication'    : {'default': True,       'config': ['Data.publication'],                'type': 'BooleanType', 'required': False},
                   'publishdbsurl'  : {'default': 'phys03',   'config': ['Data.publishDBS'],                 'type': 'StringType',  'required': False},
                   'publishname'    : {'default': '',         'config': ['Data.publishDataName'],            'type': 'StringType',  'required': False},
+                  'publishgroupname' : {'default': False,    'config': ['Data.publishWithGroupName'],       'type': 'BooleanType', 'required': False},
                   'jobtype'        : {'default': 'Analysis', 'config': ['JobType.pluginName',
                                                                         'JobType.externalPluginFile'],      'type': 'StringType',  'required': False},
                   'generator'      : {'default': 'pythia',   'config': ['JobType.generator'],               'type': 'StringType',  'required': False},
