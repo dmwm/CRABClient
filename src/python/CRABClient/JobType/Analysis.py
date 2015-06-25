@@ -51,7 +51,7 @@ class Analysis(BasicJobType):
             self.logger.debug('UNIQUE NAME: tarUUID %s ' % tarUUID)
             if len(tarUUID):
                 tarFilename   = os.path.join(self.workdir, tarUUID +'default.tgz')
-                cfgOutputName = os.path.join(self.workdir, 'CMSSW_cfg.py')
+                cfgOutputName = os.path.join(self.workdir, BOOTSTRAP_CFGFILE)
             else:
                 raise EnvironmentException('Problem with uuidgen while preparing for Sandbox upload.')
         else:

@@ -31,8 +31,8 @@ SERVICE_INSTANCES = {'prod': 'cmsweb.cern.ch',
                      'dev': 'cmsweb-dev.cern.ch'}
 BOOTSTRAP_ENVFILE = 'crab3env.json'
 BOOTSTRAP_INFOFILE = 'crab3info.json'
-BOOTSTRAP_CFGFILE = 'CMSSW_cfg.py'
-BOOTSTRAP_CFGFILE_PKL = 'CMSSW_cfg.pkl'
+BOOTSTRAP_CFGFILE = 'PSet.py'
+BOOTSTRAP_CFGFILE_PKL = 'PSet.pkl'
 
 class colors:
     colordict = {
