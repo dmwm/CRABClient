@@ -113,8 +113,8 @@ def getConfig(cfgName):
 if __name__ == '__main__':
     try:
         setConsoleLogLevelVar(LOGLEVEL_MUTE)
-        logger, memhandler = None, None
-        logger, memhandler = initLoggers()
+        tblogger, logger, memhandler = None, None, None
+        tblogger, logger, memhandler = initLoggers()
         cfgName = getConfigName(logger)
         config = getConfig(cfgName)
         cmsswCfg = CMSSWConfig(config=config, userConfig=config.JobType.psetName, logger=logger)
@@ -133,7 +133,7 @@ if __name__ == '__main__':
         traceback.print_exc()
         sys.exit(2)
     finally:
-        if logger and memhandler:
-            flushMemoryLogger(logger, memhandler)
+        if tblogger and memhandler and logger:
+            flushMemoryLogger(tblogger, memhandler, logger.logfile)
 
     print(tmpdir)

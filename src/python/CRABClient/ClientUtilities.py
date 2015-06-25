@@ -4,6 +4,7 @@ This module contains some utility methods for the client.
 
 import os
 import re
+import copy
 import datetime
 import logging
 import logging.handlers
@@ -88,45 +89,47 @@ class logfilter(logging.Filter):
 
 def initLoggers():
     """
-    Logging is using the hierarchy system, the CRAB3.all log inherit everything from CRAB3. So everything that is
-    logged to CRAB3.all will also go to CRAB3, however thing that logged using CRAB3 will not go to CRAB3.all.
-    CRAB3 logger uses memory handler, which then will be flushed to a filehandler in the 'finally' stage. So
-
+    Logging is using the hierarchy system: the CRAB3.all logger is a child of the
+    CRAB3 logger. So everything that is logged to CRAB3.all will also go to CRAB3,
+    but not viceversa. The CRAB3 logger uses a memory handler, which then will be
+    flushed to a file handler in the 'finally' stage. So:
     CRAB3.all -> screen + file
     CRAB3     -> file
     """
     global LOGGERS
-    # Set up the logger and exception handling
-    logger = logging.getLogger('CRAB3.all')
+    ## The CRAB3 logger to memory/file.
+    ## Start by setting up a (temporary) memory handler. The flush level is set to
+    ## LOGLEVEL_MUTE so that any reasonable logging level should not cause any
+    ## sudden flush. The reason for using a memory handler and flush later is that
+    ## the log file is only known when the project directory is discovered. So we
+    ## want to keep all logging in memory and flush to the log file later when the
+    ## file is known. Include a filter in the handler to filter out color codes.
     tblogger = logging.getLogger('CRAB3')
-    logger.setLevel(logging.DEBUG)
     tblogger.setLevel(logging.DEBUG)
-    if not logger.handlers:
-        # Set up console output to stdout at appropriate level
-        console_format = '%(message)s'
-        console = logging.StreamHandler(sys.stdout)
-        console.setFormatter(logging.Formatter(console_format))
-        console.setLevel(CONSOLE_LOGLEVEL)
-        logger.addHandler(console)
-    LOGGERS['CRAB3.all'] = logger
-
-    #setting up a temporary memory logging, the flush level is set to 60, the highest logging level is 50 (.CRITICAL)
-    #so any reasonable logging level should not cause any sudden flush
-    #the reason for using a memory logger and flush later is that the logfile is only known when the project directory
-    #is discovered, so we want to keep in memory and flush the messages later when we know the file
-    memhandler = logging.handlers.MemoryHandler(capacity = 1024*10, flushLevel= 60)
-    ff = logging.Formatter("%(levelname)s %(asctime)s: \t %(message)s")
-    memhandler.setFormatter(ff)
+    memhandler = logging.handlers.MemoryHandler(capacity = 1024*10, flushLevel = LOGLEVEL_MUTE)
+    memhandler.setFormatter(logging.Formatter("%(levelname)s %(asctime)s: \t %(message)s"))
     memhandler.setLevel(logging.DEBUG)
-    #adding filter that filter color code
-    filter_ = logfilter()
-    memhandler.addFilter(filter_)
+    memhandler.addFilter(logfilter())
     tblogger.addHandler(memhandler)
     LOGGERS['CRAB3'] = tblogger
 
+    ## Logger to the console. This is the logger that all the client code should
+    ## use. Since it is a child of the CRAB3 logger, all log records created by this
+    ## logger will propagate up to the CRAB3 logger handlers.
+    logger = logging.getLogger('CRAB3.all')
+    logger.setLevel(logging.DEBUG)
+    if not logger.handlers:
+        console = logging.StreamHandler(sys.stdout)
+        console.setFormatter(logging.Formatter('%(message)s'))
+        console.setLevel(CONSOLE_LOGLEVEL)
+        logger.addHandler(console)
+    ## The log file name, although technically related to the CRAB3 logger, is kept
+    ## in this logger, because this is the logger available at all time to all the
+    ## client code.
     logger.logfile = os.path.join(os.getcwd(), 'crab.log')
+    LOGGERS['CRAB3.all'] = logger
 
-    return logger, memhandler
+    return tblogger, logger, memhandler
 
 
 def getLoggers(lvl):
@@ -140,17 +143,29 @@ def setConsoleLogLevelVar(lvl):
     CONSOLE_LOGLEVEL = lvl
 
 
-def flushMemoryLogger(logger, memhandler):
-    filehandler = logging.FileHandler(logger.logfile)
+def changeFileLogger(logger, workingpath = os.getcwd(), logname = 'crab.log'):
+    """
+    change file logger destination
+    """
+    logfullpath = os.path.join(workingpath, logname)
+    logger.logfile = logfullpath
+    return logfullpath
+
+
+def flushMemoryLogger(logger, memhandler, logfilename):
+    filehandler = logging.FileHandler(logfilename)
     ff = logging.Formatter("%(levelname)s %(asctime)s: \t %(message)s")
     filehandler.setFormatter(ff)
     filehandler.setLevel(logging.DEBUG)
-    logging.getLogger('CRAB').addHandler(filehandler)
-
+    logger.addHandler(filehandler)
     memhandler.setTarget(filehandler)
-    memhandler.flush()
     memhandler.close()
     logger.removeHandler(memhandler)
+
+
+def removeLoggerHandlers(logger):
+    for h in copy.copy(logger.handlers):
+        logger.removeHandler(h)
 
 
 def getUrl(instance='prod', resource='workflow'):
@@ -346,16 +361,6 @@ def getRequestName(requestName = None):
         return prefix + requestName # + '_' + postfix
 
 
-def changeFileLogger(logger, workingpath = os.getcwd(), logname = 'crab.log'):
-    """
-    change file logger destination
-    """
-    logfullpath = os.path.join( workingpath, logname )
-    logging.getLogger('CRAB3.all').logfile = logfullpath
-
-    return logfullpath
-
-
 def createWorkArea(logger, workingArea = '.', requestName = ''):
     """
     _createWorkArea_
@@ -387,7 +392,7 @@ def createWorkArea(logger, workingArea = '.', requestName = ''):
     os.mkdir(os.path.join(fullpath, 'inputs'))
 
     ## define the log file
-    logfile = changeFileLogger( logger, workingpath = fullpath )
+    logfile = changeFileLogger(logger, workingpath = fullpath)
 
     return fullpath, requestName, logfile
 

@@ -58,7 +58,7 @@ class CRABClient(object):
             setConsoleLogLevelVar(logging.WARNING)
         elif options.debug:
             setConsoleLogLevelVar(logging.DEBUG)
-        self.logger, self.memhandler = initLoggers()
+        self.tblogger, self.logger, self.memhandler = initLoggers()
 
         #Instructions needed in case of early failures: sometimes the traceback logger
         #has not been set yet. The right file handler is only added when the workarea
@@ -177,9 +177,9 @@ if __name__ == "__main__":
     except StopExecution:
         exitcode = 0
     finally:
-        # the command crab --version do not have a logger instance
-        if hasattr(client, 'logger'):
-            flushMemoryLogger(client.logger, client.memhandler)
+        # the command crab --version does not have a logger instance
+        if hasattr(client, 'tblogger') and hasattr(client, 'memhandler') and hasattr(client, 'logger'):
+            flushMemoryLogger(client.tblogger, client.memhandler, client.logger.logfile)
 
     if hasattr(client, 'cmd'):
         client.cmd.terminate( exitcode )
