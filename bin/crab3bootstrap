@@ -23,7 +23,8 @@ from CRABClient.CRABOptParser import CRABCmdOptParser
 from CRABClient.JobType.CMSSWConfig import CMSSWConfig
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
 from CRABClient.ClientExceptions import ClientException, ConfigurationException, FEEDBACKMAIL
-from CRABClient.ClientUtilities import BOOTSTRAP_ENVFILE, BOOTSTRAP_INFOFILE, BOOTSTRAP_CFGFILE, setSubmitParserOptions, validateSubmitOptions, getLoggers, flushMemoryLogger
+from CRABClient.ClientUtilities import BOOTSTRAP_ENVFILE, BOOTSTRAP_INFOFILE, BOOTSTRAP_CFGFILE, LOGLEVEL_MUTE
+from CRABClient.ClientUtilities import setSubmitParserOptions, validateSubmitOptions, initLoggers, setConsoleLogLevelVar, flushMemoryLogger
 
 from WMCore.Configuration import loadConfigurationFile
 
@@ -111,8 +112,9 @@ def getConfig(cfgName):
 
 if __name__ == '__main__':
     try:
+        setConsoleLogLevelVar(LOGLEVEL_MUTE)
         logger, memhandler = None, None
-        logger, memhandler = getLoggers(60) #50 is CRITICAL: 60 no logging to the console
+        logger, memhandler = initLoggers()
         cfgName = getConfigName(logger)
         config = getConfig(cfgName)
         cmsswCfg = CMSSWConfig(config=config, userConfig=config.JobType.psetName, logger=logger)

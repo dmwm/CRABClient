@@ -142,3 +142,24 @@ def getFileFromURL(url, filename = None):
         f.write(filestr)
     return filename
 
+
+from CRABClient.ClientUtilities import LOGLEVEL_MUTE
+
+
+def getLoggers():
+    from CRABClient.ClientUtilities import LOGGERS
+    return LOGGERS
+
+
+def getConsoleLogLevel():
+    from CRABClient.ClientUtilities import CONSOLE_LOGLEVEL
+    return CONSOLE_LOGLEVEL
+
+
+def setConsoleLogLevel(lvl):
+    from CRABClient.ClientUtilities import setConsoleLogLevelVar
+    setConsoleLogLevelVar(lvl)
+    if 'CRAB3.all' in logging.getLogger().manager.loggerDict:
+        for h in logging.getLogger('CRAB3.all').handlers:
+            h.setLevel(lvl)
+

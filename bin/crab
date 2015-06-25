@@ -24,8 +24,7 @@ from CRABClient.CRABOptParser import CRABOptParser
 from CRABClient import __version__ as client_version
 from CRABClient.ClientMapping import parametersMapping
 from CRABClient.ClientExceptions import ClientException, FEEDBACKMAIL
-from CRABClient.ClientUtilities import getAvailCommands, logfilter , uploadlogfile, getLoggers, StopExecution, flushMemoryLogger
-
+from CRABClient.ClientUtilities import getAvailCommands, logfilter , uploadlogfile, initLoggers, setConsoleLogLevelVar, StopExecution, flushMemoryLogger
 
 
 class MyNullHandler(logging.Handler):
@@ -54,14 +53,12 @@ class CRABClient(object):
 
         (options, args) = self.parser.parse_args()
 
-        #the default the logfile destination is /crab.log, it will be  changed  when we have loaded the taskname
-        loglevel = logging.INFO
+        #the default logfile destination is /crab.log, it will be  changed  when we have loaded the taskname
         if options.quiet:
-            loglevel = logging.WARNING
-        if options.debug:
-            loglevel = logging.DEBUG
-        self.logger, self.memhandler = getLoggers(loglevel)
-
+            setConsoleLogLevelVar(logging.WARNING)
+        elif options.debug:
+            setConsoleLogLevelVar(logging.DEBUG)
+        self.logger, self.memhandler = initLoggers()
 
         #Instructions needed in case of early failures: sometimes the traceback logger
         #has not been set yet. The right file handler is only added when the workarea

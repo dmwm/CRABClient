@@ -21,7 +21,6 @@ from optparse import OptionValueError
 
 ## CRAB dependencies
 import CRABClient.Emulator
-from CRABClient.UserUtilities import getUsernameFromSiteDB
 from CRABClient.ClientExceptions import ClientException, TaskNotFoundException, CachefileNotFoundException, ConfigurationException, ConfigException, UsernameException, ProxyException
 
 
@@ -33,6 +32,7 @@ BOOTSTRAP_ENVFILE = 'crab3env.json'
 BOOTSTRAP_INFOFILE = 'crab3info.json'
 BOOTSTRAP_CFGFILE = 'PSet.py'
 BOOTSTRAP_CFGFILE_PKL = 'PSet.pkl'
+
 
 class colors:
     colordict = {
@@ -59,6 +59,16 @@ class StopExecution():
     """
 
 
+## Dictionary with the client loggers.
+LOGGERS = {}
+
+## The log level for the console handler. Can be overwritten with setConsoleLogLevelVar().
+CONSOLE_LOGLEVEL = logging.INFO
+
+## Log level to mute a logger/handler.
+LOGLEVEL_MUTE = logging.CRITICAL + 10
+
+
 class logfilter(logging.Filter):
     def filter(self, record):
         def removecolor(text):
@@ -76,7 +86,7 @@ class logfilter(logging.Filter):
         return True
 
 
-def getLoggers(loglevel):
+def initLoggers():
     """
     Logging is using the hierarchy system, the CRAB3.all log inherit everything from CRAB3. So everything that is
     logged to CRAB3.all will also go to CRAB3, however thing that logged using CRAB3 will not go to CRAB3.all.
@@ -84,22 +94,21 @@ def getLoggers(loglevel):
 
     CRAB3.all -> screen + file
     CRAB3     -> file
-
-    The loglevel parameter indicates the level for the console handler
     """
+    global LOGGERS
     # Set up the logger and exception handling
     logger = logging.getLogger('CRAB3.all')
     tblogger = logging.getLogger('CRAB3')
     logger.setLevel(logging.DEBUG)
     tblogger.setLevel(logging.DEBUG)
-
     if not logger.handlers:
         # Set up console output to stdout at appropriate level
         console_format = '%(message)s'
         console = logging.StreamHandler(sys.stdout)
         console.setFormatter(logging.Formatter(console_format))
-        console.setLevel(loglevel)
+        console.setLevel(CONSOLE_LOGLEVEL)
         logger.addHandler(console)
+    LOGGERS['CRAB3.all'] = logger
 
     #setting up a temporary memory logging, the flush level is set to 60, the highest logging level is 50 (.CRITICAL)
     #so any reasonable logging level should not cause any sudden flush
@@ -113,10 +122,23 @@ def getLoggers(loglevel):
     filter_ = logfilter()
     memhandler.addFilter(filter_)
     tblogger.addHandler(memhandler)
+    LOGGERS['CRAB3'] = tblogger
 
     logger.logfile = os.path.join(os.getcwd(), 'crab.log')
 
     return logger, memhandler
+
+
+def getLoggers(lvl):
+    msg  = "%sError%s: The function getLoggers(loglevel) from CRABClient.ClientUtilities has been deprecated." % (colors.RED, colors.NORMAL)
+    msg += " Please use the new function setConsoleLogLevel(loglevel) from CRABClient.UserUtilities instead."
+    raise ClientException(msg)
+
+
+def setConsoleLogLevelVar(lvl):
+    global CONSOLE_LOGLEVEL
+    CONSOLE_LOGLEVEL = lvl
+
 
 def flushMemoryLogger(logger, memhandler):
     filehandler = logging.FileHandler(logger.logfile)
@@ -132,14 +154,14 @@ def flushMemoryLogger(logger, memhandler):
 
 
 def getUrl(instance='prod', resource='workflow'):
-        """
-        Retrieve the url depending on the resource we are accessing and the instance.
-        """
-        if instance in SERVICE_INSTANCES.keys():
-            return BASEURL + instance + '/' + resource
-        elif instance == 'private':
-            return BASEURL + 'dev' + '/' + resource
-        raise ConfigurationException('Error: only the following instances can be used: %s' %str(SERVICE_INSTANCES.keys()))
+    """
+    Retrieve the url depending on the resource we are accessing and the instance.
+    """
+    if instance in SERVICE_INSTANCES.keys():
+        return BASEURL + instance + '/' + resource
+    elif instance == 'private':
+        return BASEURL + 'dev' + '/' + resource
+    raise ConfigurationException('Error: only the following instances can be used: %s' %str(SERVICE_INSTANCES.keys()))
 
 
 def uploadlogfile(logger, proxyfilename, logfilename = None, logpath = None, instance = 'prod', serverurl = None, username = None):
@@ -469,6 +491,7 @@ def getUsernameFromSiteDB_wrapped(logger, quiet = False):
     Wrapper function for getUsernameFromSiteDB,
     catching exceptions and printing messages.
     """
+    from CRABClient.UserUtilities import getUsernameFromSiteDB
     username = None
     msg = "Retrieving username from SiteDB..."
     if quiet:
