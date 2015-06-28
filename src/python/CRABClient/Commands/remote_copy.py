@@ -7,8 +7,6 @@ import re
 from math import ceil
 from multiprocessing import Manager
 
-from WMCore.FwkJobReport.FileInfo import readAdler32, readCksum
-
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.CredentialInteractions import CredentialInteractions
 from CRABClient.ClientUtilities import colors, cmd_exist
@@ -253,16 +251,7 @@ class remote_copy(SubCommand):
                 continue
             else:
                 self.logger.info("%sSuccess%s: Success in retrieving %s " % (colors.GREEN, colors.NORMAL, fileid))
-            if not url_input and hasattr(myfile, 'checksum'):
-                self.logger.debug("Checksum '%s'" %str(myfile['checksum']))
-                checksumOK = checksumChecker(localFilename, myfile['checksum'])
-            else:
-                checksumOK = True # No checksums provided
-
-            if not checksumOK:
-                failedfiles[fileid] = "Checksum failed"
-            else:
-                successfiles[fileid] = 'Successfully retrieve'
+            successfiles[fileid] = 'Successfully retrieved'
         return
 
 
@@ -305,23 +294,3 @@ def simpleOutputCheck(outlines):
             problems.append(line)
 
     return set(problems)
-
-
-def checksumChecker(localFilename, checksums):
-    """
-    Check given checksums vs. what's on disk
-    """
-    try:
-        adler32 = readAdler32(localFilename)
-        if adler32 == checksums['adler32']:
-            return True
-        else:
-            return False
-    except:
-        cksum = readCksum(localFilename)
-        if cksum == checksums['cksum']:
-            return True
-        else:
-            return False
-
-    return False
