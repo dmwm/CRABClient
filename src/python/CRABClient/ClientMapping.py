@@ -21,6 +21,7 @@ parametersMapping = {
                   'faillimit'      : {'default': None,       'config': ['General.failureLimit'],            'type': 'IntType',     'required': False},
                   'inputdata'      : {'default': None,       'config': ['Data.inputDataset',
                                                                         'Data.primaryDataset'],             'type': 'StringType',  'required': False},
+                  'nonvaliddata'   : {'default': False,      'config': ['Data.allowNonValidInputDataset'],  'type': 'BooleanType', 'required': False},
                   'userfiles'      : {'default': None,       'config': ['Data.userInputFiles'],             'type': 'ListType',    'required': False},
                   'dbsurl'         : {'default': 'global',   'config': ['Data.inputDBS'],                   'type': 'StringType',  'required': False},
                   'useparent'      : {'default': None,       'config': ['Data.useParent'],                  'type': 'BooleanType', 'required': False},
