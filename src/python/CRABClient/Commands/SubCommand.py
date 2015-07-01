@@ -52,19 +52,19 @@ class ConfigCommand:
             ## Overwrite configuration parameters passed as arguments in the command line.
             if overrideargs:
                 for singlearg in overrideargs:
+                    ## The next line is needed because we allow the config to be passed as argument instead via the --config option.
                     if singlearg == configname: continue
                     if len(singlearg.split('=',1)) == 1:
-                        self.logger.info("Wrong format in command-line argument '%s'. Expected format is <section-name>.<parameter-name>=<parameter-value>." % (singlearg))
-                        if len(singlearg) > 1 and singlearg[0] == '-':
-                            self.logger.info("If the argument '%s' is an option to the %s command, try 'crab %s %s [value for %s option (if required)] [arguments]'." \
-                                             % (singlearg, self.__class__.__name__, self.__class__.__name__, singlearg, singlearg))
-                        raise ConfigurationException("ERROR: Wrong command-line format.")
+                        msg  = "ERROR: Wrong format in --overrideconfig option value '%s'." % (singlearg)
+                        msg += " Expected format is <section-name>.<parameter-name>=<parameter-value>."
+                        raise ConfigurationException(msg)
                     fullparname, parval = singlearg.split('=',1)
                     # now supporting just one sub params, eg: Data.inputFiles, User.email, ...
                     parnames = fullparname.split('.', 1)
                     if len(parnames) == 1:
-                        self.logger.info("Wrong format in command-line argument '%s'. Expected format is <section-name>.<parameter-name>=<parameter-value>." % (singlearg))
-                        raise ConfigurationException("ERROR: Wrong command-line format.")
+                        msg  = "ERROR: Wrong format in --overrideconfig option value '%s'." % (singlearg)
+                        msg += " Expected format is <section-name>.<parameter-name>=<parameter-value>."
+                        raise ConfigurationException(msg)
                     self.configuration.section_(parnames[0])
                     type = configParametersInfo.get(fullparname, {}).get('type', 'undefined')
                     if type in ['undefined', 'StringType']:
@@ -291,7 +291,7 @@ class SubCommand(ConfigCommand):
         if hasattr(self.options, 'config') and self.options.config is not None:
             proxyOptsSetPlace['for_set_use'] = "config"
             ## Load the configuration file and validate it.
-            self.loadConfig(self.options.config, self.args)
+            self.loadConfig(self.options.config, self.options.overrideconfig.split(',') if self.options.overrideconfig else [])
             ## Create the CRAB project directory.
             self.requestarea, self.requestname, self.logfile = createWorkArea(self.logger, \
                                                                               getattr(self.configuration.General, 'workArea', None), \
