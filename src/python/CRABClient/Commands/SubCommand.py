@@ -52,6 +52,8 @@ class ConfigCommand:
             ## Overwrite configuration parameters passed as arguments in the command line.
             if overrideargs:
                 for singlearg in overrideargs:
+                    ## The next line is needed, because we allow the config to be passed as argument
+                    ## instead via the --config option.
                     if singlearg == configname: continue
                     if len(singlearg.split('=',1)) == 1:
                         self.logger.info("Wrong format in command-line argument '%s'. Expected format is <section-name>.<parameter-name>=<parameter-value>." % (singlearg))
