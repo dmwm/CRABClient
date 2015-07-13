@@ -19,12 +19,19 @@ class purge(SubCommand):
     def __call__(self):
 
         self.logger.info('Getting the tarball hash key')
-
-        tarballdir = glob.glob(self.requestarea+'/inputs/*.tgz')
-        if len(tarballdir) != 1:
-            self.logger.info('%sError%s: Could not find tarball or there is more than one tarball'% (colors.RED, colors.NORMAL))
-            raise ConfigurationException
-        tarballdir = tarballdir[0]
+        inputlist = {'subresource': 'search', 'workflow': self.cachedinfo['RequestName']}
+        serverFactory = CRABClient.Emulator.getEmulator('rest')
+        server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
+        uri = self.getUrl(self.instance, resource = 'task')
+        dictresult, status, reason =  server.get(uri, data = inputlist)
+        if status == 200:
+            if 'desc' in dictresult and 'columns' in dictresult['desc']:
+                position = dictresult['desc']['columns'].index('tm_user_sandbox')
+                tm_user_sandbox = dictresult['result'][position]
+                hashkey = tm_user_sandbox.replace(".tar.gz","")
+            else:
+                self.logger.info('%sError%s: Could not find tarball or there is more than one tarball'% (colors.RED, colors.NORMAL))
+                raise ConfigurationException
 
         #checking task status
 
@@ -56,7 +63,6 @@ class purge(SubCommand):
             cacheurldict = {'endpoint': cacheurl, 'pycurl': True}
 
             ufc = UserFileCache(cacheurldict)
-            hashkey = ufc.checksum(tarballdir)
             self.logger.info('Tarball hashkey: %s' %hashkey)
             self.logger.info('Attempting to remove task file from crab server cache')
 
