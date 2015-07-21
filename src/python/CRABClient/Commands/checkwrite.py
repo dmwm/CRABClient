@@ -37,6 +37,17 @@ class checkwrite(SubCommand):
                 self.lfnsaddprefix = '/store/user/' + username
             else:
                 return {'status': 'FAILED'}
+        self.checksum = None
+        if hasattr(self.options, 'checksum') and self.options.checksum != None:
+            self.checksum = 'ADLER32'
+        self.command = None
+        if hasattr(self.options, 'command') and self.options.command != None:
+            AvailableCommands = ['LCG', 'GFAL']
+            self.command = self.options.command.upper()
+            if self.command not in AvailableCommands:
+                self.logger.info("You specified to use %s command and it is not allowed. Available commands are: %s " % (self.command, str(AvailableCommands)))
+                return {'status': 'FAILED'}
+            self.logger.info("User requested to use %s commands for checkwrite." % self.command)
 
         ## Check that the location where we want to check write permission
         ## is one where the user will be allowed to stageout.
@@ -58,13 +69,17 @@ class checkwrite(SubCommand):
 
         cp_cmd = ""
         del_cmd = ""
-        if cmd_exist("gfal-copy") and cmd_exist("gfal-rm"):
+        if cmd_exist("gfal-copy") and cmd_exist("gfal-rm") and self.command in [None, "GFAL"]:
             self.logger.info("Will use `gfal-copy`, `gfal-rm` commands for checking write permissions")
             cp_cmd = "env -i X509_USER_PROXY=%s gfal-copy -v -t 180 " % os.path.abspath(self.proxyfilename)
+            if self.checksum:
+                cp_cmd += "-K %s " % self.checksum
             del_cmd = "env -i X509_USER_PROXY=%s gfal-rm -v -t 180 " % os.path.abspath(self.proxyfilename)
-        elif cmd_exist("lcg-cp") and cmd_exist("lcg-del"):
+        elif cmd_exist("lcg-cp") and cmd_exist("lcg-del") and self.command in [None, "LCG"]:
             self.logger.info("Will use `lcg-cp`, `lcg-del` commands for checking write permissions")
             cp_cmd = "lcg-cp -v -b -D srmv2 --connect-timeout 180 "
+            if self.checksum:
+                cp_cmd += "--checksum-type %s " % self.checksum
             del_cmd = "lcg-del --connect-timeout 180 -b -l -D srmv2 "
         else:
             self.logger.info("Neither gfal nor lcg command was found")
@@ -173,7 +188,7 @@ class checkwrite(SubCommand):
     def cp(self, pfn, command):
 
         abspath = os.path.abspath(self.filename)
-        if cmd_exist("gfal-copy"):
+        if cmd_exist("gfal-copy") and self.command in [None, "GFAL"]:
             abspath = "file://" + abspath
         cpcmd = command + abspath + " '" + pfn + "'"
         self.logger.info('Executing command: %s' % cpcmd)
@@ -227,7 +242,14 @@ class checkwrite(SubCommand):
                                dest = 'userlfn',
                                default = None,
                                help = 'A user lfn address.')
-
+        self.parser.add_option('--checksum',
+                               dest = 'checksum',
+                               default = None,
+                               help = 'By default it is None/False. Set it to true if needed. If true will use ADLER32')
+        self.parser.add_option('--command',
+                               dest = 'command',
+                               default = None,
+                               help = 'A command which to use. Available commands are LCG or GFAL.')
 
     def validateOptions(self):
         SubCommand.validateOptions(self)

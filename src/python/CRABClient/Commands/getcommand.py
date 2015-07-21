@@ -27,6 +27,20 @@ class getcommand(SubCommand):
         elif argv.get('subresource') == 'data':
             taskdbparam = 'tm_transfer_outputs'
             configparam = "General.transferOutputs"
+
+        #Check if user specified checksum or command and if they are correct
+        additional = {}
+        if hasattr(self.options, 'checksum') and self.options.checksum != None:
+            additional["checksum"] = 'ADLER32'
+        if hasattr(self.options, 'command') and self.options.command != None:
+            AvailableCommands = ['LCG', 'GFAL']
+            self.command = self.options.command.upper()
+            additional["command"] = self.options.command.upper()
+            if additional["command"] not in AvailableCommands:
+                self.logger.info("You specified to use %s command and it is not allowed. Available commands are: %s " % (additional["command"], str(AvailableCommands)))
+                return {'success': {}, 'failed': {}}
+            self.logger.info("User requested to use %s commands." % self.command)
+
         transferFlag = 'unknown'
         inputlist = {'subresource': 'search', 'workflow': self.cachedinfo['RequestName']}
         serverFactory = CRABClient.Emulator.getEmulator('rest')
@@ -119,7 +133,9 @@ class getcommand(SubCommand):
             else:
                 self.logger.info("Retrieving %s files" % (totalfiles))
                 arglist = ['--destination', self.dest, '--input', workflow, '--dir', self.options.projdir, \
-                           '--proxy', self.proxyfilename, '--parallel', self.options.nparallel, '--wait', self.options.waittime]
+                           '--proxy', self.proxyfilename, '--parallel', self.options.nparallel, '--wait', self.options.waittime,\
+                           '--checksum', None if 'checksum' not in additional.keys() else additional['checksum'],\
+                           '--command', None if 'command' not in additional.keys() else additional['command']]
                 copyoutput = remote_copy(self.logger, arglist)
                 successdict, faileddict = copyoutput()
                 #need to use deepcopy because successdict and faileddict are dict that is under the a manage dict, accessed multithreadly

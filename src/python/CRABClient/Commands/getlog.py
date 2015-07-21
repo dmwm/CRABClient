@@ -95,6 +95,14 @@ class getlog(getcommand):
                                 default = False,
                                 action = 'store_true',
                                 help = 'Get the short version of the log file. Use with --dir and --jobids.',)
+        self.parser.add_option('--checksum',
+                               dest = 'checksum',
+                               default = None,
+                               help = 'By default it is None/False. Set it to true if needed. If True will use ADLER32')
+        self.parser.add_option('--command',
+                               dest = 'command',
+                               default = None,
+                               help = 'A command which to use. Available commands are LCG or GFAL.')
         getcommand.setOptions(self)
 
 
