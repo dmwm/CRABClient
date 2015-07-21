@@ -2,9 +2,7 @@
 This is simply taking care of job submission
 """
 import os
-import imp
 import json
-import time
 import types
 import shutil
 import urllib
@@ -17,7 +15,7 @@ import CRABClient.Emulator
 from CRABClient import __version__
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientMapping import parametersMapping, getParamDefaultValue
-from CRABClient.ClientExceptions import ClientException, MissingOptionException, RESTCommunicationException
+from CRABClient.ClientExceptions import ClientException, RESTCommunicationException
 from CRABClient.ClientUtilities import getJobTypes, createCache, addPlugin, server_info, colors, getUrl, setSubmitParserOptions, validateSubmitOptions, checkStatusLoop
 
 
@@ -36,8 +34,8 @@ class submit(SubCommand):
     shortnames = ['sub']
 
 
-    def __init__(self, logger, cmdargs = None):
-        SubCommand.__init__(self, logger, cmdargs, disable_interspersed_args = True)
+    def __init__(self, logger, cmdargs=None):
+        SubCommand.__init__(self, logger, cmdargs, disable_interspersed_args=True)
 
 
     def __call__(self):
@@ -100,7 +98,7 @@ class submit(SubCommand):
         serverBackendURLs = server_info('backendurls', self.serverurl, self.proxyfilename, getUrl(self.instance, resource='info'))
         #if cacheSSL is specified in the server external configuration we will use it to upload the sandbox (baseURL will be ignored)
         filecacheurl = serverBackendURLs['cacheSSL'] if 'cacheSSL' in serverBackendURLs else None
-        pluginParams = [ self.configuration, self.logger, os.path.join(self.requestarea, 'inputs') ]
+        pluginParams = [self.configuration, self.logger, os.path.join(self.requestarea, 'inputs')]
         crab_job_types = getJobTypes()
         if upper(configreq['jobtype']) in crab_job_types:
             plugjobtype = crab_job_types[upper(configreq['jobtype'])](*pluginParams)
@@ -119,7 +117,7 @@ class submit(SubCommand):
                 self.logger.warning(msg)
 
         if not configreq['publishname']:
-            configreq['publishname'] =  isbchecksum
+            configreq['publishname'] = isbchecksum
         else:
             configreq['publishname'] = "%s-%s" % (configreq['publishname'], isbchecksum)
         configreq.update(jobconfig)
@@ -133,7 +131,7 @@ class submit(SubCommand):
         configreq_encoded = self._encodeRequest(configreq, listParams)
         self.logger.debug('Encoded submit request: %s' % (configreq_encoded))
 
-        dictresult, status, reason = server.put( self.uri, data = configreq_encoded)
+        dictresult, status, reason = server.put(self.uri, data = configreq_encoded)
         self.logger.debug("Result: %s" % dictresult)
         if status != 200:
             msg = "Problem sending the request:\ninput:%s\noutput:%s\nreason:%s" % (str(configreq), str(dictresult), str(reason))
@@ -146,9 +144,9 @@ class submit(SubCommand):
             raise RESTCommunicationException(msg)
 
         tmpsplit = self.serverurl.split(':')
-        createCache(self.requestarea, tmpsplit[0], tmpsplit[1] if len(tmpsplit)>1 else '', uniquerequestname,
+        createCache(self.requestarea, tmpsplit[0], tmpsplit[1] if len(tmpsplit) > 1 else '', uniquerequestname,
                     voRole=self.voRole, voGroup=self.voGroup, instance=self.instance,
-                    originalConfig = self.configuration)
+                    originalConfig=self.configuration)
 
         self.logger.info("%sSuccess%s: Your task has been delivered to the CRAB3 server." %(colors.GREEN, colors.NORMAL))
         if not (self.options.wait or self.options.dryrun):
@@ -163,7 +161,7 @@ class submit(SubCommand):
 
         self.logger.debug("About to return")
 
-        return {'requestname' : self.requestname , 'uniquerequestname' : uniquerequestname }
+        return {'requestname': self.requestname , 'uniquerequestname': uniquerequestname}
 
 
     def setOptions(self):
@@ -297,7 +295,7 @@ class submit(SubCommand):
         return True, "Valid configuration"
 
 
-    def getDBSURLAndAlias(self, arg, dbs_type = 'reader'):
+    def getDBSURLAndAlias(self, arg, dbs_type='reader'):
         if arg in DBSURLS[dbs_type].keys():
             return DBSURLS[dbs_type][arg], arg
         if arg.rstrip('/') in DBSURLS[dbs_type].values():
@@ -316,7 +314,7 @@ class submit(SubCommand):
         for lparam in listParams:
             if lparam in configreq:
                 if len(configreq[lparam]) > 0:
-                    encodedLists += ('&%s=' % lparam) + ('&%s=' % lparam).join( map(urllib.quote, configreq[lparam]) )
+                    encodedLists += ('&%s=' % lparam) + ('&%s=' % lparam).join(map(urllib.quote, configreq[lparam]))
                 del configreq[lparam]
         encoded = urllib.urlencode(configreq) + encodedLists
         return str(encoded)
@@ -353,7 +351,7 @@ class submit(SubCommand):
             events = 10
             totalJobSeconds = 0
             maxSeconds = 25
-            while (totalJobSeconds < maxSeconds):
+            while totalJobSeconds < maxSeconds:
                 opts = getCMSRunAnalysisOpts('Job.submit', 'RunJobs.dag', job=1, events=events)
 
                 s = subprocess.Popen(['sh', 'CMSRunAnalysis.sh'] + opts, env=env, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
