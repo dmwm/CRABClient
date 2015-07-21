@@ -325,7 +325,8 @@ class submit(SubCommand):
     def executeTestRun(self, filecacheurl):
         """
         Downloads the dry run tarball from the User File Cache and unpacks it in a temporary directory.
-        Runs a 10 event trial to obtain the performance report.
+        Runs a trial to obtain the performance report. Repeats trial with successively larger input events
+        until a job length of maxSeconds is reached (this improves accuracy for fast-running CMSSW parameter sets.)
         """
 
         ufc = CRABClient.Emulator.getEmulator('ufc')({'endpoint' : filecacheurl})
@@ -333,30 +334,43 @@ class submit(SubCommand):
         try:
             tmpDir = tempfile.mkdtemp()
             os.chdir(tmpDir)
-            self.logger.info('Creating temporary directory for local test run (needed for timing estimates) in %s' % tmpDir)
-            self.logger.info('Executing test, please wait...')
+            self.logger.info('Creating temporary directory for dry run sandbox in %s' % tmpDir)
             ufc.downloadLog('dry-run-sandbox.tar.gz', output=os.path.join(tmpDir, 'dry-run-sandbox.tar.gz'))
             for name in ['dry-run-sandbox.tar.gz', 'CMSRunAnalysis.tar.gz', 'sandbox.tar.gz']:
                 tf = tarfile.open(os.path.join(tmpDir, name))
                 tf.extractall(tmpDir)
                 tf.close()
             env = os.environ.update({'CRAB3_RUNTIME_DEBUG': 'True', '_CONDOR_JOB_AD': 'Job.submit'})
-            opts = getDryRunOpts('Job.submit', 'RunJobs.dag')
-            s = subprocess.Popen(['sh', 'CMSRunAnalysis.sh'] + opts, env=env, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-            out, err = s.communicate()
-            self.logger.debug(out)
-            if s.returncode != 0:
-                raise ClientException('Dry run failed to execute local test run:\n StdOut: %s\n StdErr: %s' % (err, out))
+
             with open('splitting-summary.json') as f:
                 splitting = json.load(f)
-            with open('jobReport.json') as f:
-                report = json.load(f)['steps']['cmsRun']['performance']
+
+            if self.options.skipEstimates:
+                return splitting, None
+
+            self.logger.info('Executing test, please wait...')
+
+            events = 10
+            totalJobSeconds = 0
+            maxSeconds = 25
+            while (totalJobSeconds < maxSeconds):
+                opts = getCMSRunAnalysisOpts('Job.submit', 'RunJobs.dag', job=1, events=events)
+
+                s = subprocess.Popen(['sh', 'CMSRunAnalysis.sh'] + opts, env=env, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+                out, err = s.communicate()
+                self.logger.debug(out)
+                if s.returncode != 0:
+                    raise ClientException('Dry run failed to execute local test run:\n StdOut: %s\n StdErr: %s' % (err, out))
+                with open('jobReport.json') as f:
+                    report = json.load(f)['steps']['cmsRun']['performance']
+                events += (maxSeconds / float(report['cpu']['AvgEventTime']))
+                totalJobSeconds = float(report['cpu']['TotalJobTime'])
+
         finally:
             os.chdir(cwd)
             shutil.rmtree(tmpDir)
 
         return splitting, report
-
 
     def printDryRunResults(self, splitting, report):
         """
@@ -364,26 +378,65 @@ class submit(SubCommand):
         and print the results.
         """
 
-        self.logger.info("Using %s splitting" % splitting['algo'])
+        algos = {"LumiBased": "lumis",
+                 "EventBased": "events",
+                 "FileBased": "files",
+                 "EventAwareLumiBased": "events"}
+
+        estimates = {}
         quantities = {}
+        units = algos[splitting['algo']]
+        msg = ", with an estimated processing time of %i minutes"
         for x in ['total', 'max', 'min', 'avg']:
-            if (splitting['algo'] == 'LumiBased') or (splitting['algo'] == 'EventAwareLumiBased'):
-                quantities[x] = "%i lumis" % splitting['%s_lumis' % x]
-            else:
-                quantities[x] = "%i events" % splitting['%s_events' % x]
-        msg = "\nTask consists of %i jobs to process %s"\
-            "\nThe estimated memory requirement is %.0f MB"\
-            "\nThe longest job will process %s, with an estimated processing time of %i minutes"\
-            "\nThe average job will process %s, with an estimated processing time of %i minutes"\
-            "\nThe shortest job will process %s, with an estimated processing time of %i minutes"
-        self.logger.info(msg % (splitting['total_jobs'], quantities['total'], float(report['memory']['PeakValueVsize']), #TODO: Use PeakValueRss?
-            quantities['max'], (float(report['cpu']['AvgEventTime']) * splitting['max_events'] / 60),
-            quantities['avg'], (float(report['cpu']['AvgEventTime']) * splitting['avg_events'] / 60),
-            quantities['min'], (float(report['cpu']['AvgEventTime']) * splitting['min_events'] / 60)))
+            quantities[x] = "%i %s" % (splitting['%s_%s' % (x, units)], units)
+            estimates[x] = ''
+            if not self.options.skipEstimates:
+                secondsPerEvent = float(report['cpu']['AvgEventTime'])
+                estimates[x] = msg % (secondsPerEvent * splitting['%s_events' % x] / 60)
+
+        self.logger.info("\nUsing %s splitting" % splitting['algo'])
+        self.logger.info("Task consists of %i jobs to process %s" % (splitting['total_jobs'], quantities['total']))
+        self.logger.info("The longest job will process %s%s" % (quantities['max'], estimates['max']))
+        self.logger.info("The average job will process %s%s" % (quantities['avg'], estimates['avg']))
+        self.logger.info("The shortest job will process %s%s" % (quantities['min'], estimates['min']))
+
+        if not self.options.skipEstimates:
+            self.logger.info("The estimated memory requirement is %.0f MB" % float(report['memory']['PeakValueRss']))
+            defaultMaxMemory = parametersMapping['on-server']['maxmemory']['default']
+            maxMemory = getattr(self.configuration.JobType, 'maxmemory', defaultMaxMemory)
+            if float(report['memory']['PeakValueRss']) > maxMemory:
+                msg = "\nWarning: memory estimate of %.0f MB exceeds what has been requested (JobType.maxMemoryMB = %i).\n"\
+                    "Jobs which exceed JobType.maxMemoryMB will fail. Increasing JobType.maxMemoryMB more than 500 MB beyond \n"\
+                    "the default of %i MB is not recommended, as fewer sites will be able to run your jobs. Please see\n"\
+                    "https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideEDMTimingAndMemory for information\n"\
+                    "about EDM Timing and Memory tools for checking the memory footprint of your CMSSW configuration."
+                self.logger.warning(msg % (float(report['memory']['PeakValueRss']), maxMemory, defaultMaxMemory))
+
+            self.logger.info("\nTiming quantities given below are ESTIMATES. Keep in mind that external factors\n"\
+                             "such as transient file-access delays can reduce estimate reliability.")
+
+            minJobs = 10
+            targetSecondsPerJob = 8 * 3600
+            threshold = 0.7
+            tooFew = splitting['total_jobs'] < minJobs
+            tooLong = secondsPerEvent * splitting['max_events'] > targetSecondsPerJob
+            tooShort = secondsPerEvent * splitting['avg_events'] < targetSecondsPerJob * threshold
+            if tooFew or tooLong or tooShort:
+                eventsPerUnit = splitting['avg_events'] / splitting['avg_%s' % units]
+                if tooFew:
+                    eventsPerJob = splitting['total_%s' % units] * eventsPerUnit / minJobs
+                    self.logger.info('\nAn update to your splitting parameters is recommended.')
+                else:
+                    eventsPerJob = targetSecondsPerJob / secondsPerEvent
+
+                self.logger.info('\nFor ~%i minute jobs, use:' % (eventsPerJob * secondsPerEvent / 60))
+                self.logger.info('Data.unitsPerJob = %i' % (eventsPerJob / eventsPerUnit))
+                if units == 'events':
+                    self.logger.info('Data.totalUnits = %i' %  splitting['total_events'])
 
         self.logger.info("\nDry run requested: task paused\nTo continue processing, use 'crab proceed'\n")
 
-def getDryRunOpts(ad, dag):
+def getCMSRunAnalysisOpts(ad, dag, job=1, events=10):
     """
     Parse the job ad to obtain the arguments that were passed to condor.
     """
@@ -395,14 +448,14 @@ def getDryRunOpts(ad, dag):
             info[key.strip().replace('+', '')] = val
     with open(dag) as f:
         for line in f:
-            if line.startswith('VARS Job1'):
+            if line.startswith('VARS Job{job}'.format(job=job)):
                 break
         for entry in line.strip().replace(r'\"\"', '"').replace('", "', '","').split():
             parts = entry.split('=')
             if len(parts) == 2:
                 info[parts[0]] = parts[1].strip('"')
 
-    info.update({'CRAB_Id': '0', 'firstEvent': '1', 'lastEvent': '11'})
+    info.update({'CRAB_Id': '0', 'firstEvent': '1', 'lastEvent': str(int(events) + 1)})
 
     return [x.strip("'") % info for x in info['Arguments'].replace('$', '%').replace(')', ')s').split()]
 
