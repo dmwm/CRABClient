@@ -48,14 +48,34 @@ class report(SubCommand):
             self.logger.info(msg)
             return dictresult
 
-        # Keeping only EDM files
-        poolInOnlyRes = {}
-        for jn, val in dictresult['result'][0]['runsAndLumis'].iteritems():
-             poolInOnlyRes[jn] = [f for f in val if f['type'] == 'POOLIN']
-
         returndict = {}
         if not self.usedbs:
-            analyzed, diff, doublelumis = BasicJobType.mergeLumis(poolInOnlyRes, dictresult['result'][0]['lumiMask'])
+            ## Get the run-lumi information of the input files from their filemetadatas.
+            poolInOnlyRes = {}
+            for jobid, val in dictresult['result'][0]['runsAndLumis'].iteritems():
+                poolInOnlyRes[jobid] = [f for f in val if f['type'] == 'POOLIN']
+            analyzed, diff = BasicJobType.mergeLumis(poolInOnlyRes, dictresult['result'][0]['lumiMask'])
+            ## Get the duplicate run-lumis in the output files. Use for this the run-lumi
+            ## information of the input files. Why not to use directly the output files?
+            ## Because not all types of output files have run-lumi information in their
+            ## filemetadata (note: the run-lumi information in the filemetadata is a copy
+            ## of the corresponding information in the FJR). For example, output files
+            ## produced by TFileService do not have run-lumi information in the FJR. On the
+            ## other hand, input files always have run-lumi information in the FJR, which
+            ## lists the runs/lumis in the input file that have been processed by the
+            ## corresponding job. And of course, the run-lumi information of an output file
+            ## produced by job X should be the (set made out of the) union of the run-lumi
+            ## information of the input files to job X.
+            outputFilesLumiDict = {}
+            for jobid, reports in poolInOnlyRes.iteritems():
+                lumiDict = {}
+                for rep in reports:
+                    for run, lumis in literal_eval(rep['runlumi']).iteritems():
+                        run = str(run)
+                        lumiDict.setdefault(run, []).extend(map(int, lumis))
+                for run, lumis in lumiDict.iteritems():
+                    outputFilesLumiDict.setdefault(run, []).extend(list(set(lumis)))
+            doubleLumis = BasicJobType.getDoubleLumis(outputFilesLumiDict)
             def _getNumFiles(jobs):
                 infiles = set()
                 for jn, val in jobs.iteritems():
@@ -67,14 +87,15 @@ class report(SubCommand):
             self.logger.info("%d file%s been processed" % (numFilesProcessed, " has" if numFilesProcessed == 1 else "s have"))
             def _getNumEvents(jobs, type):
                 for jn, val in jobs.iteritems():
-                    yield sum([ x['events'] for x in val if x['type'] == type])
+                    yield sum([x['events'] for x in val if x['type'] == type])
             numEventsRead = sum(_getNumEvents(dictresult['result'][0]['runsAndLumis'], 'POOLIN'))
             returndict['eventsRead'] = numEventsRead
             self.logger.info("%d event%s been read" % (numEventsRead, " has" if numEventsRead == 1 else "s have"))
             numEventsWritten = sum(_getNumEvents(dictresult['result'][0]['runsAndLumis'], 'EDM'))
             self.logger.info("%d event%s been written" % (numEventsWritten, " has" if numEventsWritten == 1 else "s have"))
         else:
-            analyzed, diff, doublelumis = BasicJobType.subtractLumis(dictresult['result'][0]['dbsInLumilist'], dictresult['result'][0]['dbsOutLumilist'])
+            analyzed, diff = BasicJobType.subtractLumis(dictresult['result'][0]['dbsInLumilist'], dictresult['result'][0]['dbsOutLumilist'])
+            doubleLumis = BasicJobType.getDoubleLumis(dictresult['result'][0]['dbsOutLumilist'])
             numFilesProcessed = dictresult['result'][0]['dbsNumFiles']
             self.logger.info("%d file%s been processed" % (numFilesProcessed, " has" if numFilesProcessed == 1 else "s have"))
             numEventsWritten = dictresult['result'][0]['dbsNumEvents']
@@ -83,7 +104,7 @@ class report(SubCommand):
         returndict['processedFiles'] = numFilesProcessed
         if self.outdir:
             if not os.path.exists(self.outdir):
-                self.logger.info('Creating directory: %s'  % self.outdir)
+                self.logger.info('Creating directory: %s' % self.outdir)
                 os.makedirs(self.outdir)
             jsonFileDir = self.outdir
         else:
@@ -99,14 +120,14 @@ class report(SubCommand):
                 json.dump(diff, jsonFile)
                 jsonFile.write("\n")
                 self.logger.info("%sWarning%s: Not analyzed luminosity sections written to %s/missingLumiSummary.json" % (colors.RED, colors.NORMAL, jsonFileDir))
-                returndict['missingLumis'] = diff
-        if doublelumis:
+                returndict['missingLumis'] = diff 
+        if doubleLumis:
             with open(os.path.join(jsonFileDir, 'double.json'), 'w') as jsonFile:
-                json.dump(doublelumis, jsonFile)
+                json.dump(doubleLumis, jsonFile)
                 jsonFile.write("\n")
                 self.logger.info("%sWarning%s: Double lumis written to %s/double.json" % (colors.RED, colors.NORMAL, jsonFileDir))
-                returndict['doubleLumis'] = doublelumis
-
+                returndict['doubleLumis'] = doubleLumis
+            
         return returndict
 
     def setOptions(self):
@@ -133,6 +154,6 @@ class report(SubCommand):
         SubCommand.validateOptions(self)
         if not re.match('^yes$|^no$', self.options.usedbs):
             raise ConfigurationException("--dbs option only accepts the yes and no values (--dbs=yes or --dbs=no)")
-        self.usedbs = 1 if self.options.usedbs=='yes' else 0
+        self.usedbs = 1 if self.options.usedbs == 'yes' else 0
 
-        setattr(self, 'outdir', getattr(self.options, 'outdir', None))
+        self.outdir = self.options.outdir
