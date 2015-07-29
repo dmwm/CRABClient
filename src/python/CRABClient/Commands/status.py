@@ -79,8 +79,7 @@ class status(SubCommand):
         if 'jobs' not in dictresult:
             self.logger.info("\nNo jobs created yet!")
         else:
-            if 'publication' in dictresult:
-                self.printPublication(dictresult)
+            self.printPublication(dictresult)
             self.printErrors(dictresult)
             # Note several options could be combined
             if self.options.summary:
@@ -119,7 +118,7 @@ class status(SubCommand):
                 self.logger.warning("%sWarning:%s\t\t\t%s." % (colors.RED, colors.NORMAL, warningMsg))
         if dictresult['taskFailureMsg']:
             if dictresult['status'] == "FAILED":
-                self.logger.error("%sError during task injection:%s\t%s" % (colors.RED,colors.NORMAL, dictresult['taskFailureMsg']))
+                self.logger.error("%sError during task injection:%s\t%s" % (colors.RED, colors.NORMAL, dictresult['taskFailureMsg']))
             else:
                 self.logger.error("%sError during task information retrieval:%s\t%s." % (colors.RED, colors.NORMAL, dictresult['taskFailureMsg']))
             # We might also have more information in the job def errors
@@ -140,7 +139,7 @@ class status(SubCommand):
         if states:
             total = sum( states[st] for st in states )
             state_list = sorted(states)
-            self.logger.info("Details:\t\t\t{0} {1}".format(self._printState(state_list[0], 13), self._percentageString(state_list[0], states[state_list[0]], total)))
+            self.logger.info("\nJobs status:\t\t\t{0} {1}".format(self._printState(state_list[0], 13), self._percentageString(state_list[0], states[state_list[0]], total)))
             for status in state_list[1:]:
                 self.logger.info("\t\t\t\t{0} {1}".format(self._printState(status, 13), self._percentageString(status, states[status], total)))
 
@@ -299,6 +298,8 @@ class status(SubCommand):
         """
         Print information about the publication of the output files in DBS.
         """
+        if 'publication' not in dictresult:
+            return
         ## If publication was disabled, print a pertinent message and return.
         if 'disabled' in dictresult['publication']:
             msg = "\nNo publication information (publication has been disabled in the CRAB configuration file)"
@@ -334,7 +335,10 @@ class status(SubCommand):
         if 'error' in dictresult['publication']:
             msg = "\nPublication status:\t\t%s" % (dictresult['publication']['error'])
             self.logger.info(msg)
-        elif dictresult['publication'] and outputDatasets:
+            ## Print the output datasets with the corresponding DAS URL.
+            printOutputDatasets(includeDASURL = True)
+            return
+        if dictresult['publication'] and outputDatasets:
             states = dictresult['publication']
             ## Don't consider publication states for which 0 files are in this state.
             states_tmp = states.copy()
@@ -363,8 +367,18 @@ class status(SubCommand):
                     msg += "\n\t\t\t\t{0} {1}".format(self._printState(status, 13), \
                                                       self._percentageString(status, states[status], numFilesToPublish))
             self.logger.info(msg)
-        ## Print the output datasets with the corresponding DAS URL.
-        printOutputDatasets(includeDASURL = True)
+            ## Print the publication errors.
+            if dictresult.get('publicationFailures'):
+                msg = "\nPublication error summary:"
+                if 'error' in dictresult['publicationFailures']:
+                    msg += "\t%s" % (dictresult['publicationFailures']['error'])
+                elif dictresult['publicationFailures'].get('result'):
+                    ndigits = int(math.ceil(math.log(numFilesToPublish+1, 10)))
+                    for failureReason, numFailedFiles in dictresult['publicationFailures']['result']:
+                        msg += ("\n\n\t%" + str(ndigits) + "s files failed to publish with following error message:\n\n\t\t%s") % (numFailedFiles, failureReason)
+                self.logger.info(msg)
+            ## Print the output datasets with the corresponding DAS URL.
+            printOutputDatasets(includeDASURL = True)
 
 
     def printSummary(self, dictresult):
