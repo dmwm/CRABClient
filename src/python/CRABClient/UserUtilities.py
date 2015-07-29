@@ -114,15 +114,22 @@ def getUsernameFromSiteDB():
     return username
 
 
-def getFileFromURL(url, filename = None):
+def getFileFromURL(url, filename = None, proxyfilename = None):
     """
     Read the content of a URL and copy it into a file.
+
+    url: the link you would like to retrieve
+    filename: the local filename where the url is saved to. Defaults to the filename in the url
+    proxyfilename: the x509 proxy certificate to be used in case auth is required
+
+    Return the filename used to save the file or ClientException in case of errors.
     """
     if filename == None:
         path = urlparse(url).path
         filename = os.path.basename(path)
     try:
-        socket = urllib.urlopen(url)
+        opener = urllib.URLopener(key_file = proxyfilename, cert_file = proxyfilename)
+        socket = opener.open(url)
         status = socket.getcode()
         filestr = socket.read()
     except IOError as ioex:
@@ -141,9 +148,6 @@ def getFileFromURL(url, filename = None):
     with open(filename, 'w') as f:
         f.write(filestr)
     return filename
-
-
-from CRABClient.ClientUtilities import LOGLEVEL_MUTE
 
 
 def getLoggers():
