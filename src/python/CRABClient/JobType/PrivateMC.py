@@ -27,6 +27,7 @@ class PrivateMC(Analysis):
 
         lhe, nfiles = self.cmsswCfg.hasLHESource()
         if lhe:
+            self.logger.debug("LHESource found in the CMSSW configuration.")
             configArguments['generator'] = getattr(self.config.JobType, 'generator', 'lhe')
             if nfiles > 1:
                 msg = "{0}Warning{1}: Using an LHESource with ".format(colors.RED, colors.NORMAL)
@@ -42,6 +43,7 @@ class PrivateMC(Analysis):
             self.logger.warning("Invalid primary dataset name %s; publication may fail." % (primaryDataset))
         configArguments['inputdata'] = primaryDataset
         return tarFilename, configArguments, isbchecksum
+
 
     def validateConfig(self, config):
         """

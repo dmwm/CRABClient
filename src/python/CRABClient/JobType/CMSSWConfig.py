@@ -100,16 +100,23 @@ class CMSSWConfig(object):
             info = self.getCfgInfo()
             return info['lheinfo']
 
-        lhe = False
-        files = 0
+        isLHE, numFiles = False, 0
 
-        if hasattr(self.fullConfig.process, 'source'):
+        if getattr(self.fullConfig.process, 'source'):
             source = self.fullConfig.process.source
+            try:
+                isLHE = str(source.type_()) == 'LHESource'
+            except AttributeError as ex:
+                msg = "Invalid CMSSW configuration: Failed to check if 'process.source' is of type 'LHESource': %s" % (ex)
+                raise ConfigurationException(msg)
+            if isLHE:
+                if hasattr(source, 'fileNames'):
+                    numFiles = len(source.fileNames)
+                else:
+                    msg = "Invalid CMSSW configuration: Object 'process.source', of type 'LHESource', is missing attribute 'fileNames'."
+                    raise ConfigurationException(msg)
 
-            lhe = str(source.type_()) == 'LHESource'
-            files = len(source.fileNames) if lhe else 0
-
-        return lhe, files
+        return isLHE, numFiles
 
 
     def outputFiles(self):
