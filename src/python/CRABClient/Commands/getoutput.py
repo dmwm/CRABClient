@@ -8,7 +8,6 @@ class getoutput(getcommand):
         is identified by the -d/--dir option
     """
     name = 'getoutput'
-    shortnames = ['output', 'out']
     visible = True #overwrite getcommand
 
     def __call__(self):

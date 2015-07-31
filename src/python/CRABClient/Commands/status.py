@@ -31,7 +31,6 @@ class status(SubCommand):
     identified by the -d/--dir option.
     """
 
-    shortnames = ['st']
     states = ['submitted', 'failure', 'queued', 'success']
 
 

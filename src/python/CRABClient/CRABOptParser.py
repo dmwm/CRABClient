@@ -22,9 +22,7 @@ class CRABOptParser(OptionParser):
         if subCommands:
             epilog = '\nValid commands are: \n'
             for k in sorted(subCommands.keys()):
-                epilog += '  %s' % subCommands[k].name
-                epilog += ''.join( [' (%s)' % name for name in subCommands[k].shortnames ] )
-                epilog += '\n'
+                epilog += '  %s\n' % subCommands[k].name
             epilog += "To get single command help run:\n  crab command --help|-h\n"
 
             epilog += '\nFor more information on how to run CRAB-3 please follow this link:\n'

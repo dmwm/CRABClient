@@ -107,7 +107,7 @@ for k, v in client.subCommands.items():
             opts += names
 
     longnames.append(cmd.name)
-    for c in [cmd.name] + cmd.shortnames:
+    for c in [cmd.name]:
         commands[c] = template_cmd.format(
                 cmd=c,
                 cmdflags=' '.join(flags),

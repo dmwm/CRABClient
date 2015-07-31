@@ -17,7 +17,6 @@ class report(SubCommand):
     Get the list of good lumis for your task identified by the -d/--dir option.
     """
     name = 'report'
-    shortnames = ['rep']
 
     def __call__(self):
         serverFactory = CRABClient.Emulator.getEmulator('rest')

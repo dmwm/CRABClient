@@ -203,7 +203,6 @@ class SubCommand(ConfigCommand):
     ## setting visible = False doesn't allow the sub-command to be called from CLI
     visible = True
     proxyfilename = None
-    shortnames = []
     usage = "usage: %prog [command-options] [args]"
     #Default command name is the name of the command class, but it is also possible to set the name attribute in the subclass
     #if the command name does not correspond to the class name (getlog => get-log)
