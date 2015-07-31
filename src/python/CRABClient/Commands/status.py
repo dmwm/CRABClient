@@ -102,7 +102,9 @@ class status(SubCommand):
 
         self.logger.info("CRAB project directory:\t\t%s" % (self.requestarea))
         self.logger.info("Task name:\t\t\t%s" % self.cachedinfo['RequestName'])
-        self.logger.info("Task status:\t\t\t%s" % dictresult['status'])
+        msg = "Task status:\t\t\t%s" % dictresult['status']
+        if dictresult['schedd'] : msg += "\ton schedd: %s" %  dictresult['schedd']
+        self.logger.info(msg)
 
         def logJDefErr(jdef):
             """Printing job def failures if any"""
