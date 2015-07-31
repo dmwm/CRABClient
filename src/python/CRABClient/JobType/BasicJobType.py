@@ -55,31 +55,16 @@ class BasicJobType(object):
         """
         Computes the processed lumis, merges if needed and returns the compacted list (called when usedbs=no).
         """
-        doubleLumis = set()
         mergedLumis = set()
-
         #merge the lumis from single files
         for reports in inputdata.values():
             for report in reports:
                 for run, lumis in literal_eval(report['runlumi']).iteritems():
                     for lumi in lumis:
-                        if (run,lumi) in mergedLumis:
-                            doubleLumis.add((run,lumi))
-                        mergedLumis.add((run,lumi))
-
-        #convert the runlumis from list of pairs to dict: [(123,3), (123,4), (123,5), (123,7), (234,6)] => {123 : [3,4,5,7], 234 : [6]}
-        dLumisDict = {}
-        mLumisDict = {}
-        for k, v in doubleLumis:
-            dLumisDict.setdefault(k, []).append(int(v))
-        for k, v in mergedLumis:
-            mLumisDict.setdefault(k, []).append(int(v))
-
-        doubleLumis = LumiList(runsAndLumis=dLumisDict)
-        mergedLumis = LumiList(runsAndLumis=mLumisDict)
-
-        #get the compact list using CMSSW framework
-        return mergedLumis.getCompactList(), (LumiList(compactList=lumimask) - mergedLumis).getCompactList(), doubleLumis.getCompactList()
+                        mergedLumis.add((run,int(lumi))) #lumi is str, but need int
+        mergedLumis = LumiList(lumis=mergedLumis)
+        diff = LumiList(compactList=lumimask) - mergedLumis
+        return mergedLumis.getCompactList(), diff.getCompactList()
 
 
     @staticmethod
@@ -90,16 +75,16 @@ class BasicJobType(object):
         out = LumiList(runsAndLumis=output)
         in_ = LumiList(runsAndLumis=input)
         diff = in_ - out
+        return out.getCompactList(), diff.getCompactList()
 
+
+    @staticmethod
+    def getDoubleLumis(lumisDict):
         #calculate lumis counted twice
         doubleLumis = set()
-        for run,lumis in output.iteritems():
+        for run, lumis in lumisDict.iteritems():
             for lumi in lumis:
-                if output[run].count(lumi) > 1:
+                if lumisDict[run].count(lumi) > 1:
                     doubleLumis.add((run,lumi))
-        dLumisDict = {}
-        for k, v in doubleLumis:
-            dLumisDict.setdefault(k, []).append(v)
-        double = LumiList(runsAndLumis=dLumisDict)
-
-        return out.getCompactList(), diff.getCompactList(), double.getCompactList()
+        doubleLumis = LumiList(lumis=doubleLumis)
+        return doubleLumis.getCompactList()
