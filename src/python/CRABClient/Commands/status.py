@@ -1,12 +1,14 @@
 from __future__ import division # I want floating points
-import urllib
+
+import json
 import math
+import urllib
 
 import CRABClient.Emulator
+from CRABClient import __version__
 from CRABClient.ClientUtilities import colors
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import RESTCommunicationException, ConfigurationException
-from CRABClient import __version__
 
 def to_hms(val):
     s = val % 60
@@ -92,7 +94,7 @@ class status(SubCommand):
             if self.options.idle:
                 self.printIdle(dictresult, user)
             if self.options.json:
-                self.logger.info(dictresult['jobs'])
+                self.logger.info(json.dumps(dictresult['jobs']))
 
         return dictresult
 
