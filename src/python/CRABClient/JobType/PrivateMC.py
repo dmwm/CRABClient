@@ -28,7 +28,14 @@ class PrivateMC(Analysis):
         lhe, nfiles = self.cmsswCfg.hasLHESource()
         if lhe:
             configArguments['generator'] = getattr(self.config.JobType, 'generator', 'lhe')
-            if nfiles > 1:
+
+            major, minor, fix = os.environ['CMSSW_VERSION'].split('_')[1:4]
+            warn = True
+            if int(major) >= 7:
+                if int(minor) >= 5:
+                    warn = False
+
+            if nfiles > 1 and warn:
                 msg = "{0}Warning{1}: Using an LHESource with ".format(colors.RED, colors.NORMAL)
                 msg += "more than one input file may not be supported by the CMSSW version used. "
                 msg += "Consider merging the LHE input files to guarantee complete processing."
