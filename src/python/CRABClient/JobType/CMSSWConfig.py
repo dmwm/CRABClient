@@ -183,3 +183,22 @@ class CMSSWConfig(object):
         else:
             with open(bootFilename) as fd:
                 return json.load(fd)
+
+
+    def validateConfig(self):
+        """ Do a basic validation of the CMSSW parameter-set configuration.
+        """
+        if not self.fullConfig:
+            msg = "Validation of CMSSW configuration was requested, but there is no configuration to validate."
+            return False, msg
+
+        if not getattr(self.fullConfig, 'process'):
+            msg = "Invalid CMSSW configuration: 'process' object is missing or is wrongly defined."
+            return False, msg
+
+        if not getattr(self.fullConfig.process, 'source'):
+            msg = "Invalid CMSSW configuration: 'process' object is missing attribute 'source' or the attribute is wrongly defined."
+            return False, msg
+
+        return True, "Valid configuration"
+

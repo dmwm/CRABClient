@@ -76,6 +76,12 @@ class Analysis(BasicJobType):
         self.cmsswCfg = CMSSWConfig(config=self.config, logger=self.logger,
                                     userConfig=self.config.JobType.psetName)
 
+        ## If there is a CMSSW pset, do a basic validation of it.
+        if self.config.JobType.psetName:
+            valid, msg = self.cmsswCfg.validateConfig()
+            if not valid:
+                raise ConfigurationException(msg)
+
         ## We need to put the pickled CMSSW configuration in the right place.
         ## Here, we determine if the bootstrap script already run and prepared everything
         ## for us. In such case we move the file, otherwise we pickle.dump the pset
