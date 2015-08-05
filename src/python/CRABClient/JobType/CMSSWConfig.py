@@ -100,16 +100,23 @@ class CMSSWConfig(object):
             info = self.getCfgInfo()
             return info['lheinfo']
 
-        lhe = False
-        files = 0
+        isLHE, numFiles = False, 0
 
-        if hasattr(self.fullConfig.process, 'source'):
+        if getattr(self.fullConfig.process, 'source'):
             source = self.fullConfig.process.source
+            try:
+                isLHE = str(source.type_()) == 'LHESource'
+            except AttributeError as ex:
+                msg = "Invalid CMSSW configuration: Failed to check if 'process.source' is of type 'LHESource': %s" % (ex)
+                raise ConfigurationException(msg)
+            if isLHE:
+                if hasattr(source, 'fileNames'):
+                    numFiles = len(source.fileNames)
+                else:
+                    msg = "Invalid CMSSW configuration: Object 'process.source', of type 'LHESource', is missing attribute 'fileNames'."
+                    raise ConfigurationException(msg)
 
-            lhe = str(source.type_()) == 'LHESource'
-            files = len(source.fileNames) if lhe else 0
-
-        return lhe, files
+        return isLHE, numFiles
 
 
     def outputFiles(self):
@@ -176,3 +183,22 @@ class CMSSWConfig(object):
         else:
             with open(bootFilename) as fd:
                 return json.load(fd)
+
+
+    def validateConfig(self):
+        """ Do a basic validation of the CMSSW parameter-set configuration.
+        """
+        if not self.fullConfig:
+            msg = "Validation of CMSSW configuration was requested, but there is no configuration to validate."
+            return False, msg
+
+        if not getattr(self.fullConfig, 'process'):
+            msg = "Invalid CMSSW configuration: 'process' object is missing or is wrongly defined."
+            return False, msg
+
+        if not getattr(self.fullConfig.process, 'source'):
+            msg = "Invalid CMSSW configuration: 'process' object is missing attribute 'source' or the attribute is wrongly defined."
+            return False, msg
+
+        return True, "Valid configuration"
+
