@@ -77,7 +77,7 @@ class Analysis(BasicJobType):
                                     userConfig=self.config.JobType.psetName)
 
         ## If there is a CMSSW pset, do a basic validation of it.
-        if self.config.JobType.psetName:
+        if not bootstrapDone() and self.config.JobType.psetName:
             valid, msg = self.cmsswCfg.validateConfig()
             if not valid:
                 raise ConfigurationException(msg)

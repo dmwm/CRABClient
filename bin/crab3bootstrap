@@ -118,6 +118,9 @@ if __name__ == '__main__':
         cfgName = getConfigName(logger)
         config = getConfig(cfgName)
         cmsswCfg = CMSSWConfig(config=config, userConfig=config.JobType.psetName, logger=logger)
+        valid, msg = cmsswCfg.validateConfig()
+        if not valid:
+            raise ConfigurationException(msg) #That's a ClientException as well
         tmpdir = getTmpDir()
         saveScramEnv( os.path.join(tmpdir, BOOTSTRAP_ENVFILE), logger)
         saveCfgFile( os.path.join(tmpdir, BOOTSTRAP_CFGFILE), cmsswCfg)
@@ -134,6 +137,6 @@ if __name__ == '__main__':
         sys.exit(2)
     finally:
         if tblogger and memhandler and logger:
-            flushMemoryLogger(tblogger, memhandler, logger.logfile)
+            flushMemoryLogger(tblogger, memhandler, "crab3bootstrap.log")
 
     print(tmpdir)
