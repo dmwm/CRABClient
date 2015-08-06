@@ -39,7 +39,7 @@ class CMSSWConfig(object):
                 msg = "Cannot find CMSSW configuration file %s in %s" % (userConfig, os.getcwd())
                 raise ConfigurationException(msg)
 
-            self.logger.debug("Importing CMSSW configuration %s" % (userConfig))
+            self.logger.info("Importing CMSSW configuration %s" % (userConfig))
             pyCfgParams = getattr(self.config.JobType, 'pyCfgParams', [])
             originalArgv = sys.argv
             sys.argv = [userConfig]
@@ -63,6 +63,7 @@ class CMSSWConfig(object):
                     sys.stdout = oldstdout
                     file.close()
                 configurationCache[cacheLine] = self.fullConfig
+            self.logger.info("Finished importing CMSSW configuration %s" % (userConfig))
             sys.argv = originalArgv
 
 
