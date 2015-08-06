@@ -104,9 +104,11 @@ def getConfig(cfgName):
     except RuntimeError as re:
         raise ConfigurationException(("CRAB configuration syntax error: %s"
                                       "Please refer to https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3CommonErrors#Syntax_error_in_CRAB_configurati" % re ))
-    if getattr(getattr(config, 'JobType', None), 'psetName', None) == None:
-        raise ConfigurationException(("Invalid CRAB configuration %s.\nParameter JobType.psetName not specified..\n"
-                                      "Please, make sure this parameter exists in you CRAB configuration." % (cfgName)))
+    if not hasattr(config, 'JobType'):
+        raise ConfigurationException(("Invalid CRAB configuration %s: Section 'JobType' is missing." % (cfgName)))
+
+    if not getattr(config.JobType, 'psetName', None) and not getattr(config.JobType, 'scriptExe', None):
+        raise ConfigurationException(("Invalid CRAB configuration %s: At least one of the parameters JobType.psetName or JobType.scriptExe has to be specified." % (cfgName)))
 
     return config
 
@@ -118,14 +120,16 @@ if __name__ == '__main__':
         tblogger, logger, memhandler = initLoggers()
         cfgName = getConfigName()
         config = getConfig(cfgName)
-        cmsswCfg = CMSSWConfig(config=config, userConfig=config.JobType.psetName, logger=logger)
-        valid, msg = cmsswCfg.validateConfig()
-        if not valid:
-            raise ConfigurationException(msg) #That's a ClientException as well
+        if getattr(config.JobType, 'psetName', None):
+            cmsswCfg = CMSSWConfig(config=config, userConfig=config.JobType.psetName, logger=logger)
+            valid, msg = cmsswCfg.validateConfig()
+            if not valid:
+                raise ConfigurationException(msg) #That's a ClientException as well
         tmpdir = getTmpDir()
-        saveScramEnv( os.path.join(tmpdir, BOOTSTRAP_ENVFILE), logger)
-        saveCfgFile( os.path.join(tmpdir, BOOTSTRAP_CFGFILE), cmsswCfg)
-        saveCfgInfo( os.path.join(tmpdir, BOOTSTRAP_INFOFILE), cmsswCfg)
+        saveScramEnv(os.path.join(tmpdir, BOOTSTRAP_ENVFILE), logger)
+        if getattr(config.JobType, 'psetName', None):
+            saveCfgFile(os.path.join(tmpdir, BOOTSTRAP_CFGFILE), cmsswCfg)
+            saveCfgInfo(os.path.join(tmpdir, BOOTSTRAP_INFOFILE), cmsswCfg)
     except ClientException as ce:
         print("Error during CRAB3 bootstrap:\n%s" % str(ce))
         sys.exit(1)

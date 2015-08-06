@@ -18,25 +18,31 @@ class PrivateMC(Analysis):
         """
         Override run() for JobType
         """
+        ## Call the run() method of the parent (i.e. Analysis) class.
         tarFilename, configArguments = super(PrivateMC, self).run(*args, **kwargs)
+
+        ## Change the `jobtype' parameter from 'Analysis' to 'PrivateMC'.
         configArguments['jobtype'] = 'PrivateMC'
 
-        lhe, nfiles = self.cmsswCfg.hasLHESource()
-        if lhe:
-            self.logger.debug("LHESource found in the CMSSW configuration.")
-            configArguments['generator'] = getattr(self.config.JobType, 'generator', 'lhe')
-
-            major, minor, fix = os.environ['CMSSW_VERSION'].split('_')[1:4]
-            warn = True
-            if int(major) >= 7:
-                if int(minor) >= 5:
-                    warn = False
-
-            if nfiles > 1 and warn:
-                msg = "{0}Warning{1}: Using an LHESource with ".format(colors.RED, colors.NORMAL)
-                msg += "more than one input file may not be supported by the CMSSW version used. "
-                msg += "Consider merging the LHE input files to guarantee complete processing."
-                self.logger.warning(msg)
+        ## If there is a CMSSW pset...
+        if getattr(self.config.JobType, 'psetName', None):
+            ## Check if it has an LHE source.
+            lhe, nfiles = self.cmsswCfg.hasLHESource()
+            ## If it does...
+            if lhe:
+                ## Set the `generator' parameter to 'lhe' (unless the user specified some other
+                ## value for that parameter).
+                self.logger.debug("LHESource found in the CMSSW configuration.")
+                configArguments['generator'] = getattr(self.config.JobType, 'generator', 'lhe')
+                ## CMSSW versions < 7.5.X may not support reading more than one LHESource input
+                ## file. => Give a warning message.
+                major, minor = os.environ['CMSSW_VERSION'].split('_')[1:3]
+                warn = not (int(major) >= 7 and int(minor) >= 5)
+                if nfiles > 1 and warn:
+                    msg = "{0}Warning{1}: Using an LHESource with ".format(colors.RED, colors.NORMAL)
+                    msg += "more than one input file may not be supported by the CMSSW version used. "
+                    msg += "Consider merging the LHE input files to guarantee complete processing."
+                    self.logger.warning(msg)
 
         configArguments['primarydataset'] = getattr(self.config.Data, 'outputPrimaryDataset', 'CRAB_PrivateMC')
 

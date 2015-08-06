@@ -37,6 +37,7 @@ class UserTarball(object):
         self.tarfile = tarfile.open(name=name , mode=mode, dereference=True)
         self.checksum = None
 
+
     def addFiles(self, userFiles=None, cfgOutputName=None):
         """
         Add the necessary files to the tarball
@@ -46,7 +47,7 @@ class UserTarball(object):
             directories.append('python')
         # /data/ subdirs contain data files needed by the code
         # /interface/ subdirs contain C++ header files needed e.g. by ROOT6
-        dataDirs    = ['data','interface']
+        dataDirs = ['data', 'interface']
         userFiles = userFiles or []
 
         # Tar up whole directories
@@ -67,7 +68,7 @@ class UserTarball(object):
                 self.checkdirectory(root)
                 self.tarfile.add(root, directory, recursive=True)
 
-        # Tar up extra files the user needs
+        ## Tar up extra files the user needs.
         for globName in userFiles:
             fileNames = glob.glob(globName)
             if not fileNames:
@@ -77,27 +78,27 @@ class UserTarball(object):
                 self.checkdirectory(filename)
                 self.tarfile.add(filename, os.path.basename(filename), recursive=True)
 
-
+        ## Adding scriptExe to the tarfile.
         scriptExe = getattr(self.config.JobType, 'scriptExe', None)
         if scriptExe:
             self.tarfile.add(scriptExe, arcname=os.path.basename(scriptExe))
 
-        # Adding the pset files to the tarfile
+        ## Adding the pickled CMSSW pset (and the loading .py file) to the tarfile.
         if cfgOutputName:
             basedir = os.path.dirname(cfgOutputName)
             self.tarfile.add(cfgOutputName, arcname=BOOTSTRAP_CFGFILE)
             self.tarfile.add(os.path.join(basedir, BOOTSTRAP_CFGFILE_PKL), arcname=BOOTSTRAP_CFGFILE_PKL)
             self.tarfile.add(os.path.join(basedir, BOOTSTRAP_CFGFILE_DUMP), arcname=BOOTSTRAP_CFGFILE_DUMP)
 
-        #debug directory
+        ## Adding the original CMSSW pset to the tarfile.
+        psetfilename = getattr(self.config.JobType, 'psetName', None)
+        if psetfilename:
+            self.tarfile.add(psetfilename, '/debug/originalPSet.py')
+
+        ## Adding the CRAB config to the tarfile.
         configtmp = tempfile.NamedTemporaryFile(delete=True)
         configtmp.write(str(self.config))
         configtmp.flush()
-        psetfilename = getattr(self.config.JobType, 'psetName', None)
-        if not psetfilename == None:
-            self.tarfile.add(psetfilename,'/debug/originalPSet.py')
-        else:
-            self.logger.debug('Failed to add pset to tarball')
         self.tarfile.add(configtmp.name, '/debug/crabConfig.py')
         configtmp.close()
 

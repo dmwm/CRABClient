@@ -17,7 +17,7 @@ if [ "$SUBMIT" = true ]; then
     CRAB3_BIN_ROOT=$(sh -c "source $CRAB_SOURCE_SCRIPT >/dev/null 2>/dev/null; if [ \$? -eq 0 ] && [ -d \$CRABCLIENT_ROOT ]; \
                         then echo \$CRABCLIENT_ROOT/bin; else exit 1; fi")
     if [ $? -ne 0 ]; then
-        echo -e "Error while loading CRAB3 environment. Cannot find CRAB3 root direcotry inside:\n\t$CRAB_SOURCE_SCRIPT";
+        echo -e "Error while loading CRAB3 environment. Cannot find CRAB3 root directory inside:\n\t$CRAB_SOURCE_SCRIPT";
         exit 1;
     fi
 
@@ -26,7 +26,7 @@ if [ "$SUBMIT" = true ]; then
     CRAB3_PY_ROOT=$(sh -c "source $CRAB_SOURCE_SCRIPT >/dev/null 2>/dev/null; if [ \$? -eq 0 ] && [ -d \$CRABCLIENT_ROOT ]; \
                         then echo \$CRABCLIENT_ROOT/\$PYTHON_LIB_SITE_PACKAGES; else exit 1; fi")
     if [ $? -ne 0 ]; then
-        echo -e "Error while loading CRAB3 environment. Cannot find CRAB3 root direcotry inside:\n\t$CRAB_SOURCE_SCRIPT";
+        echo -e "Error while loading CRAB3 environment. Cannot find CRAB3 root directory inside:\n\t$CRAB_SOURCE_SCRIPT";
         exit 1;
     fi
 

@@ -70,73 +70,85 @@ class Analysis(BasicJobType):
         if getattr(self.config.Data, 'inputDataset', None):
             configArguments['inputdata'] = self.config.Data.inputDataset
 
-        ## Create CMSSW config.
         self.logger.debug("self.config: %s" % (self.config))
-        self.logger.debug("self.config.JobType.psetName: %s" % (self.config.JobType.psetName))
-        ## The loading of a CMSSW pset in the CMSSWConfig constructor is not idempotent
-        ## in the sense that a second loading of the same pset may not produce the same
-        ## result. Therefore there is a cache in CMSSWConfig to avoid loading any CMSSW
-        ## pset twice. However, some "complicated" psets seem to evade the caching.
-        ## Thus, to be safe, keep the CMSSWConfig instance in a class variable, so that
-        ## it can be reused later if wanted (for example, in PrivateMC when checking if
-        ## the pset has an LHE source) instead of having to load the pset again.
-        ## As for what does "complicated" psets mean, Daniel Riley said that there are
-        ## some psets where one module modifies the configuration from another module.
-        self.cmsswCfg = CMSSWConfig(config=self.config, logger=self.logger,
-                                    userConfig=self.config.JobType.psetName)
 
-        ## If there is a CMSSW pset, do a basic validation of it.
-        if not bootstrapDone() and self.config.JobType.psetName:
-            valid, msg = self.cmsswCfg.validateConfig()
-            if not valid:
-                raise ConfigurationException(msg)
+        ## If there is a CMSSW pset...
+        if getattr(self.config.JobType, 'psetName', None):
+            self.logger.debug("self.config.JobType.psetName: %s" % (self.config.JobType.psetName))
+            ## Create a CMSSWConfig object.
+            ## The loading of a CMSSW pset in the CMSSWConfig constructor is not idempotent
+            ## in the sense that a second loading of the same pset may not produce the same
+            ## result. Therefore there is a cache in CMSSWConfig to avoid loading any CMSSW
+            ## pset twice. However, some "complicated" psets seem to evade the caching.
+            ## Thus, to be safe, keep the CMSSWConfig instance in a class variable, so that
+            ## it can be reused later if wanted (for example, in PrivateMC when checking if
+            ## the pset has an LHE source) instead of having to load the pset again.
+            ## As for what does "complicated" psets mean, Daniel Riley said that there are
+            ## some psets where one module modifies the configuration from another module.
+            self.cmsswCfg = CMSSWConfig(config=self.config, logger=self.logger,
+                                        userConfig=self.config.JobType.psetName)
+            ## Do a basic validation of the CMSSW configuration (the bootstrap script does
+            ## it as well, so we should not do it again if the script already ran).
+            if not bootstrapDone():
+                valid, msg = self.cmsswCfg.validateConfig()
+                if not valid:
+                    raise ConfigurationException(msg)
+            ## We need to put the pickled CMSSW configuration in the right place.
+            ## Here, we determine if the bootstrap script already ran and prepared everything
+            ## for us. In such case we move the file, otherwise we pickle.dump the pset.
+            if not bootstrapDone():
+                # Write out CMSSW config
+                self.cmsswCfg.writeFile(cfgOutputName)
+            else:
+                # Move the pickled configuration file created by the bootstrap script
+                self.moveCfgFile(cfgOutputName)
 
-        ## We need to put the pickled CMSSW configuration in the right place.
-        ## Here, we determine if the bootstrap script already run and prepared everything
-        ## for us. In such case we move the file, otherwise we pickle.dump the pset
-        if not bootstrapDone():
-            # Write out CMSSW config
-            self.cmsswCfg.writeFile(cfgOutputName)
+            ## Interrogate the CMSSW pset for output files (only output files produced by
+            ## PoolOutputModule or TFileService are identified automatically). Do this
+            ## automatic detection even if JobType.disableAutomaticOutputCollection = True,
+            ## so that we can still classify the output files in EDM, TFile and additional
+            ## output files in the Task DB (and the job ad).
+            ## TODO: Do we really need this classification at all? cmscp and PostJob read
+            ## the FJR to know if an output file is EDM, TFile or other.
+            edmfiles, tfiles = self.cmsswCfg.outputFiles()
+            ## If JobType.disableAutomaticOutputCollection = True, ignore the EDM and TFile
+            ## output files that are not listed in JobType.outputFiles.
+            if getattr(self.config.JobType, 'disableAutomaticOutputCollection', getParamDefaultValue('JobType.disableAutomaticOutputCollection')):
+                outputFiles = [re.sub(r'^file:', '', file) for file in getattr(self.config.JobType, 'outputFiles', [])]
+                edmfiles = [file for file in edmfiles if file in outputFiles]
+                tfiles = [file for file in tfiles if file in outputFiles]
+            self.logger.debug("The following EDM output files will be collected: %s" % edmfiles)
+            self.logger.debug("The following TFile output files will be collected: %s" % tfiles)
+            configArguments['edmoutfiles'] = edmfiles
+            configArguments['tfileoutfiles'] = tfiles
+            ## Get the additional output files that have to be collected, but remove
+            ## duplicates listed already as EDM files or TFiles.
+            addoutputFiles = [re.sub(r'^file:', '', file) for file in getattr(self.config.JobType, 'outputFiles', []) if re.sub(r'^file:', '', file) not in edmfiles+tfiles]
+            self.logger.debug("The following user output files will be collected: %s" % addoutputFiles)
+            configArguments['addoutputfiles'].extend(addoutputFiles)
+        ## If there isn't a CMSSW pset... (then there must be a scriptExe)
         else:
-            # Move the pickled and the configuration files created by the bootstrap script
-            self.moveCfgFile(cfgOutputName)
+            ## Get the output files that have to be collected.
+            outputFiles = getattr(self.config.JobType, 'outputFiles', [])
+            self.logger.debug("The following output files will be collected: %s" % (outputFiles))
+            configArguments['addoutputfiles'].extend(outputFiles)
 
-        ## Interrogate the CMSSW pset for output files (only output files produced by
-        ## PoolOutputModule or TFileService are identified automatically). Do this
-        ## automatic detection even if JobType.disableAutomaticOutputCollection = True,
-        ## so that we can still classify the output files in EDM, TFile and additional
-        ## output files in the Task DB (and the job ad).
-        ## TODO: Do we really need this classification at all? cmscp and PostJob read
-        ## the FJR to know if an output file is EDM, TFile or other.
-        edmfiles, tfiles = self.cmsswCfg.outputFiles()
-        ## If JobType.disableAutomaticOutputCollection = True, ignore the EDM and TFile
-        ## output files that are not listed in JobType.outputFiles.
-        if getattr(self.config.JobType, 'disableAutomaticOutputCollection', getParamDefaultValue('JobType.disableAutomaticOutputCollection')):
-            outputFiles = [re.sub(r'^file:', '', file) for file in getattr(self.config.JobType, 'outputFiles', [])]
-            edmfiles = [file for file in edmfiles if file in outputFiles]
-            tfiles = [file for file in tfiles if file in outputFiles]
-        ## Get the list of additional output files that have to be collected as given
-        ## in JobType.outputFiles, but remove duplicates listed already as EDM files or
-        ## TFiles.
-        addoutputFiles = [re.sub(r'^file:', '', file) for file in getattr(self.config.JobType, 'outputFiles', []) if re.sub(r'^file:', '', file) not in edmfiles+tfiles]
-        self.logger.debug("The following EDM output files will be collected: %s" % edmfiles)
-        self.logger.debug("The following TFile output files will be collected: %s" % tfiles)
-        self.logger.debug("The following user output files will be collected: %s" % addoutputFiles)
-        configArguments['edmoutfiles'] = edmfiles
-        configArguments['tfileoutfiles'] = tfiles
-        configArguments['addoutputfiles'].extend(addoutputFiles)
         ## Give warning message in case no output file was detected in the CMSSW pset
         ## nor was any specified in the CRAB configuration.
         if not configArguments['edmoutfiles'] and not configArguments['tfileoutfiles'] and not configArguments['addoutputfiles']:
             msg = "%sWarning%s:" % (colors.RED, colors.NORMAL)
-            if getattr(self.config.JobType, 'disableAutomaticOutputCollection', getParamDefaultValue('JobType.disableAutomaticOutputCollection')):
-                msg += " Automatic detection of output files in the CMSSW configuration is disabled from the CRAB configuration"
-                msg += " and no output file was explicitly specified in the CRAB configuration."
+            if getattr(self.config.JobType, 'psetName', None):
+                if getattr(self.config.JobType, 'disableAutomaticOutputCollection', getParamDefaultValue('JobType.disableAutomaticOutputCollection')):
+                    msg += " Automatic detection of output files in the CMSSW configuration is disabled from the CRAB configuration"
+                    msg += " and no output file was explicitly specified in the CRAB configuration."
+                else:
+                    msg += " CRAB could not detect any output file in the CMSSW configuration"
+                    msg += " nor was any explicitly specified in the CRAB configuration."
             else:
-                msg += " CRAB could not detect any output file in the CMSSW configuration"
-                msg += " nor was any explicitly specified in the CRAB configuration."
+                msg += " No output files specified in the CRAB configuration."
             msg += " Hence CRAB will not collect any output file from this task."
             self.logger.warning(msg)
+                
 
         ## UserTarball calls ScramEnvironment which can raise EnvironmentException.
         ## Since ScramEnvironment is already called above and the exception is not
@@ -144,7 +156,10 @@ class Analysis(BasicJobType):
         ## But otherwise we should take this into account.
         with UserTarball(name=tarFilename, logger=self.logger, config=self.config) as tb:
             inputFiles = [re.sub(r'^file:', '', file) for file in getattr(self.config.JobType, 'inputFiles', [])]
-            tb.addFiles(userFiles=inputFiles, cfgOutputName=cfgOutputName)
+            if getattr(self.config.JobType, 'psetName', None):
+                tb.addFiles(userFiles=inputFiles, cfgOutputName=cfgOutputName)
+            else:
+                tb.addFiles(userFiles=inputFiles)
             configArguments['adduserfiles'] = [os.path.basename(f) for f in inputFiles]
             try:
                 uploadResult = tb.upload(filecacheurl = filecacheurl)
@@ -300,8 +315,8 @@ class Analysis(BasicJobType):
             msg = "Invalid CRAB configuration: Parameter Data.splitting not specified."
             return False, msg
 
-        if not getattr(config.JobType, 'psetName', None):
-            msg = "Invalid CRAB configuration: Parameter JobType.psetName not specified."
+        if not getattr(config.JobType, 'psetName', None) and not getattr(config.JobType, 'scriptExe', None):
+            msg = "Invalid CRAB configuration: At least one of the two parameters JobType.psetName or JobType.scriptExe has to be specified."
             return False, msg
 
         return True, "Valid configuration"

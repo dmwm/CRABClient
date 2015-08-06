@@ -138,7 +138,7 @@ class submit(SubCommand):
                     voRole=self.voRole, voGroup=self.voGroup, instance=self.instance,
                     originalConfig=self.configuration)
 
-        self.logger.info("%sSuccess%s: Your task has been delivered to the CRAB3 server." %(colors.GREEN, colors.NORMAL))
+        self.logger.info("%sSuccess%s: Your task has been delivered to the CRAB3 server." % (colors.GREEN, colors.NORMAL))
         if not (self.options.wait or self.options.dryrun):
             self.logger.info("Task name: %s" % uniquerequestname)
             self.logger.info("Please use 'crab status' to check how the submission process proceeds.")
@@ -279,7 +279,7 @@ class submit(SubCommand):
 
         if hasattr(self.configuration.JobType, 'scriptExe'):
             if not os.path.isfile(self.configuration.JobType.scriptExe):
-                msg = "Cannot find the file %s specified in the JobType.scriptExe configuration parameter." % (self.configuration.JobType.scriptExe)
+                msg = "Cannot find file '%s' specified in the JobType.scriptExe configuration parameter." % (self.configuration.JobType.scriptExe)
                 return False, msg
 
         return True, "Valid configuration"
