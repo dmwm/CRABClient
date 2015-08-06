@@ -20,10 +20,12 @@ import logging.handlers
 
 from httplib import HTTPException
 
+from ServerUtilities import FEEDBACKMAIL
+
 from CRABClient.CRABOptParser import CRABOptParser
 from CRABClient import __version__ as client_version
 from CRABClient.ClientMapping import parametersMapping
-from CRABClient.ClientExceptions import ClientException, FEEDBACKMAIL
+from CRABClient.ClientExceptions import ClientException 
 from CRABClient.ClientUtilities import getAvailCommands, logfilter , uploadlogfile, initLoggers, setConsoleLogLevelVar, StopExecution, flushMemoryLogger
 
 
