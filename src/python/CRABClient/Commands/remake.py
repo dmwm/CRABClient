@@ -48,7 +48,7 @@ class remake(SubCommand):
         self.parser.add_option("--task",
                                dest = "cmptask",
                                default = None,
-                               help = "The complete task name. Can be taken from 'crab status' output, or from glidemon or dashboard.")
+                               help = "The complete task name. Can be taken from 'crab status' output, or from dashboard.")
 
 
     def validateOptions(self):
