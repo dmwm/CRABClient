@@ -132,7 +132,7 @@ if __name__ == "__main__":
     try:
         client()
         exitcode = 0 #no exceptions no errors
-    except HTTPException, he:
+    except HTTPException as he:
         client.logger.info("Error contacting the server.")
         if he.status==503 and he.result.find("CMSWEB Error: Service unavailable")!=-1:
             client.logger.info("It seems the CMSWEB frontend is not responding. Please check: https://twiki.cern.ch/twiki/bin/viewauth/CMS/ScheduledInterventions")
@@ -162,13 +162,13 @@ if __name__ == "__main__":
         client.logger.debug('     Request headers: %s' % he.headers)
         logging.getLogger('CRAB3').exception('Caught exception')
         exitcode = he.status
-    except pycurl.error, pe:
+    except pycurl.error as  pe:
         client.logger.error(pe)
         logging.getLogger('CRAB3').exception('Caught exception')
         exitcode = pe.args[0]
         if pe[1].find('(DNS server returned answer with no data)'):
             client.logger.info("It seems the CMSWEB frontend is not responding. Please check: https://twiki.cern.ch/twiki/bin/viewauth/CMS/ScheduledInterventions")
-    except ClientException, ce:
+    except ClientException as ce:
         client.logger.error(ce)
         logging.getLogger('CRAB3').exception('Caught exception')
         exitcode = ce.exitcode
