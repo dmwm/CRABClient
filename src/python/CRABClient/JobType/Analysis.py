@@ -4,9 +4,12 @@ CMSSW job type plug-in
 
 import os
 import re
+import math
 import shutil
 import string
 import tempfile
+
+from httplib import HTTPException
 
 from WMCore.Lexicon import lfnParts
 from WMCore.DataStructs.LumiList import LumiList
@@ -20,8 +23,9 @@ from CRABClient.JobType.BasicJobType import BasicJobType
 from CRABClient.ClientMapping import getParamDefaultValue
 from CRABClient.JobType.LumiMask import getLumiList, getRunList
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
-from CRABClient.ClientExceptions import EnvironmentException, ConfigurationException
+from CRABClient.ClientExceptions import ClientException, EnvironmentException, ConfigurationException
 from CRABClient.ClientUtilities import bootstrapDone, BOOTSTRAP_CFGFILE, BOOTSTRAP_CFGFILE_PKL
+
 
 class Analysis(BasicJobType):
     """
@@ -137,7 +141,26 @@ class Analysis(BasicJobType):
             inputFiles = [re.sub(r'^file:', '', file) for file in getattr(self.config.JobType, 'inputFiles', [])]
             tb.addFiles(userFiles=inputFiles, cfgOutputName=cfgOutputName)
             configArguments['adduserfiles'] = [os.path.basename(f) for f in inputFiles]
-            uploadResults = tb.upload(filecacheurl = filecacheurl)
+            try:
+                uploadResults = tb.upload(filecacheurl = filecacheurl)
+            except HTTPException as hte:
+                if 'X-Error-Info' in hte.headers:
+                    reason = hte.headers['X-Error-Info']
+                    reason_re = re.compile(r'\AFile size is ([0-9]*)B\. This is bigger than the maximum allowed size of ([0-9]*)B\.$')
+                    re_match = reason_re.match(reason)
+                    if re_match:
+                        ISBSize = int(re_match.group(1))
+                        ISBSizeLimit = int(re_match.group(2))
+                        reason  = "%sError%s:" % (colors.RED, colors.NORMAL)
+                        reason += " Input sanbox size is ~%sMB. This is bigger than the maximum allowed size of %sMB." % (ISBSize/1024/1024, ISBSizeLimit/1024/1024)
+                        ISBContent = sorted(tb.content, reverse=True)
+                        biggestFileSize = ISBContent[0][0]
+                        ndigits = int(math.ceil(math.log(biggestFileSize+1, 10))) 
+                        reason += "\nInput sanbox content sorted by size[Bytes]:"
+                        for (size, name) in ISBContent:
+                            reason += ("\n%" + str(ndigits) + "s\t%s") % (size, name)
+                        raise ClientException(reason)
+                raise hte
 
         self.logger.debug("Result uploading input files: %s " % str(uploadResults))
         configArguments['cacheurl'] = filecacheurl

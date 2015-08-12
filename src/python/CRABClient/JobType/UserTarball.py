@@ -49,11 +49,11 @@ class UserTarball(object):
         userFiles = userFiles or []
 
         # Tar up whole directories
-        for directory in  directories:
+        for directory in directories:
             fullPath = os.path.join(self.scram.getCmsswBase(), directory)
-            self.logger.debug(" checking directory %s" % fullPath)
+            self.logger.debug("Checking directory %s" % fullPath)
             if os.path.exists(fullPath):
-                self.logger.debug(" adding directory %s to tarball" % fullPath)
+                self.logger.debug("Adding directory %s to tarball" % fullPath)
                 self.checkdirectory(fullPath)
                 self.tarfile.add(fullPath, directory, recursive=True)
 
@@ -62,7 +62,7 @@ class UserTarball(object):
         for root, _dummy, _dummy in os.walk(srcPath):
             if os.path.basename(root) in dataDirs:
                 directory = root.replace(srcPath,'src')
-                self.logger.debug(" adding data directory %s to tarball" % root)
+                self.logger.debug("Adding data directory %s to tarball" % root)
                 self.checkdirectory(root)
                 self.tarfile.add(root, directory, recursive=True)
 
@@ -70,9 +70,9 @@ class UserTarball(object):
         for globName in userFiles:
             fileNames = glob.glob(globName)
             if not fileNames:
-                raise InputFileNotFoundException('The input file "%s" taken from parameter config.JobType.inputFiles cannot be found' % globName)
+                raise InputFileNotFoundException("The input file '%s' taken from parameter config.JobType.inputFiles cannot be found." % globName)
             for filename in fileNames:
-                self.logger.debug(" adding file %s to tarball" % filename)
+                self.logger.debug("Adding file %s to tarball" % filename)
                 self.checkdirectory(filename)
                 self.tarfile.add(filename, os.path.basename(filename), recursive=True)
 
@@ -97,13 +97,20 @@ class UserTarball(object):
         self.tarfile.add(configtmp.name, '/debug/crabConfig.py')
         configtmp.close()
 
+
+    def writeContent(self):
+        """Save the content of the tarball"""
+        self.content = [(int(x.size), x.name) for x in self.tarfile.getmembers()]
+
+
     def close(self):
         """
-        Calculate the checkum and clos
+        Calculate the checkum and close
         """
-
+        self.writeContent()
         self.calculateChecksum()
         return self.tarfile.close()
+
 
     def upload(self, filecacheurl=None):
         """
@@ -111,7 +118,7 @@ class UserTarball(object):
         """
         self.close()
         archiveName = self.tarfile.name
-        self.logger.debug(" uploading archive to cache %s " % archiveName)
+        self.logger.debug("Uploading archive %s to the CRAB cache. Using URI %s" % (archiveName, filecacheurl))
         ufc = CRABClient.Emulator.getEmulator('ufc')({'endpoint' : filecacheurl})
         result = ufc.upload(archiveName)
         if 'hashkey' not in result:
@@ -141,6 +148,7 @@ class UserTarball(object):
                 #sha256sum.update(chunkdata)
         #sha256sum.hexdigest()
 
+
     def checkdirectory(self, dir_):
         #checking for infinite symbolic link loop
         try:
@@ -151,6 +159,7 @@ class UserTarball(object):
             err = '%sError%s: Infinite directory loop found in: %s \nStderr: %s' % \
                     (colors.RED, colors.NORMAL, dir_ , msg)
             raise EnvironmentException(err)
+
 
     def __getattr__(self, *args):
         """
