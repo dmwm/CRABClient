@@ -1,5 +1,3 @@
-FEEDBACKMAIL = 'hn-cms-computing-tools@cern.ch'
-
 class ClientException(Exception):
     """
     general client exception
