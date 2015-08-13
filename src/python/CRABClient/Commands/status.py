@@ -130,12 +130,10 @@ class status(SubCommand):
         else:
             ## The REST Interface can return dictresult['jobSetID'] = '' or dictresult['jobSetID'] = task name.
             if self.cachedinfo['RequestName'] == dictresult['jobSetID']:
-                ## Print the Dashboard and GlideMon monitoring URLs for this task.
+                ## Print the Dashboard monitoring URL for this task.
                 taskname = urllib.quote(dictresult['jobSetID'])
-                glidemonURL = "http://glidemon.web.cern.ch/glidemon/jobs.php?taskname=" + taskname
                 dashboardURL = "http://dashb-cms-job.cern.ch/dashboard/templates/task-analysis/#user=" + username \
                              + "&refresh=0&table=Jobs&p=1&records=25&activemenu=2&status=&site=&tid=" + taskname
-                self.logger.info("Glidemon monitoring URL:\t%s" % (glidemonURL))
                 self.logger.info("Dashboard monitoring URL:\t%s" % (dashboardURL))
 
         #Print information about jobs
@@ -291,7 +289,7 @@ class status(SubCommand):
                             remainder -= nj
                         if remainder > 0:
                             msg += "\n\n\tFor the error messages of the other %s jobs," % (remainder)
-                            msg += " please have a look at the task monitoring web pages."
+                            msg += " please have a look at the dashboard task monitoring web page."
             if unknown:
                 msg += "\n\nCould not find exit code details for %s jobs." % (unknown)
             msg += "\n\nHave a look at https://twiki.cern.ch/twiki/bin/viewauth/CMSPublic/JobExitCodes for a description of the exit codes."
