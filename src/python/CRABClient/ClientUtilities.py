@@ -619,8 +619,14 @@ def setSubmitParserOptions(parser):
                            dest = 'dryrun',
                            default = False,
                            action = 'store_true',
-                           help = "Do not actually submit the task; instead, return how many jobs this task would create, along with processing time estimates.")
+                           help = "Do not actually submit the task; instead, return how many jobs this task would create, "\
+                                  "along with processing time and memory consumption estimates.")
 
+    parser.add_option('--skip-estimates',
+                           dest = 'skipEstimates',
+                           default = False,
+                           action = 'store_true',
+                           help = "When executing a dry run, skip the processing time and memory consumption estimates.")
 
 def validateSubmitOptions(options, args, logger):
     """ If no configuration file was passed as an option, try to extract it from the first argument.
