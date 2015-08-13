@@ -49,7 +49,7 @@ class submit(SubCommand):
 
         self.logger.debug("Working on %s" % str(self.requestarea))
 
-        configreq = {'dryrun': 1 if self.options.dryrun else 0}
+        self.configreq = {'dryrun': 1 if self.options.dryrun else 0}
         for param in parametersMapping['on-server']:
             mustbetype = getattr(types, parametersMapping['on-server'][param]['type'])
             default = parametersMapping['on-server'][param]['default']
@@ -62,10 +62,10 @@ class submit(SubCommand):
                     if temp is None:
                         break
                 if temp is not None:
-                    configreq[param] = temp
+                    self.configreq[param] = temp
                     break
                 elif default is not None:
-                    configreq[param] = default
+                    self.configreq[param] = default
                     temp = default
                 else:
                     ## Parameter not strictly required.
@@ -74,10 +74,10 @@ class submit(SubCommand):
             ## This is not checked in SubCommand.validateConfig().
             if param == 'workflow':
                 if mustbetype == type(self.requestname):
-                    configreq['workflow'] = self.requestname
+                    self.configreq['workflow'] = self.requestname
             ## Translate boolean flags into integers.
             elif param in ['savelogsflag', 'publication', 'publishgroupname', 'nonprodsw', 'useparent', 'ignorelocality', 'saveoutput', 'oneEventMode', 'nonvaliddata']:
-                configreq[param] = 1 if temp else 0
+                self.configreq[param] = 1 if temp else 0
             ## Translate DBS URL aliases into DBS URLs.
             elif param in ['dbsurl', 'publishdbsurl']:
                 if param == 'dbsurl':
@@ -86,12 +86,12 @@ class submit(SubCommand):
                     dbstype = 'writer'
                 allowed_dbsurls = DBSURLS[dbstype].values()
                 allowed_dbsurls_aliases = DBSURLS[dbstype].keys()
-                if configreq[param] in allowed_dbsurls_aliases:
-                    configreq[param] = DBSURLS[dbstype][configreq[param]]
-                elif configreq[param].rstrip('/') in allowed_dbsurls:
-                    configreq[param] = configreq[param].rstrip('/')
-            elif param == 'scriptexe' and 'scriptexe' in configreq:
-                configreq[param] = os.path.basename(configreq[param])
+                if self.configreq[param] in allowed_dbsurls_aliases:
+                    self.configreq[param] = DBSURLS[dbstype][self.configreq[param]]
+                elif self.configreq[param].rstrip('/') in allowed_dbsurls:
+                    self.configreq[param] = self.configreq[param].rstrip('/')
+            elif param == 'scriptexe' and 'scriptexe' in self.configreq:
+                self.configreq[param] = os.path.basename(self.configreq[param])
 
         jobconfig = {}
         #get the backend URLs from the server external configuration
@@ -100,47 +100,47 @@ class submit(SubCommand):
         filecacheurl = serverBackendURLs['cacheSSL'] if 'cacheSSL' in serverBackendURLs else None
         pluginParams = [self.configuration, self.logger, os.path.join(self.requestarea, 'inputs')]
         crab_job_types = getJobTypes()
-        if upper(configreq['jobtype']) in crab_job_types:
-            plugjobtype = crab_job_types[upper(configreq['jobtype'])](*pluginParams)
+        if upper(self.configreq['jobtype']) in crab_job_types:
+            plugjobtype = crab_job_types[upper(self.configreq['jobtype'])](*pluginParams)
             inputfiles, jobconfig, isbchecksum = plugjobtype.run(filecacheurl)
         else:
-            fullname = configreq['jobtype']
+            fullname = self.configreq['jobtype']
             basename = os.path.basename(fullname).split('.')[0]
             plugin = addPlugin(fullname)[basename]
             pluginInst = plugin(*pluginParams)
             inputfiles, jobconfig, isbchecksum = pluginInst.run()
 
-        if configreq['publication']:
+        if self.configreq['publication']:
             non_edm_files = jobconfig['tfileoutfiles'] + jobconfig['addoutputfiles']
             if non_edm_files:
                 msg = "%sWarning%s: The following output files will not be published, as they are not EDM files: %s" % (colors.RED, colors.NORMAL, non_edm_files)
                 self.logger.warning(msg)
 
-        if not configreq['publishname']:
-            configreq['publishname'] = isbchecksum
+        if not self.configreq['publishname']:
+            self.configreq['publishname'] = isbchecksum
         else:
-            configreq['publishname'] = "%s-%s" % (configreq['publishname'], isbchecksum)
-        configreq.update(jobconfig)
+            self.configreq['publishname'] = "%s-%s" % (self.configreq['publishname'], isbchecksum)
+        self.configreq.update(jobconfig)
         server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
 
         self.logger.info("Sending the request to the server")
-        self.logger.debug("Submitting %s " % str(configreq))
+        self.logger.debug("Submitting %s " % str(self.configreq))
         ## TODO: this shouldn't be hard-coded.
         listParams = ['adduserfiles', 'addoutputfiles', 'sitewhitelist', 'siteblacklist', 'blockwhitelist', 'blockblacklist', \
                       'tfileoutfiles', 'edmoutfiles', 'runs', 'lumis', 'userfiles', 'scriptargs', 'extrajdl']
-        configreq_encoded = self._encodeRequest(configreq, listParams)
-        self.logger.debug('Encoded submit request: %s' % (configreq_encoded))
+        self.configreq_encoded = self._encodeRequest(self.configreq, listParams)
+        self.logger.debug('Encoded submit request: %s' % (self.configreq_encoded))
 
-        dictresult, status, reason = server.put(self.uri, data = configreq_encoded)
+        dictresult, status, reason = server.put(self.uri, data = self.configreq_encoded)
         self.logger.debug("Result: %s" % dictresult)
         if status != 200:
-            msg = "Problem sending the request:\ninput:%s\noutput:%s\nreason:%s" % (str(configreq), str(dictresult), str(reason))
+            msg = "Problem sending the request:\ninput:%s\noutput:%s\nreason:%s" % (str(self.configreq), str(dictresult), str(reason))
             raise RESTCommunicationException(msg)
         elif dictresult.has_key("result"):
             uniquerequestname = dictresult["result"][0]["RequestName"]
         else:
             msg = "Problem during submission, no request ID returned:\ninput:%s\noutput:%s\nreason:%s" \
-                   % (str(configreq), str(dictresult), str(reason))
+                   % (str(self.configreq), str(dictresult), str(reason))
             raise RESTCommunicationException(msg)
 
         tmpsplit = self.serverurl.split(':')
@@ -326,7 +326,6 @@ class submit(SubCommand):
         Runs a trial to obtain the performance report. Repeats trial with successively larger input events
         until a job length of maxSeconds is reached (this improves accuracy for fast-running CMSSW parameter sets.)
         """
-
         ufc = CRABClient.Emulator.getEmulator('ufc')({'endpoint' : filecacheurl})
         cwd = os.getcwd()
         try:
@@ -358,8 +357,14 @@ class submit(SubCommand):
                 out, err = s.communicate()
                 self.logger.debug(out)
                 if s.returncode != 0:
-                    raise ClientException('Dry run failed to execute local test run:\n StdOut: %s\n StdErr: %s' % (err, out))
-                with open('jobReport.json') as f:
+                    raise ClientException('Dry run failed to execute local test run:\n StdOut: %s\n StdErr: %s' % (out, err))
+
+                #Once this https://github.com/dmwm/CRABServer/pull/4938 will get merged the job will be executed inside the CMSSW dir
+                #Therefore the 'jobReport.json' will not be in the cwd. We will delete these three lines of code in the future
+                jobReport = 'jobReport.json'
+                if not os.path.isfile(jobReport):
+                    jobReport = os.path.join( self.configreq["jobsw"], jobReport)
+                with open(jobReport) as f:
                     report = json.load(f)['steps']['cmsRun']['performance']
                 events += (maxSeconds / float(report['cpu']['AvgEventTime']))
                 totalJobSeconds = float(report['cpu']['TotalJobTime'])
@@ -429,10 +434,12 @@ class submit(SubCommand):
 
                 self.logger.info('\nFor ~%i minute jobs, use:' % (eventsPerJob * secondsPerEvent / 60))
                 self.logger.info('Data.unitsPerJob = %i' % (eventsPerJob / eventsPerUnit))
+                self.logger.info('You will need to submit a new task')
                 if units == 'events':
                     self.logger.info('Data.totalUnits = %i' %  splitting['total_events'])
 
         self.logger.info("\nDry run requested: task paused\nTo continue processing, use 'crab proceed'\n")
+
 
 def getCMSRunAnalysisOpts(ad, dag, job=1, events=10):
     """
