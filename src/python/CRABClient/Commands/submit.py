@@ -357,9 +357,14 @@ class submit(SubCommand):
                 out, err = s.communicate()
                 self.logger.debug(out)
                 if s.returncode != 0:
-                    raise ClientException('Dry run failed to execute local test run:\n StdOut: %s\n StdErr: %s' % (err, out))
+                    raise ClientException('Dry run failed to execute local test run:\n StdOut: %s\n StdErr: %s' % (out, err))
 
-                with open('jobReport.json') as f:
+                #Once this https://github.com/dmwm/CRABServer/pull/4938 will get merged the job will be executed inside the CMSSW dir
+                #Therefore the 'jobReport.json' will not be in the cwd. We will delete these three lines of code in the future
+                jobReport = 'jobReport.json'
+                if not os.path.isfile(jobReport):
+                    jobReport = os.path.join( self.configreq["jobsw"], jobReport)
+                with open(jobReport) as f:
                     report = json.load(f)['steps']['cmsRun']['performance']
                 events += (maxSeconds / float(report['cpu']['AvgEventTime']))
                 totalJobSeconds = float(report['cpu']['TotalJobTime'])
@@ -429,6 +434,7 @@ class submit(SubCommand):
 
                 self.logger.info('\nFor ~%i minute jobs, use:' % (eventsPerJob * secondsPerEvent / 60))
                 self.logger.info('Data.unitsPerJob = %i' % (eventsPerJob / eventsPerUnit))
+                self.logger.info('You will need to submit a new task')
                 if units == 'events':
                     self.logger.info('Data.totalUnits = %i' %  splitting['total_events'])
 
