@@ -13,7 +13,6 @@ import time
 import pkgutil
 import sys
 import cPickle
-import logging
 import subprocess
 import traceback
 from string import upper
