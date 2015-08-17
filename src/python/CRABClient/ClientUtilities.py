@@ -156,6 +156,7 @@ def flushMemoryLogger(logger, memhandler, logfilename):
     ff = logging.Formatter("%(levelname)s %(asctime)s: \t %(message)s")
     filehandler.setFormatter(ff)
     filehandler.setLevel(logging.DEBUG)
+    filehandler.addFilter(logfilter())
     logger.addHandler(filehandler)
     memhandler.setTarget(filehandler)
     memhandler.close()
@@ -370,7 +371,7 @@ def createWorkArea(logger, workingArea = '.', requestName = ''):
 
     if workingArea is None or workingArea == '.' :
         workingArea = os.getenv('CRAB_WORKING_AREA', '.')
-    elif not os.path.isabs(workingArea):
+    if not os.path.isabs(workingArea):
         workingArea = os.path.abspath(workingArea)
 
     ## create the working area if it is not there
