@@ -102,13 +102,13 @@ class submit(SubCommand):
         crab_job_types = getJobTypes()
         if upper(self.configreq['jobtype']) in crab_job_types:
             plugjobtype = crab_job_types[upper(self.configreq['jobtype'])](*pluginParams)
-            inputfiles, jobconfig, isbchecksum = plugjobtype.run(filecacheurl)
+            inputfiles, jobconfig = plugjobtype.run(filecacheurl)
         else:
             fullname = self.configreq['jobtype']
             basename = os.path.basename(fullname).split('.')[0]
             plugin = addPlugin(fullname)[basename]
             pluginInst = plugin(*pluginParams)
-            inputfiles, jobconfig, isbchecksum = pluginInst.run()
+            inputfiles, jobconfig = pluginInst.run()
 
         if self.configreq['publication']:
             non_edm_files = jobconfig['tfileoutfiles'] + jobconfig['addoutputfiles']
@@ -116,10 +116,6 @@ class submit(SubCommand):
                 msg = "%sWarning%s: The following output files will not be published, as they are not EDM files: %s" % (colors.RED, colors.NORMAL, non_edm_files)
                 self.logger.warning(msg)
 
-        if not self.configreq['publishname']:
-            self.configreq['publishname'] = isbchecksum
-        else:
-            self.configreq['publishname'] = "%s-%s" % (self.configreq['publishname'], isbchecksum)
         self.configreq.update(jobconfig)
         server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
 

@@ -6,7 +6,6 @@
 
 import os
 import glob
-import hashlib
 import tarfile
 import tempfile
 
@@ -108,7 +107,6 @@ class UserTarball(object):
         Calculate the checkum and close
         """
         self.writeContent()
-        self.calculateChecksum()
         return self.tarfile.close()
 
 
@@ -124,29 +122,7 @@ class UserTarball(object):
         if 'hashkey' not in result:
             self.logger.error("Failed to upload source files: %s" % str(result))
             raise CachefileNotFoundException
-        return str(result['hashkey']) + '.tar.gz', self.checksum
-
-
-    def calculateChecksum(self):
-        """
-        Calculate a checksum that doesn't depend on the tgz
-        creation data
-        """
-        lsl = [(x.name, int(x.size), int(x.mtime), x.uname) for x in self.tarfile.getmembers()]
-        hasher = hashlib.md5(str(lsl))
-        self.logger.debug('tgz contents: %s' % lsl)
-        self.checksum = hasher.hexdigest()
-        self.logger.debug('MD5 checksum: %s' % self.checksum)
-
-        #Old way reads in the file again. May use for for non-tar files if needed.
-        #sha256sum = hashlib.sha256()
-        #with open(self.tarfile.name, 'rb') as f:
-            #while True:
-                #chunkdata = f.read(8192)
-                #if not chunkdata:
-                    #break
-                #sha256sum.update(chunkdata)
-        #sha256sum.hexdigest()
+        return str(result['hashkey'])
 
 
     def checkdirectory(self, dir_):

@@ -146,7 +146,7 @@ class Analysis(BasicJobType):
             tb.addFiles(userFiles=inputFiles, cfgOutputName=cfgOutputName)
             configArguments['adduserfiles'] = [os.path.basename(f) for f in inputFiles]
             try:
-                uploadResults = tb.upload(filecacheurl = filecacheurl)
+                uploadResult = tb.upload(filecacheurl = filecacheurl)
             except HTTPException as hte:
                 if 'X-Error-Info' in hte.headers:
                     reason = hte.headers['X-Error-Info']
@@ -159,17 +159,16 @@ class Analysis(BasicJobType):
                         reason += " Input sanbox size is ~%sMB. This is bigger than the maximum allowed size of %sMB." % (ISBSize/1024/1024, ISBSizeLimit/1024/1024)
                         ISBContent = sorted(tb.content, reverse=True)
                         biggestFileSize = ISBContent[0][0]
-                        ndigits = int(math.ceil(math.log(biggestFileSize+1, 10))) 
+                        ndigits = int(math.ceil(math.log(biggestFileSize+1, 10)))
                         reason += "\nInput sanbox content sorted by size[Bytes]:"
                         for (size, name) in ISBContent:
                             reason += ("\n%" + str(ndigits) + "s\t%s") % (size, name)
                         raise ClientException(reason)
                 raise hte
 
-        self.logger.debug("Result uploading input files: %s " % str(uploadResults))
         configArguments['cacheurl'] = filecacheurl
-        configArguments['cachefilename'] = uploadResults[0]
-        isbchecksum = uploadResults[1]
+        configArguments['cachefilename'] = "%s.tar.gz" % uploadResult
+        self.logger.debug("Result uploading input files: %(cachefilename)s " % configArguments)
 
         # Upload list of user-defined input files to process as the primary input
         userFilesList = getattr(self.config.Data, 'userInputFiles', None)
@@ -228,7 +227,7 @@ class Analysis(BasicJobType):
 
         configArguments['jobtype'] = 'Analysis'
 
-        return tarFilename, configArguments, isbchecksum
+        return tarFilename, configArguments
 
 
     def validateConfig(self, config):

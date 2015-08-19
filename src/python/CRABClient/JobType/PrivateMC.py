@@ -22,7 +22,7 @@ class PrivateMC(Analysis):
         """
         Override run() for JobType
         """
-        tarFilename, configArguments, isbchecksum = super(PrivateMC, self).run(*args, **kwargs)
+        tarFilename, configArguments = super(PrivateMC, self).run(*args, **kwargs)
         configArguments['jobtype'] = 'PrivateMC'
 
         lhe, nfiles = self.cmsswCfg.hasLHESource()
@@ -49,7 +49,7 @@ class PrivateMC(Analysis):
         if not re.match("/%(primDS)s.*" % (lfnParts), primaryDataset):
             self.logger.warning("Invalid primary dataset name %s; publication may fail." % (primaryDataset))
         configArguments['inputdata'] = primaryDataset
-        return tarFilename, configArguments, isbchecksum
+        return tarFilename, configArguments
 
 
     def validateConfig(self, config):
