@@ -10,10 +10,12 @@ import tarfile
 import tempfile
 
 import CRABClient.Emulator
-from CRABClient.ClientUtilities import colors
 from CRABClient.ClientMapping import configParametersInfo
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
+from CRABClient.ClientUtilities import colors, BOOTSTRAP_CFGFILE, BOOTSTRAP_CFGFILE_PKL
 from CRABClient.ClientExceptions import EnvironmentException, InputFileNotFoundException, CachefileNotFoundException
+
+from ServerUtilities import USER_SANDBOX_EXCLUSIONS, BOOTSTRAP_CFGFILE_DUMP
 
 
 class UserTarball(object):
@@ -80,11 +82,14 @@ class UserTarball(object):
         if scriptExe:
             self.tarfile.add(scriptExe, arcname=os.path.basename(scriptExe))
 
-        # Adding the pset and crabconfig file to the tarfile
+        # Adding the pset files to the tarfile
         if cfgOutputName:
-            self.tarfile.add(cfgOutputName, arcname='PSet.py')
-            self.tarfile.add(os.path.splitext(cfgOutputName)[0]+'.pkl', arcname='PSet.pkl')
+            basedir = os.path.dirname(cfgOutputName)
+            self.tarfile.add(cfgOutputName, arcname=BOOTSTRAP_CFGFILE)
+            self.tarfile.add(os.path.join(basedir, BOOTSTRAP_CFGFILE_PKL), arcname=BOOTSTRAP_CFGFILE_PKL)
+            self.tarfile.add(os.path.join(basedir, BOOTSTRAP_CFGFILE_DUMP), arcname=BOOTSTRAP_CFGFILE_DUMP)
 
+        #debug directory
         configtmp = tempfile.NamedTemporaryFile(delete=True)
         configtmp.write(str(self.config))
         configtmp.flush()
@@ -118,7 +123,7 @@ class UserTarball(object):
         archiveName = self.tarfile.name
         self.logger.debug("Uploading archive %s to the CRAB cache. Using URI %s" % (archiveName, filecacheurl))
         ufc = CRABClient.Emulator.getEmulator('ufc')({'endpoint' : filecacheurl})
-        result = ufc.upload(archiveName)
+        result = ufc.upload(archiveName, excludeList = USER_SANDBOX_EXCLUSIONS)
         if 'hashkey' not in result:
             self.logger.error("Failed to upload source files: %s" % str(result))
             raise CachefileNotFoundException
