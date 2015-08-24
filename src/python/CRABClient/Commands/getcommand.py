@@ -27,6 +27,7 @@ class getcommand(SubCommand):
         elif argv.get('subresource') == 'data':
             taskdbparam = 'tm_transfer_outputs'
             configparam = "General.transferOutputs"
+
         transferFlag = 'unknown'
         inputlist = {'subresource': 'search', 'workflow': self.cachedinfo['RequestName']}
         serverFactory = CRABClient.Emulator.getEmulator('rest')
@@ -119,7 +120,8 @@ class getcommand(SubCommand):
             else:
                 self.logger.info("Retrieving %s files" % (totalfiles))
                 arglist = ['--destination', self.dest, '--input', workflow, '--dir', self.options.projdir, \
-                           '--proxy', self.proxyfilename, '--parallel', self.options.nparallel, '--wait', self.options.waittime]
+                           '--proxy', self.proxyfilename, '--parallel', self.options.nparallel, '--wait', self.options.waittime, \
+                           '--checksum', self.checksum, '--command', self.command]
                 copyoutput = remote_copy(self.logger, arglist)
                 successdict, faileddict = copyoutput()
                 #need to use deepcopy because successdict and faileddict are dict that is under the a manage dict, accessed multithreadly
@@ -187,7 +189,15 @@ class getcommand(SubCommand):
                                 default = None,
                                 help = 'Ids of the jobs you want to retrieve. Comma separated list of integers.',
                                 metavar = 'JOBIDS' )
-
+        self.parser.add_option('--checksum',
+                                dest = 'checksum',
+                                default = 'yes',
+                                help = 'Set it to true if needed. If true will use ADLER32 checksum' +\
+                                       'Allowed values are yes/no. Default is yes.')
+        self.parser.add_option('--command',
+                                dest = 'command',
+                                default = None,
+                                help = 'A command which to use. Available commands are LCG or GFAL.')
 
     def validateOptions(self):
         #Figuring out the destination directory
@@ -209,3 +219,19 @@ class getcommand(SubCommand):
         if getattr(self.options, 'jobids', None):
             self.options.jobids = validateJobids(self.options.jobids)
 
+        if hasattr(self.options, 'command') and self.options.command != None:
+            AvailableCommands = ['LCG', 'GFAL']
+            self.command = self.options.command.upper()
+            if self.command not in AvailableCommands:
+                msg = "You specified to use %s command and it is not allowed. Available commands are: %s " % (self.command, str(AvailableCommands))
+                ex = ConfigurationException(msg)
+                raise ex
+        else:
+            self.command = None
+        if hasattr(self.options, 'checksum'):
+            if re.match('^yes$|^no$', self.options.checksum):
+                self.checksum = 'ADLER32' if self.options.checksum == 'yes' else None
+            else:
+                msg = "You specified to use %s checksum. Only lowercase yes/no is accepted to turn ADLER32 checksum" % self.options.checksum
+                ex = ConfigurationException(msg)
+                raise ex
