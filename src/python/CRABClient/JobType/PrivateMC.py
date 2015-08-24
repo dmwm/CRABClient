@@ -22,13 +22,21 @@ class PrivateMC(Analysis):
         """
         Override run() for JobType
         """
-        tarFilename, configArguments, isbchecksum = super(PrivateMC, self).run(*args, **kwargs)
+        tarFilename, configArguments = super(PrivateMC, self).run(*args, **kwargs)
         configArguments['jobtype'] = 'PrivateMC'
 
         lhe, nfiles = self.cmsswCfg.hasLHESource()
         if lhe:
+            self.logger.debug("LHESource found in the CMSSW configuration.")
             configArguments['generator'] = getattr(self.config.JobType, 'generator', 'lhe')
-            if nfiles > 1:
+
+            major, minor, fix = os.environ['CMSSW_VERSION'].split('_')[1:4]
+            warn = True
+            if int(major) >= 7:
+                if int(minor) >= 5:
+                    warn = False
+
+            if nfiles > 1 and warn:
                 msg = "{0}Warning{1}: Using an LHESource with ".format(colors.RED, colors.NORMAL)
                 msg += "more than one input file may not be supported by the CMSSW version used. "
                 msg += "Consider merging the LHE input files to guarantee complete processing."
@@ -41,7 +49,8 @@ class PrivateMC(Analysis):
         if not re.match("/%(primDS)s.*" % (lfnParts), primaryDataset):
             self.logger.warning("Invalid primary dataset name %s; publication may fail." % (primaryDataset))
         configArguments['inputdata'] = primaryDataset
-        return tarFilename, configArguments, isbchecksum
+        return tarFilename, configArguments
+
 
     def validateConfig(self, config):
         """

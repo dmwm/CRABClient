@@ -1,12 +1,14 @@
 from __future__ import division # I want floating points
-import urllib
+
+import json
 import math
+import urllib
 
 import CRABClient.Emulator
+from CRABClient import __version__
 from CRABClient.ClientUtilities import colors
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import RESTCommunicationException, ConfigurationException
-from CRABClient import __version__
 
 def to_hms(val):
     s = val % 60
@@ -79,8 +81,7 @@ class status(SubCommand):
         if 'jobs' not in dictresult:
             self.logger.info("\nNo jobs created yet!")
         else:
-            if 'publication' in dictresult:
-                self.printPublication(dictresult)
+            self.printPublication(dictresult)
             self.printErrors(dictresult)
             # Note several options could be combined
             if self.options.summary:
@@ -92,7 +93,7 @@ class status(SubCommand):
             if self.options.idle:
                 self.printIdle(dictresult, user)
             if self.options.json:
-                self.logger.info(dictresult['jobs'])
+                self.logger.info(json.dumps(dictresult['jobs']))
 
         return dictresult
 
@@ -102,7 +103,9 @@ class status(SubCommand):
 
         self.logger.info("CRAB project directory:\t\t%s" % (self.requestarea))
         self.logger.info("Task name:\t\t\t%s" % self.cachedinfo['RequestName'])
-        self.logger.info("Task status:\t\t\t%s" % dictresult['status'])
+        msg = "Task status:\t\t\t%s" % dictresult['status']
+        if dictresult['schedd'] : msg += "\ton schedd: %s" %  dictresult['schedd']
+        self.logger.info(msg)
 
         def logJDefErr(jdef):
             """Printing job def failures if any"""
@@ -119,7 +122,7 @@ class status(SubCommand):
                 self.logger.warning("%sWarning:%s\t\t\t%s." % (colors.RED, colors.NORMAL, warningMsg))
         if dictresult['taskFailureMsg']:
             if dictresult['status'] == "FAILED":
-                self.logger.error("%sError during task injection:%s\t%s" % (colors.RED,colors.NORMAL, dictresult['taskFailureMsg']))
+                self.logger.error("%sError during task injection:%s\t%s" % (colors.RED, colors.NORMAL, dictresult['taskFailureMsg']))
             else:
                 self.logger.error("%sError during task information retrieval:%s\t%s." % (colors.RED, colors.NORMAL, dictresult['taskFailureMsg']))
             # We might also have more information in the job def errors
@@ -127,12 +130,10 @@ class status(SubCommand):
         else:
             ## The REST Interface can return dictresult['jobSetID'] = '' or dictresult['jobSetID'] = task name.
             if self.cachedinfo['RequestName'] == dictresult['jobSetID']:
-                ## Print the Dashboard and GlideMon monitoring URLs for this task.
+                ## Print the Dashboard monitoring URL for this task.
                 taskname = urllib.quote(dictresult['jobSetID'])
-                glidemonURL = "http://glidemon.web.cern.ch/glidemon/jobs.php?taskname=" + taskname
                 dashboardURL = "http://dashb-cms-job.cern.ch/dashboard/templates/task-analysis/#user=" + username \
                              + "&refresh=0&table=Jobs&p=1&records=25&activemenu=2&status=&site=&tid=" + taskname
-                self.logger.info("Glidemon monitoring URL:\t%s" % (glidemonURL))
                 self.logger.info("Dashboard monitoring URL:\t%s" % (dashboardURL))
 
         #Print information about jobs
@@ -140,7 +141,7 @@ class status(SubCommand):
         if states:
             total = sum( states[st] for st in states )
             state_list = sorted(states)
-            self.logger.info("Details:\t\t\t{0} {1}".format(self._printState(state_list[0], 13), self._percentageString(state_list[0], states[state_list[0]], total)))
+            self.logger.info("\nJobs status:\t\t\t{0} {1}".format(self._printState(state_list[0], 13), self._percentageString(state_list[0], states[state_list[0]], total)))
             for status in state_list[1:]:
                 self.logger.info("\t\t\t\t{0} {1}".format(self._printState(status, 13), self._percentageString(status, states[status], total)))
 
@@ -288,7 +289,7 @@ class status(SubCommand):
                             remainder -= nj
                         if remainder > 0:
                             msg += "\n\n\tFor the error messages of the other %s jobs," % (remainder)
-                            msg += " please have a look at the task monitoring web pages."
+                            msg += " please have a look at the dashboard task monitoring web page."
             if unknown:
                 msg += "\n\nCould not find exit code details for %s jobs." % (unknown)
             msg += "\n\nHave a look at https://twiki.cern.ch/twiki/bin/viewauth/CMSPublic/JobExitCodes for a description of the exit codes."
@@ -299,6 +300,8 @@ class status(SubCommand):
         """
         Print information about the publication of the output files in DBS.
         """
+        if 'publication' not in dictresult:
+            return
         ## If publication was disabled, print a pertinent message and return.
         if 'disabled' in dictresult['publication']:
             msg = "\nNo publication information (publication has been disabled in the CRAB configuration file)"
@@ -334,7 +337,10 @@ class status(SubCommand):
         if 'error' in dictresult['publication']:
             msg = "\nPublication status:\t\t%s" % (dictresult['publication']['error'])
             self.logger.info(msg)
-        elif dictresult['publication'] and outputDatasets:
+            ## Print the output datasets with the corresponding DAS URL.
+            printOutputDatasets(includeDASURL = True)
+            return
+        if dictresult['publication'] and outputDatasets:
             states = dictresult['publication']
             ## Don't consider publication states for which 0 files are in this state.
             states_tmp = states.copy()
@@ -363,8 +369,18 @@ class status(SubCommand):
                     msg += "\n\t\t\t\t{0} {1}".format(self._printState(status, 13), \
                                                       self._percentageString(status, states[status], numFilesToPublish))
             self.logger.info(msg)
-        ## Print the output datasets with the corresponding DAS URL.
-        printOutputDatasets(includeDASURL = True)
+            ## Print the publication errors.
+            if dictresult.get('publicationFailures'):
+                msg = "\nPublication error summary:"
+                if 'error' in dictresult['publicationFailures']:
+                    msg += "\t%s" % (dictresult['publicationFailures']['error'])
+                elif dictresult['publicationFailures'].get('result'):
+                    ndigits = int(math.ceil(math.log(numFilesToPublish+1, 10)))
+                    for failureReason, numFailedFiles in dictresult['publicationFailures']['result']:
+                        msg += ("\n\n\t%" + str(ndigits) + "s files failed to publish with following error message:\n\n\t\t%s") % (numFailedFiles, failureReason)
+                self.logger.info(msg)
+            ## Print the output datasets with the corresponding DAS URL.
+            printOutputDatasets(includeDASURL = True)
 
 
     def printSummary(self, dictresult):

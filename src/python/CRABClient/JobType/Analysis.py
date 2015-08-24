@@ -4,9 +4,12 @@ CMSSW job type plug-in
 
 import os
 import re
+import math
 import shutil
 import string
 import tempfile
+
+from httplib import HTTPException
 
 from WMCore.Lexicon import lfnParts
 from WMCore.DataStructs.LumiList import LumiList
@@ -20,8 +23,9 @@ from CRABClient.JobType.BasicJobType import BasicJobType
 from CRABClient.ClientMapping import getParamDefaultValue
 from CRABClient.JobType.LumiMask import getLumiList, getRunList
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
-from CRABClient.ClientExceptions import EnvironmentException, ConfigurationException
+from CRABClient.ClientExceptions import ClientException, EnvironmentException, ConfigurationException
 from CRABClient.ClientUtilities import bootstrapDone, BOOTSTRAP_CFGFILE, BOOTSTRAP_CFGFILE_PKL
+
 
 class Analysis(BasicJobType):
     """
@@ -38,6 +42,10 @@ class Analysis(BasicJobType):
                            'tfileoutfiles'             : [],
                            'edmoutfiles'               : [],
                           }
+
+        if getattr(self.config.Data, 'useParent', False) and getattr(self.config.Data, 'secondaryDataset', None):
+            msg = "Invalid CRAB configuration: Parameter Data.useParent and Data.secondaryDataset cannot be used together."
+            raise ConfigurationException(msg)
 
         # Get SCRAM environment
         scram = ScramEnvironment(logger=self.logger)
@@ -75,6 +83,12 @@ class Analysis(BasicJobType):
         ## some psets where one module modifies the configuration from another module.
         self.cmsswCfg = CMSSWConfig(config=self.config, logger=self.logger,
                                     userConfig=self.config.JobType.psetName)
+
+        ## If there is a CMSSW pset, do a basic validation of it.
+        if not bootstrapDone() and self.config.JobType.psetName:
+            valid, msg = self.cmsswCfg.validateConfig()
+            if not valid:
+                raise ConfigurationException(msg)
 
         ## We need to put the pickled CMSSW configuration in the right place.
         ## Here, we determine if the bootstrap script already run and prepared everything
@@ -131,12 +145,30 @@ class Analysis(BasicJobType):
             inputFiles = [re.sub(r'^file:', '', file) for file in getattr(self.config.JobType, 'inputFiles', [])]
             tb.addFiles(userFiles=inputFiles, cfgOutputName=cfgOutputName)
             configArguments['adduserfiles'] = [os.path.basename(f) for f in inputFiles]
-            uploadResults = tb.upload(filecacheurl = filecacheurl)
+            try:
+                uploadResult = tb.upload(filecacheurl = filecacheurl)
+            except HTTPException as hte:
+                if 'X-Error-Info' in hte.headers:
+                    reason = hte.headers['X-Error-Info']
+                    reason_re = re.compile(r'\AFile size is ([0-9]*)B\. This is bigger than the maximum allowed size of ([0-9]*)B\.$')
+                    re_match = reason_re.match(reason)
+                    if re_match:
+                        ISBSize = int(re_match.group(1))
+                        ISBSizeLimit = int(re_match.group(2))
+                        reason  = "%sError%s:" % (colors.RED, colors.NORMAL)
+                        reason += " Input sanbox size is ~%sMB. This is bigger than the maximum allowed size of %sMB." % (ISBSize/1024/1024, ISBSizeLimit/1024/1024)
+                        ISBContent = sorted(tb.content, reverse=True)
+                        biggestFileSize = ISBContent[0][0]
+                        ndigits = int(math.ceil(math.log(biggestFileSize+1, 10)))
+                        reason += "\nInput sanbox content sorted by size[Bytes]:"
+                        for (size, name) in ISBContent:
+                            reason += ("\n%" + str(ndigits) + "s\t%s") % (size, name)
+                        raise ClientException(reason)
+                raise hte
 
-        self.logger.debug("Result uploading input files: %s " % str(uploadResults))
         configArguments['cacheurl'] = filecacheurl
-        configArguments['cachefilename'] = uploadResults[0]
-        isbchecksum = uploadResults[1]
+        configArguments['cachefilename'] = "%s.tar.gz" % uploadResult
+        self.logger.debug("Result uploading input files: %(cachefilename)s " % configArguments)
 
         # Upload list of user-defined input files to process as the primary input
         userFilesList = getattr(self.config.Data, 'userInputFiles', None)
@@ -195,7 +227,7 @@ class Analysis(BasicJobType):
 
         configArguments['jobtype'] = 'Analysis'
 
-        return tarFilename, configArguments, isbchecksum
+        return tarFilename, configArguments
 
 
     def validateConfig(self, config):

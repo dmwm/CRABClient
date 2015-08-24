@@ -18,11 +18,13 @@ import tempfile
 import traceback
 from optparse import OptionParser
 
+from ServerUtilities import FEEDBACKMAIL
+
 from CRABClient.CRABOptParser import CRABOptParser
 from CRABClient.CRABOptParser import CRABCmdOptParser
 from CRABClient.JobType.CMSSWConfig import CMSSWConfig
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
-from CRABClient.ClientExceptions import ClientException, ConfigurationException, FEEDBACKMAIL
+from CRABClient.ClientExceptions import ClientException, ConfigurationException
 from CRABClient.ClientUtilities import BOOTSTRAP_ENVFILE, BOOTSTRAP_INFOFILE, BOOTSTRAP_CFGFILE, LOGLEVEL_MUTE
 from CRABClient.ClientUtilities import setSubmitParserOptions, validateSubmitOptions, initLoggers, setConsoleLogLevelVar, flushMemoryLogger
 
@@ -118,6 +120,9 @@ if __name__ == '__main__':
         cfgName = getConfigName(logger)
         config = getConfig(cfgName)
         cmsswCfg = CMSSWConfig(config=config, userConfig=config.JobType.psetName, logger=logger)
+        valid, msg = cmsswCfg.validateConfig()
+        if not valid:
+            raise ConfigurationException(msg) #That's a ClientException as well
         tmpdir = getTmpDir()
         saveScramEnv( os.path.join(tmpdir, BOOTSTRAP_ENVFILE), logger)
         saveCfgFile( os.path.join(tmpdir, BOOTSTRAP_CFGFILE), cmsswCfg)
@@ -134,6 +139,6 @@ if __name__ == '__main__':
         sys.exit(2)
     finally:
         if tblogger and memhandler and logger:
-            flushMemoryLogger(tblogger, memhandler, logger.logfile)
+            flushMemoryLogger(tblogger, memhandler, "crab3bootstrap.log")
 
     print(tmpdir)

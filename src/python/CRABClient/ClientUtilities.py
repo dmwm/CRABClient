@@ -13,7 +13,6 @@ import time
 import pkgutil
 import sys
 import cPickle
-import logging
 import subprocess
 import traceback
 from string import upper
@@ -157,6 +156,7 @@ def flushMemoryLogger(logger, memhandler, logfilename):
     ff = logging.Formatter("%(levelname)s %(asctime)s: \t %(message)s")
     filehandler.setFormatter(ff)
     filehandler.setLevel(logging.DEBUG)
+    filehandler.addFilter(logfilter())
     logger.addHandler(filehandler)
     memhandler.setTarget(filehandler)
     memhandler.close()
@@ -371,7 +371,7 @@ def createWorkArea(logger, workingArea = '.', requestName = ''):
 
     if workingArea is None or workingArea == '.' :
         workingArea = os.getenv('CRAB_WORKING_AREA', '.')
-    elif not os.path.isabs(workingArea):
+    if not os.path.isabs(workingArea):
         workingArea = os.path.abspath(workingArea)
 
     ## create the working area if it is not there
@@ -619,36 +619,31 @@ def setSubmitParserOptions(parser):
                            dest = 'dryrun',
                            default = False,
                            action = 'store_true',
-                           help = "Do not actually submit the task; instead, return how many jobs this task would create, along with processing time estimates.")
+                           help = "Do not actually submit the task; instead, return how many jobs this task would create, "\
+                                  "along with processing time and memory consumption estimates.")
 
+    parser.add_option('--skip-estimates',
+                           dest = 'skipEstimates',
+                           default = False,
+                           action = 'store_true',
+                           help = "When executing a dry run, skip the processing time and memory consumption estimates.")
 
 def validateSubmitOptions(options, args, logger):
-        """ If no configuration file was passed as an option, try to extract it from the arguments.
-            Assume that the arguments can only be:
-                1) the configuration file name, and
-                2) parameters to override in the configuration file.
-            The last ones should all contain an '=' sign, so these are not candidates to be the
-            configuration file argument. Also, the configuration file name should end with '.py'.
-            If can not find a configuration file candidate, use the default 'crabConfig.py'.
-            If find more than one candidate, raise ConfigurationException.
-        """
+    """ If no configuration file was passed as an option, try to extract it from the first argument.
+        Assume that the arguments can only be:
+            1) the configuration file name (in the first argument), and
+            2) parameters to override in the configuration file.
+        The last ones should all contain an '=' sign, while the configuration file name should not.
+        Also, the configuration file name should end with '.py'.
+        If the first argument is not a python file name, use the default name 'crabConfig.py'.
+    """
 
-        if options.config is None:
-            useDefault = True
-            if len(args):
-                configCandidates = [(arg, i) for i, arg in enumerate(args) if '=' not in arg and arg[-3:] == '.py']
-                configCandidateNames = set([configCandidateName for (configCandidateName, _) in configCandidates])
-                if len(configCandidateNames) == 1:
-                    options.config = configCandidates[0][0]
-                    del args[configCandidates[0][1]]
-                    useDefault = False
-                elif len(configCandidateNames) > 1:
-                    msg  = "Unable to unambiguously extract the CRAB configuration file name from the command arguments."
-                    msg += " Possible candidates are: %s" % (list(configCandidateNames))
-                    logger.info(msg)
-                    raise ConfigurationException("ERROR: Unable to extract CRAB configuration file name from command arguments.")
-            if useDefault:
-                options.config = 'crabConfig.py'
+    if options.config is None:
+        if len(args) and '=' not in args[0] and args[0][-3:] == '.py':
+            options.config = args[0]
+            del args[0]
+        else:
+            options.config = 'crabConfig.py'
 
 
 #XXX Trying to do it as a Command causes a lot of headaches (and workaround code).

@@ -1,4 +1,5 @@
 import os
+import time
 import datetime
 import subprocess
 
@@ -71,79 +72,70 @@ class checkwrite(SubCommand):
         del_cmd = ""
         if cmd_exist("gfal-copy") and cmd_exist("gfal-rm") and self.command in [None, "GFAL"]:
             self.logger.info("Will use `gfal-copy`, `gfal-rm` commands for checking write permissions")
-            cp_cmd = "env -i X509_USER_PROXY=%s gfal-copy -v -t 180 " % os.path.abspath(self.proxyfilename)
-            if self.checksum:
-                cp_cmd += "-K %s " % self.checksum
-            del_cmd = "env -i X509_USER_PROXY=%s gfal-rm -v -t 180 " % os.path.abspath(self.proxyfilename)
-        elif cmd_exist("lcg-cp") and cmd_exist("lcg-del") and self.command in [None, "LCG"]:
+            cp_cmd = "env -i X509_USER_PROXY=%s gfal-copy -p -v -t 180 " % os.path.abspath(self.proxyfilename)
+            delfile_cmd = "env -i X509_USER_PROXY=%s gfal-rm -v -t 180 " % os.path.abspath(self.proxyfilename)
+            deldir_cmd = "env -i X509_USER_PROXY=%s gfal-rm -r -v -t 180 " % os.path.abspath(self.proxyfilename)
+        elif cmd_exist("lcg-cp") and cmd_exist("lcg-del"):
             self.logger.info("Will use `lcg-cp`, `lcg-del` commands for checking write permissions")
             cp_cmd = "lcg-cp -v -b -D srmv2 --connect-timeout 180 "
-            if self.checksum:
-                cp_cmd += "--checksum-type %s " % self.checksum
-            del_cmd = "lcg-del --connect-timeout 180 -b -l -D srmv2 "
+            delfile_cmd = "lcg-del --connect-timeout 180 -b -l -D srmv2 "
+            deldir_cmd = "lcg-del -d --connect-timeout 180 -b -l -D srmv2 "
         else:
             self.logger.info("Neither gfal nor lcg command was found")
             return {'status': 'FAILED'}
 
 
         self.logger.info('Will check write permission in %s on site %s' % (self.lfnsaddprefix, self.options.sitename))
-
-        retry = 0
-        stop = False
-        use_new_file = True
-        while not stop:
-            if use_new_file:
-                self.filename = 'crab3checkwrite.' + str(retry) + '.tmp'
-                self.createFile()
-                pfn = self.getPFN()
-            self.logger.info('Attempting to copy (dummy) file %s to %s on site %s' % (self.filename, self.lfnsaddprefix, self.options.sitename))
-            cpout, cperr, cpexitcode = self.cp(pfn, cp_cmd)
-            if cpexitcode == 0:
-                self.logger.info('Successfully copied file %s to %s on site %s' % (self.filename, self.lfnsaddprefix, self.options.sitename))
-                self.logger.info('Attempting to delete file %s from site %s' % (pfn, self.options.sitename))
-                delexitcode = self.delete(pfn, del_cmd)
-                if delexitcode:
-                    self.logger.info('%sWarning%s: Failed to delete file %s from site %s' % (colors.RED, colors.NORMAL, pfn, self.options.sitename))
-                else:
-                    self.logger.info('Successfully deleted file %s from site %s' % (pfn, self.options.sitename))
-                self.logger.info('%sSuccess%s: Able to write in %s on site %s' % (colors.GREEN, colors.NORMAL, self.lfnsaddprefix, self.options.sitename))
-                returndict = {'status': 'SUCCESS'}
-                stop = True
+        timestamp =  str(time.strftime("%Y%m%d_%H%M%S"))
+        self.filename = 'crab3checkwrite_' + timestamp  + '.tmp'
+        self.subdir = 'crab3checkwrite_' + timestamp
+        self.createFile()
+        pfn = self.getPFN()
+        dirpfn = pfn[:len(pfn)-len(self.filename)]
+        self.logger.info('\nAttempting to create (dummy) directory %s and copy (dummy) file %s to %s\n' % (self.subdir, self.filename, self.lfnsaddprefix))
+        cpout, cperr, cpexitcode = self.cp(pfn, cp_cmd)
+        if cpexitcode == 0:
+            self.logger.info('\nSuccessfully created directory %s and copied file %s to %s' % (self.subdir, self.filename, self.lfnsaddprefix))
+            self.logger.info('\nAttempting to delete file %s\n' % (pfn))
+            delexitcode = self.delete(pfn, delfile_cmd)
+            if delexitcode:
+                self.logger.info('\nFailed to delete file %s' % (pfn))
+                finalmsg  = '%sError%s: CRAB3 is able to copy but unable to delete file in %s on site %s. Asynchronous Stage Out with CRAB3 will fail.' % (colors.RED, colors.NORMAL, self.lfnsaddprefix, self.options.sitename)
+                finalmsg += '\n       You may want to contact the site administrators sending them the \'crab checkwrite\' output as printed above.'
+                returndict = {'status': 'FAILED'}
             else:
-                if 'Permission denied' in cperr or 'mkdir: cannot create directory' in cperr:
-                    msg  = '%sError%s: Unable to write in %s on site %s' % (colors.RED, colors.NORMAL, self.lfnsaddprefix, self.options.sitename)
-                    msg += '\n       You may want to contact the site administrators sending them the \'crab checkwrite\' output as printed above.'
-                    self.logger.info(msg)
+                self.logger.info('\nSuccessfully deleted file %s' % (pfn))
+                self.logger.info('\nAttempting to delete directory %s\n' % (dirpfn))
+                delexitcode = self.delete(dirpfn, deldir_cmd)
+                if delexitcode:
+                    self.logger.info('\nFailed to delete directory %s' % (dirpfn))
+                    finalmsg  = '%sError%s: CRAB3 is able to copy but unable to delete directory in %s on site %s. Asynchronous Stage Out with CRAB3 will fail.' % (colors.RED, colors.NORMAL, self.lfnsaddprefix, self.options.sitename)
+                    finalmsg += '\n       You may want to contact the site administrators sending them the \'crab checkwrite\' output as printed above.'
                     returndict = {'status': 'FAILED'}
-                    stop = True
-                elif 'timeout' in cpout or 'timeout' in cperr:
-                    self.logger.info('Connection time out.')
-                    msg  = 'Unable to check write permission in %s on site %s' % (self.lfnsaddprefix, self.options.sitename)
-                    msg += '\nPlease try again later or contact the site administrators sending them the \'crab checkwrite\' output as printed above.'
-                    self.logger.info(msg)
-                    returndict = {'status': 'FAILED'}
-                    stop = True
-                elif 'exist' in cpout or 'exist' in cperr and retry == 0:
-                    self.logger.info('Error copying file %s to %s on site %s; it may be that file already exists.' % (self.filename, self.lfnsaddprefix, self.options.sitename))
-                    self.logger.info('Attempting to delete file %s from site %s' % (pfn, self.options.sitename))
-                    delexitcode = self.delete(pfn, del_cmd)
-                    if delexitcode:
-                        self.logger.info('Failed to delete file %s from site %s' % (pfn, self.options.sitename))
-                        use_new_file = True
-                    else:
-                        self.logger.info('Successfully deleted file %s from site %s' % (pfn, self.options.sitename))
-                        use_new_file = False
-                    retry += 1
                 else:
-                    msg  = 'Unable to check write permission in %s on site %s' % (self.lfnsaddprefix, self.options.sitename)
-                    msg += '\nPlease try again later or contact the site administrators sending them the \'crab checkwrite\' output as printed above.'
-                    self.logger.info(msg)
-                    returndict = {'status' : 'FAILED'}
-                    stop = True
-            if stop or use_new_file:
-                self.removeFile()
+                    self.logger.info('\nSuccessfully deleted directory %s' % (dirpfn))
+                    finalmsg = '%sSuccess%s: Able to write in %s on site %s' % (colors.GREEN, colors.NORMAL, self.lfnsaddprefix, self.options.sitename)
+                    returndict = {'status': 'SUCCESS'}
+        else:
+            if 'Permission denied' in cperr or 'mkdir: cannot create directory' in cperr:
+                finalmsg  = '%sError%s: Unable to write in %s on site %s' % (colors.RED, colors.NORMAL, self.lfnsaddprefix, self.options.sitename)
+                finalmsg += '\n       You may want to contact the site administrators sending them the \'crab checkwrite\' output as printed above.'
+                returndict = {'status': 'FAILED'}
+            elif 'timeout' in cpout or 'timeout' in cperr:
+                self.logger.info('Connection time out.')
+                finalmsg  = '\nUnable to check write permission in %s on site %s' % (self.lfnsaddprefix, self.options.sitename)
+                finalmsg += '\nPlease try again later or contact the site administrators sending them the \'crab checkwrite\' output as printed above.'
+                returndict = {'status': 'FAILED'}
+            else:
+                finalmsg  = 'Unable to check write permission in %s on site %s' % (self.lfnsaddprefix, self.options.sitename)
+                finalmsg += '\nPlease try again later or contact the site administrators sending them the \'crab checkwrite\' output as printed above.'
+                returndict = {'status' : 'FAILED'}
+        self.removeFile()
 
-        self.logger.info('%sNote%s: You cannot write to a site if you did not ask permission.' % (colors.BOLD, colors.NORMAL))
+        self.logger.info('\nCheckwrite Result:')
+        self.logger.info(finalmsg)
+        if returndict['status'] == 'FAILED':
+            self.logger.info('%sNote%s: You cannot write to a site if you did not ask permission.' % (colors.BOLD, colors.NORMAL))
 
         return returndict
 
@@ -170,7 +162,7 @@ class checkwrite(SubCommand):
 
     def getPFN(self):
 
-        lfnsadd = self.lfnsaddprefix + '/' + self.filename
+        lfnsadd = self.lfnsaddprefix + '/' + self.subdir + '/' + self.filename
         try:
             pfndict = self.phedex.getPFN(nodes = [self.options.sitename], lfns = [lfnsadd])
             pfn = pfndict[(self.options.sitename, lfnsadd)]
