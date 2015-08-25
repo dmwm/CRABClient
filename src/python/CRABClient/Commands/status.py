@@ -78,9 +78,7 @@ class status(SubCommand):
 
         self.printShort(dictresult, user)
 
-        if 'jobs' not in dictresult:
-            self.logger.info("\nNo jobs created yet!")
-        else:
+        if 'jobs' in dictresult:
             self.printPublication(dictresult)
             self.printErrors(dictresult)
             # Note several options could be combined
@@ -103,8 +101,14 @@ class status(SubCommand):
 
         self.logger.info("CRAB project directory:\t\t%s" % (self.requestarea))
         self.logger.info("Task name:\t\t\t%s" % self.cachedinfo['RequestName'])
-        msg = "Task status:\t\t\t%s" % dictresult['status']
-        if dictresult['schedd'] : msg += "\ton schedd: %s" %  dictresult['schedd']
+        if dictresult['schedd']:
+            msg = "Grid scheduler:\t\t\t%s" % (dictresult['schedd'])
+            self.logger.info(msg)
+        msg = "Task status:\t\t\t"
+        if 'FAILED' in dictresult['status']:
+            msg += "%s%s%s" % (colors.RED, dictresult['status'], colors.NORMAL)
+        else:
+            msg += "%s" % (dictresult['status'])
         self.logger.info(msg)
 
         def logJDefErr(jdef):
@@ -119,14 +123,18 @@ class status(SubCommand):
         ## and/or maybe some warning added by the REST Interface to the status result).
         if dictresult['taskWarningMsg']:
             for warningMsg in dictresult['taskWarningMsg']:
-                self.logger.warning("%sWarning:%s\t\t\t%s." % (colors.RED, colors.NORMAL, warningMsg))
-        if dictresult['taskFailureMsg']:
-            if dictresult['status'] == "FAILED":
-                self.logger.error("%sError during task injection:%s\t%s" % (colors.RED, colors.NORMAL, dictresult['taskFailureMsg']))
-            else:
-                self.logger.error("%sError during task information retrieval:%s\t%s." % (colors.RED, colors.NORMAL, dictresult['taskFailureMsg']))
+                self.logger.warning("%sWarning%s:\t\t\t%s" % (colors.RED, colors.NORMAL, warningMsg))
+        if dictresult['taskFailureMsg'] or dictresult['statusFailureMsg']:
+            if dictresult['taskFailureMsg']:
+                msg  = "%sFailure message%s:" % (colors.RED, colors.NORMAL)
+                msg += "\t\t%s" % (dictresult['taskFailureMsg'].replace('\n', '\n\t\t\t\t'))
+                self.logger.error(msg)
+            if dictresult['statusFailureMsg']:
+                msg = "%sError retrieving task status%s:" % (colors.RED, colors.NORMAL)
+                msg += "\t%s" % (dictresult['statusFailureMsg'].replace('\n', '\n\t\t\t\t'))
+                self.logger.error(msg)
             # We might also have more information in the job def errors
-            logJDefErr(jdef=dictresult)
+            logJDefErr(jdef=dictresult) # AndresT: The server is not filling up this information. Can we remove this? 
         else:
             ## The REST Interface can return dictresult['jobSetID'] = '' or dictresult['jobSetID'] = task name.
             if self.cachedinfo['RequestName'] == dictresult['jobSetID']:
@@ -144,6 +152,8 @@ class status(SubCommand):
             self.logger.info("\nJobs status:\t\t\t{0} {1}".format(self._printState(state_list[0], 13), self._percentageString(state_list[0], states[state_list[0]], total)))
             for status in state_list[1:]:
                 self.logger.info("\t\t\t\t{0} {1}".format(self._printState(status, 13), self._percentageString(status, states[status], total)))
+        elif not (dictresult['taskFailureMsg'] or dictresult['statusFailureMsg']):
+            self.logger.info("\nNo jobs created yet!")
 
 
     def printErrors(self, dictresult):
