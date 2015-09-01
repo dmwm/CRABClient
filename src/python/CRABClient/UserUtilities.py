@@ -4,8 +4,6 @@ This module contains the utility methods available for users.
 
 import os
 import logging
-import logging.handlers
-import string
 import urllib
 import subprocess
 import traceback
@@ -124,8 +122,11 @@ def getFileFromURL(url, filename = None, proxyfilename = None):
 
     Return the filename used to save the file or ClientException in case of errors.
     """
+    parsedurl = urlparse(url)
+    import pdb
+    pdb.set_trace()
     if filename == None:
-        path = urlparse(url).path
+        path = parsedurl.path
         filename = os.path.basename(path)
     try:
         opener = urllib.URLopener(key_file = proxyfilename, cert_file = proxyfilename)
@@ -143,7 +144,7 @@ def getFileFromURL(url, filename = None, proxyfilename = None):
         tblogger.exception(ex)
         msg = "Unexpected error while trying to retrieve file from %s: %s" % (url, ex)
         raise ClientException(msg)
-    if status != 200:
+    if status != 200 and parsedurl.scheme in ['http', 'https']:
         raise ClientException("Unable to retieve the file from %s. HTTP status code %s. HTTP content: %s" % (url, status, socket.info()))
     with open(filename, 'w') as f:
         f.write(filestr)
