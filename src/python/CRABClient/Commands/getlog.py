@@ -90,25 +90,21 @@ class getlog(getcommand):
         self.logger.info("Retrieving...")
         success = []
         failed = []
-        for item in self.options.jobids:
-            jobid = str(item[1])
-            filename = 'job_out.' + jobid + '.0.txt'
-            url = webdir + '/' + filename
-            try:
-                getFileFromURL(url, self.dest + '/' + filename, proxyfilename)
-                self.logger.info('Retrieved %s' % (filename))
-                success.append(filename)
-                retry = 1 #To retrieve retried joblog, if there is any.
-                while urllib.urlopen(webdir + '/' + 'job_out.' + jobid + '.' + str(retry) + '.txt').getcode() == 200:
-                    filename = 'job_out.' + jobid + '.' + str(retry) + '.txt'
-                    url = webdir + '/' + filename
+        for _, jobid in self.options.jobids:
+            retry = 0
+            succeded = True
+            while succeded:
+                filename = 'job_out.%s.%s.txt' % (jobid, retry)
+                url = webdir + '/' + filename
+                try:
                     getFileFromURL(url, self.dest + '/' + filename, proxyfilename)
                     self.logger.info('Retrieved %s' % (filename))
                     success.append(filename)
-                    retry = retry + 1
-            except ClientException as ex:
-                self.logger.debug(str(ex))
-                failed.append(filename)
+                    retry += 1 #To retrieve retried joblog, if there is any.
+                except ClientException as ex:
+                    succeded = False
+                    self.logger.debug(str(ex))
+                    failed.append(filename)
 
         return failed, success
 
