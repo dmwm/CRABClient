@@ -34,7 +34,6 @@ class getcommand(SubCommand):
         uri = self.getUrl(self.instance, resource = 'task')
         dictresult, status, reason =  server.get(uri, data = inputlist)
         self.logger.debug('Server result: %s' % dictresult)
-        dictresult = self.processServerResult(dictresult)
         if status == 200:
             if 'desc' in dictresult and 'columns' in dictresult['desc']:
                 position = dictresult['desc']['columns'].index(taskdbparam)    
@@ -79,7 +78,6 @@ class getcommand(SubCommand):
         server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
         dictresult, status, reason = server.get(self.uri, data = inputlist)
         self.logger.debug('Server result: %s' % dictresult)
-        dictresult = self.processServerResult(dictresult)
 
         if status != 200:
             msg = "Problem retrieving information from the server:\ninput:%s\noutput:%s\nreason:%s" % (str(inputlist), str(dictresult), str(reason))
@@ -135,11 +133,6 @@ class getcommand(SubCommand):
                 self.logger.info(msg)
 
         return returndict
-
-
-    def processServerResult(self, result):
-        #no modifications by default
-        return result
 
 
     def setDestination(self):

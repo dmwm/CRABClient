@@ -31,7 +31,6 @@ class getlog(getcommand):
                 dictresult, status, reason =  server.get(uri, data = inputlist)
                 webdir = dictresult['result'][0]
                 self.logger.info('Server result: %s' % webdir)
-                dictresult = self.processServerResult(webdir)
                 if status != 200:
                     msg = "Problem retrieving information from the server:\ninput:%s\noutput:%s\nreason:%s" % (str(inputlist), str(dictresult), str(reason))
                     raise RESTCommunicationException(msg)
