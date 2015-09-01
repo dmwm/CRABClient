@@ -120,11 +120,9 @@ def getFileFromURL(url, filename = None, proxyfilename = None):
     filename: the local filename where the url is saved to. Defaults to the filename in the url
     proxyfilename: the x509 proxy certificate to be used in case auth is required
 
-    Return the filename used to save the file or ClientException in case of errors.
+    Return the filename used to save the file or raises ClientException in case of errors (a status attribute is added if the error is an http one).
     """
     parsedurl = urlparse(url)
-    import pdb
-    pdb.set_trace()
     if filename == None:
         path = parsedurl.path
         filename = os.path.basename(path)
@@ -138,14 +136,19 @@ def getFileFromURL(url, filename = None, proxyfilename = None):
         tblogger.exception(ioex)
         msg = "Error while trying to retrieve file from %s: %s" % (url, ioex)
         msg += "\nMake sure the URL is correct."
-        raise ClientException(msg)
+        exc = ClientException(msg)
+        if ioex[0] == 'http error':
+            exc.status = ioex[1]
+        raise exc
     except Exception as ex:
         tblogger = logging.getLogger('CRAB3')
         tblogger.exception(ex)
         msg = "Unexpected error while trying to retrieve file from %s: %s" % (url, ex)
         raise ClientException(msg)
     if status != 200 and parsedurl.scheme in ['http', 'https']:
-        raise ClientException("Unable to retieve the file from %s. HTTP status code %s. HTTP content: %s" % (url, status, socket.info()))
+        exc = ClientException("Unable to retieve the file from %s. HTTP status code %s. HTTP content: %s" % (url, status, socket.info()))
+        exc.status = status
+        raise exc
     with open(filename, 'w') as f:
         f.write(filestr)
     return filename
