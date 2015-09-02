@@ -83,7 +83,7 @@ class tasks(SubCommand):
     def validateOptions(self):
 
         if self.options.fromdate is not None and self.options.days is not None:
-            msg = "Options --fromdate and --days are incompatible. Please specify only one of them."
+            msg = "Options --fromdate and --days cannot be used together. Please specify only one of them."
             raise ConfigurationException(msg)
         if self.options.fromdate is None and self.options.days is None:
             days = 30
@@ -104,5 +104,5 @@ class tasks(SubCommand):
 
         if self.options.status is not None:
             if self.options.status not in TASKDBSTATUSES:
-                msg = "Please enter a valid tasks status. Valid task statuses are: %s" % (TASKDBSTATUSES)
+                msg = "Please enter a valid task status. Valid task statuses are: %s" % (TASKDBSTATUSES)
                 raise ConfigurationException(msg) 
