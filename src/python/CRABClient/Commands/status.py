@@ -111,14 +111,6 @@ class status(SubCommand):
             msg += "%s" % (dictresult['status'])
         self.logger.info(msg)
 
-        def logJDefErr(jdef):
-            """Printing job def failures if any"""
-            if jdef['jobdefErrors']:
-                self.logger.error("%sFailed to inject %s\t%s out of %s:" % (colors.RED, colors.NORMAL, \
-                                                                            jdef['failedJobdefs'], jdef['totalJobdefs']))
-                for error in jdef['jobdefErrors']:
-                    self.logger.info("\t%s" % error)
-
         ## Print the warning messages (these are the warnings in the Tasks DB,
         ## and/or maybe some warning added by the REST Interface to the status result).
         if dictresult['taskWarningMsg']:
@@ -133,8 +125,6 @@ class status(SubCommand):
                 msg = "%sError retrieving task status%s:" % (colors.RED, colors.NORMAL)
                 msg += "\t%s" % (dictresult['statusFailureMsg'].replace('\n', '\n\t\t\t\t'))
                 self.logger.error(msg)
-            # We might also have more information in the job def errors
-            logJDefErr(jdef=dictresult) # AndresT: The server is not filling up this information. Can we remove this? 
         else:
             ## The REST Interface can return dictresult['jobSetID'] = '' or dictresult['jobSetID'] = task name.
             if self.cachedinfo['RequestName'] == dictresult['jobSetID']:
