@@ -103,7 +103,9 @@ class getlog(getcommand):
                     retry += 1 #To retrieve retried joblog, if there is any.
                 except ClientException as ex:
                     succeded = False
-                    self.logger.debug(str(ex))
+                    #only print exception that are not 404, this is expected since we try all the jobs retries
+                    if not hasattr(ex, "status") or ex.status!=404:
+                        self.logger.debug(str(ex))
                     failed.append(filename)
 
         return failed, success

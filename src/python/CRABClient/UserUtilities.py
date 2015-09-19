@@ -132,8 +132,6 @@ def getFileFromURL(url, filename = None, proxyfilename = None):
         status = socket.getcode()
         filestr = socket.read()
     except IOError as ioex:
-        tblogger = logging.getLogger('CRAB3')
-        tblogger.exception(ioex)
         msg = "Error while trying to retrieve file from %s: %s" % (url, ioex)
         msg += "\nMake sure the URL is correct."
         exc = ClientException(msg)
