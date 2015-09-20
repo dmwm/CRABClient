@@ -8,14 +8,12 @@ import sys
 import imp
 import json
 import pickle
-import hashlib
 import logging
 
-from PSetTweaks.WMTweak import makeTweak
+from ServerUtilities import BOOTSTRAP_CFGFILE_DUMP
 
-from CRABClient.ClientUtilities import bootstrapDone
-from CRABClient.ClientUtilities import BOOTSTRAP_INFOFILE
 from CRABClient.ClientExceptions import ConfigurationException
+from CRABClient.ClientUtilities import bootstrapDone, BOOTSTRAP_CFGFILE_PKL, BOOTSTRAP_INFOFILE, LOGGERS
 
 configurationCache = {}
 
@@ -75,8 +73,10 @@ class CMSSWConfig(object):
         self.outputFile = filename
         self.logger.debug("Writing CMSSW configuration to %s" % self.outputFile)
 
+        basedir = os.path.dirname(filename)
+
         #saving the process object as a pickle
-        pklFileName = os.path.splitext(filename)[0] + ".pkl"
+        pklFileName = os.path.join(basedir, BOOTSTRAP_CFGFILE_PKL)
         pklFile = open(pklFileName, "wb")
         pickle.dump(self.fullConfig.process, pklFile)
         pklFile.close()
@@ -87,6 +87,15 @@ class CMSSWConfig(object):
         outFile.write("import pickle\n")
         outFile.write("process = pickle.load(open('PSet.pkl', 'rb'))\n")# % os.path.split(pklFileName)[1])
         outFile.close()
+
+        try:
+            dumpedStr = self.fullConfig.process.dumpPython()
+            dumpFileName = os.path.join(basedir, BOOTSTRAP_CFGFILE_DUMP)
+            with open(dumpFileName, 'w') as fd:
+                fd.write(dumpedStr)
+        except Exception as e:
+            self.logger.debug('Cannot dump CMSSW configuration file. This prevents sandbox recycling but it is not a fatal error.')
+            LOGGERS['CRAB3'].error(str(e))
 
         return
 
@@ -142,9 +151,9 @@ class CMSSWConfig(object):
         #determine all modules on EndPaths
         modulesOnEndPaths = set()
         for m in process.endpaths_().itervalues():
-             if len(pathsToRun)==0 or m.label() in pathsToRun:
-                 for n in m.moduleNames():
-                     modulesOnEndPaths.add(n)
+            if len(pathsToRun)==0 or m.label() in pathsToRun:
+                for n in m.moduleNames():
+                    modulesOnEndPaths.add(n)
 
         outputModules = set()
         for n,o in process.outputModules_().iteritems():

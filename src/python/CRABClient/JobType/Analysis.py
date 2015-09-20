@@ -16,15 +16,17 @@ from WMCore.DataStructs.LumiList import LumiList
 
 import PandaServerInterface as PandaInterface
 
-from CRABClient.ClientUtilities import colors
+from ServerUtilities import BOOTSTRAP_CFGFILE_DUMP
+
+from CRABClient.ClientUtilities import colors, LOGGERS
 from CRABClient.JobType.UserTarball import UserTarball
 from CRABClient.JobType.CMSSWConfig import CMSSWConfig
 from CRABClient.JobType.BasicJobType import BasicJobType
 from CRABClient.ClientMapping import getParamDefaultValue
 from CRABClient.JobType.LumiMask import getLumiList, getRunList
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
-from CRABClient.ClientExceptions import ClientException, EnvironmentException, ConfigurationException
 from CRABClient.ClientUtilities import bootstrapDone, BOOTSTRAP_CFGFILE, BOOTSTRAP_CFGFILE_PKL
+from CRABClient.ClientExceptions import ClientException, EnvironmentException, ConfigurationException
 
 
 class Analysis(BasicJobType):
@@ -97,7 +99,7 @@ class Analysis(BasicJobType):
             # Write out CMSSW config
             self.cmsswCfg.writeFile(cfgOutputName)
         else:
-            # Move the pickled configuration file created by the bootstrap script
+            # Move the pickled and the configuration files created by the bootstrap script
             self.moveCfgFile(cfgOutputName)
 
         ## Interrogate the CMSSW pset for output files (only output files produced by
@@ -165,6 +167,11 @@ class Analysis(BasicJobType):
                             reason += ("\n%" + str(ndigits) + "s\t%s") % (size, name)
                         raise ClientException(reason)
                 raise hte
+            except Exception as e:
+                msg = ("Impossible to calculate the checksum of the sandbox tarball.\nError message: %s.\n"
+                       "More details can be found in %s" % (e, self.logger.logfile))
+                LOGGERS['CRAB3'].exception(msg) #the traceback is only printed into the logfile
+                raise ClientException(msg)
 
         configArguments['cacheurl'] = filecacheurl
         configArguments['cachefilename'] = "%s.tar.gz" % uploadResult
@@ -300,6 +307,7 @@ class Analysis(BasicJobType):
     def moveCfgFile(self, cfgOutputName):
         bootCfgname = os.path.join(os.environ['CRAB3_BOOTSTRAP_DIR'], BOOTSTRAP_CFGFILE)
         bootCfgPklname = os.path.join(os.environ['CRAB3_BOOTSTRAP_DIR'], BOOTSTRAP_CFGFILE_PKL)
+        bootCfgDumpname = os.path.join(os.environ['CRAB3_BOOTSTRAP_DIR'], BOOTSTRAP_CFGFILE_DUMP)
         if not os.path.isfile(bootCfgname) or not os.path.isfile(bootCfgPklname):
             msg = "The CRAB3_BOOTSTRAP_DIR environment variable is set, but I could not find %s or %s" % (bootCfgname, bootCfgPklname)
             raise EnvironmentException(msg)
@@ -308,6 +316,8 @@ class Analysis(BasicJobType):
                 destination = os.path.dirname(cfgOutputName)
                 shutil.move(bootCfgname, destination)
                 shutil.move(bootCfgPklname, destination)
+                if os.path.isfile(bootCfgDumpname):
+                    shutil.move(bootCfgDumpname, destination)
             except Exception as ex:
                 msg = "Cannot move either %s or %s to %s. Error is: %s" % (bootCfgname, bootCfgPklname, destination, ex)
                 raise EnvironmentException(msg)
