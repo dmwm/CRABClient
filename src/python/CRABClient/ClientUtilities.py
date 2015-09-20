@@ -21,7 +21,7 @@ from optparse import OptionValueError
 
 ## CRAB dependencies
 import CRABClient.Emulator
-from CRABClient.ClientExceptions import ClientException, TaskNotFoundException, CachefileNotFoundException, ConfigurationException, ConfigException, UsernameException, ProxyException
+from CRABClient.ClientExceptions import ClientException, TaskNotFoundException, CachefileNotFoundException, ConfigurationException, ConfigException, UsernameException, ProxyException, RESTCommunicationException
 
 
 BASEURL = '/crabserver/'

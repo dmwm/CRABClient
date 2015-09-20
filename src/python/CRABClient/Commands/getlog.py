@@ -1,17 +1,13 @@
-import os
-import sys
 import urllib
-from httplib import HTTPException
 
-from CRABClient import __version__
-from RESTInteractions import HTTPRequests
-from CRABClient.UserUtilities import getFileFromURL
-from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.Commands.getcommand import getcommand
-from CRABClient.ClientUtilities import colors
-from CRABClient.ClientExceptions import ConfigurationException, RESTCommunicationException, ClientException, MissingOptionException
 import CRABClient.Emulator
+from CRABClient import __version__
+from CRABClient.ClientUtilities import colors
+from CRABClient.UserUtilities import getFileFromURL
+from CRABClient.Commands.getcommand import getcommand
+from CRABClient.ClientExceptions import RESTCommunicationException, ClientException, MissingOptionException
 
+from ServerUtilities import getProxiedWebDir
 
 class getlog(getcommand):
     """
@@ -25,41 +21,22 @@ class getlog(getcommand):
 
     def __call__(self):
         if self.options.short:
-            inputlist = {'subresource': 'webdir', 'workflow': self.cachedinfo['RequestName']}
+            taskname = self.cachedinfo['RequestName']
+            inputlist = {'subresource': 'webdir', 'workflow': taskname}
             serverFactory = CRABClient.Emulator.getEmulator('rest')
-            server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__) 
+            server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
             uri = self.getUrl(self.instance, resource = 'task')
-            dictresult, status, reason =  server.get(uri, data = inputlist)
-            self.logger.info('Server result: %s' % dictresult['result'][0])
-            dictresult = self.processServerResult(dictresult)
-            if status != 200:
-                msg = "Problem retrieving information from the server:\ninput:%s\noutput:%s\nreason:%s" % (str(inputlist), str(dictresult), str(reason))
-                raise RESTCommunicationException(msg)
+            webdir = getProxiedWebDir(taskname, self.serverurl, uri, self.proxyfilename, self.logger.debug)
+            if not webdir:
+                dictresult, status, reason =  server.get(uri, data = inputlist)
+                webdir = dictresult['result'][0]
+                self.logger.info('Server result: %s' % webdir)
+                if status != 200:
+                    msg = "Problem retrieving information from the server:\ninput:%s\noutput:%s\nreason:%s" % (str(inputlist), str(dictresult), str(reason))
+                    raise RESTCommunicationException(msg)
             self.setDestination()
             self.logger.info("Setting the destination to %s " % self.dest)
-            self.logger.info("Retrieving...")
-            success = []
-            failed = []        
-            for item in self.options.jobids:
-                jobid = str(item[1])
-                filename = 'job_out.'+jobid+'.0.txt'
-                url = dictresult['result'][0]+'/'+filename
-                try:
-                    getFileFromURL(url, self.dest+'/'+filename)
-                    self.logger.info ('Retrieved %s' % (filename))
-                    success.append(filename)
-                    retry = 1
-                    #To retrieve retried joblog, if there is any.
-                    while urllib.urlopen(dictresult['result'][0]+'/'+'job_out.'+jobid+'.'+str(retry)+'.txt').getcode() == 200:
-                        filename = 'job_out.'+jobid+'.'+str(retry)+'.txt'
-                        url = dictresult['result'][0]+'/'+filename
-                        getFileFromURL(url, self.dest+'/'+filename)
-                        self.logger.info ('Retrieved %s' % (filename))
-                        success.append(filename)
-                        retry = retry + 1
-                except ClientException as ex:
-                    self.logger.debug(str(ex))
-                    failed.append(filename)
+            failed, success = self.retrieveShortLogs(webdir, self.proxyfilename)
             if failed:
                 msg = "%sError%s: Failed to retrieve the following files: %s" % (colors.RED,colors.NORMAL,failed)
                 self.logger.info(msg)
@@ -72,7 +49,7 @@ class getlog(getcommand):
                ('failed'  in returndict and returndict['failed']):
                 msg = "You can use the --short option to retrieve a short version of the log files from the Grid scheduler."
                 self.logger.info(msg)
- 
+
         return returndict
 
     def setOptions(self):
@@ -107,3 +84,29 @@ class getlog(getcommand):
                 ex = MissingOptionException(msg)
                 ex.missingOption = "jobids"
                 raise ex
+
+
+    def retrieveShortLogs(self, webdir, proxyfilename):
+        self.logger.info("Retrieving...")
+        success = []
+        failed = []
+        for _, jobid in self.options.jobids:
+            retry = 0
+            succeded = True
+            while succeded:
+                filename = 'job_out.%s.%s.txt' % (jobid, retry)
+                url = webdir + '/' + filename
+                try:
+                    getFileFromURL(url, self.dest + '/' + filename, proxyfilename)
+                    self.logger.info('Retrieved %s' % (filename))
+                    success.append(filename)
+                    retry += 1 #To retrieve retried joblog, if there is any.
+                except ClientException as ex:
+                    succeded = False
+                    #only print exception that are not 404, this is expected since we try all the jobs retries
+                    if not hasattr(ex, "status") or ex.status!=404:
+                        self.logger.debug(str(ex))
+                    failed.append(filename)
+
+        return failed, success
+

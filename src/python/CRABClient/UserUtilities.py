@@ -4,8 +4,6 @@ This module contains the utility methods available for users.
 
 import os
 import logging
-import logging.handlers
-import string
 import urllib
 import subprocess
 import traceback
@@ -114,36 +112,44 @@ def getUsernameFromSiteDB():
     return username
 
 
-def getFileFromURL(url, filename = None):
+def getFileFromURL(url, filename = None, proxyfilename = None):
     """
     Read the content of a URL and copy it into a file.
+
+    url: the link you would like to retrieve
+    filename: the local filename where the url is saved to. Defaults to the filename in the url
+    proxyfilename: the x509 proxy certificate to be used in case auth is required
+
+    Return the filename used to save the file or raises ClientException in case of errors (a status attribute is added if the error is an http one).
     """
+    parsedurl = urlparse(url)
     if filename == None:
-        path = urlparse(url).path
+        path = parsedurl.path
         filename = os.path.basename(path)
     try:
-        socket = urllib.urlopen(url)
+        opener = urllib.URLopener(key_file = proxyfilename, cert_file = proxyfilename)
+        socket = opener.open(url)
         status = socket.getcode()
         filestr = socket.read()
     except IOError as ioex:
-        tblogger = logging.getLogger('CRAB3')
-        tblogger.exception(ioex)
         msg = "Error while trying to retrieve file from %s: %s" % (url, ioex)
         msg += "\nMake sure the URL is correct."
-        raise ClientException(msg)
+        exc = ClientException(msg)
+        if ioex[0] == 'http error':
+            exc.status = ioex[1]
+        raise exc
     except Exception as ex:
         tblogger = logging.getLogger('CRAB3')
         tblogger.exception(ex)
         msg = "Unexpected error while trying to retrieve file from %s: %s" % (url, ex)
         raise ClientException(msg)
-    if status != 200:
-        raise ClientException("Unable to retieve the file from %s. HTTP status code %s. HTTP content: %s" % (url, status, socket.info()))
+    if status != 200 and parsedurl.scheme in ['http', 'https']:
+        exc = ClientException("Unable to retieve the file from %s. HTTP status code %s. HTTP content: %s" % (url, status, socket.info()))
+        exc.status = status
+        raise exc
     with open(filename, 'w') as f:
         f.write(filestr)
     return filename
-
-
-from CRABClient.ClientUtilities import LOGLEVEL_MUTE
 
 
 def getLoggers():

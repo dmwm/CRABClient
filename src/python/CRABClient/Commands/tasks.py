@@ -59,7 +59,7 @@ class tasks(SubCommand):
 
         This allows to set specific command options
         """
-         
+
         self.parser.add_option( '--fromdate',
                                 dest = 'fromdate',
                                 default = None,
