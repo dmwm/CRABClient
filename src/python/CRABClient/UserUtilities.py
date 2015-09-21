@@ -10,10 +10,15 @@ import traceback
 from urlparse import urlparse
 from ast import literal_eval
 
+## DBS dependencies
+from dbs.apis.dbsClient import DbsApi
+
 ## WMCore dependencies
 from WMCore.Configuration import Configuration
+from WMCore.DataStructs.LumiList import LumiList
 
 ## CRAB dependencies
+from CRABClient.ClientUtilities import DBSURLS
 from CRABClient.ClientExceptions import ClientException, UsernameException, ProxyException
 
 
@@ -150,6 +155,42 @@ def getFileFromURL(url, filename = None, proxyfilename = None):
     with open(filename, 'w') as f:
         f.write(filestr)
     return filename
+
+
+def getLumiListInValidFiles(dataset, dbsurl = 'phys03'):
+    """
+    Get the runs/lumis in the valid files of a given dataset.
+
+    dataset: the dataset name as published in DBS
+    dbsurl: the DBS URL or DBS prod instance
+
+    Returns a LumiList object.
+    """
+    dbsurl = DBSURLS['reader'].get(dbsurl, dbsurl)
+    dbs3api = DbsApi(url=dbsurl)
+    try:
+        files = dbs3api.listFileArray(dataset=dataset, validFileOnly=0, detail=True)
+    except Exception as ex:
+        msg  = "Got DBS client error requesting details of dataset '%s' on DBS URL '%s': %s" % (dataset, dbsurl, ex)
+        msg += "\n%s" % (traceback.format_exc())
+        raise ClientException(msg)
+    if not files:
+        msg = "Dataset '%s' not found in DBS URL '%s'." % (dataset, dbsurl)
+        raise ClientException(msg)
+    validFiles = [f['logical_file_name'] for f in files if f['is_file_valid']]
+    blocks = set([f['block_name'] for f in files])
+    runLumiPairs = []
+    for blockName in blocks:
+        fileLumis = dbs3api.listFileLumis(block_name=blockName)
+        for f in fileLumis:
+            if f['logical_file_name'] in validFiles:
+                run = f['run_num']
+                lumis = f['lumi_section_num']
+                for lumi in lumis:
+                    runLumiPairs.append((run,lumi))
+    lumiList = LumiList(lumis=runLumiPairs)
+    
+    return lumiList
 
 
 def getLoggers():

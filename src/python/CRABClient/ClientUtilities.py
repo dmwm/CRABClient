@@ -24,6 +24,13 @@ import CRABClient.Emulator
 from CRABClient.ClientExceptions import ClientException, TaskNotFoundException, CachefileNotFoundException, ConfigurationException, ConfigException, UsernameException, ProxyException, RESTCommunicationException
 
 
+DBSURLS = {'reader': {'global': 'https://cmsweb.cern.ch/dbs/prod/global/DBSReader',
+                      'phys01': 'https://cmsweb.cern.ch/dbs/prod/phys01/DBSReader',
+                      'phys02': 'https://cmsweb.cern.ch/dbs/prod/phys02/DBSReader',
+                      'phys03': 'https://cmsweb.cern.ch/dbs/prod/phys03/DBSReader'},
+           'writer': {'phys03': 'https://cmsweb.cern.ch/dbs/prod/phys03/DBSWriter'}}
+
+
 BASEURL = '/crabserver/'
 SERVICE_INSTANCES = {'prod': 'cmsweb.cern.ch',
                      'preprod': 'cmsweb-testbed.cern.ch',

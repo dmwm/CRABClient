@@ -13,17 +13,11 @@ from string import upper
 
 import CRABClient.Emulator
 from CRABClient import __version__
+from CRABClient.ClientUtilities import DBSURLS
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientMapping import parametersMapping, getParamDefaultValue
 from CRABClient.ClientExceptions import ClientException, RESTCommunicationException
 from CRABClient.ClientUtilities import getJobTypes, createCache, addPlugin, server_info, colors, getUrl, setSubmitParserOptions, validateSubmitOptions, checkStatusLoop
-
-
-DBSURLS = {'reader': {'global': 'https://cmsweb.cern.ch/dbs/prod/global/DBSReader',
-                      'phys01': 'https://cmsweb.cern.ch/dbs/prod/phys01/DBSReader',
-                      'phys02': 'https://cmsweb.cern.ch/dbs/prod/phys02/DBSReader',
-                      'phys03': 'https://cmsweb.cern.ch/dbs/prod/phys03/DBSReader'},
-           'writer': {'phys03': 'https://cmsweb.cern.ch/dbs/prod/phys03/DBSWriter'}}
 
 
 class submit(SubCommand):
