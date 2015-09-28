@@ -15,7 +15,6 @@ class remake(SubCommand):
     shortnames = ['rmk']
 
     def __call__(self):
-
         return self.remakecache(''.join(self.options.cmptask.split()))
 
     def remakecache(self,taskname):
@@ -36,7 +35,7 @@ class remake(SubCommand):
             pickle.dump({'voGroup': '', 'Server': self.serverurl , 'instance': self.instance, 'RequestName': taskname, 'voRole': '', 'Port': ''}, dumpfile)
             dumpfile.close()
             self.logger.info("%sSuccess%s: Finished remaking project directory %s" % (colors.GREEN, colors.NORMAL, requestarea))
-            return 0
+            return requestarea
 
 
     def setOptions(self):
