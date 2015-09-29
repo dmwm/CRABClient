@@ -42,6 +42,12 @@ class remote_copy(SubCommand):
         self.parser.add_option("--wait",
                                dest = "waittime")
 
+        self.parser.add_option("--checksum",
+                               dest = "checksum")
+
+        self.parser.add_option("--command",
+                               dest = "command")
+
     def __call__(self):
         """
         Copying locally files staged remotely.
@@ -53,7 +59,7 @@ class remote_copy(SubCommand):
         globalExitcode = -1
 
         dicttocopy = self.options.inputdict
- 
+
         # taking number of parallel download to create from user, default is 10
         if self.options.nparallel == None:
             nsubprocess = 10
@@ -64,13 +70,17 @@ class remote_copy(SubCommand):
             self.logger.info("Inappropriate number of parallel download, must between 0 to 20 ")
             return -1
         command = ""
-        if cmd_exist("gfal-copy"):
+        if cmd_exist("gfal-copy") and self.options.command not in ["LCG"]:
             self.logger.info("Will use `gfal-copy` command for file transfers")
             command = "env -i X509_USER_PROXY=%s gfal-copy -v " % os.path.abspath(self.proxyfilename)
+            if self.options.checksum:
+                command += "-K %s " % self.options.checksum
             command += " -T "
-        elif cmd_exist("lcg-cp"):
+        elif cmd_exist("lcg-cp") and self.options.command not in ["GFAL"]:
             self.logger.info("Will use `lcg-cp` command for file transfers")
             command = "lcg-cp --connect-timeout 20 --verbose -b -D srmv2"
+            if self.options.checksum:
+                command += "--checksum-type %s " % self.options.checksum
             command += " --sendreceive-timeout "
         else:
             # This should not happen. If it happens, Site Admin have to install GFAL2 (yum install gfal2-util gfal2-all)

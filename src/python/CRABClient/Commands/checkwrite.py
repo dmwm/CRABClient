@@ -1,4 +1,5 @@
 import os
+import re
 import time
 import datetime
 import subprocess
@@ -59,16 +60,20 @@ class checkwrite(SubCommand):
 
         cp_cmd = ""
         del_cmd = ""
-        if cmd_exist("gfal-copy") and cmd_exist("gfal-rm"):
+        if cmd_exist("gfal-copy") and cmd_exist("gfal-rm") and self.command in [None, "GFAL"]:
             self.logger.info("Will use `gfal-copy`, `gfal-rm` commands for checking write permissions")
             cp_cmd = "env -i X509_USER_PROXY=%s gfal-copy -p -v -t 180 " % os.path.abspath(self.proxyfilename)
             delfile_cmd = "env -i X509_USER_PROXY=%s gfal-rm -v -t 180 " % os.path.abspath(self.proxyfilename)
             deldir_cmd = "env -i X509_USER_PROXY=%s gfal-rm -r -v -t 180 " % os.path.abspath(self.proxyfilename)
+            if self.checksum:
+                cp_cmd += "-K %s " % self.checksum
         elif cmd_exist("lcg-cp") and cmd_exist("lcg-del"):
             self.logger.info("Will use `lcg-cp`, `lcg-del` commands for checking write permissions")
             cp_cmd = "lcg-cp -v -b -D srmv2 --connect-timeout 180 "
             delfile_cmd = "lcg-del --connect-timeout 180 -b -l -D srmv2 "
             deldir_cmd = "lcg-del -d --connect-timeout 180 -b -l -D srmv2 "
+            if self.checksum:
+                cp_cmd += "--checksum-type %s " % self.checksum
         else:
             self.logger.info("Neither gfal nor lcg command was found")
             return {'status': 'FAILED'}
@@ -169,7 +174,7 @@ class checkwrite(SubCommand):
     def cp(self, pfn, command):
 
         abspath = os.path.abspath(self.filename)
-        if cmd_exist("gfal-copy"):
+        if cmd_exist("gfal-copy")  and self.command in [None, "GFAL"]:
             abspath = "file://" + abspath
         cpcmd = command + abspath + " '" + pfn + "'"
         self.logger.info('Executing command: %s' % cpcmd)
@@ -223,6 +228,15 @@ class checkwrite(SubCommand):
                                dest = 'userlfn',
                                default = None,
                                help = 'A user lfn address.')
+        self.parser.add_option('--checksum',
+                               dest = 'checksum',
+                               default = 'yes',
+                               help = 'Set it to true if needed. If true will use ADLER32 checksum' +\
+                                       'Allowed values are yes/no. Default is yes.')
+        self.parser.add_option('--command',
+                               dest = 'command',
+                               default = None,
+                               help = 'A command which to use. Available commands are LCG or GFAL.')
 
 
     def validateOptions(self):
@@ -234,3 +248,19 @@ class checkwrite(SubCommand):
             ex = MissingOptionException(msg)
             ex.missingOption = "sitename"
             raise ex
+        if hasattr(self.options, 'command') and self.options.command != None:
+            AvailableCommands = ['LCG', 'GFAL']
+            self.command = self.options.command.upper()
+            if self.command not in AvailableCommands:
+                msg = "You specified to use %s command and it is not allowed. Available commands are: %s " % (self.command, str(AvailableCommands))
+                ex = ConfigurationException(msg)
+                raise ex
+        else:
+            self.command = None
+        if hasattr(self.options, 'checksum'):
+            if re.match('^yes$|^no$', self.options.checksum):
+                self.checksum = 'ADLER32' if self.options.checksum == 'yes' else None
+            else:
+                msg = "You specified to use %s checksum. Only lowercase yes/no is accepted to turn ADLER32 checksum" % self.options.checksum
+                ex = ConfigurationException(msg)
+                raise ex
