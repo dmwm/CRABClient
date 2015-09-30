@@ -254,10 +254,9 @@ class status(SubCommand):
             ndigits = int(math.ceil(math.log(totnumjobs+1, 10)))
             ## For each exit code:
             for i, ec in enumerate(exitCodes):
-                numjobs = ec_numjobs[ec]
                 ## Sort the error messages for this exit code from most frequent one to less
                 ## frequent one.
-                numjobs.sort()
+                numjobs = sorted(ec_numjobs[ec])
                 numjobs.reverse()
                 ## Count the total number of failed jobs with this exit code.
                 count = 0
@@ -418,8 +417,7 @@ class status(SubCommand):
         self.logger.info("\nSite Summary Table (including retries):\n")
         self.logger.info("%-20s %10s %10s %10s %10s %10s %10s" % ("Site", "Runtime", "Waste", "Running", "Successful", "Stageout", "Failed"))
 
-        sorted_sites = sites.keys()
-        sorted_sites.sort()
+        sorted_sites = sorted(sites.keys())
         for site in sorted_sites:
             info = sites[site]
             if site == 'Unknown': continue

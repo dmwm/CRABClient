@@ -100,8 +100,7 @@ class getcommand(SubCommand):
                 self.logger.info("\n".join(xrootlfn))
                 returndict = {'xrootd': xrootlfn}
             elif self.options.dump:
-                jobid_pfn_lfn_list = map(lambda x: (x['jobid'], x['pfn'], x['lfn']), workflow)
-                jobid_pfn_lfn_list.sort()
+                jobid_pfn_lfn_list = sorted(map(lambda x: (x['jobid'], x['pfn'], x['lfn']), workflow))
                 lastjobid = -1
                 filecounter = 1
                 msg = ""
