@@ -178,7 +178,7 @@ class ConfigCommand:
             while attrs and obj is not None:
                 obj = getattr(obj, attrs.pop(0), None)
             if obj is not None:
-                if type(obj) != requiredType:
+                if not isinstance(obj, requiredType):
                     msg = "Invalid CRAB configuration: Parameter %s requires a value of type %s (while a value of type %s was given)." \
                           % (paramName, str(requiredType), str(type(obj)))
                     if paramName == "Data.userInputFiles":

@@ -67,7 +67,7 @@ class submit(SubCommand):
             ## Check that the requestname is of the right type.
             ## This is not checked in SubCommand.validateConfig().
             if param == 'workflow':
-                if mustbetype == type(self.requestname):
+                if isinstance(self.requestname, mustbetype):
                     self.configreq['workflow'] = self.requestname
             ## Translate boolean flags into integers.
             elif param in ['savelogsflag', 'publication', 'publishgroupname', 'nonprodsw', 'useparent', 'ignorelocality', 'saveoutput', 'oneEventMode', 'nonvaliddata']:
