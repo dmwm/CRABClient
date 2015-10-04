@@ -5,11 +5,11 @@ import multiprocessing
 import time
 import re
 from math import ceil
+import logging
 from multiprocessing import Manager
 
-from MultiProcessingLog import MultiProcessingLog
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ClientUtilities import colors, cmd_exist
+from CRABClient.ClientUtilities import colors, cmd_exist, logfilter
 
 
 class remote_copy(SubCommand):
@@ -48,13 +48,17 @@ class remote_copy(SubCommand):
         self.parser.add_option("--command",
                                dest = "command")
 
+
     def __call__(self):
         """
         Copying locally files staged remotely.
          * using a subprocess to encapsulate the copy command.
          * maximum parallel download is 10
         """
-
+        ## This is the log gilename that is going to be used by the subprocesses that copy the file
+        ## Using the same logfile is not supported automatically, see:
+        ## https://docs.python.org/2/howto/logging-cookbook.html#logging-to-a-single-file-from-multiple-processes
+        self.remotecpLogile = "%s/remote_copy.log" % os.path.dirname(self.logger.logfile)
         dicttocopy = self.options.inputdict
 
         # taking number of parallel download to create from user, default is 10
@@ -148,11 +152,16 @@ class remote_copy(SubCommand):
             inputq.put((myfile, cmd))
 
         self.logger.info("Please wait")
-        self.stopchildproc(inputq, processarray,nsubprocess)
 
+        keybInt = self.stopchildproc(inputq, processarray, nsubprocess)
 
-        #getting output for global exit
-        if len(successfiles) == 0:
+        self.saveSubprocessesOut(failedfiles, keybInt)
+
+        if keybInt:
+            ## if ctrl-C was hit we wont find anything interesting in the subprocesses out
+            ## that means that successfiles and failedfiles will not be dict as normally expected
+            return [], []
+        elif len(successfiles) == 0:
             self.logger.info("No file retrieved")
         elif len(failedfiles) != 0:
             self.logger.info(colors.GREEN+"Number of files successfully retrieved: %s" % len(successfiles)+colors.NORMAL)
@@ -181,6 +190,7 @@ class remote_copy(SubCommand):
     def stopchildproc(self,inputq,processarray,nsubprocess):
         """
         simply sending a STOP message to the sub process
+        Return True if ctrl-C has been hit
         """
         self.logger.debug("stopchildproc() method has been called")
         try:
@@ -191,8 +201,52 @@ class remote_copy(SubCommand):
         finally:
             # giving the time to the sub-process to exit
             for process in processarray:
-                process.join()
-                #time.sleep(1)
+                try:
+                    process.join()
+                except KeyboardInterrupt:
+                    self.logger.info("Master process keyboard interrupted while waiting")
+                    return True
+        return False
+
+    def saveSubprocessesOut(self, failedfiles, keybInt):
+        """ Get the logfile produced by the subprocesses and put it into
+            the usual crab.log file
+        """
+        if os.path.isfile(self.remotecpLogile):
+            self.logger.debug("The output of the transfer subprocesses follows:")
+            with open(self.remotecpLogile) as fp:
+                for line in fp:
+                    self.logger.debug("\t" + line) #TODO to remove the newline at the end
+
+            if keybInt or failedfiles: # N.B. failed files cannot be read if keybInt
+                self.logger.info("For more details about the errors please open the logfile")
+        else:
+            self.logger.debug("Cannot find %s" % self.remotecpLogile)
+
+    def setSubprocessLog(self):
+        """ Set the logger for the subprocess workers so that everything that
+            is debug get logged to a file, and everything that is info get logged
+            to both screen and file.
+
+            See https://docs.python.org/2/howto/logging-cookbook.html#logging-to-a-single-file-from-multiple-processes
+            for the reason we need to do that.
+
+            The file will be put into the "main" crab.log file and removed by
+            the master process by saveSubprocessesOut
+        """
+        logger = logging.getLogger('remotecopy')
+        logger.setLevel(logging.DEBUG)
+        formatter = logging.Formatter('%(levelname)s %(asctime)s: \t %(message)s')
+        consolehandler = logging.StreamHandler()
+        consolehandler.setLevel(logging.INFO) #            consolehandler.setFormatter(formatter)
+        logger.addHandler(consolehandler)
+        filehandler = logging.FileHandler(self.remotecpLogile)
+        filehandler.setFormatter(formatter)
+        filehandler.setLevel(logging.DEBUG)
+        filehandler.addFilter(logfilter())
+        logger.addHandler(filehandler)
+        return logger
+
 
     def processWorker(self, input_, successfiles, failedfiles):
         """
@@ -200,6 +254,7 @@ class remote_copy(SubCommand):
 
         Runs a subprocessed command.
         """
+        logger = self.setSubprocessLog()
         # Get this started
         while True:
             try:
@@ -221,36 +276,43 @@ class remote_copy(SubCommand):
                 localFilename = os.path.join(dirpath,  str(fileid))
                 command = work
 
-            print "maaaao"
-            self.logger.info("Retrieving %s " % fileid)
-            self.logger.debug("Executing %s" % command)
+            logger.info("Retrieving %s " % fileid)
+            logger.debug("Executing %s" % command)
             pipe = subprocess.Popen(command, stdout = subprocess.PIPE,
                                      stderr = subprocess.PIPE, shell = True)
-            stdout, stderr = pipe.communicate()
+            try:
+                stdout, stderr = pipe.communicate()
+            except KeyboardInterrupt:
+                logger.info("Subprocess exit due to keyboard interrupt")
+                break
             error = simpleOutputCheck(stderr)
 
-            self.logger.debug("Finish executing for file %s" % fileid)
+            logger.debug("Finish executing for file %s" % fileid)
 
             if pipe.returncode != 0 or len(error) > 0:
-                self.logger.info("%sWarning%s: Failed retrieving %s" % (colors.RED, colors.NORMAL, fileid))
-                #self.logger.debug(colors.RED +"Stderr: %s " %stderr+ colors.NORMAL)
-                [self.logger.debug(colors.RED +"\t %s" % x + colors.NORMAL) for x in error]
+                logger.info("%sWarning%s: Failed retrieving %s" % (colors.RED, colors.NORMAL, fileid))
+                #logger.debug(colors.RED +"Stderr: %s " %stderr+ colors.NORMAL)
+                [logger.info(colors.RED +"\t %s" % x + colors.NORMAL) for x in error]
                 failedfiles[fileid] = str(error)
+                logger.debug("Full stderr follows:\n%s" % stderr)
 
                 if "timed out" in stderr or "timed out" in stdout:
-                    self.logger.info("%sWarning%s: Failed due to connection timeout" % (colors.RED, colors.NORMAL ))
-                    self.logger.info("Please use the '-w' option to increase the connection timeout")
+                    logger.info("%sWarning%s: Failed due to connection timeout" % (colors.RED, colors.NORMAL ))
+                    logger.info("Please use the '-w' option to increase the connection timeout")
 
                 if os.path.isfile(localFilename) and os.path.getsize(localFilename) != myfile['size']:
-                    self.logger.debug("File %s has the wrong size, deleting it" % fileid)
+                    logger.debug("File %s has the wrong size, deleting it" % fileid)
                     try:
                         os.remove(localFilename)
                     except Exception as ex:
-                        self.logger.debug("%sWarning%s: Cannot remove the file because of: %s" % (colors.RED, colors.NORMAL, ex))
-                time.sleep(60)
-                continue
+                        logger.debug("%sWarning%s: Cannot remove the file because of: %s" % (colors.RED, colors.NORMAL, ex))
+                try:
+                    time.sleep(60)
+                except KeyboardInterrupt:
+                    logger.info("Subprocess exit due to keyboard interrupt")
+                    break
             else:
-                self.logger.info("%sSuccess%s: Success in retrieving %s " % (colors.GREEN, colors.NORMAL, fileid))
+                logger.info("%sSuccess%s: Success in retrieving %s " % (colors.GREEN, colors.NORMAL, fileid))
             successfiles[fileid] = 'Successfully retrieved'
         return
 

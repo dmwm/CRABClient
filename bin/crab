@@ -23,7 +23,7 @@ from ServerUtilities import FEEDBACKMAIL
 from CRABClient.CRABOptParser import CRABOptParser
 from CRABClient import __version__ as client_version
 from CRABClient.ClientMapping import parametersMapping
-from CRABClient.ClientExceptions import ClientException 
+from CRABClient.ClientExceptions import ClientException
 from CRABClient.ClientUtilities import getAvailCommands, uploadlogfile, initLoggers, setConsoleLogLevelVar, StopExecution, flushMemoryLogger
 
 
@@ -78,6 +78,10 @@ class CRABClient(object):
             a long version to the log
 
             Adapted from Doug Hellmann
+
+            This might help sometimes:
+            import traceback,pprint;
+            pprint.pprint(traceback.format_tb(tback))
             """
             clientinstance = self
 
