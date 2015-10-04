@@ -1,14 +1,14 @@
 from __future__ import division
 import os
 import subprocess
-import multiprocessing, Queue
+import multiprocessing
 import time
 import re
 from math import ceil
 from multiprocessing import Manager
 
+from MultiProcessingLog import MultiProcessingLog
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.CredentialInteractions import CredentialInteractions
 from CRABClient.ClientUtilities import colors, cmd_exist
 
 
@@ -51,12 +51,9 @@ class remote_copy(SubCommand):
     def __call__(self):
         """
         Copying locally files staged remotely.
-         *Using a subprocess to encapsulate the copy command.
-         * maximum parallel download is 10, line 61
-         * default --sendreceive-timeout is 1800 s, line 75 and 77
+         * using a subprocess to encapsulate the copy command.
+         * maximum parallel download is 10
         """
-
-        globalExitcode = -1
 
         dicttocopy = self.options.inputdict
 
@@ -101,7 +98,7 @@ class remote_copy(SubCommand):
 
 
         self.logger.debug("Starting ChildProcess with %s ChildProcess" % nsubprocess)
-        inputq, processarray = self.startchildproc(self.processWorker,nsubprocess, successfiles, failedfiles)
+        inputq, processarray = self.startchildproc(self.processWorker, nsubprocess, successfiles, failedfiles)
 
         for myfile in dicttocopy:
             if downspeed < mindownspeed:
@@ -157,15 +154,12 @@ class remote_copy(SubCommand):
         #getting output for global exit
         if len(successfiles) == 0:
             self.logger.info("No file retrieved")
-            globalExitcode = -1
         elif len(failedfiles) != 0:
             self.logger.info(colors.GREEN+"Number of files successfully retrieved: %s" % len(successfiles)+colors.NORMAL)
             self.logger.info(colors.RED+"Number of files failed to be retrieved: %s" % len(failedfiles)+colors.NORMAL)
             #self.logger.debug("List of failed file and reason: %s" % failedfiles)
-            globalExitcode = -1
         else:
             self.logger.info("%sSuccess%s: All files successfully retrieved" % (colors.GREEN,colors.NORMAL))
-            globalExitcode = 0
 
         return successfiles , failedfiles
 
@@ -181,7 +175,7 @@ class remote_copy(SubCommand):
             subprocessarray.append(p)
             subprocessarray[i].start()
 
-        return inputq,subprocessarray
+        return inputq, subprocessarray
 
 
     def stopchildproc(self,inputq,processarray,nsubprocess):
@@ -190,31 +184,26 @@ class remote_copy(SubCommand):
         """
         self.logger.debug("stopchildproc() method has been called")
         try:
-            for i in range(nsubprocess):
+            for _ in range(nsubprocess):
                 inputq.put(('-1', 'STOP'))
-
         #except Exception, ex:
-         #   pass
+        #   pass
         finally:
             # giving the time to the sub-process to exit
             for process in processarray:
                 process.join()
                 #time.sleep(1)
 
-    def processWorker(self,input, successfiles, failedfiles):
+    def processWorker(self, input_, successfiles, failedfiles):
         """
         _processWorker_
 
         Runs a subprocessed command.
         """
         # Get this started
-
-
         while True:
-            workid = None
             try:
-                myfile, work = input.get()
-                t1 = time.time()
+                myfile, work = input_.get()
             except (EOFError, IOError):
                 crashMessage = "Hit EOF/IO in getting new work\n"
                 crashMessage += "Assuming this is a graceful break attempt."
@@ -232,6 +221,7 @@ class remote_copy(SubCommand):
                 localFilename = os.path.join(dirpath,  str(fileid))
                 command = work
 
+            print "maaaao"
             self.logger.info("Retrieving %s " % fileid)
             self.logger.debug("Executing %s" % command)
             pipe = subprocess.Popen(command, stdout = subprocess.PIPE,
@@ -254,7 +244,7 @@ class remote_copy(SubCommand):
                 if os.path.isfile(localFilename) and os.path.getsize(localFilename) != myfile['size']:
                     self.logger.debug("File %s has the wrong size, deleting it" % fileid)
                     try:
-                       os.remove(localFilename)
+                        os.remove(localFilename)
                     except Exception as ex:
                         self.logger.debug("%sWarning%s: Cannot remove the file because of: %s" % (colors.RED, colors.NORMAL, ex))
                 time.sleep(60)

@@ -480,17 +480,16 @@ class SubCommand(ConfigCommand):
 
 
     def crabcachepath(self):
-
-         if 'CRAB3_CACHE_FILE' in os.environ:
-             if os.path.isabs(os.environ['CRAB3_CACHE_FILE']):
-                 return os.environ['CRAB3_CACHE_FILE']
-             else:
-                 msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
-                 msg += " Invalid path in environment variable CRAB3_CACHE_FILE: %s" % (os.environ['CRAB3_CACHE_FILE'])
-                 msg += " Please export a valid full path."
-                 raise EnvironmentException(msg)
-         else:
-             return str(os.path.expanduser('~')) + '/.crab3'
+        if 'CRAB3_CACHE_FILE' in os.environ:
+            if os.path.isabs(os.environ['CRAB3_CACHE_FILE']):
+                return os.environ['CRAB3_CACHE_FILE']
+            else:
+                msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
+                msg += " Invalid path in environment variable CRAB3_CACHE_FILE: %s" % (os.environ['CRAB3_CACHE_FILE'])
+                msg += " Please export a valid full path."
+                raise EnvironmentException(msg)
+        else:
+            return str(os.path.expanduser('~')) + '/.crab3'
 
 
     def updateCRABCacheFile(self):
