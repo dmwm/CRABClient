@@ -1,5 +1,3 @@
-import urllib
-
 import CRABClient.Emulator
 from CRABClient import __version__
 from CRABClient.ClientUtilities import colors
@@ -8,6 +6,7 @@ from CRABClient.Commands.getcommand import getcommand
 from CRABClient.ClientExceptions import RESTCommunicationException, ClientException, MissingOptionException
 
 from ServerUtilities import getProxiedWebDir
+
 
 class getlog(getcommand):
     """
@@ -51,6 +50,7 @@ class getlog(getcommand):
                 self.logger.info(msg)
 
         return returndict
+
 
     def setOptions(self):
         """
