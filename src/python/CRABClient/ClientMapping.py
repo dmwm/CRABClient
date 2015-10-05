@@ -42,7 +42,7 @@ parametersMapping = {
                   'eventsperlumi'  : {'default': None,       'config': ['JobType.eventsPerLumi'],           'type': 'IntType',     'required': False},
                   'adduserfiles'   : {'default': [],         'config': ['JobType.inputFiles'],              'type': 'ListType',    'required': False},
                   'addoutputfiles' : {'default': [],         'config': ['JobType.outputFiles'],             'type': 'ListType',    'required': False},
-                  'maxjobruntime'  : {'default': 1315,       'config': ['JobType.maxJobRuntimeMin'],        'type': 'IntType',     'required': False},
+                  'maxjobruntime'  : {'default': 1250,       'config': ['JobType.maxJobRuntimeMin'],        'type': 'IntType',     'required': False},
                   'numcores'       : {'default': 1,          'config': ['JobType.numCores'],                'type': 'IntType',     'required': False},
                   'maxmemory'      : {'default': 2000,       'config': ['JobType.maxMemoryMB'],             'type': 'IntType',     'required': False},
                   'priority'       : {'default': 10,         'config': ['JobType.priority'],                'type': 'IntType',     'required': False},
