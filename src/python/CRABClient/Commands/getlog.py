@@ -1,5 +1,3 @@
-import urllib
-
 import CRABClient.Emulator
 from CRABClient import __version__
 from CRABClient.ClientUtilities import colors
@@ -8,6 +6,7 @@ from CRABClient.Commands.getcommand import getcommand
 from CRABClient.ClientExceptions import RESTCommunicationException, ClientException, MissingOptionException
 
 from ServerUtilities import getProxiedWebDir
+
 
 class getlog(getcommand):
     """
@@ -52,6 +51,7 @@ class getlog(getcommand):
 
         return returndict
 
+
     def setOptions(self):
         """
         __setOptions__
@@ -91,6 +91,9 @@ class getlog(getcommand):
         success = []
         failed = []
         for _, jobid in self.options.jobids:
+            ## We don't know a priori how many retries the job had. So we start with retry 0
+            ## and increase it by 1 until we are unable to retrieve a log file (interpreting
+            ## this as the fact that we reached the highest retry already).
             retry = 0
             succeded = True
             while succeded:
@@ -100,13 +103,15 @@ class getlog(getcommand):
                     getFileFromURL(url, self.dest + '/' + filename, proxyfilename)
                     self.logger.info('Retrieved %s' % (filename))
                     success.append(filename)
-                    retry += 1 #To retrieve retried joblog, if there is any.
+                    retry += 1 #To retrieve retried job log, if there is any.
                 except ClientException as ex:
                     succeded = False
-                    #only print exception that are not 404, this is expected since we try all the jobs retries
+                    ## Ignore the exception if the HTTP status code is 404. Status 404 means file
+                    ## not found (see http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html). File
+                    ## not found error is expected, since we try all the job retries.
                     if not hasattr(ex, "status") or ex.status!=404:
                         self.logger.debug(str(ex))
-                    failed.append(filename)
+                        failed.append(filename)
 
         return failed, success
 
