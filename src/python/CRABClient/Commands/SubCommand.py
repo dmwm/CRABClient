@@ -77,7 +77,7 @@ class ConfigCommand:
                         self.logger.debug("Overriden parameter %s with %s" % (fullparname, parval))
             valid, configmsg = self.validateConfig() ## Subclasses of SubCommand overwrite this method if needed.
         except RuntimeError as re:
-            configmsg  = "Syntax error in CRAB configuration file:\n%s" % (self._extractReason(configname, re))
+            configmsg  = "Error in CRAB configuration file:\n%s" % (self._extractReason(configname, re))
             configmsg += "\nPlease refer to https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3CommonErrors#Syntax_error_in_CRAB_configurati"
             configmsg += "\nSee the ./crab.log file for more details."
             configmsg += "\nThe documentation about the CRAB configuration file can be found in"
@@ -178,7 +178,7 @@ class ConfigCommand:
             while attrs and obj is not None:
                 obj = getattr(obj, attrs.pop(0), None)
             if obj is not None:
-                if type(obj) != requiredType:
+                if not isinstance(obj, requiredType):
                     msg = "Invalid CRAB configuration: Parameter %s requires a value of type %s (while a value of type %s was given)." \
                           % (paramName, str(requiredType), str(type(obj)))
                     if paramName == "Data.userInputFiles":

@@ -16,7 +16,6 @@ import sys
 import json
 import tempfile
 import traceback
-from optparse import OptionParser
 
 from ServerUtilities import FEEDBACKMAIL
 
@@ -78,7 +77,7 @@ def getTmpDir():
     return tempName
 
 
-def getConfigName(logger):
+def getConfigName():
     """ Get the configuration filename from the command line options
     """
     ## The client has a "two level" parsing. One global (for example gets the --debug option and the command name),
@@ -90,7 +89,7 @@ def getConfigName(logger):
     opt, args =  parser.parse_args()
     args = args or []
     opt, cmdargs = optParser.parse_args(args[1:])
-    validateSubmitOptions(opt, args, logger)
+    validateSubmitOptions(opt, args)
 
     return opt.config
 
@@ -117,7 +116,7 @@ if __name__ == '__main__':
         setConsoleLogLevelVar(LOGLEVEL_MUTE)
         tblogger, logger, memhandler = None, None, None
         tblogger, logger, memhandler = initLoggers()
-        cfgName = getConfigName(logger)
+        cfgName = getConfigName()
         config = getConfig(cfgName)
         cmsswCfg = CMSSWConfig(config=config, userConfig=config.JobType.psetName, logger=logger)
         valid, msg = cmsswCfg.validateConfig()
