@@ -81,7 +81,7 @@ class remote_copy(SubCommand):
             self.logger.info("Will use `lcg-cp` command for file transfers")
             command = "lcg-cp --connect-timeout 20 --verbose -b -D srmv2"
             if self.options.checksum:
-                command += "--checksum-type %s " % self.options.checksum
+                command += " --checksum-type %s " % self.options.checksum
             command += " --sendreceive-timeout "
         else:
             # This should not happen. If it happens, Site Admin have to install GFAL2 (yum install gfal2-util gfal2-all)
@@ -140,7 +140,7 @@ class remote_copy(SubCommand):
             localsrmtimeout = minsrmtimeout if maxtime < minsrmtimeout else maxtime # do not want a too short timeout
 
             timeout = " --srm-timeout "
-            if cmd_exist("gfal-copy"):
+            if cmd_exist("gfal-copy") and self.options.command not in ["LCG"]:
                 timeout = " -t "
             cmd = '%s %s %s %%s' % (command, timeout + str(localsrmtimeout) + ' ', myfile['pfn'])
             if url_input:
@@ -187,10 +187,9 @@ class remote_copy(SubCommand):
         return inputq, subprocessarray
 
 
-    def stopchildproc(self,inputq,processarray,nsubprocess):
-        """
-        simply sending a STOP message to the sub process
-        Return True if ctrl-C has been hit
+    def stopchildproc(self, inputq, processarray, nsubprocess):
+        """ Simply sending a STOP message to the sub process
+            Return True if ctrl-C has been hit
         """
         self.logger.debug("stopchildproc() method has been called")
         try:
@@ -217,6 +216,8 @@ class remote_copy(SubCommand):
             with open(self.remotecpLogile) as fp:
                 for line in fp:
                     self.logger.debug("\t" + line) #TODO to remove the newline at the end
+
+            os.remove(self.remotecpLogile)
 
             if keybInt or failedfiles: # N.B. failed files cannot be read if keybInt
                 self.logger.info("For more details about the errors please open the logfile")
@@ -300,6 +301,11 @@ class remote_copy(SubCommand):
                     logger.info("%sWarning%s: Failed due to connection timeout" % (colors.RED, colors.NORMAL ))
                     logger.info("Please use the '-w' option to increase the connection timeout")
 
+                if "checksum" in stderr:
+                    logger.info("%sWarning%s: as of 3.3.1510 CRAB3 is using an option to validate the checksum with lcg-cp/gfal-cp commands."
+                                " You might get false positives since for some site this is not working."
+                                " In that case please use the option --checksum=no"% (colors.RED, colors.NORMAL ))
+
                 if os.path.isfile(localFilename) and os.path.getsize(localFilename) != myfile['size']:
                     logger.debug("File %s has the wrong size, deleting it" % fileid)
                     try:
@@ -313,7 +319,7 @@ class remote_copy(SubCommand):
                     break
             else:
                 logger.info("%sSuccess%s: Success in retrieving %s " % (colors.GREEN, colors.NORMAL, fileid))
-            successfiles[fileid] = 'Successfully retrieved'
+                successfiles[fileid] = 'Successfully retrieved'
         return
 
 
