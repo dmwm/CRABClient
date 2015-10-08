@@ -20,6 +20,10 @@ class remote_copy(SubCommand):
     name  = __name__.split('.').pop()
     usage = "usage: %prog " + name + " [options] [args]"
 
+    def __init__(self, logger, cmdargs=None):
+        SubCommand.__init__(self, logger, cmdargs)
+        self.remotecpLogile = None
+
 
     def setOptions(self):
         """
@@ -126,8 +130,8 @@ class remote_copy(SubCommand):
                         self.logger.info("Removing %s as it is not complete: current size %s, expected size %s" % (fileid, size, \
                                                                                 myfile['size'] if 'size' in myfile else 'unknown'))
                         os.remove(localFilename)
-                    except Exception as ex:
-                        self.logger.info("%sError%s: Cannot remove the file because of: %s" % (colors.RED, colors.NORMAL,ex))
+                    except OSError as ex:
+                        self.logger.info("%sError%s: Cannot remove the file because of: %s" % (colors.RED, colors.NORMAL, ex))
 
             # if the file still exists skip it
             if not url_input and os.path.isfile(localFilename):
@@ -191,6 +195,7 @@ class remote_copy(SubCommand):
         """ Simply sending a STOP message to the sub process
             Return True if ctrl-C has been hit
         """
+        result = False #using variable instead of direct return to make pylint happy. See W0150
         self.logger.debug("stopchildproc() method has been called")
         try:
             for _ in range(nsubprocess):
@@ -204,8 +209,8 @@ class remote_copy(SubCommand):
                     process.join()
                 except KeyboardInterrupt:
                     self.logger.info("Master process keyboard interrupted while waiting")
-                    return True
-        return False
+                    result = True
+        return result
 
     def saveSubprocessesOut(self, failedfiles, keybInt):
         """ Get the logfile produced by the subprocesses and put it into
@@ -215,7 +220,7 @@ class remote_copy(SubCommand):
             self.logger.debug("The output of the transfer subprocesses follows:")
             with open(self.remotecpLogile) as fp:
                 for line in fp:
-                    self.logger.debug("\t" + line) #TODO to remove the newline at the end
+                    self.logger.debug("\t" + line[:-1]) #-1 is to remove the newline at the end
 
             os.remove(self.remotecpLogile)
 
@@ -293,7 +298,8 @@ class remote_copy(SubCommand):
             if pipe.returncode != 0 or len(error) > 0:
                 logger.info("%sWarning%s: Failed retrieving %s" % (colors.RED, colors.NORMAL, fileid))
                 #logger.debug(colors.RED +"Stderr: %s " %stderr+ colors.NORMAL)
-                [logger.info(colors.RED +"\t %s" % x + colors.NORMAL) for x in error]
+                for x in error:
+                    logger.info(colors.RED +"\t %s" % x + colors.NORMAL)
                 failedfiles[fileid] = str(error)
                 logger.debug("Full stderr follows:\n%s" % stderr)
 
@@ -310,7 +316,7 @@ class remote_copy(SubCommand):
                     logger.debug("File %s has the wrong size, deleting it" % fileid)
                     try:
                         os.remove(localFilename)
-                    except Exception as ex:
+                    except OSError as ex:
                         logger.debug("%sWarning%s: Cannot remove the file because of: %s" % (colors.RED, colors.NORMAL, ex))
                 try:
                     time.sleep(60)

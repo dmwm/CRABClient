@@ -4,7 +4,6 @@ import imp
 import json
 import types
 from ast import literal_eval
-from optparse import OptionParser
 
 import CRABClient.Emulator
 from CRABClient import SpellChecker
@@ -17,7 +16,6 @@ from CRABClient.ClientUtilities import loadCache, getWorkArea, server_info, crea
 from CRABClient.ClientMapping import renamedParams, commandsConfiguration, configParametersInfo, getParamDefaultValue
 from CRABClient.ClientExceptions import ConfigurationException, MissingOptionException, EnvironmentException
 
-from WMCore.Credential.Proxy import Proxy
 from WMCore.Configuration import loadConfigurationFile, Configuration
 
 #if certificates in myproxy expires in less than RENEW_MYPROXY_THRESHOLD days renew them
@@ -105,7 +103,7 @@ class ConfigCommand:
         else:
             modPath = imp.find_module(cfgBaseName, [cfgDirName])
         try:
-            modRef = imp.load_module(cfgBaseName, modPath[0],
+            imp.load_module(cfgBaseName, modPath[0],
                                      modPath[1], modPath[2])
         except Exception as ex:
             msg = str(ex)
@@ -170,7 +168,7 @@ class ConfigCommand:
             requiredTypeName = paramInfo['type']
             try:
                 requiredType = getattr(types, requiredTypeName)
-            except AttributeError as ex:
+            except AttributeError:
                 msg = "Invalid type %s specified in CRABClient configuration mapping for parameter %s." % (requiredTypeName, paramName)
                 return False, msg
             attrs = paramName.split('.')
@@ -354,10 +352,6 @@ class SubCommand(ConfigCommand):
         via crabconfig.py or crab option --instance. The variable passed via crab option will always be used over the variable
         in crabconfig.py. Instance name other than specify in the SERVICE_INSTANCE will be treated as a private instance.
         """
-        serverurl = None
-
-        #Will be use to print available instances
-        available_instances = ', '.join(SERVICE_INSTANCES)
 
         if hasattr(self.options, 'instance') and self.options.instance is not None:
             if hasattr(self, 'configuration') and hasattr(self.configuration.General, 'instance') and self.configuration.General.instance is not None:
@@ -425,7 +419,7 @@ class SubCommand(ConfigCommand):
             self.logger.debug('Skipping proxy creation')
 
 
-    def loadLocalCache(self, proxyOptsSetPlace, serverurl = None):
+    def loadLocalCache(self, proxyOptsSetPlace):
         """ 
         Loads the client cache and set up the server url
         """

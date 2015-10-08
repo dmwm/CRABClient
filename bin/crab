@@ -47,6 +47,10 @@ class CRABClient(object):
 
         self.subCommands = getAvailCommands()
         self.parser = CRABOptParser(self.subCommands)
+        self.tblogger = None
+        self.logger = None
+        self.memhandler = None
+        self.cmd = None
 
 
     def __call__(self):
@@ -186,7 +190,7 @@ if __name__ == "__main__":
         client.logger.debug('     Request headers: %s' % he.headers)
         logging.getLogger('CRAB3').exception('Caught exception')
         exitcode = he.status
-    except pycurl.error as  pe:
+    except pycurl.error as pe:
         client.logger.error(pe)
         logging.getLogger('CRAB3').exception('Caught exception')
         exitcode = pe.args[0]
