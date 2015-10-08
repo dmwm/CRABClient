@@ -25,7 +25,7 @@ parametersMapping = {
                   'userfiles'      : {'default': None,       'config': ['Data.userInputFiles'],             'type': 'ListType',    'required': False},
                   'dbsurl'         : {'default': 'global',   'config': ['Data.inputDBS'],                   'type': 'StringType',  'required': False},
                   'useparent'      : {'default': None,       'config': ['Data.useParent'],                  'type': 'BooleanType', 'required': False},
-                  'secondarydata'  : {'default': None,       'config': ['Data.secondaryDataset'],           'type': 'StringType',  'required': False},
+                  'secondarydata'  : {'default': None,       'config': ['Data.secondaryInputDataset'],      'type': 'StringType',  'required': False},
                   'ignorelocality' : {'default': False,      'config': ['Data.ignoreLocality'],             'type': 'BooleanType', 'required': False},
                   'splitalgo'      : {'default': None,       'config': ['Data.splitting'],                  'type': 'StringType',  'required': True },
                   'algoargs'       : {'default': None,       'config': ['Data.unitsPerJob'],                'type': 'IntType',     'required': True },
@@ -83,6 +83,7 @@ renamedParams = {
     'JobType.maxmemory'               : {'newParam' : 'JobType.maxMemoryMB',             'version' : None},
     'JobType.maxjobruntime'           : {'newParam' : 'JobType.maxJobRuntimeMin',        'version' : None},
     'JobType.allowNonProductionCMSSW' : {'newParam' : 'JobType.allowUndistributedCMSSW', 'version' : 'v3.3.16'},
+    'Data.secondaryDataset'           : {'newParam' : 'Data.secondaryInputDataset',      'version' : 'v3.3.1511'},
 }
 
 

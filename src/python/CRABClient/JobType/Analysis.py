@@ -45,8 +45,8 @@ class Analysis(BasicJobType):
                            'edmoutfiles'               : [],
                           }
 
-        if getattr(self.config.Data, 'useParent', False) and getattr(self.config.Data, 'secondaryDataset', None):
-            msg = "Invalid CRAB configuration: Parameters Data.useParent and Data.secondaryDataset cannot be used together."
+        if getattr(self.config.Data, 'useParent', False) and getattr(self.config.Data, 'secondaryInputDataset', None):
+            msg = "Invalid CRAB configuration: Parameters Data.useParent and Data.secondaryInputDataset cannot be used together."
             raise ConfigurationException(msg)
 
         # Get SCRAM environment
