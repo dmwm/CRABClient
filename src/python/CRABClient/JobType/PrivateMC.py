@@ -3,14 +3,10 @@ PrivateMC job type plug-in
 """
 
 import os
-import re
 
-from WMCore.Lexicon import lfnParts
-
-from CRABClient.JobType.Analysis import Analysis
-from CRABClient.JobType.CMSSWConfig import CMSSWConfig
-from CRABClient.ClientMapping import getParamDefaultValue
 from CRABClient.ClientUtilities import colors
+from CRABClient.JobType.Analysis import Analysis
+from CRABClient.ClientMapping import getParamDefaultValue
 
 
 class PrivateMC(Analysis):
@@ -42,13 +38,8 @@ class PrivateMC(Analysis):
                 msg += "Consider merging the LHE input files to guarantee complete processing."
                 self.logger.warning(msg)
 
-        ## Get the user-specified primary dataset name.
-        outputPrimaryDataset = getattr(self.config.Data, 'outputPrimaryDataset', 'CRAB_PrivateMC')
-        # Normalizes "foo/bar" and "/foo/bar" to "/foo/bar"
-        outputPrimaryDataset = "/" + os.path.join(*outputPrimaryDataset.split("/"))
-        if not re.match("/%(primDS)s.*" % (lfnParts), outputPrimaryDataset):
-            self.logger.warning("Invalid primary dataset name %s; publication may fail." % (outputPrimaryDataset))
-        configArguments['inputdata'] = outputPrimaryDataset
+        configArguments['primarydataset'] = getattr(self.config.Data, 'outputPrimaryDataset', 'CRAB_PrivateMC')
+
         return tarFilename, configArguments
 
 
@@ -69,7 +60,7 @@ class PrivateMC(Analysis):
 
         ## If publication is True, check that there is a primary dataset name specified.
         if getattr(config.Data, 'publication', getParamDefaultValue('Data.publication')):
-            if not hasattr(config.Data, 'outputPrimaryDataset'):
+            if not getattr(config.Data, 'outputPrimaryDataset'):
                 msg  = "Invalid CRAB configuration: Parameter Data.outputPrimaryDataset not specified."
                 msg += "\nMC generation job type requires this parameter for publication."
                 return False, msg
