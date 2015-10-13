@@ -206,10 +206,10 @@ if __name__ == "__main__":
         exitcode = 0
     finally:
         # the command crab --version does not have a logger instance
-        if hasattr(client, 'tblogger') and hasattr(client, 'memhandler') and hasattr(client, 'logger'):
+        if getattr(client, 'tblogger', None) and getattr(client, 'memhandler', None) and getattr(client, 'logger', None):
             flushMemoryLogger(client.tblogger, client.memhandler, client.logger.logfile)
 
-    if hasattr(client, 'cmd'):
+    if getattr(client, 'cmd', None):
         client.cmd.terminate( exitcode )
 
     sys.exit( exitcode )
