@@ -61,12 +61,6 @@ class PrivateMC(Analysis):
         if not valid:
             return valid, reason
 
-        ## Check that there is no input dataset specified.
-        if getattr(config.Data, 'inputDataset', None):
-            msg  = "Invalid CRAB configuration: MC generation job type does not use an input dataset."
-            msg += "\nIf you really intend to run over an input dataset, then you have to run an analysis job type (i.e. set JobType.pluginName = 'Analysis')."
-            return False, msg
-
         ## If publication is True, check that there is a primary dataset name specified.
         if getattr(config.Data, 'publication', getParamDefaultValue('Data.publication')):
             if not hasattr(config.Data, 'primaryDataset'):
