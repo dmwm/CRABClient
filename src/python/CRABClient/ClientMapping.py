@@ -20,7 +20,7 @@ parametersMapping = {
                   'savelogsflag'   : {'default': False,      'config': ['General.transferLogs'],            'type': 'BooleanType', 'required': False},
                   'faillimit'      : {'default': None,       'config': ['General.failureLimit'],            'type': 'IntType',     'required': False},
                   'inputdata'      : {'default': None,       'config': ['Data.inputDataset',
-                                                                        'Data.primaryDataset'],             'type': 'StringType',  'required': False},
+                                                                        'Data.outputPrimaryDataset'],       'type': 'StringType',  'required': False},
                   'nonvaliddata'   : {'default': False,      'config': ['Data.allowNonValidInputDataset'],  'type': 'BooleanType', 'required': False},
                   'userfiles'      : {'default': None,       'config': ['Data.userInputFiles'],             'type': 'ListType',    'required': False},
                   'dbsurl'         : {'default': 'global',   'config': ['Data.inputDBS'],                   'type': 'StringType',  'required': False},
@@ -84,6 +84,7 @@ renamedParams = {
     'JobType.maxjobruntime'           : {'newParam' : 'JobType.maxJobRuntimeMin',        'version' : None},
     'JobType.allowNonProductionCMSSW' : {'newParam' : 'JobType.allowUndistributedCMSSW', 'version' : 'v3.3.16'},
     'Data.secondaryDataset'           : {'newParam' : 'Data.secondaryInputDataset',      'version' : 'v3.3.1511'},
+    'Data.primaryDataset'             : {'newParam' : 'Data.outputPrimaryDataset',       'version' : 'v3.3.1511'},
 }
 
 
