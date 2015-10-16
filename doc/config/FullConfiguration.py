@@ -33,7 +33,7 @@ config.section_("JobType")
 ## Specific data options
 config.section_("Data")
 #config.Data.inputDataset = '/cms/data/set'
-#config.Data.publishDataName = 'MyReskimForTwo'
+#config.Data.outputDatasetTag = 'MyReskimForTwo'
 ## Splitting Algorithms
 #config.Data.splitting = 'LumiBased'
 #config.Data.splitting = 'EventBased'

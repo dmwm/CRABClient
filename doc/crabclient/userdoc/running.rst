@@ -321,8 +321,8 @@ You can only publish data for completed tasks, the publication information does 
 
 Datasets are named according to the config parameters::
 
-    config.Data.publishDataName = 'EWVTestCRAB3Skim'
+    config.Data.outputDatasetTag = 'EWVTestCRAB3Skim'
     config.Data.processingVersion = 'v%s' % myVersion
 
-as as described in the next section in the case of multiple output files. Defaults are taken for both publishDataName and processingVersion if one or both are left unspecified.
+as as described in the next section in the case of multiple output files. Defaults are taken for both outputDatasetTag and processingVersion if one or both are left unspecified.
 

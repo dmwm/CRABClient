@@ -34,7 +34,7 @@ parametersMapping = {
                   'publication'    : {'default': True,       'config': ['Data.publication'],                'type': 'BooleanType', 'required': False},
                   'publishdbsurl'  : {'default': 'phys03',   'config': ['Data.publishDBS'],                 'type': 'StringType',  'required': False},
                   #the 2 here to the publishname was added because of https://github.com/dmwm/CRABServer/issues/4947
-                  'publishname2'    : {'default': '',         'config': ['Data.publishDataName'],            'type': 'StringType',  'required': False},
+                  'publishname2'   : {'default': '',         'config': ['Data.outputDatasetTag'],           'type': 'StringType',  'required': False},
                   'publishgroupname' : {'default': False,    'config': ['Data.publishWithGroupName'],       'type': 'BooleanType', 'required': False},
                   'jobtype'        : {'default': 'Analysis', 'config': ['JobType.pluginName',
                                                                         'JobType.externalPluginFile'],      'type': 'StringType',  'required': False},
@@ -85,6 +85,7 @@ renamedParams = {
     'JobType.allowNonProductionCMSSW' : {'newParam' : 'JobType.allowUndistributedCMSSW', 'version' : 'v3.3.16'},
     'Data.secondaryDataset'           : {'newParam' : 'Data.secondaryInputDataset',      'version' : 'v3.3.1511'},
     'Data.primaryDataset'             : {'newParam' : 'Data.outputPrimaryDataset',       'version' : 'v3.3.1511'},
+    'Data.publishDataName'            : {'newParam' : 'Data.outputDatasetTag',           'version' : 'v3.3.1511'},
 }
 
 
