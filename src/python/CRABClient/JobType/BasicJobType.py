@@ -5,8 +5,10 @@ Conventions:
  2) a plug-in needs to implement mainly the run method
 """
 from ast import literal_eval
+
 from WMCore.Configuration import Configuration
 from WMCore.DataStructs.LumiList import LumiList
+
 from CRABClient.ClientExceptions import ConfigurationException
 
 
@@ -51,9 +53,9 @@ class BasicJobType(object):
 
 
     @staticmethod
-    def mergeLumis(inputdata, lumimask):
+    def mergeLumis(inputdata):
         """
-        Computes the processed lumis, merges if needed and returns the compacted list (called when usedbs=no).
+        Computes the processed lumis, merges if needed and returns the compacted list.
         """
         mergedLumis = set()
         #merge the lumis from single files
@@ -63,24 +65,32 @@ class BasicJobType(object):
                     for lumi in lumis:
                         mergedLumis.add((run,int(lumi))) #lumi is str, but need int
         mergedLumis = LumiList(lumis=mergedLumis)
-        diff = LumiList(compactList=lumimask) - mergedLumis
-        return mergedLumis.getCompactList(), diff.getCompactList()
+        return mergedLumis.getCompactList()
 
 
     @staticmethod
-    def subtractLumis(input, output):
-        """
-        Computes the processed lumis, merges from the DBS reuslts (called when usedbs=yes).
-        """
-        out = LumiList(runsAndLumis=output)
-        in_ = LumiList(runsAndLumis=input)
-        diff = in_ - out
-        return out.getCompactList(), diff.getCompactList()
+    def intersectLumis(lumisA, lumisB):
+        result = LumiList(compactList=lumisA) & LumiList(compactList=lumisB)
+        return result.getCompactList()
 
 
     @staticmethod
-    def getDoubleLumis(lumisDict):
-        #calculate lumis counted twice
+    def subtractLumis(lumisA, lumisB):
+        result = LumiList(compactList=lumisA) - LumiList(compactList=lumisB)
+        return result.getCompactList()
+
+
+    @staticmethod
+    def getDuplicateLumis(lumisDict):
+        """
+        Get the run-lumis appearing more than once in the input
+        dictionary of runs and lumis, which is assumed to have
+        the following format:
+            {
+            '1': [1,2,3,4,6,7,8,9,10],
+            '2': [1,4,5,20]
+            }
+        """
         doubleLumis = set()
         for run, lumis in lumisDict.iteritems():
             seen = set()
