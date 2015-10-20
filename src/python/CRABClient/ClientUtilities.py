@@ -509,10 +509,6 @@ def getUsernameFromSiteDB_wrapped(logger, quiet = False):
         logger.debug(msg)
     else:
         logger.info(msg)
-    infomsg  = "\n%sNote%s: Make sure you have the correct certificate mapped in SiteDB" % (colors.BOLD, colors.NORMAL)
-    infomsg += " (you can check what is the certificate you currently have mapped in SiteDB"
-    infomsg += " by searching for your name in https://cmsweb.cern.ch/sitedb/prod/people)."
-    infomsg += " For instructions on how to map a certificate in SiteDB, see https://twiki.cern.ch/twiki/bin/viewauth/CMS/SiteDBForCRAB."
     try:
         username = getUsernameFromSiteDB()
     except ProxyException as ex:
@@ -522,8 +518,7 @@ def getUsernameFromSiteDB_wrapped(logger, quiet = False):
         else:
             logger.error(msg)
     except UsernameException as ex:
-        msg  = "%sError%s: %s" % (colors.RED, colors.NORMAL, ex)
-        msg += infomsg
+        msg = "%sError%s: %s" % (colors.RED, colors.NORMAL, ex)
         if quiet:
             logger.debug(msg)
         else:

@@ -5,6 +5,8 @@ import json
 import types
 from ast import literal_eval
 
+from WMCore.Configuration import loadConfigurationFile, Configuration
+
 import CRABClient.Emulator
 from CRABClient import SpellChecker
 from CRABClient.__init__ import __version__
@@ -13,13 +15,12 @@ from CRABClient.CRABOptParser import CRABCmdOptParser
 from CRABClient.ClientUtilities import BASEURL, SERVICE_INSTANCES
 from CRABClient.CredentialInteractions import CredentialInteractions
 from CRABClient.ClientUtilities import loadCache, getWorkArea, server_info, createWorkArea
-from CRABClient.ClientMapping import renamedParams, commandsConfiguration, configParametersInfo, getParamDefaultValue
 from CRABClient.ClientExceptions import ConfigurationException, MissingOptionException, EnvironmentException
-
-from WMCore.Configuration import loadConfigurationFile, Configuration
+from CRABClient.ClientMapping import renamedParams, commandsConfiguration, configParametersInfo, getParamDefaultValue
 
 #if certificates in myproxy expires in less than RENEW_MYPROXY_THRESHOLD days renew them
 RENEW_MYPROXY_THRESHOLD = 15
+
 
 class ConfigCommand:
     """
@@ -75,7 +76,7 @@ class ConfigCommand:
                         self.logger.debug("Overriden parameter %s with %s" % (fullparname, parval))
             valid, configmsg = self.validateConfig() ## Subclasses of SubCommand overwrite this method if needed.
         except RuntimeError as re:
-            configmsg  = "Error in CRAB configuration file:\n%s" % (self._extractReason(configname, re))
+            configmsg  = "Error while loading CRAB configuration:\n%s" % (self._extractReason(configname, re))
             configmsg += "\nPlease refer to https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3CommonErrors#Syntax_error_in_CRAB_configurati"
             configmsg += "\nSee the ./crab.log file for more details."
             configmsg += "\nThe documentation about the CRAB configuration file can be found in"

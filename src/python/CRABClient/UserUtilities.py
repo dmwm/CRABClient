@@ -3,12 +3,11 @@ This module contains the utility methods available for users.
 """
 
 import os
-import logging
 import urllib
-import subprocess
+import logging
 import traceback
+import subprocess
 from urlparse import urlparse
-from ast import literal_eval
 
 ## DBS dependencies
 from dbs.apis.dbsClient import DbsApi
@@ -18,7 +17,7 @@ from WMCore.Configuration import Configuration
 from WMCore.DataStructs.LumiList import LumiList
 
 ## CRAB dependencies
-from CRABClient.ClientUtilities import DBSURLS
+from CRABClient.ClientUtilities import DBSURLS, colors
 from CRABClient.ClientExceptions import ClientException, UsernameException, ProxyException
 
 
@@ -49,9 +48,10 @@ def getUsernameFromSiteDB():
     stdout, stderr = process.communicate()
     if process.returncode or not stdout:
         msg  = "Aborting the attempt to retrieve username from SiteDB."
-        msg += "\nError executing command: %s" % (cmd)
-        msg += "\n  Stdout:\n    %s" % (str(stdout).replace('\n', '\n    '))
-        msg += "\n  Stderr:\n    %s" % (str(stderr).replace('\n', '\n    '))
+        msg += "\nDetails follow:"
+        msg += "\n  Error executing command: %s" % (cmd)
+        msg += "\n    Stdout:\n      %s" % (str(stdout).replace('\n', '\n      '))
+        msg += "\n    Stderr:\n      %s" % (str(stderr).replace('\n', '\n      '))
         raise ProxyException(msg)
     ## Check if proxy is valid.
     #proxyTimeLeft = [x[x.find(':')+2:] for x in stdout.split('\n') if 'timeleft' in x][0]
@@ -60,9 +60,10 @@ def getUsernameFromSiteDB():
     stdout, stderr = process.communicate()
     if process.returncode or not stdout:
         msg  = "Aborting the attempt to retrieve username from SiteDB."
-        msg += "\nError executing command: %s" % (cmd)
-        msg += "\n  Stdout:\n    %s" % (str(stdout).replace('\n', '\n    '))
-        msg += "\n  Stderr:\n    %s" % (str(stderr).replace('\n', '\n    '))
+        msg += "\nDetails follow:"
+        msg += "\n  Error executing command: %s" % (cmd)
+        msg += "\n    Stdout:\n      %s" % (str(stdout).replace('\n', '\n      '))
+        msg += "\n    Stderr:\n      %s" % (str(stderr).replace('\n', '\n      '))
         raise ProxyException(msg)
     proxyTimeLeft = str(stdout).replace('\n','')
     if int(proxyTimeLeft) < 60:
@@ -75,44 +76,39 @@ def getUsernameFromSiteDB():
     stdout, stderr = process.communicate()
     if process.returncode or not stdout:
         msg  = "Aborting the attempt to retrieve username from SiteDB."
-        msg += "\nError executing command: %s" % (cmd)
-        msg += "\n  Stdout:\n    %s" % (str(stdout).replace('\n', '\n    '))
-        msg += "\n  Stderr:\n    %s" % (str(stderr).replace('\n', '\n    '))
+        msg += "\nDetails follow:"
+        msg += "\n  Error executing command: %s" % (cmd)
+        msg += "\n    Stdout:\n      %s" % (str(stdout).replace('\n', '\n      '))
+        msg += "\n    Stderr:\n      %s" % (str(stderr).replace('\n', '\n      '))
         raise ProxyException(msg)
     proxyFileName = str(stdout).replace('\n','')
     ## Path to certificates.
     capath = os.environ['X509_CERT_DIR'] if 'X509_CERT_DIR' in os.environ else "/etc/grid-security/certificates"
     ## Retrieve user info from SiteDB.
-    cmd = "curl -s --capath %s --cert %s --key %s 'https://cmsweb.cern.ch/sitedb/data/prod/whoami'" % (capath, proxyFileName, proxyFileName)
-    process = subprocess.Popen(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
+    queryCmd = "curl -s --capath %s --cert %s --key %s 'https://cmsweb.cern.ch/sitedb/data/prod/whoami'" % (capath, proxyFileName, proxyFileName)
+    process = subprocess.Popen(queryCmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
     stdout, stderr = process.communicate()
     if process.returncode or not stdout:
-        msg  = "Unable to retrieve username from SiteDB."
-        msg += "\nError executing command: %s" % (cmd)
-        msg += "\n  Stdout:\n    %s" % (str(stdout).replace('\n', '\n    '))
-        msg += "\n  Stderr:\n    %s" % (str(stderr).replace('\n', '\n    '))
+        msg  = "Error contacting SiteDB."
+        msg += "\nDetails follow:"
+        msg += "\n  Executed command: %s" % (queryCmd)
+        msg += "\n    Stdout:\n      %s" % (str(stdout).replace('\n', '\n      '))
+        msg += "\n    Stderr:\n      %s" % (str(stderr).replace('\n', '\n      '))
         raise UsernameException(msg)
     ## Extract the username from the above command output.
-    try:
-        dictresult = literal_eval(str(stdout).replace('\n',''))
-    except Exception as ex:
-        msg  = "Unable to retrieve username from SiteDB: %s" % (ex)
-        msg += "\nExecuted command: %s" % (cmd)
-        msg += "\n  Stdout:\n    %s" % (str(stdout).replace('\n', '\n    '))
-        msg += "\n  Stderr:\n    %s" % (str(stderr).replace('\n', '\n    '))
-        msg += "\nFailure occurred executing literal_eval(str(stdout).replace('\\n','')):"
-        msg += "\n%s" % (traceback.format_exc())
-        raise UsernameException(msg)
-    if len(dictresult.get('result', [])) != 1 or 'login' not in dictresult['result'][0]:
-        msg  = "Unable to extract username from SiteDB."
-        msg += "\nUnexpected output format from command: %s" % (cmd)
-        msg += "\n  Stdout:\n    %s" % (str(stdout).replace('\n', '\n    '))
-        raise UsernameException(msg)
-    username = dictresult['result'][0]['login']
-    if username == "null" or not username:
-        msg  = "SiteDB returned %s login username." % ("'null'" if username == "null" else "no")
-        msg += "\nExecuted command: %s" % (cmd)
-        msg += "\n  Stdout:\n    %s" % (str(stdout).replace('\n', '\n    '))
+    parseCmd = "echo '%s' | tr ':,' '\n' | grep -A1 login | tail -1 | tr -d ' \n\"'" % (str(stdout))
+    process = subprocess.Popen(parseCmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
+    username, stderr = process.communicate()
+    if username == 'null' or not username:
+        msg  = "Failed to retrieve username from SiteDB. Your DN does not seem to be registered in SiteDB."
+        msg += "\nDetails follow:"
+        msg += "\n  Executed command: %s" % (queryCmd)
+        msg += "\n    Stdout:\n      %s" % (str(stdout).replace('\n', '\n      '))
+        msg += "\n    Parsed username: %s" % (username)
+        msg += "\n%sNote%s: Make sure you have the correct certificate mapped in SiteDB" % (colors.BOLD, colors.NORMAL)
+        msg += " (you can check what is the certificate you currently have mapped in SiteDB"
+        msg += " by searching for your name in https://cmsweb.cern.ch/sitedb/prod/people)."
+        msg += " For instructions on how to map a certificate in SiteDB, see https://twiki.cern.ch/twiki/bin/viewauth/CMS/SiteDBForCRAB."
         raise UsernameException(msg)
     return username
 
