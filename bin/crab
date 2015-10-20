@@ -176,7 +176,7 @@ if __name__ == "__main__":
                 break
             client.logger.info('Reason is: %s' % reason)
         if he.headers.has_key('X-Error-Id'):
-            client.logger.info('This error id might help operators investigate the issue in the server: %s' % he.headers['X-Error-Id'])
+            client.logger.info('Error Id: %s' % he.headers['X-Error-Id'])
         #The following goes to the logfile.
         errmsg = "ERROR: %s (%s): " % (he.reason, he.status)
         ## answer can be a json or not
