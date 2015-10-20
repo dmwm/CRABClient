@@ -111,6 +111,16 @@ class status(SubCommand):
             msg += "%s" % (dictresult['status'])
         self.logger.info(msg)
 
+        ## Show dashboard URL for the task.
+        ## The REST Interface can return dictresult['jobSetID'] = '' or dictresult['jobSetID'] = task name.
+        if dictresult['schedd']:
+            if self.cachedinfo['RequestName'] == dictresult['jobSetID']:
+                ## Print the Dashboard monitoring URL for this task.
+                taskname = urllib.quote(dictresult['jobSetID'])
+                dashboardURL = "http://dashb-cms-job.cern.ch/dashboard/templates/task-analysis/#user=" + username \
+                             + "&refresh=0&table=Jobs&p=1&records=25&activemenu=2&status=&site=&tid=" + taskname
+                self.logger.info("Dashboard monitoring URL:\t%s" % (dashboardURL))
+
         ## Print the warning messages (these are the warnings in the Tasks DB,
         ## and/or maybe some warning added by the REST Interface to the status result).
         if dictresult['taskWarningMsg']:
@@ -125,14 +135,6 @@ class status(SubCommand):
                 msg = "%sError retrieving task status%s:" % (colors.RED, colors.NORMAL)
                 msg += "\t%s" % (dictresult['statusFailureMsg'].replace('\n', '\n\t\t\t\t'))
                 self.logger.error(msg)
-        else:
-            ## The REST Interface can return dictresult['jobSetID'] = '' or dictresult['jobSetID'] = task name.
-            if self.cachedinfo['RequestName'] == dictresult['jobSetID']:
-                ## Print the Dashboard monitoring URL for this task.
-                taskname = urllib.quote(dictresult['jobSetID'])
-                dashboardURL = "http://dashb-cms-job.cern.ch/dashboard/templates/task-analysis/#user=" + username \
-                             + "&refresh=0&table=Jobs&p=1&records=25&activemenu=2&status=&site=&tid=" + taskname
-                self.logger.info("Dashboard monitoring URL:\t%s" % (dashboardURL))
 
         #Print information about jobs
         states = dictresult['jobsPerStatus']
