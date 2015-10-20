@@ -11,7 +11,6 @@ import tempfile
 
 from httplib import HTTPException
 
-from WMCore.Lexicon import lfnParts
 from WMCore.DataStructs.LumiList import LumiList
 
 import PandaServerInterface as PandaInterface
@@ -189,13 +188,7 @@ class Analysis(BasicJobType):
                 msg += " Duplicated entries will be removed."
                 self.logger.warning(msg)
             configArguments['userfiles'] = set(userFilesList)
-            ## Get the user-specified primary dataset name.
-            outputPrimaryDataset = getattr(self.config.Data, 'outputPrimaryDataset', 'CRAB_UserFiles')
-            # Normalizes "foo/bar" and "/foo/bar" to "/foo/bar"
-            outputPrimaryDataset = "/" + os.path.join(*outputPrimaryDataset.split("/"))
-            if not re.match("/%(primDS)s.*" % (lfnParts), outputPrimaryDataset):
-                self.logger.warning("Invalid primary dataset name %s; publication may fail." % (outputPrimaryDataset))
-            configArguments['inputdata'] = outputPrimaryDataset
+            configArguments['primarydataset'] = getattr(self.config.Data, 'outputPrimaryDataset', 'CRAB_UserFiles')
 
         lumi_mask_name = getattr(self.config.Data, 'lumiMask', None)
         lumi_list = None
@@ -249,7 +242,7 @@ class Analysis(BasicJobType):
 
         ## Make sure only one of the two parameters Data.inputDataset and Data.userInputFiles
         ## was specified.
-        if hasattr(config.Data, 'inputDataset') and hasattr(config.Data, 'userInputFiles'):
+        if getattr(config.Data, 'inputDataset', None) and getattr(config.Data, 'userInputFiles', None):
             msg  = "Invalid CRAB configuration: Analysis job type accepts either an input dataset or a set of user input files to run on, but not both."
             msg += "\nSuggestion: Specify only one of the two parameters, Data.inputDataset or Data.userInputFiles, but not both."
             return False, msg
@@ -263,13 +256,22 @@ class Analysis(BasicJobType):
             return False, msg
 
         ## When running over an input dataset, we don't accept that the user specifies a
-        ## primary dataset name, because the primary dataset name will already be extracted
-        ## from the input dataset name.
+        ## primary dataset, because the primary dataset will already be extracted from
+        ## the input dataset.
         if getattr(config.Data, 'inputDataset', None) and getattr(config.Data, 'outputPrimaryDataset', None):
             msg  = "Invalid CRAB configuration: Analysis job type with input dataset does not accept an output primary dataset name to be specified,"
             msg += " because the later will be extracted from the first."
             msg += "\nSuggestion: Remove the parameter Data.outputPrimaryDataset."
             return False, msg
+
+        ## When running over user input files with publication turned on, we want the
+        ## user to specify the primary dataset to be used for publication.
+        if getattr(config.Data, 'publication', getParamDefaultValue('Data.publication')):
+            if not getattr(config.Data, 'inputDataset', None):
+                if not getattr(config.Data, 'outputPrimaryDataset', None):
+                    msg  = "Invalid CRAB configuration: Parameter Data.outputPrimaryDataset not specified."
+                    msg += "\nAnalysis job type without input dataset requires this parameter for publication."
+                    return False, msg
 
         ## When running over user input files, make sure the splitting mode is 'FileBased'.
         if getattr(config.Data, 'userInputFiles', None) and self.splitAlgo != 'FileBased':
