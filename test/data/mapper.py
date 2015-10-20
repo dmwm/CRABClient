@@ -19,7 +19,7 @@ defaulturi = {
                             "RequestorDN"       : {"default": None,             "config": None,                     "type": "StringType",  "required": True },
                             "SaveLogs"          : {"default": False,            "config": 'General.transferLogs',   "type": "BooleanType", "required": True },
                             "asyncDest"         : {"default": None,             "config": 'Site.storageSite',       "type": "StringType",  "required": True },
-                            "PublishDataName"   : {"default": str(time.time()), "config": 'Data.publishDataName',   "type": "StringType",  "required": True },
+                            "PublishDataName"   : {"default": str(time.time()), "config": 'Data.outputDatasetTag',  "type": "StringType",  "required": True },
                             "ProcessingVersion" : {"default": "v1",             "config": 'Data.processingVersion', "type": "StringType",  "required": True },
                             "DbsUrl"            : {"default": "http://cmsdbsprod.cern.ch/cms_dbs_prod_global/servlet/DBSServlet", "config": 'Data.inputDBS', "type": "StringType",  "required": True },
                             "SiteWhitelist"     : {"default": None,             "config": 'Site.whitelist',         "type": "ListType",    "required": False},

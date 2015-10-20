@@ -88,7 +88,7 @@ class DeepTask(unittest.TestCase):
         myTask.config.Data.unitsPerJob = 100
         myTask.config.Data.totalUnits = 1000
         myTask.config.Data.publication = True
-        myTask.config.Data.publishDataName = 'CRABAPI-Unittest'
+        myTask.config.Data.outputDatasetTag = 'CRABAPI-Unittest'
         myTask.config.section_("Site")
         myTask.config.Site.storageSite = 'T2_US_Nowhere'
         val = myTask.submit()

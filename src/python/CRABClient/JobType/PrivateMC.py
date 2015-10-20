@@ -43,12 +43,12 @@ class PrivateMC(Analysis):
                 self.logger.warning(msg)
 
         ## Get the user-specified primary dataset name.
-        primaryDataset = getattr(self.config.Data, 'primaryDataset', 'CRAB_PrivateMC')
+        outputPrimaryDataset = getattr(self.config.Data, 'outputPrimaryDataset', 'CRAB_PrivateMC')
         # Normalizes "foo/bar" and "/foo/bar" to "/foo/bar"
-        primaryDataset = "/" + os.path.join(*primaryDataset.split("/"))
-        if not re.match("/%(primDS)s.*" % (lfnParts), primaryDataset):
-            self.logger.warning("Invalid primary dataset name %s; publication may fail." % (primaryDataset))
-        configArguments['inputdata'] = primaryDataset
+        outputPrimaryDataset = "/" + os.path.join(*outputPrimaryDataset.split("/"))
+        if not re.match("/%(primDS)s.*" % (lfnParts), outputPrimaryDataset):
+            self.logger.warning("Invalid primary dataset name %s; publication may fail." % (outputPrimaryDataset))
+        configArguments['inputdata'] = outputPrimaryDataset
         return tarFilename, configArguments
 
 
@@ -69,8 +69,8 @@ class PrivateMC(Analysis):
 
         ## If publication is True, check that there is a primary dataset name specified.
         if getattr(config.Data, 'publication', getParamDefaultValue('Data.publication')):
-            if not hasattr(config.Data, 'primaryDataset'):
-                msg  = "Invalid CRAB configuration: Parameter Data.primaryDataset not specified."
+            if not hasattr(config.Data, 'outputPrimaryDataset'):
+                msg  = "Invalid CRAB configuration: Parameter Data.outputPrimaryDataset not specified."
                 msg += "\nMC generation job type requires this parameter for publication."
                 return False, msg
 

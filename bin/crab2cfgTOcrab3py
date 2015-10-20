@@ -77,7 +77,7 @@ paramsMap = [
     ('Data'     , 'unitsPerJob'          , False, ''       , ''                         , _getunits),           #_getunits does the work
     ('Data'     , 'lumiMask'             , False, 'CMSSW'  , 'lumi_mask'                , RawConfigParser.get),
     ('Data'     , 'publication'          , False, 'USER'   , 'publish_data'             , RawConfigParser.getboolean),
-    ('Data'     , 'publishDataName'      , False, 'USER'   , 'publish_data_name'        , RawConfigParser.get),
+    ('Data'     , 'outputDatasetTag'     , False, 'USER'   , 'publish_data_name'        , RawConfigParser.get),
     ('Data'     , 'publishDBS'           , False, 'USER'   , 'dbs_url_for_publication'  , RawConfigParser.get),
     ('Data'     , 'runRange'             , False, 'CMSSW'  , 'runselection'             , RawConfigParser.get),
     ('User'     , 'voRole'               , False, 'GRID'   , 'role'                     , RawConfigParser.get),
