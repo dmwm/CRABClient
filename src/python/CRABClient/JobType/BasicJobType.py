@@ -6,7 +6,6 @@ Conventions:
 """
 from ast import literal_eval
 
-from WMCore.Configuration import Configuration
 from WMCore.DataStructs.LumiList import LumiList
 
 from CRABClient.ClientExceptions import ConfigurationException
@@ -42,7 +41,7 @@ class BasicJobType(object):
         raise NotImplementedError()
 
 
-    def validateConfig(self):
+    def validateConfig(self, config):
         """
         _validateConfig_
 

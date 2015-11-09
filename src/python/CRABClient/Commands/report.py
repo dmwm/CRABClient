@@ -1,13 +1,12 @@
 import os
-import re
 import json
-from string import upper
 from ast import literal_eval
 
 from WMCore.DataStructs.LumiList import LumiList
  
 import CRABClient.Emulator
 from CRABClient import __version__
+from CRABClient.ClientUtilities import colors
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.JobType.BasicJobType import BasicJobType
 from CRABClient.ClientExceptions import RESTCommunicationException, ConfigurationException
@@ -79,7 +78,7 @@ class report(SubCommand):
         ## Extract the reports of the input files.
         poolInOnlyRes = {}
         for jobid, reports in dictresult['result'][0]['runsAndLumis'].iteritems():
-            poolInOnlyRes[jobid] = [report for report in reports if report['type'] == 'POOLIN']
+            poolInOnlyRes[jobid] = [rep for rep in reports if rep['type'] == 'POOLIN']
         
         ## Calculate how many input files have been processed.
         numFilesProcessed = _getNumFiles(dictresult['result'][0]['runsAndLumis'], 'POOLIN')
@@ -97,7 +96,7 @@ class report(SubCommand):
 
         ## Get the lumis in the input dataset.
         inputDatasetLumis = dictresult['result'][0]['inputDataset']['lumis']
-        if not inputDatasetLumis: # for backward compatibility with tasks submitted before the December release.
+        if not inputDatasetLumis: # for backward compatibility with tasks submitted before the 3.3.1602 release.
             inputDatasetLumis = dictresult['result'][0]['dbsInLimilistNewClientOldTask']
         returndict['inputDatasetLumis'] = inputDatasetLumis
 
@@ -149,8 +148,8 @@ class report(SubCommand):
         outputFilesLumis = {}
         for jobid, reports in poolInOnlyRes.iteritems():
             lumiDict = {}
-            for report in reports:
-                for run, lumis in literal_eval(report['runlumi']).iteritems():
+            for rep in reports:
+                for run, lumis in literal_eval(rep['runlumi']).iteritems():
                     lumiDict.setdefault(str(run), []).extend(map(int, lumis))
             for run, lumis in lumiDict.iteritems():
                 outputFilesLumis.setdefault(run, []).extend(list(set(lumis)))
