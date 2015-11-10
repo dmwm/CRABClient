@@ -60,7 +60,7 @@ class resubmit(SubCommand):
         self.logger.debug("Result: %s" % (dictresult))
         if status != 200:
             msg = "Problem resubmitting the task to the server:\ninput:%s\noutput:%s\nreason:%s" \
-                  % (str(data), str(dictresult), str(reason))
+                  % (str(configreq_encoded), str(dictresult), str(reason))
             raise RESTCommunicationException(msg)
         self.logger.info("Resubmit request sent to the server.")
         if dictresult['result'][0]['result'] != 'ok':
