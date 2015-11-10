@@ -49,8 +49,9 @@ class resubmit(SubCommand):
             if attr_value is not None:
                 configreq[attr_name] = attr_value
         configreq['force'] = 1 if self.options.force else 0
+        configreq['publication'] = 1 if self.options.publication else 0
 
-        self.logger.info("Sending the request to the server")
+        self.logger.info("Sending resubmit request to the server.")
         self.logger.debug("Submitting %s " % str(configreq))
         configreq_encoded = self._encodeRequest(configreq)
         self.logger.debug("Encoded resubmit request: %s" % (configreq_encoded))
@@ -61,14 +62,15 @@ class resubmit(SubCommand):
             msg = "Problem resubmitting the task to the server:\ninput:%s\noutput:%s\nreason:%s" \
                   % (str(data), str(dictresult), str(reason))
             raise RESTCommunicationException(msg)
-        self.logger.info("Resubmit request sent to the CRAB3 server.")
+        self.logger.info("Resubmit request sent to the server.")
         if dictresult['result'][0]['result'] != 'ok':
             msg = "Server responded with: '%s'" % (dictresult['result'][0]['result'])
             self.logger.info(msg)
             returndict = {'status': 'FAILED'}
         else:
             if not self.options.wait:
-                msg = "Please use 'crab status' to check how the resubmission process proceeds."
+                msg  = "Please use 'crab status' to check how the resubmission process proceeds."
+                msg += "\nNotice it may take a couple of minutes for the resubmission to get fully processed."
                 self.logger.info(msg)
             else:
                 targetTaskStatus = 'SUBMITTED'
@@ -159,6 +161,12 @@ class resubmit(SubCommand):
                                action = 'store_true',
                                help = "Force resubmission of successful jobs indicated in --jobids option.")
 
+        self.parser.add_option('--publication',
+                               dest = 'publication',
+                               default = False,
+                               action = 'store_true',
+                               help = "Resubmit only the failed publications.")
+
 
     def validateOptions(self):
         """
@@ -166,6 +174,29 @@ class resubmit(SubCommand):
         and put the strings to be passed to the server to self
         """
         SubCommand.validateOptions(self)
+
+        if self.options.publication:
+            if self.options.sitewhitelist is not None or self.options.siteblacklist is not None or \
+               self.options.maxjobruntime is not None or self.options.maxmemory is not None or \
+               self.options.numcores is not None or self.options.priority is not None:
+                msg  = "The options --sitewhitelist, --siteblacklist,"
+                msg += " --maxjobruntime, --maxmemory, --numcores and  --priority"
+                msg += " can not be specified together with the option --publication."
+                msg += " The last option is to only resubmit (failed) publications,"
+                msg += " in which case all of the first options make no sense."
+                raise ConfigurationException(msg)
+            if self.options.jobids:
+                msg  = "The option --jobids"
+                msg += " can not be specified together with the option --publication."
+                msg += " The last option is to only resubmit (failed) publications,"
+                msg += " which does not allow yet filtering on job ids (ALL failed publications will be resubmitted)."
+                raise ConfigurationException(msg)
+            if self.options.force:
+                msg  = "The option --force"
+                msg += " can not be specified together with the option --publication."
+                msg += " The last option is to only resubmit failed publications."
+                msg += " Publications in a status other than 'failed' can not be resubmitted."
+                raise ConfigurationException(msg)
 
         ## The --jobids option indicates which jobs have to be resubmitted. If it is not
         ## given, then all jobs in the task that are not running or successfully
