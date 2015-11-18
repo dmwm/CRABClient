@@ -184,6 +184,12 @@ class submit(SubCommand):
         if not valid:
             return False, msg
 
+        requestNameLenLimit = 80
+        if hasattr(self.configuration.General, 'requestName'):
+            if len(self.configuration.General.requestName) > requestNameLenLimit:
+                msg = "Invalid CRAB configuration: Parameter General.requestName should not be longer than %d characters." % (requestNameLenLimit)
+                return False, msg
+
         ## Check that Data.unitsPerjob is specified.
         if hasattr(self.configuration.Data, 'unitsPerJob'):
             try:
