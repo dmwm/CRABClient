@@ -184,7 +184,7 @@ class submit(SubCommand):
         if not valid:
             return False, msg
 
-        requestNameLenLimit = 80
+        requestNameLenLimit = 100
         if hasattr(self.configuration.General, 'requestName'):
             if len(self.configuration.General.requestName) > requestNameLenLimit:
                 msg = "Invalid CRAB configuration: Parameter General.requestName should not be longer than %d characters." % (requestNameLenLimit)
