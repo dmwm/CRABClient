@@ -12,7 +12,7 @@ import logging
 
 from ServerUtilities import BOOTSTRAP_CFGFILE_DUMP
 
-from CRABClient.ClientExceptions import ConfigurationException
+from CRABClient.ClientExceptions import ConfigurationException, EnvironmentException
 from CRABClient.ClientUtilities import bootstrapDone, BOOTSTRAP_CFGFILE_PKL, BOOTSTRAP_INFOFILE, LOGGERS
 
 configurationCache = {}
