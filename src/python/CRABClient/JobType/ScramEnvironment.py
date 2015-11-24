@@ -30,7 +30,7 @@ class ScramEnvironment(dict):
             self.logger.debug("Loading required information from the bootstrap environment file")
             try:
                 self.initFromFile()
-            except EnvironmentException, ee:
+            except EnvironmentException as ee:
                 self.logger.info(str(ee))
                 self.logger.info("Will try to find the necessary information from the environment")
                 self.initFromEnv()
@@ -60,7 +60,7 @@ class ScramEnvironment(dict):
         self.command = 'scram'
         self["SCRAM_ARCH"] = None
 
-        if os.environ.has_key("SCRAM_ARCH"):
+        if 'SCRAM_ARCH' in os.environ:
             self["SCRAM_ARCH"] = os.environ["SCRAM_ARCH"]
         else:
             #I am not sure we should keep this fallback..
@@ -74,7 +74,7 @@ class ScramEnvironment(dict):
 #            Commenting these two out. I don't think they are really needed
 #            self.cmsswReleaseBase = os.environ["CMSSW_RELEASE_BASE"]
 #            self.localRT          = os.environ["LOCALRT"]
-        except KeyError, ke:
+        except KeyError as ke:
             self["CMSSW_BASE"]        = None
             self["CMSSW_VERSION"]     = None
 #            self.cmsswReleaseBase = None

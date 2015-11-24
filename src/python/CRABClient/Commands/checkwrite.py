@@ -59,7 +59,6 @@ class checkwrite(SubCommand):
             self.logger.info("LFN %s is valid." % (self.lfnsaddprefix))
 
         cp_cmd = ""
-        del_cmd = ""
         if cmd_exist("gfal-copy") and cmd_exist("gfal-rm") and self.command in [None, "GFAL"]:
             self.logger.info("Will use `gfal-copy`, `gfal-rm` commands for checking write permissions")
             cp_cmd = "env -i X509_USER_PROXY=%s gfal-copy -p -v -t 180 " % os.path.abspath(self.proxyfilename)
@@ -166,7 +165,7 @@ class checkwrite(SubCommand):
         except HTTPException as errormsg:
             self.logger.info('%sError%s: Failed to contact PhEDEx or wrong PhEDEx node name is used' % (colors.RED, colors.NORMAL))
             self.logger.info('Result: %s\nStatus :%s\nURL :%s' % (errormsg.result, errormsg.status, errormsg.url))
-            raise HTTPException, errormsg
+            raise HTTPException(errormsg)
 
         return pfn
 
