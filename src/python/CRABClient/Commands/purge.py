@@ -1,13 +1,15 @@
+import subprocess
+
+from httplib import HTTPException
+
 from WMCore.Services.UserFileCache.UserFileCache  import UserFileCache
+
+import CRABClient.Emulator
+from CRABClient import __version__
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientUtilities import colors, server_info, getUrl
 from CRABClient.ClientExceptions import ConfigurationException, ConfigException, RESTCommunicationException
-from httplib import HTTPException
-import CRABClient.Emulator
-from CRABClient import __version__
 
-import glob
-import subprocess
 
 class purge(SubCommand):
     """
@@ -69,9 +71,9 @@ class purge(SubCommand):
             try:
                 ufcresult = ufc.removeFile(hashkey)
             except HTTPException as re:
-                if re.headers.has_key('X-Error-Info') and 'Not such file' in re.headers['X-Error-Info']:
+                if 'X-Error-Info' in re.headers and 'Not such file' in re.headers['X-Error-Info']:
                     self.logger.info('%sError%s: Failed to find task file in crab server cache; the file might have been already purged' % (colors.RED,colors.NORMAL))
-                    raise HTTPException , re
+                    raise HTTPException(re)
 
             if ufcresult == '':
                 self.logger.info('%sSuccess%s: Successfully removed task files from crab server cache' % (colors.GREEN, colors.NORMAL))
@@ -87,7 +89,7 @@ class purge(SubCommand):
                 scheddaddress = server_info('scheddaddress', self.serverurl, self.proxyfilename, baseurl, workflow = self.cachedinfo['RequestName'] )
             except HTTPException as he:
                 self.logger.info('%sError%s: Failed to get schedd address' % (colors.RED, colors.NORMAL))
-                raise HTTPException,he
+                raise HTTPException(he)
             self.logger.debug('%sSuccess%s: Successfully got schedd address' % (colors.GREEN, colors.NORMAL))
             self.logger.debug('Schedd address: %s' % scheddaddress)
             self.logger.info('Attempting to remove task from schedd')

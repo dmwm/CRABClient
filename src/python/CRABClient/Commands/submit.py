@@ -33,9 +33,6 @@ class submit(SubCommand):
 
 
     def __call__(self):
-        valid = False
-        configmsg = 'Default'
-
         self.logger.debug("Started submission")
         serverFactory = CRABClient.Emulator.getEmulator('rest')
 
@@ -96,13 +93,13 @@ class submit(SubCommand):
         crab_job_types = getJobTypes()
         if upper(self.configreq['jobtype']) in crab_job_types:
             plugjobtype = crab_job_types[upper(self.configreq['jobtype'])](*pluginParams)
-            inputfiles, jobconfig = plugjobtype.run(filecacheurl)
+            dummy_inputfiles, jobconfig = plugjobtype.run(filecacheurl)
         else:
             fullname = self.configreq['jobtype']
             basename = os.path.basename(fullname).split('.')[0]
             plugin = addPlugin(fullname)[basename]
             pluginInst = plugin(*pluginParams)
-            inputfiles, jobconfig = pluginInst.run()
+            dummy_inputfiles, jobconfig = pluginInst.run()
 
         if self.configreq['publication']:
             non_edm_files = jobconfig['tfileoutfiles'] + jobconfig['addoutputfiles']
@@ -126,7 +123,7 @@ class submit(SubCommand):
         if status != 200:
             msg = "Problem sending the request:\ninput:%s\noutput:%s\nreason:%s" % (str(self.configreq), str(dictresult), str(reason))
             raise RESTCommunicationException(msg)
-        elif dictresult.has_key("result"):
+        elif 'result' in dictresult:
             uniquerequestname = dictresult["result"][0]["RequestName"]
         else:
             msg = "Problem during submission, no request ID returned:\ninput:%s\noutput:%s\nreason:%s" \

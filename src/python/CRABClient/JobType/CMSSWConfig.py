@@ -15,7 +15,9 @@ from ServerUtilities import BOOTSTRAP_CFGFILE_DUMP
 from CRABClient.ClientExceptions import ConfigurationException, EnvironmentException
 from CRABClient.ClientUtilities import bootstrapDone, BOOTSTRAP_CFGFILE_PKL, BOOTSTRAP_INFOFILE, LOGGERS
 
+
 configurationCache = {}
+
 
 class CMSSWConfig(object):
     """
@@ -175,7 +177,7 @@ class CMSSWConfig(object):
 
         ## Find files written by TFileService.
         tfiles = []
-        if process.services.has_key('TFileService'):
+        if 'TFileService' in process.services:
             tFileService = process.services['TFileService']
             if "fileName" in tFileService.parameterNames_():
                 tfile = re.sub(r'^file:', '', getattr(tFileService, 'fileName').value())
