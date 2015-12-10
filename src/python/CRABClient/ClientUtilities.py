@@ -718,8 +718,11 @@ def checkStatusLoop(logger, server, uri, uniquerequestname, targetstatus, cmdnam
                 continuecheck = False
                 msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
                 msg += " The %s of your task has failed." % ("resubmission" if cmdname == "resubmit" else "submission")
-                msg += " You can do 'crab status' to get the error message."
                 logger.info(msg)
+                if dictresult['taskFailureMsg']:
+                    msg  = "%sFailure message%s:" % (colors.RED, colors.NORMAL)
+                    msg += "\t%s" % (dictresult['taskFailureMsg'].replace('\n', '\n\t\t\t'))
+                    logger.error(msg)
             elif dictresult['status'] in ['SUBMITTED', 'UPLOADED', 'UNKNOWN']: #until the node_state file is available status is unknown
                 continuecheck = False
             else:
