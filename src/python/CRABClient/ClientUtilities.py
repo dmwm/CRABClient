@@ -705,7 +705,7 @@ def checkStatusLoop(logger, server, uri, uniquerequestname, targetstatus, cmdnam
         if status != 200:
             msg  = "Error when trying to check the task status."
             msg += " Please check the task status later using 'crab status'."
-            logger.info(msg)
+            logger.error(msg)
             msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(uniquerequestname), str(dictresult), str(reason))
             raise RESTCommunicationException(msg)
 
@@ -718,7 +718,7 @@ def checkStatusLoop(logger, server, uri, uniquerequestname, targetstatus, cmdnam
                 continuecheck = False
                 msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
                 msg += " The %s of your task has failed." % ("resubmission" if cmdname == "resubmit" else "submission")
-                logger.info(msg)
+                logger.error(msg)
                 if dictresult['taskFailureMsg']:
                     msg  = "%sFailure message%s:" % (colors.RED, colors.NORMAL)
                     msg += "\t%s" % (dictresult['taskFailureMsg'].replace('\n', '\n\t\t\t'))
