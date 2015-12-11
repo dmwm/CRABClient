@@ -83,8 +83,7 @@ class BasicJobType(object):
         #calculate lumis counted twice
         doubleLumis = set()
         for run, lumis in lumisDict.iteritems():
-            for lumi in lumis:
-                if lumisDict[run].count(lumi) > 1:
-                    doubleLumis.add((run,lumi))
+            seen = set()
+            doubleLumis.update(set((run, lumi) for lumi in lumis if (run, lumi) in seen or seen.add((run, lumi))))
         doubleLumis = LumiList(lumis=doubleLumis)
         return doubleLumis.getCompactList()
