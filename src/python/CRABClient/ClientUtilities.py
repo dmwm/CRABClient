@@ -705,7 +705,7 @@ def checkStatusLoop(logger, server, uri, uniquerequestname, targetstatus, cmdnam
         if status != 200:
             msg  = "Error when trying to check the task status."
             msg += " Please check the task status later using 'crab status'."
-            logger.info(msg)
+            logger.error(msg)
             msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(uniquerequestname), str(dictresult), str(reason))
             raise RESTCommunicationException(msg)
 
@@ -714,12 +714,15 @@ def checkStatusLoop(logger, server, uri, uniquerequestname, targetstatus, cmdnam
         logger.info("Task status: %s" % (dictresult['status']))
         if dictresult['status'] != tmpresult:
             tmpresult = dictresult['status']
-            if dictresult['status'] in ['FAILED', 'SUBMITFAILED', 'RESUBMITFAILED']:
+            if dictresult['status'] in ['SUBMITFAILED', 'RESUBMITFAILED']:
                 continuecheck = False
                 msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
                 msg += " The %s of your task has failed." % ("resubmission" if cmdname == "resubmit" else "submission")
-                msg += " You can do 'crab status' to get the error message."
-                logger.info(msg)
+                logger.error(msg)
+                if dictresult['taskFailureMsg']:
+                    msg  = "%sFailure message%s:" % (colors.RED, colors.NORMAL)
+                    msg += "\t%s" % (dictresult['taskFailureMsg'].replace('\n', '\n\t\t\t'))
+                    logger.error(msg)
             elif dictresult['status'] in ['SUBMITTED', 'UPLOADED', 'UNKNOWN']: #until the node_state file is available status is unknown
                 continuecheck = False
             else:
@@ -731,7 +734,7 @@ def checkStatusLoop(logger, server, uri, uniquerequestname, targetstatus, cmdnam
         else:
             continuecheck = False
             logger.info("Please check crab.log")
-            logger.debug("Task status other than FAILED, SUBMITFAILED, RESUBMITFAILED, SUBMITTED, UPLOADED, NEW, HOLDING, QUEUED, RESUBMIT")
+            logger.debug("Task status other than SUBMITFAILED, RESUBMITFAILED, SUBMITTED, UPLOADED, NEW, HOLDING, QUEUED, RESUBMIT")
         ## Break the loop if we were waiting already too much.
         if currenttime > endtime:
             continuecheck = False
@@ -746,7 +749,7 @@ def checkStatusLoop(logger, server, uri, uniquerequestname, targetstatus, cmdnam
             msg  = "%sSuccess%s:" % (colors.GREEN, colors.NORMAL)
             msg += " Your task has been processed and your jobs have been %s successfully." % ("resubmitted" if cmdname == "resubmit" else "submitted")
             logger.info(msg)
-        elif currenttime < endtime and tmpresult not in ['FAILED', 'SUBMITFAILED', 'RESUBMITFAILED']:
+        elif currenttime < endtime and tmpresult not in ['SUBMITFAILED', 'RESUBMITFAILED']:
             msg  = "The CRAB3 server finished processing your task."
             msg += " Use 'crab status' to see if your jobs have been %s successfully." % ("resubmitted" if cmdname == "resubmit" else "submitted")
             logger.info(msg)
