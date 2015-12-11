@@ -3,7 +3,6 @@
         but doesn't want to subprocess.Popen()
 """
 import CRABAPI
-import logging
 
 from CRABClient.ClientUtilities import initLoggers, flushMemoryLogger, removeLoggerHandlers
 
