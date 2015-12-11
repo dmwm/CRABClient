@@ -3,7 +3,6 @@
         but doesn't want to subprocess.Popen()
 """
 import CRABAPI
-import logging
 
 from CRABClient.ClientUtilities import initLoggers, flushMemoryLogger, removeLoggerHandlers
 
@@ -16,8 +15,12 @@ def crabCommand(command, *args, **kwargs):
     #Converting all arguments to a list. Adding '--' and '='
     arguments = []
     for key, val in kwargs.iteritems():
-        arguments.append('--'+str(key))
-        arguments.append(val)
+        if isinstance(val, bool):
+            if val:
+                arguments.append('--'+str(key))
+        else:
+            arguments.append('--'+str(key))
+            arguments.append(val)
     arguments.extend(list(args))
 
     return execRaw(command, arguments)
