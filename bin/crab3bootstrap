@@ -5,7 +5,7 @@
     after running 'scram unset env'
 
     In particular the script:
-        - saves the environment variables used by CRAB3: SCRAM_ARCH, CMSSW_BASE, CMSSW_RELEASE_BASE, CMSSW_VERSION, LOCALRT
+        - saves the environment variables used by CRAB3: SCRAM_ARCH, CMSSW_BASE, CMSSW_VERSION
         - handles the PSet file:
             * get the output files (tfiles and edmfiles)
             * dump the pickled expanded version of the pset
