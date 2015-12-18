@@ -54,7 +54,7 @@ class PrivateMC(Analysis):
 
         ## If publication is True, check that there is a primary dataset name specified.
         if getattr(config.Data, 'publication', getParamDefaultValue('Data.publication')):
-            if not getattr(config.Data, 'outputPrimaryDataset'):
+            if not getattr(config.Data, 'outputPrimaryDataset', getParamDefaultValue('Data.outputPrimaryDataset')):
                 msg  = "Invalid CRAB configuration: Parameter Data.outputPrimaryDataset not specified."
                 msg += "\nMC generation job type requires this parameter for publication."
                 return False, msg
