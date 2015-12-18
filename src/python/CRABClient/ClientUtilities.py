@@ -80,7 +80,7 @@ class logfilter(logging.Filter):
         def removecolor(text):
             if not text:
                 return text
-            for color, colorval in colors.colordict.iteritems():
+            for dummyColor, colorval in colors.colordict.iteritems():
                 if colorval in text:
                     text = text.replace(colorval, '')
             return text
@@ -200,7 +200,7 @@ def uploadlogfile(logger, proxyfilename, logfilename = None, logpath = None, ins
         cmd = 'env'
         logger.debug('Running env command')
         pipe = subprocess.Popen(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
-        stdout, stderr = pipe.communicate()
+        stdout, dummyStderr = pipe.communicate()
         logger.debug('\n\n\nUSER ENVIROMENT\n%s' % stdout)
     except Exception as se:
         logger.debug('Failed to get the user env\nException message: %s' % (se))
@@ -430,8 +430,8 @@ def getWorkArea(projdir):
     return requestarea, requestname
 
 
-def loadCache(dir, logger):
-    requestarea, requestname = getWorkArea(dir)
+def loadCache(mydir, logger):
+    requestarea, dummyRequestname = getWorkArea(mydir)
     cachename = os.path.join(requestarea, '.requestcache')
     #Check if the directory exists.
     if not os.path.isdir(requestarea):
@@ -660,7 +660,7 @@ def server_info(subresource, server, proxyfilename, baseurl, **kwargs):
     server = CRABClient.Emulator.getEmulator('rest')(server, proxyfilename, proxyfilename, version=__version__)
     requestdict = {'subresource': subresource}
     requestdict.update(**kwargs)
-    dictresult, status, reason = server.get(baseurl, requestdict)
+    dictresult, dummyStatus, dummyReason = server.get(baseurl, requestdict)
 
     return dictresult['result'][0]
 
