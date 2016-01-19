@@ -7,6 +7,7 @@ Utility for CRAB2 to CRAB3 configuration file.
 - The Request name is set to the name of the crab3 config file passed by the command line
 - Runselection in crab2 can be an interval like 132-255. We do not support it in crab3.
 """
+from __future__ import print_function
 
 import sys
 import os
@@ -141,7 +142,7 @@ deprecatedParams = ['server_name',
                     'verify_dbs23',
                     'use_dbs3',
                     'first_lumi',
-                    'ce_black_list', 
+                    'ce_black_list',
                     'ce_white_list',
                     'max_cpu_time',
                    ]
@@ -161,7 +162,7 @@ def parseParameters():
             return args[0], args[1]
         if args[1][-4:] == '.cfg' and args[0][-3:] == '.py':
             return args[1], args[0]
-    print usage()
+    print(usage())
     sys.exit(1)
 
 def checkMonteCarlo(configC3, configC2):
@@ -174,7 +175,7 @@ def checkMonteCarlo(configC3, configC2):
     if configC2.has_option('CMSSW', 'datasetpath') and configC2.get('CMSSW', 'datasetpath') == 'None':
         monteCarlo = True
     if monteCarlo:
-        print 'This appears to be a Monte Carlo job, setting type to privateMC'
+        print('This appears to be a Monte Carlo job, setting type to privateMC')
         configC3.JobType.pluginName = 'privateMC'
         configC3.Data.totalUnits = configC2.getint('CMSSW', 'total_number_of_events')
     return monteCarlo
@@ -211,7 +212,7 @@ def printUnsupporterParams(configC2):
     suppParams.extend(['lumis_per_job', 'total_number_of_lumis', 'number_of_jobs', 'events_per_job', 'total_number_of_events'])
     unknown     = []
     obsolete    = []
-    notyetready = []    
+    notyetready = []
     for section in configC2.sections():
         for paramName, _ in configC2.items(section):
             if paramName in deprecatedParams:
@@ -222,25 +223,25 @@ def printUnsupporterParams(configC2):
                 unknown.append(paramName)
     report = ''
     if notyetready:
-        report += "CRAB2 parameters not YET supported in CRAB3: \n\t" + ','.join(notyetready) 
+        report += "CRAB2 parameters not YET supported in CRAB3: \n\t" + ','.join(notyetready)
     if obsolete:
-        report += "\nCRAB2 parameters obsolete in CRAB3: \n\t" + ','.join(obsolete) 
+        report += "\nCRAB2 parameters obsolete in CRAB3: \n\t" + ','.join(obsolete)
     if unknown:
-        report += "\nCRAB2 parameters unknown to this convertion utility: \n\t" + ','.join(unknown)  
+        report += "\nCRAB2 parameters unknown to this convertion utility: \n\t" + ','.join(unknown)
     if report:
-        print 'crab2cfgTOcrab3py report:'   
-        print report         
+        print('crab2cfgTOcrab3py report:')
+        print(report)
 
 
 if __name__ == "__main__":
     configNameC2, configNameC3 = parseParameters()
     if not os.path.isfile(configNameC2):
         errMsg =  "Error: Cannot find file %s \n" % configNameC2
-        print errMsg + usage()
+        print(errMsg + usage())
         sys.exit(2)
     if os.path.isfile(configNameC3):
         errMsg =  "Error: File %s already exists\n" % configNameC3
-        print errMsg + usage()
+        print(errMsg + usage())
         sys.exit(2)
     configC2 = RawConfigParser()
     configC2.read(configNameC2)
@@ -248,8 +249,8 @@ if __name__ == "__main__":
     if configC3.Data.unitsPerJob < 0:
         configC3.Data.unitsPerJob = DEFAULT_UNITS_PER_JOB
     saveConfigurationFile(configC3, configNameC3)
-    print 'Convertion done!'
+    print('Convertion done!')
     printUnsupporterParams(configC2)
     if len(missingParams) > 0:
-        print "Warning: Not all the mandatory parameters were found in the crab2 configuration file. Open the crab3 generated config file to know which."
+        print("Warning: Not all the mandatory parameters were found in the crab2 configuration file. Open the crab3 generated config file to know which.")
 

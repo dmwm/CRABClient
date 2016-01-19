@@ -1,4 +1,5 @@
 from __future__ import division
+from __future__ import print_function
 import os
 import subprocess
 import multiprocessing
@@ -268,7 +269,7 @@ class remote_copy(SubCommand):
             except (EOFError, IOError):
                 crashMessage = "Hit EOF/IO in getting new work\n"
                 crashMessage += "Assuming this is a graceful break attempt."
-                print crashMessage
+                print(crashMessage)
                 break
 
             if work == 'STOP':

@@ -7,6 +7,7 @@ To install  : python setup.py install --prefix=<some dir>
 To clean    : python setup.py clean
 To run tests: python setup.py test
 """
+from __future__ import print_function
 
 import sys
 import os
@@ -55,7 +56,7 @@ class TestCommand(Command):
         try:
             tests = TestLoader().loadTestsFromNames(testfiles)
         except:
-            print "\nFail to load unit tests", testfiles
+            print("\nFail to load unit tests", testfiles)
             raise
         test = TextTestRunner(verbosity = 2)
         test.run(tests)
@@ -154,7 +155,7 @@ def main():
 
     if  sys.version < required_python_version:
         msg = "I'm sorry, but %s %s requires Python %s or later."
-        print msg % (name, version, required_python_version)
+        print(msg % (name, version, required_python_version))
         sys.exit(1)
 
     # set default location for "data_files" to
