@@ -8,6 +8,7 @@ import math
 import shutil
 import string
 import tempfile
+from functools import reduce
 
 from httplib import HTTPException
 
