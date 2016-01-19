@@ -162,16 +162,16 @@ if __name__ == "__main__":
         client.logger.info("The server answered with an error.")
         if he.status==503 and he.result.find("CMSWEB Error: Service unavailable")!=-1:
             client.logger.info("It seems the CMSWEB frontend is not responding. Please check: https://twiki.cern.ch/twiki/bin/viewauth/CMS/ScheduledInterventions")
-        if he.headers.has_key('X-Error-Detail'):
+        if 'X-Error-Detail' in he.headers:
             client.logger.info('Server answered with: %s' % he.headers['X-Error-Detail'])
-        if he.headers.has_key('X-Error-Info'):
+        if 'X-Error-Info' in he.headers:
             reason = he.headers['X-Error-Info']
             for parname in parametersMapping['on-server']:
                 tmpmsg = "'%s'" % (parname)
                 if tmpmsg in reason and parametersMapping['on-server'][parname]['config']:
                     reason = reason.replace(tmpmsg, tmpmsg.replace(parname, ' or '.join(parametersMapping['on-server'][parname]['config'])))
             client.logger.info('Reason is: %s' % reason)
-        if he.headers.has_key('X-Error-Id'):
+        if 'X-Error-Id' in he.headers:
             client.logger.info('Error Id: %s' % he.headers['X-Error-Id'])
         #The following goes to the logfile.
         errmsg = "ERROR: %s (%s): " % (he.reason, he.status)
