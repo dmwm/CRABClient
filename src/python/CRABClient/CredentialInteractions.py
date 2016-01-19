@@ -181,7 +181,7 @@ class CredentialInteractions(object):
             group, role = proxy.getUserGroupAndRoleFromProxy(proxyFileName)
             proxyAttrs = {'group': group, 'role': role}
             ## Make sure proxyOptsSetPlace is a dictionary and has the expected keys.
-            if type(proxyOptsSetPlace) != dict:
+            if not isinstance(proxyOptsSetPlace, dict):
                 proxyOptsSetPlace = {}
             proxyOptsSetPlace.setdefault('set_in', {})
             proxyOptsSetPlace['set_in'].setdefault('group', "")

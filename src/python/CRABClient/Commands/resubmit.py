@@ -86,7 +86,7 @@ class resubmit(SubCommand):
         Similar method as in submit.
         """
         encodedLists = ""
-        listParams = [k for k in configreq.keys() if type(configreq[k]) == list]
+        listParams = [k for k in configreq.keys() if isinstance(configreq[k], list)]
         for lparam in listParams:
             if len(configreq[lparam]) > 0:
                 encodedLists += ("&%s=" % lparam) + ("&%s=" % lparam).join(map(urllib.quote, configreq[lparam]))
