@@ -8,6 +8,7 @@ import CRABClient.Emulator
 import os
 import re
 import copy
+import urllib
 
 class getcommand(SubCommand):
     """
@@ -59,9 +60,9 @@ class getcommand(SubCommand):
             if tm_edm_outfiles == '[]' and tm_tfile_outfiles == '[]' and tm_outfiles == '[]':
                 msg  = "%sWarning%s:" % (colors.RED, colors.NORMAL)
                 msg += " There are no output files to retrieve, because CRAB could not detect any in the CMSSW configuration"
-                msg += " nor was any explicitly specified in the CRAB configuration." 
+                msg += " nor was any explicitly specified in the CRAB configuration."
                 self.logger.warning(msg)
- 
+
         #Retrieving output files location from the server
         self.logger.debug('Retrieving locations for task %s' % self.cachedinfo['RequestName'])
         inputlist =  [('workflow', self.cachedinfo['RequestName'])]
@@ -77,7 +78,7 @@ class getcommand(SubCommand):
             inputlist.extend(self.options.jobids)
         serverFactory = CRABClient.Emulator.getEmulator('rest')
         server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
-        dictresult, status, reason = server.get(self.uri, data = inputlist)
+        dictresult, status, reason = server.get(self.uri, data = urllib.urlencode(inputlist))
         self.logger.debug('Server result: %s' % dictresult)
 
         if status != 200:
@@ -86,8 +87,7 @@ class getcommand(SubCommand):
 
         totalfiles = len(dictresult['result'])
         cpresults = []
-#        for workflow in dictresult['result']: TODO re-enable this when we will have resubmissions
-        workflow = dictresult['result']        #TODO assigning workflow to dictresult. for the moment we have only one wf
+        workflow = dictresult['result']
         if len(workflow) > 0:
             if self.options.dump or self.options.xroot:
                 self.logger.debug("Getting url info")
