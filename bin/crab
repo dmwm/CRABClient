@@ -7,9 +7,10 @@ it simply:
   - loads and calls the specified command
   - exit with the proper exit codes
 """
+from __future__ import print_function
 import sys
 if sys.version_info < (2, 6):
-    print '\nError: using a version of python < 2.6. Exiting...\n'
+    print('\nError: using a version of python < 2.6. Exiting...\n')
     sys.exit()
 
 import pycurl
@@ -130,17 +131,17 @@ class CRABClient(object):
 
         # check that the command is valid
         if len(args) == 0:
-            print "You have not specified a command."
+            print("You have not specified a command.")
             # Described the valid commands in epilog, reuse here
-            print self.parser.epilog
+            print(self.parser.epilog)
             sys.exit(-1)
 
         sub_cmd = None
         try:
             sub_cmd = next( v for k,v in self.subCommands.items() if args[0] in v.shortnames or args[0]==v.name)
         except StopIteration:
-            print "'" + str(args[0]) + "' is not a valid command."
-            print self.parser.print_help()
+            print("'" + str(args[0]) + "' is not a valid command.")
+            print(self.parser.print_help())
             sys.exit(-1)
         self.cmd = sub_cmd(self.logger, args[1:])
 
@@ -162,16 +163,16 @@ if __name__ == "__main__":
         client.logger.info("The server answered with an error.")
         if he.status==503 and he.result.find("CMSWEB Error: Service unavailable")!=-1:
             client.logger.info("It seems the CMSWEB frontend is not responding. Please check: https://twiki.cern.ch/twiki/bin/viewauth/CMS/ScheduledInterventions")
-        if he.headers.has_key('X-Error-Detail'):
+        if 'X-Error-Detail' in he.headers:
             client.logger.info('Server answered with: %s' % he.headers['X-Error-Detail'])
-        if he.headers.has_key('X-Error-Info'):
+        if 'X-Error-Info' in he.headers:
             reason = he.headers['X-Error-Info']
             for parname in parametersMapping['on-server']:
                 tmpmsg = "'%s'" % (parname)
                 if tmpmsg in reason and parametersMapping['on-server'][parname]['config']:
                     reason = reason.replace(tmpmsg, tmpmsg.replace(parname, ' or '.join(parametersMapping['on-server'][parname]['config'])))
             client.logger.info('Reason is: %s' % reason)
-        if he.headers.has_key('X-Error-Id'):
+        if 'X-Error-Id' in he.headers:
             client.logger.info('Error Id: %s' % he.headers['X-Error-Id'])
         #The following goes to the logfile.
         errmsg = "ERROR: %s (%s): " % (he.reason, he.status)

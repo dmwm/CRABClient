@@ -133,8 +133,8 @@ class CMSSWTest(unittest.TestCase):
         cmssw = CMSSW(config=testWMConfig, logger=self.logger, workingdir=None)
         _dummy, configArguments = cmssw.run(self.reqConfig)
         self.assertTrue(len(configArguments['InputDataset']) > 0)
-        self.assertTrue(configArguments.has_key('ProcessingVersion'))
-        self.assertTrue(configArguments.has_key('AnalysisConfigCacheDoc'))
+        self.assertTrue('ProcessingVersion' in configArguments)
+        self.assertTrue('AnalysisConfigCacheDoc' in configArguments)
 
 
     def testValidateConfig(self):

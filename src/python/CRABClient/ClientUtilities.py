@@ -1,6 +1,7 @@
 """
 This module contains some utility methods for the client.
 """
+from __future__ import print_function
 
 import os
 import re
@@ -754,6 +755,6 @@ def checkStatusLoop(logger, server, uri, uniquerequestname, targetstatus, cmdnam
             msg += " Use 'crab status' to see if your jobs have been %s successfully." % ("resubmitted" if cmdname == "resubmit" else "submitted")
             logger.info(msg)
 
-    print '\a' #Generate audio bell
+    print('\a') #Generate audio bell
     logger.debug("Ended %s process." % ("resubmission" if cmdname == "resubmit" else "submission"))
 

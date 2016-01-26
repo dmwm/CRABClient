@@ -10,6 +10,7 @@
             * get the output files (tfiles and edmfiles)
             * dump the pickled expanded version of the pset
 """
+from __future__ import print_function
 #TODO check what happens if I run this script when 'CRAB3_BOOTSTRAP_DIR' is set
 import os
 import sys
