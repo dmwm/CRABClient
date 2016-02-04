@@ -56,6 +56,7 @@ parametersMapping = {
                   'vogroup'        : {'default': None,       'config': ['User.voGroup'],                    'type': 'StringType',  'required': False},
                   'oneEventMode'   : {'default': False,      'config': ['Debug.oneEventMode'],              'type': 'BooleanType', 'required': False},
                   'asourl'         : {'default': None,       'config': ['Debug.ASOURL'],                    'type': 'StringType',  'required': False},
+                  'asodb'          : {'default': None,       'config': ['Debug.ASODB'],                     'type': 'StringType',  'required': False},
                   'scheddname'     : {'default': None,       'config': ['Debug.scheddName'],                'type': 'StringType',  'required': False},
                   'extrajdl'       : {'default': None,       'config': ['Debug.extraJDL'],                  'type': 'ListType',    'required': False},
                   'collector'      : {'default': None,       'config': ['Debug.collector'],                 'type': 'StringType',  'required': False},
