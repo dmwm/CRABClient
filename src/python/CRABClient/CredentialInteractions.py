@@ -34,7 +34,8 @@ class CredentialInteractions(object):
                                   'serverDN' :       serverdn,
                                   'group' :          group,
                                   'role':            role if role != '' else 'NULL',
-                                  'myproxyAccount' : myproxyAccount
+                                  'myproxyAccount' : myproxyAccount,
+                                  'cleanEnvironment': True
                                   }
         self.proxyChanged = False
         self.certLocation = '~/.globus/usercert.pem' if 'X509_USER_CERT' not in os.environ else os.environ['X509_USER_CERT']
