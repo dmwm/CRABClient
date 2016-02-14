@@ -53,7 +53,7 @@ class Analysis(BasicJobType):
         scram = ScramEnvironment(logger=self.logger)
 
         configArguments.update({'jobarch': scram.getScramArch(),
-                                'jobsw'  : scram.getCmsswVersion()})
+                                'jobsw': scram.getCmsswVersion()})
 
         # Build tarball
         if self.workdir:
