@@ -246,7 +246,7 @@ class status(SubCommand):
             ## Error summary header.
             msg = "\nError Summary:"
             if not self.options.verboseErrors:
-                msg += " (use --verboseErrors for details about the errors)"
+                msg += " (use crab status --verboseErrors for details about the errors)"
             ## Auxiliary variable for the layout of the error summary messages.
             totnumjobs = len(dictresult['jobs'])
             ndigits = int(math.ceil(math.log(totnumjobs+1, 10)))
