@@ -4,6 +4,8 @@ This is simply taking care of job submission
 import os
 import json
 import types
+import re
+import shlex
 import shutil
 import urllib
 import tarfile
@@ -439,22 +441,34 @@ def getCMSRunAnalysisOpts(ad, dag, job=1, events=10):
     Parse the job ad to obtain the arguments that were passed to condor.
     """
 
+    set_re = re.compile(r'\+?(\w+)\s*=\s*(.*)$')
+
     info = {}
     with open(ad) as f:
-        for key, val in [line.split('=', 1) for line in f if len(line.split('=', 1)) == 2]:
-            val = val.strip().strip('"').strip("'")
-            info[key.strip().replace('+', '')] = val
+        for line in f:
+            m = set_re.match(line)
+            if not m:
+                continue
+            key, value = m.groups()
+            # Somehow, Condor likes doubled double quotes?
+            info[key] = value.strip("'\"").replace('""', '"')
     with open(dag) as f:
         for line in f:
             if line.startswith('VARS Job{job}'.format(job=job)):
                 break
-        for entry in line.strip().replace(r'\"\"', '"').replace('", "', '","').split():
-            parts = entry.split('=')
-            if len(parts) == 2:
-                info[parts[0]] = parts[1].strip('"')
+        else:
+            raise ClientException('Dry run failed to execute parse DAG description.')
+        for setting in shlex.split(line):
+            m = set_re.match(setting)
+            if not m:
+                continue
+            key, value = m.groups()
+            info[key] = value.replace('""', '"')
 
     info.update({'CRAB_Id': '0', 'firstEvent': '1', 'lastEvent': str(int(events) + 1)})
 
-    return [x.strip("'") % info for x in info['Arguments'].replace('$', '%').replace(')', ')s').split()]
-
+    args = shlex.split(info['Arguments'])
+    def repl(match):
+        return info[match.group(1)]
+    return [re.sub(r'\$\((\w+)\)', repl, arg) for arg in args]
 
