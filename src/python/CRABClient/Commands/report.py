@@ -9,7 +9,7 @@ from CRABClient import __version__
 from CRABClient.ClientUtilities import colors
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.JobType.BasicJobType import BasicJobType
-from CRABClient.ClientExceptions import RESTCommunicationException, ConfigurationException
+from CRABClient.ClientExceptions import RESTCommunicationException, ConfigurationException, UnknownOptionException
 
 
 class report(SubCommand):
@@ -164,10 +164,10 @@ class report(SubCommand):
         ## 3) The lumis that were supposed to be processed by jobs whose status is
         ##    'failed'.
         notProcessedLumis = {}
-        notProcLumisCalcMethMsg  = "The '%s' lumis were calculated as:" % (self.options.recovery)
+        notProcLumisCalcMethMsg = "The '%s' lumis were calculated as:" % (self.options.recovery)
         if self.options.recovery == 'notFinished':
             notProcessedLumis = BasicJobType.subtractLumis(lumisToProcess, processedLumis)
-            notProcLumisCalcMethMsg += " the lumis to process minus the processed lumis"
+            notProcLumisCalcMethMsg += " the lumis to process minus the processed lumis."
         elif self.options.recovery == 'notPublished':
             publishedLumis = {}
             firstdataset = True
@@ -192,7 +192,7 @@ class report(SubCommand):
                         for lumiRange in lumiRanges:
                             notProcessedLumis[run].extend(range(lumiRange[0], lumiRange[1]+1))
             notProcessedLumis = LumiList(runsAndLumis=notProcessedLumis).getCompactList()
-            notProcLumisCalcMethMsg += " the lumis to process by jobs in status 'failed'"
+            notProcLumisCalcMethMsg += " the lumis to process by jobs in status 'failed'."
         returndict['notProcessedLumis'] = notProcessedLumis
 
         ## Create the output directory if it doesn't exists.
@@ -229,16 +229,15 @@ class report(SubCommand):
                     self.logger.info("  %sWarning%s: '%s' lumis written to %s" % (colors.RED, colors.NORMAL, self.options.recovery, filename))
                 self.logger.info("           %s" % (notProcLumisCalcMethMsg))
             if outputFilesDuplicateLumis:
-                with open(os.path.join(jsonFileDir, 'outputFilesDobleLumis.json'), 'w') as jsonFile:
+                with open(os.path.join(jsonFileDir, 'outputFilesDuplicateLumis.json'), 'w') as jsonFile:
                     json.dump(outputFilesDuplicateLumis, jsonFile)
                     jsonFile.write("\n")
-                    self.logger.info("  %sWarning%s: Duplicate lumis in output files written to outputFilesDobleLumis.json" % (colors.RED, colors.NORMAL))
+                    self.logger.info("  %sWarning%s: Duplicate lumis in output files written to outputFilesDuplicateLumis.json" % (colors.RED, colors.NORMAL))
         ## 2) Then the summary about output datasets in DBS. For this, publication must
         ##    be True and the output files must be publishable.
         if publication and outputDatasetsInfo:
             if onlyDBSSummary:
-                msg = "Will provide a short report with information found in DBS."
-                self.logger.info(msg)
+                self.logger.info("Will provide a short report with information found in DBS.")
             self.logger.info("Summary from output datasets in DBS:")
             if outputDatasetsNumEvents:
                 msg = "  Number of events:"
@@ -289,12 +288,21 @@ class report(SubCommand):
                                help = "Method to calculate not processed lumis: notFinished," + \
                                       " notPublished or failed [default: %default].")
 
+        self.parser.add_option("--dbs",
+                               dest = "usedbs",
+                               default = None,
+                               help = "Deprecated option removed in CRAB v3.3.1603.")
+
 
     def validateOptions(self):
         """
         Check if the output file is given and set as attribute
         """
         SubCommand.validateOptions(self)
+
+        if self.options.usedbs is not None:
+            msg = "CRAB command option error: the option --dbs has been deprecated since CRAB v3.3.1603."
+            raise UnknownOptionException(msg)
 
         recoveryMethods = ['notFinished', 'notPublished', 'failed']
         if self.options.recovery not in recoveryMethods:
