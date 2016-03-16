@@ -34,8 +34,6 @@ class uploadlog(SubCommand):
             self.logger.debug("crab.log exists")
             if hasattr(self, 'cachedinfo') and 'RequestName' in self.cachedinfo:
                 logfilename = str(self.cachedinfo['RequestName'])+".log"
-            else:
-                logfilename = str(time.strftime("%Y-%m-%d_%H%M%S"))+'_crab.log'
         else:
             msg = "%sError%s: Could not locate log file." % (colors.RED, colors.NORMAL)
             self.logger.info(msg)

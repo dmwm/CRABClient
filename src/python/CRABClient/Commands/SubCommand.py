@@ -16,7 +16,7 @@ from CRABClient.ClientUtilities import BASEURL, SERVICE_INSTANCES
 from CRABClient.CredentialInteractions import CredentialInteractions
 from CRABClient.ClientUtilities import loadCache, getWorkArea, server_info, createWorkArea
 from CRABClient.ClientExceptions import ConfigurationException, MissingOptionException, EnvironmentException, CachefileNotFoundException
-from CRABClient.ClientMapping import renamedParams, commandsConfiguration, configParametersInfo, getParamDefaultValue 
+from CRABClient.ClientMapping import renamedParams, commandsConfiguration, configParametersInfo, getParamDefaultValue
 
 #if certificates in myproxy expires in less than RENEW_MYPROXY_THRESHOLD days renew them
 RENEW_MYPROXY_THRESHOLD = 15
