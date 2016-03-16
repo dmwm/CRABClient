@@ -15,8 +15,8 @@ from CRABClient.CRABOptParser import CRABCmdOptParser
 from CRABClient.ClientUtilities import BASEURL, SERVICE_INSTANCES
 from CRABClient.CredentialInteractions import CredentialInteractions
 from CRABClient.ClientUtilities import loadCache, getWorkArea, server_info, createWorkArea
-from CRABClient.ClientExceptions import ConfigurationException, MissingOptionException, EnvironmentException
-from CRABClient.ClientMapping import renamedParams, commandsConfiguration, configParametersInfo, getParamDefaultValue
+from CRABClient.ClientExceptions import ConfigurationException, MissingOptionException, EnvironmentException, CachefileNotFoundException
+from CRABClient.ClientMapping import renamedParams, commandsConfiguration, configParametersInfo, getParamDefaultValue 
 
 #if certificates in myproxy expires in less than RENEW_MYPROXY_THRESHOLD days renew them
 RENEW_MYPROXY_THRESHOLD = 15
@@ -425,22 +425,26 @@ class SubCommand(ConfigCommand):
         Loads the client cache and set up the server url
         """
         self.requestarea, self.requestname = getWorkArea(self.options.projdir)
-        self.cachedinfo, self.logfile = loadCache(self.requestarea, self.logger)
-        port = ':' + self.cachedinfo['Port'] if self.cachedinfo['Port'] else ''
-        self.instance = self.cachedinfo['instance']
-        self.serverurl = self.cachedinfo['Server'] + port
-        msgadd = []
-        if self.cmdconf['requiresProxyVOOptions'] and self.options.voGroup is None:
-            self.voGroup = self.cachedinfo['voGroup']
-            proxyOptsSetPlace['set_in']['group'] = "cache"
-            msgadd.append("VO group '%s'" % (self.voGroup))
-        if self.cmdconf['requiresProxyVOOptions'] and self.options.voRole is None:
-            self.voRole = self.cachedinfo['voRole']
-            proxyOptsSetPlace['set_in']['role'] = "cache"
-            msgadd.append("VO role '%s'" % (self.voRole))
-        if msgadd:
-            msg = "Using %s as written in the request cache file for this task." % (" and ".join(msgadd))
-            self.logger.debug(msg)
+        try:
+            self.cachedinfo, self.logfile = loadCache(self.requestarea, self.logger)
+            port = ':' + self.cachedinfo['Port'] if self.cachedinfo['Port'] else ''
+            self.instance = self.cachedinfo['instance']
+            self.serverurl = self.cachedinfo['Server'] + port
+            msgadd = []
+            if self.cmdconf['requiresProxyVOOptions'] and self.options.voGroup is None:
+                self.voGroup = self.cachedinfo['voGroup']
+                proxyOptsSetPlace['set_in']['group'] = "cache"
+                msgadd.append("VO group '%s'" % (self.voGroup))
+            if self.cmdconf['requiresProxyVOOptions'] and self.options.voRole is None:
+                self.voRole = self.cachedinfo['voRole']
+                proxyOptsSetPlace['set_in']['role'] = "cache"
+                msgadd.append("VO role '%s'" % (self.voRole))
+            if msgadd:
+                msg = "Using %s as written in the request cache file for this task." % (" and ".join(msgadd))
+                self.logger.debug(msg)
+        except CachefileNotFoundException, ex:
+            if self.cmdconf['requiresLocalCache']:
+                raise ex
 
 
     def getConfiDict(self):
