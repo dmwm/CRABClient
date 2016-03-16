@@ -442,7 +442,7 @@ class SubCommand(ConfigCommand):
             if msgadd:
                 msg = "Using %s as written in the request cache file for this task." % (" and ".join(msgadd))
                 self.logger.debug(msg)
-        except CachefileNotFoundException, ex:
+        except CachefileNotFoundException as ex:
             if self.cmdconf['requiresLocalCache']:
                 raise ex
 

@@ -2,8 +2,7 @@ import os
 import time
 
 from CRABClient.Commands.SubCommand import SubCommand
-from WMCore.Services.UserFileCache.UserFileCache import UserFileCache
-from CRABClient.ClientUtilities import colors, server_info, uploadlogfile
+from CRABClient.ClientUtilities import colors, uploadlogfile
 from CRABClient.ClientExceptions import ConfigurationException, MissingOptionException
 
 
