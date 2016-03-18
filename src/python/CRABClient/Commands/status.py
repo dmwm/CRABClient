@@ -4,6 +4,7 @@ import json
 import math
 import urllib
 
+from ServerUtilities import TASKDBSTATUSES_TMP
 import CRABClient.Emulator
 from CRABClient import __version__
 from CRABClient.ClientUtilities import colors
@@ -108,7 +109,10 @@ class status(SubCommand):
         if 'FAILED' in dictresult['status']:
             msg += "%s%s%s" % (colors.RED, dictresult['status'], colors.NORMAL)
         else:
-            msg += "%s" % (dictresult['status'])
+            if dictresult['status'] in TASKDBSTATUSES_TMP:
+                msg += "%s on command %s" % (dictresult['status'], dictresult['command'])
+            else:
+                msg += "%s" % (dictresult['status'])
         self.logger.info(msg)
 
         ## Show dashboard URL for the task.
@@ -745,7 +749,7 @@ class status(SubCommand):
         SubCommand.validateOptions(self)
         if self.options.idle and (self.options.long or self.options.summary):
             raise ConfigurationException("Option --idle conflicts with --summary and --long")
-        
+
         if self.options.sort is not None:
             sortOpts = ["state", "site", "runtime", "memory", "cpu", "retries", "waste", "exitcode"]
             if self.options.sort not in sortOpts:

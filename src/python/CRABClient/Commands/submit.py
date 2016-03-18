@@ -87,7 +87,7 @@ class submit(SubCommand):
         jobconfig = {}
         #get the backend URLs from the server external configuration
         serverBackendURLs = server_info('backendurls', self.serverurl, self.proxyfilename, getUrl(self.instance, resource='info'))
-        #if cacheSSL is specified in the server external configuration we will use it to upload the sandbox (baseURL will be ignored)
+        #if cacheSSL is specified in the server external configuration we will use it to upload the sandbox
         filecacheurl = serverBackendURLs['cacheSSL'] if 'cacheSSL' in serverBackendURLs else None
         pluginParams = [self.configuration, self.logger, os.path.join(self.requestarea, 'inputs')]
         crab_job_types = getJobTypes()
