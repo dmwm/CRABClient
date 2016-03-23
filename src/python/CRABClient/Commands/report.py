@@ -97,7 +97,7 @@ class report(SubCommand):
         ## Get the lumis in the input dataset.
         inputDatasetLumis = dictresult['result'][0]['inputDataset']['lumis']
         if not inputDatasetLumis: # for backward compatibility with tasks submitted before the 3.3.1602 release.
-            inputDatasetLumis = dictresult['result'][0]['dbsInLimilistNewClientOldTask']
+            inputDatasetLumis = dictresult['result'][0]['dbsInLumilistNewClientOldTask']
         returndict['inputDatasetLumis'] = inputDatasetLumis
 
         ## Get the lumis split across files in the input dataset.
