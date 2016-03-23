@@ -232,7 +232,7 @@ def uploadlogfile(logger, proxyfilename, logfilename = None, logpath = None, ins
     if doupload:
         cacheurl = server_info('backendurls', serverurl, proxyfilename, baseurl)
         cacheurl = cacheurl['cacheSSL']
-        cacheurldict = {'endpoint': cacheurl}
+        cacheurldict = {'endpoint': cacheurl, "pycurl": True}
 
         ufc = UserFileCache(cacheurldict)
         logger.debug("cacheURL: %s\nLog file name: %s" % (cacheurl, logfilename))
