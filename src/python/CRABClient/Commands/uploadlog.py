@@ -2,8 +2,7 @@ import os
 import time
 
 from CRABClient.Commands.SubCommand import SubCommand
-from WMCore.Services.UserFileCache.UserFileCache import UserFileCache
-from CRABClient.ClientUtilities import colors, server_info, uploadlogfile
+from CRABClient.ClientUtilities import colors, uploadlogfile
 from CRABClient.ClientExceptions import ConfigurationException, MissingOptionException
 
 
@@ -32,7 +31,12 @@ class uploadlog(SubCommand):
             self.logfile = self.options.logpath
         elif os.path.isfile(self.logfile):
             self.logger.debug("crab.log exists")
-            logfilename = str(self.cachedinfo['RequestName'])+".log"
+            if hasattr(self, 'cachedinfo') and 'RequestName' in self.cachedinfo:
+                logfilename = str(self.cachedinfo['RequestName'])+".log"
+            else:
+                self.logger.info("Couldn't get information from .requestcache (file likely not created due to submission failure), try\n"
+                        "'crab uploadlog --logpath=<path-to-log-file-in-project-dir>'")
+                return
         else:
             msg = "%sError%s: Could not locate log file." % (colors.RED, colors.NORMAL)
             self.logger.info(msg)

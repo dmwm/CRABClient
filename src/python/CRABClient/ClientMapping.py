@@ -119,22 +119,22 @@ WARNING: Don't set at the same time acceptsArguments = True and requiresDirOptio
 ---------------------------------------------------------------------------------------------------------------
 """
 commandsConfiguration = {
-    'checkusername' : {'acceptsArguments': False, 'requiresREST': False, 'initializeProxy': True,  'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False},
-    'checkwrite'    : {'acceptsArguments': False, 'requiresREST': False, 'initializeProxy': True,  'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': True,  'doProxyGroupRoleCheck': True },
-    'getlog'        : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': True,  'doProxyGroupRoleCheck': True },
-    'getoutput'     : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': True,  'doProxyGroupRoleCheck': True },
-    'kill'          : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': False, 'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False},
-    'proceed'       : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False},
-    'purge'         : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': False, 'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False},
-    'remake'        : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False},
-    'remote_copy'   : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': False, 'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False},
-    'report'        : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False},
-    'request_type'  : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False},
-    'resubmit'      : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False},
-    'status'        : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False},
-    'submit'        : {'acceptsArguments': True,  'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': True },
-    'tasks'         : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False},
-    'uploadlog'     : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False}
+    'checkusername' : {'acceptsArguments': False, 'requiresREST': False, 'initializeProxy': True,  'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False, 'requiresLocalCache': False},
+    'checkwrite'    : {'acceptsArguments': False, 'requiresREST': False, 'initializeProxy': True,  'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': True,  'doProxyGroupRoleCheck': True,  'requiresLocalCache': False},
+    'getlog'        : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': True,  'doProxyGroupRoleCheck': True,  'requiresLocalCache': True },
+    'getoutput'     : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': True,  'doProxyGroupRoleCheck': True,  'requiresLocalCache': True },
+    'kill'          : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': False, 'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False, 'requiresLocalCache': True },
+    'proceed'       : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False, 'requiresLocalCache': True },
+    'purge'         : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': False, 'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False, 'requiresLocalCache': True },
+    'remake'        : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False, 'requiresLocalCache': False},
+    'remote_copy'   : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': False, 'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False, 'requiresLocalCache': True },
+    'report'        : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False, 'requiresLocalCache': True },
+    'request_type'  : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False, 'requiresLocalCache': True },
+    'resubmit'      : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False, 'requiresLocalCache': True },
+    'status'        : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False, 'requiresLocalCache': True },
+    'submit'        : {'acceptsArguments': True,  'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': True , 'requiresLocalCache': False},
+    'tasks'         : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False, 'requiresLocalCache': False},
+    'uploadlog'     : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False, 'requiresLocalCache': False}
 }
 
 
