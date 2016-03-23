@@ -20,7 +20,7 @@ class checkwrite(SubCommand):
 
     def __init__(self, logger, cmdargs = None):
         SubCommand.__init__(self, logger, cmdargs)
-        self.phedex = PhEDEx({"cert": self.proxyfilename, "key": self.proxyfilename, "logger": self.logger})
+        self.phedex = PhEDEx({"cert": self.proxyfilename, "key": self.proxyfilename, "logger": self.logger, "pycurl" : True})
         self.lfnsaddprefix = None
         self.filename = None
 
@@ -165,7 +165,7 @@ class checkwrite(SubCommand):
         except HTTPException as errormsg:
             self.logger.info('%sError%s: Failed to contact PhEDEx or wrong PhEDEx node name is used' % (colors.RED, colors.NORMAL))
             self.logger.info('Result: %s\nStatus :%s\nURL :%s' % (errormsg.result, errormsg.status, errormsg.url))
-            raise HTTPException(errormsg)
+            raise
 
         return pfn
 
