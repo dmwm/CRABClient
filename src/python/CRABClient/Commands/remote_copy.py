@@ -306,7 +306,7 @@ class remote_copy(SubCommand):
 
                 if "timed out" in stderr or "timed out" in stdout:
                     logger.info("%sWarning%s: Failed due to connection timeout" % (colors.RED, colors.NORMAL ))
-                    logger.info("Please use the '-w' option to increase the connection timeout")
+                    logger.info("Please use the '--wait' option to increase the connection timeout")
 
                 if "checksum" in stderr:
                     logger.info("%sWarning%s: as of 3.3.1510 CRAB3 is using an option to validate the checksum with lcg-cp/gfal-cp commands."
