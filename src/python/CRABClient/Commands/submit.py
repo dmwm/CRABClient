@@ -321,7 +321,7 @@ class submit(SubCommand):
         Runs a trial to obtain the performance report. Repeats trial with successively larger input events
         until a job length of maxSeconds is reached (this improves accuracy for fast-running CMSSW parameter sets.)
         """
-        ufc = CRABClient.Emulator.getEmulator('ufc')({'endpoint' : filecacheurl})
+        ufc = CRABClient.Emulator.getEmulator('ufc')({'endpoint' : filecacheurl, "pycurl": True})
         cwd = os.getcwd()
         try:
             tmpDir = tempfile.mkdtemp()
