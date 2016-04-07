@@ -19,6 +19,5 @@ DBS3_PYCURL_ROOT=$(getVariableValue \$DBS3_PYCURL_CLIENT_ROOT \$PYTHON_LIB_SITE_
 export PYTHONPATH=$PYTHONPATH:$CRAB3_PY_ROOT:$DBS3_PY_ROOT:$DBS3_PYCURL_ROOT
 export PATH=$PATH:$CRAB3_BIN_ROOT
 if [ -n "$BASH" ]; then
-    echo bash is set
     source $CRAB3_ETC_ROOT/crab-bash-completion.sh
 fi
