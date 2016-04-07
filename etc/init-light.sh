@@ -22,7 +22,3 @@ if [ -n "$BASH" ]; then
     echo bash is set
     source $CRAB3_ETC_ROOT/crab-bash-completion.sh
 fi
-
-#[mmascher@lxplus007 ~]$ export CRAB_SOURCE_SCRIPT=/cvmfs/cms.cern.ch/crab3/crab_pre.sh
-#[mmascher@lxplus007 ~]$ source ~/repos/CRABClient/init-light.sh
-#[mmascher@lxplus007 ~]$ crab
