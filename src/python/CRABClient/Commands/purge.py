@@ -73,7 +73,7 @@ class purge(SubCommand):
             except HTTPException as re:
                 if 'X-Error-Info' in re.headers and 'Not such file' in re.headers['X-Error-Info']:
                     self.logger.info('%sError%s: Failed to find task file in crab server cache; the file might have been already purged' % (colors.RED,colors.NORMAL))
-                    raise HTTPException(re)
+                    raise
 
             if ufcresult == '':
                 self.logger.info('%sSuccess%s: Successfully removed task files from crab server cache' % (colors.GREEN, colors.NORMAL))
