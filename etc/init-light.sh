@@ -16,8 +16,17 @@ CRAB3_PY_ROOT=$(getVariableValue \$CRABCLIENT_ROOT \$PYTHON_LIB_SITE_PACKAGES)
 DBS3_PY_ROOT=$(getVariableValue \$DBS3_CLIENT_ROOT \$PYTHON_LIB_SITE_PACKAGES)
 DBS3_PYCURL_ROOT=$(getVariableValue \$DBS3_PYCURL_CLIENT_ROOT \$PYTHON_LIB_SITE_PACKAGES)
 
-export PYTHONPATH=$PYTHONPATH:$CRAB3_PY_ROOT:$DBS3_PY_ROOT:$DBS3_PYCURL_ROOT
-export PATH=$PATH:$CRAB3_BIN_ROOT
-if [ -n "$BASH" ]; then
-    source $CRAB3_ETC_ROOT/crab-bash-completion.sh
+if [ $# -gt 0 ]; then
+    if [ "x$1" == "x-csh" ]; then
+        echo "setenv PYTHONPATH $PYTHONPATH:$CRAB3_PY_ROOT:$DBS3_PY_ROOT:$DBS3_PYCURL_ROOT; \
+                        setenv PATH $PATH:$CRAB3_BIN_ROOT"
+    else
+        exit 254
+    fi
+else
+    export PYTHONPATH=$PYTHONPATH:$CRAB3_PY_ROOT:$DBS3_PY_ROOT:$DBS3_PYCURL_ROOT
+    export PATH=$PATH:$CRAB3_BIN_ROOT
+    if [ -n "$BASH" ]; then
+        source $CRAB3_ETC_ROOT/crab-bash-completion.sh
+    fi
 fi
