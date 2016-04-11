@@ -281,7 +281,7 @@ class Analysis(BasicJobType):
             return False, msg
 
         ## Make sure the splitting algorithm is valid.
-        allowedSplitAlgos = ['FileBased', 'LumiBased', 'EventAwareLumiBased']
+        allowedSplitAlgos = ['Automatic', 'FileBased', 'LumiBased', 'EventAwareLumiBased']
         if self.splitAlgo not in allowedSplitAlgos:
             msg  = "Invalid CRAB configuration: Parameter Data.splitting has an invalid value ('%s')." % (self.splitAlgo)
             msg += "\nAnalysis job type only supports the following splitting algorithms: %s." % (allowedSplitAlgos)

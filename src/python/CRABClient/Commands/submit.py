@@ -376,7 +376,8 @@ class submit(SubCommand):
         and print the results.
         """
 
-        algos = {"LumiBased": "lumis",
+        algos = {"Automatic": "seconds",
+                 "LumiBased": "lumis",
                  "EventBased": "events",
                  "FileBased": "files",
                  "EventAwareLumiBased": "events"}
