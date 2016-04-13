@@ -6,6 +6,7 @@ import os
 
 from CRABClient.ClientUtilities import colors
 from CRABClient.JobType.Analysis import Analysis
+from CRABClient.ClientExceptions import ConfigurationException
 from CRABClient.ClientMapping import getParamDefaultValue
 
 
@@ -22,6 +23,7 @@ class PrivateMC(Analysis):
         configArguments['jobtype'] = 'PrivateMC'
 
         lhe, nfiles = self.cmsswCfg.hasLHESource()
+        pool = self.cmsswCfg.hasPoolSource()
         if lhe:
             self.logger.debug("LHESource found in the CMSSW configuration.")
             configArguments['generator'] = getattr(self.config.JobType, 'generator', 'lhe')
@@ -37,6 +39,21 @@ class PrivateMC(Analysis):
                 msg += "more than one input file may not be supported by the CMSSW version used. "
                 msg += "Consider merging the LHE input files to guarantee complete processing."
                 self.logger.warning(msg)
+
+        if getattr(self.config.JobType, 'generator', '') == 'lhe' and not lhe:
+            msg = "Generator set to 'lhe' but "
+            if pool:
+                msg += "'PoolSource' instead of 'LHESoure' present in parameter set.  If you "
+                msg += "are processing files in EDMLHE format, please set 'JobType.pluginName' "
+                msg += "to 'Analysis'."
+            else:
+                msg += "no 'LHESource' found in parameter set.  If you are processing a gridpack "
+                msg += "to produce EDMLHE files, please remove the parameter 'JobType.generator'."
+            raise ConfigurationException(msg)
+        elif pool:
+            msg = "Found a 'PoolSource' in the parameter set.  Please switch to either 'EmptySource' "
+            msg += "or 'LHESource' for event generation, or set 'JobType.pluginName' to 'Analysis'."
+            raise ConfigurationException(msg)
 
         configArguments['primarydataset'] = getattr(self.config.Data, 'outputPrimaryDataset', 'CRAB_PrivateMC')
 

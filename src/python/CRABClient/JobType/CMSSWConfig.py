@@ -102,6 +102,28 @@ class CMSSWConfig(object):
         return
 
 
+    def hasPoolSource(self):
+        """
+        Returns if an PoolSource is present in the parameter set.
+        """
+        if bootstrapDone():
+            self.logger.debug("Getting source info from bootstrap cachefile.")
+            info = self.getCfgInfo()
+            return info['poolinfo']
+
+        isPool = False
+
+        if getattr(self.fullConfig.process, 'source'):
+            source = self.fullConfig.process.source
+            try:
+                isPool = str(source.type_()) == 'PoolSource'
+            except AttributeError as ex:
+                msg = "Invalid CMSSW configuration: Failed to check if 'process.source' is of type 'PoolSource': %s" % (ex)
+                raise ConfigurationException(msg)
+
+        return isPool
+
+
     def hasLHESource(self):
         """
         Returns a tuple containing a bool to indicate usage of an
