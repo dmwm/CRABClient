@@ -59,8 +59,10 @@ def saveCfgInfo(destFile, cmsswCfg):
         info = {}
         edmfiles, tfiles = cmsswCfg.outputFiles()
         lhe, nfiles = cmsswCfg.hasLHESource()
+        pool = cmsswCfg.hasPoolSource()
         info['outfiles'] = [ edmfiles, tfiles]
         info['lheinfo'] = [lhe, nfiles]
+        info['poolinfo'] = [pool]
         with open(destFile, 'w') as fd:
             json.dump(info, fd)
     except IOError as ioe:
