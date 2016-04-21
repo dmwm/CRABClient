@@ -5,10 +5,12 @@ from CRABClient import __version__
 import CRABClient.Emulator
 
 from urllib import urlencode
+from base64 import b64encode
+
 
 class kill(SubCommand):
     """
-    Command to kill submitted tasks. The user must give the crab project 
+    Command to kill submitted tasks. The user must give the crab project
     directory for the task he/she wants to kill.
     """
     visible = True
@@ -18,7 +20,11 @@ class kill(SubCommand):
         server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
 
         self.logger.debug('Killing task %s' % self.cachedinfo['RequestName'])
-        dictresult, status, reason = server.delete(self.uri, data = urlencode({ 'workflow' : self.cachedinfo['RequestName']}) + '&' + urlencode(self.jobids))
+        inputs = {'workflow' : self.cachedinfo['RequestName']}
+        if self.options.killwarning:
+            inputs.update({'killwarning' : b64encode(self.options.killwarning)})
+
+        dictresult, status, reason = server.delete(self.uri, data = urlencode(inputs) + '&' + urlencode(self.jobids))
         self.logger.debug("Result: %s" % dictresult)
 
         if status != 200:
@@ -34,7 +40,7 @@ class kill(SubCommand):
             resultdict = {'status' : 'SUCCESS'}
 
         return resultdict
-    
+
     def setOptions(self):
         """
         __setOptions__
@@ -46,6 +52,11 @@ class kill(SubCommand):
                                 default = None,
                                 help = 'Ids of the jobs you want to kill. Comma separated list of integers.',
                                 metavar = 'JOBIDS' )
+
+        self.parser.add_option( '--killwarning',
+                                dest = 'killwarning',
+                                default = None,
+                                help = 'A warning message to be appended to the list of warnings shown by the "crab status"')
 
     def validateOptions(self):
         SubCommand.validateOptions(self)
