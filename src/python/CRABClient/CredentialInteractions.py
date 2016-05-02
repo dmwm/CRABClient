@@ -300,7 +300,13 @@ class CredentialInteractions(object):
         myproxytimeleft = 0
         self.logger.debug("Getting myproxy life time left for %s" % self.defaultDelegation["myProxySvr"])
         # return an integer that indicates the number of seconds to the expiration of the proxy in myproxy
-        myproxytimeleft = myproxy.getMyProxyTimeLeft(serverRenewer=True, nokey=nokey)
+        # Also catch the exception in case WMCore encounters a problem with the proxy itself (one such case was #4532)
+        try:
+            myproxytimeleft = myproxy.getMyProxyTimeLeft(serverRenewer=True, nokey=nokey)
+        except Exception as ex:
+            msg = ex._message if hasattr(ex, "_message") else str(ex)
+            raise ProxyCreationException("Problems calculating the time left until the expiration of the proxy."
+                    " Please reset your environment or contact hn-cms-computing-tools@cern.ch if the problem persists.\n%s" % msg)
         self.logger.debug("Myproxy is valid: %i" % myproxytimeleft)
 
         trustRetrListChanged = myproxy.trustedRetrievers!=self.defaultDelegation['serverDN'] #list on the REST and on myproxy are different
