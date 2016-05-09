@@ -43,7 +43,7 @@ class PrivateMC(Analysis):
         if getattr(self.config.JobType, 'generator', '') == 'lhe' and not lhe:
             msg = "Generator set to 'lhe' but "
             if pool:
-                msg += "'PoolSource' instead of 'LHESoure' present in parameter set.  If you "
+                msg += "'PoolSource' instead of 'LHESource' present in parameter set.  If you "
                 msg += "are processing files in EDMLHE format, please set 'JobType.pluginName' "
                 msg += "to 'Analysis'."
             else:
