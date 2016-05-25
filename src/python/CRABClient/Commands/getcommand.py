@@ -86,7 +86,6 @@ class getcommand(SubCommand):
             raise RESTCommunicationException(msg)
 
         totalfiles = len(dictresult['result'])
-        cpresults = []
         workflow = dictresult['result']
         if len(workflow) > 0:
             if self.options.dump or self.options.xroot:
