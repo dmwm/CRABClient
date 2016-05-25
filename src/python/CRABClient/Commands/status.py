@@ -71,13 +71,13 @@ class status(SubCommand):
         if self.options.idle:
             verbose = 2
         dictresult, status, reason = server.get(self.uri, data = { 'workflow' : self.cachedinfo['RequestName'], 'verbose': verbose })
-        dictresult = dictresult['result'][0] #take just the significant part
-
         if status != 200:
             msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(self.cachedinfo['RequestName']), str(dictresult), str(reason))
             raise RESTCommunicationException(msg)
+        dictresult = dictresult['result'][0] #take just the significant part
+        username = dictresult['username']
 
-        self.printShort(dictresult, user)
+        self.printShort(dictresult, username)
 
         if 'jobs' in dictresult:
             self.printPublication(dictresult)
@@ -120,7 +120,7 @@ class status(SubCommand):
             ## Print the Dashboard monitoring URL for this task.
             taskname = urllib.quote(self.cachedinfo['RequestName'])
             dashboardURL = "http://dashb-cms-job.cern.ch/dashboard/templates/task-analysis/#user=" + username \
-                         + "&refresh=0&table=Jobs&p=1&records=25&activemenu=2&status=&site=&tid=" + taskname
+                         + "&table=Mains&pattern=" + taskname
             self.logger.info("Dashboard monitoring URL:\t%s" % (dashboardURL))
 
         ## Print the warning messages (these are the warnings in the Tasks DB,
