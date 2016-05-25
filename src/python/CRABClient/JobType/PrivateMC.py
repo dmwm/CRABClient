@@ -51,8 +51,9 @@ class PrivateMC(Analysis):
                 msg += "to produce EDMLHE files, please remove the parameter 'JobType.generator'."
             raise ConfigurationException(msg)
         elif pool:
-            msg = "Found a 'PoolSource' in the parameter set.  Please switch to either 'EmptySource' "
-            msg += "or 'LHESource' for event generation, or set 'JobType.pluginName' to 'Analysis'."
+            msg = "Found a 'PoolSource' in the parameter set. But that's not compatible with PrivateMC. "
+            msg += "Please switch to either 'EmptySource' or 'LHESource' for event generation, "
+            msg += "or set 'JobType.pluginName' to 'Analysis'."
             raise ConfigurationException(msg)
 
         configArguments['primarydataset'] = getattr(self.config.Data, 'outputPrimaryDataset', 'CRAB_PrivateMC')
