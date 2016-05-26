@@ -147,7 +147,7 @@ class resubmit(SubCommand):
                                default = None,
                                type = 'int',
                                help = "Set the priority of this task compared to other tasks you own; tasks default to 10." + \
-                                      " This does not improve your share compared to other users.")
+                                      " Tasks with higher priority values run first. This does not change your share compared to other users.")
 
         self.parser.add_option('--wait',
                                dest = 'wait',
