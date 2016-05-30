@@ -90,8 +90,20 @@ class UserTarball(object):
             self.tarfile.add(os.path.join(basedir, BOOTSTRAP_CFGFILE_DUMP), arcname=BOOTSTRAP_CFGFILE_DUMP)
 
         #debug directory
-        configtmp = tempfile.NamedTemporaryFile(delete=True)
-        configtmp.write(str(self.config))
+        #configtmp = tempfile.NamedTemporaryFile(delete=True)
+        #configtmp.write(str(self.config))
+        #configtmp.flush()
+        #psetfilename = getattr(self.config.JobType, 'psetName', None)
+        #if not psetfilename == None:
+        #    self.tarfile.add(psetfilename,'/debug/originalPSet.py')
+        #else:
+        #    self.logger.debug('Failed to add pset to tarball')
+        #self.tarfile.add(configtmp.name, '/debug/crabConfig.py')
+        #configtmp.close()
+
+    def addMonFiles(self):
+        configtmp = tempfile.NamedTemporaryFile(delete=True) 
+        configtmp.write(str(self.config)) 
         configtmp.flush()
         psetfilename = getattr(self.config.JobType, 'psetName', None)
         if not psetfilename == None:
@@ -100,7 +112,6 @@ class UserTarball(object):
             self.logger.debug('Failed to add pset to tarball')
         self.tarfile.add(configtmp.name, '/debug/crabConfig.py')
         configtmp.close()
-
 
     def writeContent(self):
         """Save the content of the tarball"""

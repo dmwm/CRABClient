@@ -61,6 +61,7 @@ class Analysis(BasicJobType):
             self.logger.debug('UNIQUE NAME: tarUUID %s ' % tarUUID)
             if len(tarUUID):
                 tarFilename   = os.path.join(self.workdir, tarUUID + 'default.tgz')
+                debugTarFilename = os.path.join(self.workdir, 'debugFiles.tgz')
                 cfgOutputName = os.path.join(self.workdir, BOOTSTRAP_CFGFILE)
             else:
                 raise EnvironmentException('Problem with uuidgen while preparing for Sandbox upload.')
@@ -139,6 +140,10 @@ class Analysis(BasicJobType):
             msg += " Hence CRAB will not collect any output file from this task."
             self.logger.warning(msg)
 
+        with UserTarball(name=debugTarFilename, logger=self.logger, config=self.config) as dtb:
+            dtb.addMonFiles()
+            debugFilesUploadResult = dtb.upload(filecacheurl = filecacheurl)
+
         ## UserTarball calls ScramEnvironment which can raise EnvironmentException.
         ## Since ScramEnvironment is already called above and the exception is not
         ## handled, we are sure that if we reached this point it will not raise EnvironmentException.
@@ -175,6 +180,7 @@ class Analysis(BasicJobType):
 
         configArguments['cacheurl'] = filecacheurl
         configArguments['cachefilename'] = "%s.tar.gz" % uploadResult
+        configArguments['debugfilename'] = "%s.tar.gz" % debugFilesUploadResult
         self.logger.debug("Result uploading input files: %(cachefilename)s " % configArguments)
 
         # Upload list of user-defined input files to process as the primary input
@@ -227,7 +233,6 @@ class Analysis(BasicJobType):
             configArguments['lumis'] = [str(reduce(lambda x,y: x+y, lumi_mask[run]))[1:-1].replace(' ','') for run in configArguments['runs']]
 
         configArguments['jobtype'] = 'Analysis'
-
         return tarFilename, configArguments
 
 
