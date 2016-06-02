@@ -230,7 +230,7 @@ class checkwrite(SubCommand):
         self.parser.add_option('--checksum',
                                dest = 'checksum',
                                default = 'yes',
-                               help = 'Set it to true if needed. If true will use ADLER32 checksum' +\
+                               help = 'Set it to yes if needed. It will use ADLER32 checksum' +\
                                        'Allowed values are yes/no. Default is yes.')
         self.parser.add_option('--command',
                                dest = 'command',
