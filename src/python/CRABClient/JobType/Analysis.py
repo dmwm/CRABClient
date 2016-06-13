@@ -66,8 +66,8 @@ class Analysis(BasicJobType):
             else:
                 raise EnvironmentException('Problem with uuidgen while preparing for Sandbox upload.')
         else:
-            _dummy, tarFilename   = tempfile.mkstemp(suffix='.tgz')
-            _dummy, cfgOutputName = tempfile.mkstemp(suffix='_cfg.py')
+            _, tarFilename   = tempfile.mkstemp(suffix='.tgz')
+            _, cfgOutputName = tempfile.mkstemp(suffix='_cfg.py')
 
         if getattr(self.config.Data, 'inputDataset', None):
             configArguments['inputdata'] = self.config.Data.inputDataset
@@ -140,10 +140,6 @@ class Analysis(BasicJobType):
             msg += " Hence CRAB will not collect any output file from this task."
             self.logger.warning(msg)
 
-        with UserTarball(name=debugTarFilename, logger=self.logger, config=self.config) as dtb:
-            dtb.addMonFiles()
-            debugFilesUploadResult = dtb.upload(filecacheurl = filecacheurl)
-
         ## UserTarball calls ScramEnvironment which can raise EnvironmentException.
         ## Since ScramEnvironment is already called above and the exception is not
         ## handled, we are sure that if we reached this point it will not raise EnvironmentException.
@@ -177,6 +173,14 @@ class Analysis(BasicJobType):
                        "More details can be found in %s" % (e, self.logger.logfile))
                 LOGGERS['CRAB3'].exception(msg) #the traceback is only printed into the logfile
                 raise ClientException(msg)
+
+        with UserTarball(name=debugTarFilename, logger=self.logger, config=self.config) as dtb:
+            dtb.addMonFiles()
+            try:
+                debugFilesUploadResult = dtb.upload(filecacheurl = filecacheurl)
+            except Exception as e:
+                msg = ("Problem uploading debug_files.tar.gz.\nError message: %s.\n"
+                       "More details can be found in %s" % (e, self.logger.logfile))
 
         configArguments['cacheurl'] = filecacheurl
         configArguments['cachefilename'] = "%s.tar.gz" % uploadResult
@@ -233,6 +237,7 @@ class Analysis(BasicJobType):
             configArguments['lumis'] = [str(reduce(lambda x,y: x+y, lumi_mask[run]))[1:-1].replace(' ','') for run in configArguments['runs']]
 
         configArguments['jobtype'] = 'Analysis'
+
         return tarFilename, configArguments
 
 
