@@ -3,6 +3,7 @@ Module to handle lumiMask.json file
 """
 
 import urlparse
+import urllib2
 
 from WMCore.Lexicon import jobrange
 from WMCore.DataStructs.LumiList import LumiList
@@ -20,11 +21,18 @@ def getLumiList(lumi_mask_name, logger = None):
     if parts[0] in ['http', 'https']:
         if logger:
             logger.debug('Downloading lumi-mask from %s' % lumi_mask_name)
-        lumi_list = LumiList(url = lumi_mask_name)
+        try:
+            lumi_list = LumiList(url = lumi_mask_name)
+        except urllib2.HTTPError as err:
+            raise ConfigurationException("Problem downloading lumi-mask file; %s %s" 
+                    % (err.code, err.msg))
     else:
         if logger:
             logger.debug('Reading lumi-mask from %s' % lumi_mask_name)
-        lumi_list = LumiList(filename = lumi_mask_name)
+        try:    
+            lumi_list = LumiList(filename = lumi_mask_name)
+        except IOError as err:
+            raise ConfigurationException("Problem loading lumi-mask file; %s" % str(err))
 
     return lumi_list
 
@@ -38,7 +46,7 @@ def getRunList(myrange):
         return []
     try:
         jobrange(myrange)
-    except AssertionError as ex:
+    except AssertionError:
         raise ConfigurationException("Invalid runRange: %s" % myrange)
 
     myrange = myrange.split(',')
