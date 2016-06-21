@@ -131,6 +131,7 @@ def getFileFromURL(url, filename = None, proxyfilename = None):
         opener = urllib.URLopener(key_file = proxyfilename, cert_file = proxyfilename)
         socket = opener.open(url)
         status = socket.getcode()
+        #TODO Emilis will optimize and read by chunks
         filestr = socket.read()
     except IOError as ioex:
         msg = "Error while trying to retrieve file from %s: %s" % (url, ioex)
