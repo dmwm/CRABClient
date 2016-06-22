@@ -23,7 +23,7 @@ class status2(SubCommand):
         inputlist = {'subresource': 'webdir', 'workflow': taskname}
         uri = self.getUrl(self.instance, resource = 'task')
         webdir = getProxiedWebDir(taskname, self.serverurl, uri, self.proxyfilename, self.logger.debug)
-        filename = 'site_ad.txt' #TODO Emilis fill find the name
+        filename = 'status_cache' #TODO Emilis fill find the name
         if not webdir:
             serverFactory = CRABClient.Emulator.getEmulator('rest')
             server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
@@ -31,7 +31,7 @@ class status2(SubCommand):
             webdir = dictresult['result'][0]
             self.logger.info('Server result: %s' % webdir)
         url = webdir + '/' + filename
-        longStReport = getFileFromURL(url, self.proxyfilename)
+        longStReport = getFileFromURL(url, proxyfilename=self.proxyfilename)
         self.logger.info(open(longStReport).read())
 
 
