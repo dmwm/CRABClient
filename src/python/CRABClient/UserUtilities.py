@@ -132,7 +132,15 @@ def getFileFromURL(url, filename = None, proxyfilename = None):
         socket = opener.open(url)
         status = socket.getcode()
         #TODO Emilis will optimize and read by chunks
-        filestr = socket.read()
+        with open (filename, 'a') as f:
+            f.seek(0)
+            f.truncate()
+            while True:
+                piece = socket.read(1024)
+                if not piece:
+                    break
+                f.write(piece)
+            
     except IOError as ioex:
         msg = "Error while trying to retrieve file from %s: %s" % (url, ioex)
         msg += "\nMake sure the URL is correct."
@@ -149,8 +157,8 @@ def getFileFromURL(url, filename = None, proxyfilename = None):
         exc = ClientException("Unable to retieve the file from %s. HTTP status code %s. HTTP content: %s" % (url, status, socket.info()))
         exc.status = status
         raise exc
-    with open(filename, 'w') as f:
-        f.write(filestr)
+#    with open(filename, 'w') as f:
+#        f.write(filestr)
     return filename
 
 
