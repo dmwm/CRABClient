@@ -71,13 +71,26 @@ class status(SubCommand):
         if self.options.idle:
             verbose = 2
         dictresult, status, reason = server.get(self.uri, data = { 'workflow' : self.cachedinfo['RequestName'], 'verbose': verbose })
-        dictresult = dictresult['result'][0] #take just the significant part
-
         if status != 200:
             msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(self.cachedinfo['RequestName']), str(dictresult), str(reason))
             raise RESTCommunicationException(msg)
 
-        self.printShort(dictresult, user)
+        dictresult = dictresult['result'][0] #take just the significant part
+
+        # get the SiteDB username, until the 'workflow' API is modified need to use the 'task' one
+        # i.e. change /crab/prod/workflow to /crab/prod/task  (be a bit general in case this is not production)
+        uri = '/'.join(self.uri.split('/')[0:-1]) + '/task'  # yeah.. ugly, but temporary
+        self.logger.debug('Looking up full DB information for task %s' % self.cachedinfo['RequestName'])
+        dic, status, reason = server.get(uri, data = { 'subresource' : 'search', 'workflow' : self.cachedinfo['RequestName']})
+        if status != 200:
+            msg = "Problem retrieving DB info:\ninput:%s\noutput:%s\nreason:%s" % (str(self.cachedinfo['RequestName']), str(dic), str(reason))
+            raise RESTCommunicationException(msg)
+
+        position = dic['desc']['columns'].index('tm_username')
+        username = dic['result'][position]
+        self.logger.debug('Identified SiteDB username for this task as: %s' % username)
+
+        self.printShort(dictresult, username)
 
         if 'jobs' in dictresult:
             self.printPublication(dictresult)
@@ -120,7 +133,7 @@ class status(SubCommand):
             ## Print the Dashboard monitoring URL for this task.
             taskname = urllib.quote(self.cachedinfo['RequestName'])
             dashboardURL = "http://dashb-cms-job.cern.ch/dashboard/templates/task-analysis/#user=" + username \
-                         + "&refresh=0&table=Jobs&p=1&records=25&activemenu=2&status=&site=&tid=" + taskname
+                         + "&table=Mains&pattern=" + taskname
             self.logger.info("Dashboard monitoring URL:\t%s" % (dashboardURL))
 
         ## Print the warning messages (these are the warnings in the Tasks DB,
