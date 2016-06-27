@@ -109,7 +109,7 @@ class status(SubCommand):
         if 'FAILED' in dictresult['status']:
             msg += "%s%s%s" % (colors.RED, dictresult['status'], colors.NORMAL)
         else:
-            if dictresult['status'] in TASKDBSTATUSES_TMP:
+            if dictresult['status'] in TASKDBSTATUSES_TMP and 'command' in dictresult:
                 msg += "%s on command %s" % (dictresult['status'], dictresult['command'])
             else:
                 msg += "%s" % (dictresult['status'])
