@@ -236,6 +236,9 @@ class SubCommand(ConfigCommand):
 
         ## Get the command configuration.
         self.cmdconf = commandsConfiguration.get(self.name)
+        if not self.cmdconf:
+            raise RuntimeError("Canot find command %s in commandsConfiguration inside ClientMapping. Are you developer"
+                               "trying to add a command without it's correspondant configuration?" % self.name)
 
         ## Get the CRAB cache file.
         self.crab3dic = self.getConfiDict()
