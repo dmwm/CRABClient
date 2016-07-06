@@ -174,6 +174,7 @@ class Analysis(BasicJobType):
                 LOGGERS['CRAB3'].exception(msg) #the traceback is only printed into the logfile
                 raise ClientException(msg)
 
+        debugFilesUploadResult = None
         with UserTarball(name=debugTarFilename, logger=self.logger, config=self.config) as dtb:
             dtb.addMonFiles()
             try:
@@ -181,10 +182,12 @@ class Analysis(BasicJobType):
             except Exception as e:
                 msg = ("Problem uploading debug_files.tar.gz.\nError message: %s.\n"
                        "More details can be found in %s" % (e, self.logger.logfile))
+                LOGGERS['CRAB3'].exception(msg) #the traceback is only printed into the logfile
 
         configArguments['cacheurl'] = filecacheurl
         configArguments['cachefilename'] = "%s.tar.gz" % uploadResult
-        configArguments['debugfilename'] = "%s.tar.gz" % debugFilesUploadResult
+        if debugFilesUploadResult is not None:
+            configArguments['debugfilename'] = "%s.tar.gz" % debugFilesUploadResult
         self.logger.debug("Result uploading input files: %(cachefilename)s " % configArguments)
 
         # Upload list of user-defined input files to process as the primary input
