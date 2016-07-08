@@ -44,6 +44,8 @@ class UserTarball(object):
         directories = ['lib', 'biglib', 'module']
         if getattr(self.config.JobType, 'sendPythonFolder', configParametersInfo['JobType.sendPythonFolder']['default']):
             directories.append('python')
+            directories.append('cfipython')
+        # Note that dataDirs are only looked-for and added under the src/ folder.
         # /data/ subdirs contain data files needed by the code
         # /interface/ subdirs contain C++ header files needed e.g. by ROOT6
         dataDirs    = ['data','interface']
