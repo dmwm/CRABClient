@@ -229,9 +229,9 @@ class checkwrite(SubCommand):
                                help = 'A user lfn address.')
         self.parser.add_option('--checksum',
                                dest = 'checksum',
-                               default = 'yes',
-                               help = 'Set it to true if needed. If true will use ADLER32 checksum' +\
-                                       'Allowed values are yes/no. Default is yes.')
+                               default = 'no',
+                               help = 'Set it to yes if needed. It will use ADLER32 checksum' +\
+                                       'Allowed values are yes/no. Default is no.')
         self.parser.add_option('--command',
                                dest = 'command',
                                default = None,
