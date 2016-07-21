@@ -31,9 +31,9 @@ class status2(SubCommand):
 
 
     def getColumn(self, dictresult, columnName):
-        webdirIndex = dictresult['desc']['columns'].index(columnName)
-        webdir = dictresult['result'][webdirIndex]
-        return webdir
+        columnIndex = dictresult['desc']['columns'].index(columnName)
+        value = dictresult['result'][columnIndex]
+        return value
 
     def __call__(self):
         # Get all of the columns from the database for a certain task
@@ -44,7 +44,7 @@ class status2(SubCommand):
         crabDBInfo, _, _ =  server.get(uri, data = {'subresource': 'search', 'workflow': taskname})
         self.logger.debug("Got information from server oracle database: %s", crabDBInfo)
 
-        user = self.getColumn(crabDBInfo, 'tm_user_webdir')
+        user = self.getColumn(crabDBInfo, 'tm_username')
         webdir = self.getColumn(crabDBInfo, 'tm_user_webdir')
         rootDagId = self.getColumn(crabDBInfo, 'clusterid') #that's the condor id from the TW
 
@@ -262,7 +262,7 @@ class status2(SubCommand):
 
         return sortdict
 
-    def printShort(self, statusCacheFilename):
+    def printShort(self, statusCacheInfo):
         """ Give a summary of the job statuses, keeping in mind that:
                 - If there is a job with id 0 then this is the probe job for the estimation
                   This is the so called automatic splitting
@@ -271,13 +271,13 @@ class status2(SubCommand):
         """
 
         # This record is no longer necessary and makes parsing more difficult.
-        if 'DagStatus' in statusCacheFilename:
-            del statusCacheFilename['DagStatus']
+        if 'DagStatus' in statusCacheInfo:
+            del statusCacheInfo['DagStatus']
 
         jobsPerStatus = {}
         jobList = []
         result= {}
-        for job, info in statusCacheFilename.items():
+        for job, info in statusCacheInfo.items():
             status = info['State']
             jobsPerStatus.setdefault(status, 0)
             jobsPerStatus[status] += 1
@@ -286,14 +286,14 @@ class status2(SubCommand):
         result['jobList'] = jobList
 
         # Print information  about the single splitting job
-        if '0' in statusCacheFilename:
-            statusSplJob = statusCacheFilename['0']['State']
+        if '0' in statusCacheInfo:
+            statusSplJob = statusCacheInfo['0']['State']
             self.logger.info("\nSplitting job status:\t\t{0}".format(self._printState(statusSplJob, 13)))
 
         # Collect information about jobs
         # Create a dictionary like { 'finished' : 1, 'running' : 3}
         states = {}
-        for jobid, statusDict in statusCacheFilename.iteritems():
+        for jobid, statusDict in statusCacheInfo.iteritems():
             status = statusDict['State']
             if jobid == '0' or '-' in jobid: #skip splitting and completing jobs
                 continue
@@ -303,7 +303,7 @@ class status2(SubCommand):
         # Collect information about subjobs
         # Create a dictionary like { 'finished' : 1, 'running' : 3}
         statesSJ = {}
-        for jobid, statusDict in statusCacheFilename.iteritems():
+        for jobid, statusDict in statusCacheInfo.iteritems():
             status = statusDict['State']
             if jobid == '0' or '-' not in jobid: #skip splitting and normal jobs
                 continue
