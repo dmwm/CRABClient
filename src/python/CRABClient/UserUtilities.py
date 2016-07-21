@@ -132,7 +132,7 @@ def getFileFromURL(url, filename = None, proxyfilename = None):
         socket = opener.open(url)
         status = socket.getcode()
         # Read the file by chunks instead of all at once, appending each chunk to the final result.
-        # This lowers the memory overhead, which can be a problem with big files. 
+        # This lowers the memory overhead, which can be a problem with big files.
         with open (filename, 'a') as f:
             f.seek(0)
             f.truncate()
@@ -141,7 +141,6 @@ def getFileFromURL(url, filename = None, proxyfilename = None):
                 if not piece:
                     break
                 f.write(piece)
-            
     except IOError as ioex:
         msg = "Error while trying to retrieve file from %s: %s" % (url, ioex)
         msg += "\nMake sure the URL is correct."
@@ -193,7 +192,7 @@ def getLumiListInValidFiles(dataset, dbsurl = 'phys03'):
                 for lumi in lumis:
                     runLumiPairs.append((run,lumi))
     lumiList = LumiList(lumis=runLumiPairs)
-    
+
     return lumiList
 
 
