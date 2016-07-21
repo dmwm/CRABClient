@@ -143,7 +143,7 @@ class status(SubCommand):
                 self.logger.error(msg)
 
 
-    def printShort(self, dictresult):
+    def printShort(self, statusCacheFilename):
         """ Give a summary of the job statuses, keeping in mind that:
                 - If there is a job with id 0 then this is the probe job for the estimation
                   This is the so called automatic splitting
@@ -152,14 +152,14 @@ class status(SubCommand):
         """
 
         ## Print information  about the single splitting job
-        if '0' in dictresult['jobs']:
-            statusSplJob = dictresult['jobs']['0']['State']
+        if '0' in statusCacheFilename['jobs']:
+            statusSplJob = statusCacheFilename['jobs']['0']['State']
             self.logger.info("\nSplitting job status:\t\t{0}".format(self._printState(statusSplJob, 13)))
 
         ## Collect information about jobs
         # Create a dictionary like { 'finished' : 1, 'running' : 3}
         states = {}
-        for jobid, statusDict in dictresult['jobs'].iteritems():
+        for jobid, statusDict in statusCacheFilename['jobs'].iteritems():
             status = statusDict['State']
             if jobid == '0' or '-' in jobid:
                 continue
@@ -169,7 +169,7 @@ class status(SubCommand):
         ## Collect information about subjobs
         # Create a dictionary like { 'finished' : 1, 'running' : 3}
         statesSJ = {}
-        for jobid, statusDict in dictresult['jobs'].iteritems():
+        for jobid, statusDict in statusCacheFilename['jobs'].iteritems():
             status = statusDict['State']
             if jobid == '0' or '-' not in jobid:
                 continue

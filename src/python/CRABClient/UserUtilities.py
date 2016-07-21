@@ -141,7 +141,6 @@ def getFileFromURL(url, filename = None, proxyfilename = None):
                 if not piece:
                     break
                 f.write(piece)
-
     except IOError as ioex:
         msg = "Error while trying to retrieve file from %s: %s" % (url, ioex)
         msg += "\nMake sure the URL is correct."
