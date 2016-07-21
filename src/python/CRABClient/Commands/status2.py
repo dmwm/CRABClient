@@ -68,6 +68,7 @@ class status2(SubCommand):
             # Skip first line of the file (it contains info for the caching script) and load job_report summary
             fd.readline()
             statusCacheInfo = literal_eval(fd.readline())
+        self.logger.debug("Got information from status cache file: %s", statusCacheInfo)
 
         self.printDAGStatus(statusCacheInfo)
 
@@ -109,7 +110,7 @@ class status2(SubCommand):
         # Get dag status from the node_state/job_log summary
         dagman_codes = {1:'SUBMITTED', 2:'SUBMITTED', 3:'SUBMITTED', 4:'SUBMITTED', 5:'COMPLETED', 6:'FAILED'}
         dag_status = dagman_codes.get(statusCacheInfo['DagStatus']['DagStatus'])
-        msg = "Status on the scheduler:\t\t\t" + dag_status
+        msg = "Status on the scheduler:\t" + dag_status
         self.logger.info(msg)
         return msg
 
@@ -128,7 +129,7 @@ class status2(SubCommand):
         if schedd:
             msg = "Grid scheduler:\t\t\t%s" % schedd
             self.logger.info(msg)
-        msg = "DB task status:\t\t\t"
+        msg = "Status on the CRAB server:\t"
         if 'FAILED' in status:
             msg += "%s%s%s" % (colors.RED, status, colors.NORMAL)
         else:
@@ -175,9 +176,13 @@ class status2(SubCommand):
         cpu_max = 0
         cpu_sum = 0
         wall_sum = 0
-        # Iterate over the dictionary in jobId order
-#        for jobid in sorted(dictresult.keys(), key=int):
-        for jobid in sorted(dictresult.keys()):
+        def compareFunction(j1 ,j2):
+            # j's can be '1' or '1-1'.
+            x1 = map(int, j1.split('-'))
+            x2 = map(int, j2.split('-'))
+            return cmp(x1, x2) #using list comparison
+
+        for jobid in sorted(dictresult.keys(), cmp=compareFunction):
             info = dictresult[str(jobid)]
             state = info['State']
             site = ''
@@ -309,7 +314,7 @@ class status2(SubCommand):
             if currStates:
                 total = sum( states[st] for st in states )
                 state_list = sorted(states)
-                self.logger.info("\n{0} status:\t\t\t{1} {2}".format(jobtype, self._printState(state_list[0], 13), self._percentageString(state_list[0], states[state_list[0]], total)))
+                self.logger.info("\n{0:32}{1} {2}".format(jobtype + ' status:', self._printState(state_list[0], 13), self._percentageString(state_list[0], states[state_list[0]], total)))
                 for status in state_list[1:]:
                     self.logger.info("\t\t\t\t{0} {1}".format(self._printState(status, 13), self._percentageString(status, states[status], total)))
         return result
