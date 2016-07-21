@@ -61,12 +61,13 @@ class Analysis(BasicJobType):
             self.logger.debug('UNIQUE NAME: tarUUID %s ' % tarUUID)
             if len(tarUUID):
                 tarFilename   = os.path.join(self.workdir, tarUUID + 'default.tgz')
+                debugTarFilename = os.path.join(self.workdir, 'debugFiles.tgz')
                 cfgOutputName = os.path.join(self.workdir, BOOTSTRAP_CFGFILE)
             else:
                 raise EnvironmentException('Problem with uuidgen while preparing for Sandbox upload.')
         else:
-            _dummy, tarFilename   = tempfile.mkstemp(suffix='.tgz')
-            _dummy, cfgOutputName = tempfile.mkstemp(suffix='_cfg.py')
+            _, tarFilename   = tempfile.mkstemp(suffix='.tgz')
+            _, cfgOutputName = tempfile.mkstemp(suffix='_cfg.py')
 
         if getattr(self.config.Data, 'inputDataset', None):
             configArguments['inputdata'] = self.config.Data.inputDataset
@@ -173,8 +174,20 @@ class Analysis(BasicJobType):
                 LOGGERS['CRAB3'].exception(msg) #the traceback is only printed into the logfile
                 raise ClientException(msg)
 
+        debugFilesUploadResult = None
+        with UserTarball(name=debugTarFilename, logger=self.logger, config=self.config) as dtb:
+            dtb.addMonFiles()
+            try:
+                debugFilesUploadResult = dtb.upload(filecacheurl = filecacheurl)
+            except Exception as e:
+                msg = ("Problem uploading debug_files.tar.gz.\nError message: %s.\n"
+                       "More details can be found in %s" % (e, self.logger.logfile))
+                LOGGERS['CRAB3'].exception(msg) #the traceback is only printed into the logfile
+
         configArguments['cacheurl'] = filecacheurl
         configArguments['cachefilename'] = "%s.tar.gz" % uploadResult
+        if debugFilesUploadResult is not None:
+            configArguments['debugfilename'] = "%s.tar.gz" % debugFilesUploadResult
         self.logger.debug("Result uploading input files: %(cachefilename)s " % configArguments)
 
         # Upload list of user-defined input files to process as the primary input

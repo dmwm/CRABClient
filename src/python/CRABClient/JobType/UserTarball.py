@@ -15,7 +15,7 @@ from CRABClient.JobType.ScramEnvironment import ScramEnvironment
 from CRABClient.ClientUtilities import colors, BOOTSTRAP_CFGFILE, BOOTSTRAP_CFGFILE_PKL
 from CRABClient.ClientExceptions import EnvironmentException, InputFileNotFoundException, CachefileNotFoundException
 
-from ServerUtilities import USER_SANDBOX_EXCLUSIONS, BOOTSTRAP_CFGFILE_DUMP
+from ServerUtilities import NEW_USER_SANDBOX_EXCLUSIONS, BOOTSTRAP_CFGFILE_DUMP
 
 
 class UserTarball(object):
@@ -44,6 +44,8 @@ class UserTarball(object):
         directories = ['lib', 'biglib', 'module']
         if getattr(self.config.JobType, 'sendPythonFolder', configParametersInfo['JobType.sendPythonFolder']['default']):
             directories.append('python')
+            directories.append('cfipython')
+        # Note that dataDirs are only looked-for and added under the src/ folder.
         # /data/ subdirs contain data files needed by the code
         # /interface/ subdirs contain C++ header files needed e.g. by ROOT6
         dataDirs    = ['data','interface']
@@ -60,7 +62,7 @@ class UserTarball(object):
 
         # Search for and tar up "data" directories in src/
         srcPath = os.path.join(self.scram.getCmsswBase(), 'src')
-        for root, _dummy, _dummy in os.walk(srcPath):
+        for root, _, _ in os.walk(srcPath):
             if os.path.basename(root) in dataDirs:
                 directory = root.replace(srcPath,'src')
                 self.logger.debug("Adding data directory %s to tarball" % root)
@@ -89,7 +91,10 @@ class UserTarball(object):
             self.tarfile.add(os.path.join(basedir, BOOTSTRAP_CFGFILE_PKL), arcname=BOOTSTRAP_CFGFILE_PKL)
             self.tarfile.add(os.path.join(basedir, BOOTSTRAP_CFGFILE_DUMP), arcname=BOOTSTRAP_CFGFILE_DUMP)
 
-        #debug directory
+    def addMonFiles(self):
+        """
+        Add monitoring files the debug tarball.
+        """
         configtmp = tempfile.NamedTemporaryFile(delete=True)
         configtmp.write(str(self.config))
         configtmp.flush()
@@ -97,10 +102,15 @@ class UserTarball(object):
         if not psetfilename == None:
             self.tarfile.add(psetfilename,'/debug/originalPSet.py')
         else:
-            self.logger.debug('Failed to add pset to tarball')
-        self.tarfile.add(configtmp.name, '/debug/crabConfig.py')
-        configtmp.close()
+            self.logger.debug('Failed to add pset to debug_files.tar.gz')
 
+        self.tarfile.add(configtmp.name, '/debug/crabConfig.py')
+
+        scriptExe = getattr(self.config.JobType, 'scriptExe', None)
+        if scriptExe:
+            self.tarfile.add(scriptExe, arcname=os.path.basename(scriptExe))
+
+        configtmp.close()
 
     def writeContent(self):
         """Save the content of the tarball"""
@@ -123,7 +133,7 @@ class UserTarball(object):
         archiveName = self.tarfile.name
         self.logger.debug("Uploading archive %s to the CRAB cache. Using URI %s" % (archiveName, filecacheurl))
         ufc = CRABClient.Emulator.getEmulator('ufc')({'endpoint' : filecacheurl, "pycurl": True})
-        result = ufc.upload(archiveName, excludeList = USER_SANDBOX_EXCLUSIONS)
+        result = ufc.upload(archiveName, excludeList = NEW_USER_SANDBOX_EXCLUSIONS)
         if 'hashkey' not in result:
             self.logger.error("Failed to upload source files: %s" % str(result))
             raise CachefileNotFoundException
