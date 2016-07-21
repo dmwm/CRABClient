@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 if [ -z "$CRAB_SOURCE_SCRIPT" ]; then
-    CRAB_SOURCE_SCRIPT="/cvmfs/cms.cern.ch/crab3/crab.sh"
+    CRAB_SOURCE_SCRIPT="/cvmfs/cms.cern.ch/crab3/crab_standalone.sh"
 fi
 
 function getVariableValue {
