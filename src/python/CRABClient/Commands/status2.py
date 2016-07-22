@@ -32,8 +32,8 @@ class status2(SubCommand):
 
     def getColumn(self, dictresult, columnName):
         columnIndex = dictresult['desc']['columns'].index(columnName)
-        webdir = dictresult['result'][columnIndex]
-        return webdir
+        value = dictresult['result'][columnIndex]
+        return value
 
     def __call__(self):
         # Get all of the columns from the database for a certain task
