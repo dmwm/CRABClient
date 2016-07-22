@@ -5,7 +5,7 @@ import CRABClient.Emulator
 import urllib
 from CRABClient import __version__
 import math
-import ast
+from ast import literal_eval
 import json
 
 from CRABClient.UserUtilities import getFileFromURL
@@ -29,45 +29,61 @@ class status2(SubCommand):
 
     shortnames = ['st2']
 
-    def __call__(self):
 
+    def getColumn(self, dictresult, columnName):
+        columnIndex = dictresult['desc']['columns'].index(columnName)
+        value = dictresult['result'][columnIndex]
+        return value
+
+    def __call__(self):
         # Get all of the columns from the database for a certain task
         taskname = self.cachedinfo['RequestName']
         uri = self.getUrl(self.instance, resource = 'task')
         serverFactory = CRABClient.Emulator.getEmulator('rest')
         server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
-        dictresult, _, _ =  server.get(uri, data = {'subresource': 'search', 'workflow': taskname})
+        crabDBInfo, _, _ =  server.get(uri, data = {'subresource': 'search', 'workflow': taskname})
+        self.logger.debug("Got information from server oracle database: %s", crabDBInfo)
 
-        webdirIndex = dictresult['desc']['columns'].index('tm_user_webdir')
-        webdir = dictresult['result'][webdirIndex]
+        user = self.getColumn(crabDBInfo, 'tm_username')
+        webdir = self.getColumn(crabDBInfo, 'tm_user_webdir')
+        rootDagId = self.getColumn(crabDBInfo, 'clusterid') #that's the condor id from the TW
 
+        #Print information from the database
+        self.printTaskInfo(crabDBInfo, user)
+        if rootDagId and not webdir:
+            # if the dag is submitted and the webdir is not there we have to wait that AdjustSites run
+            # and upload the webdir location to the server
+            self.logger.info("The CRAB server submitted your task to the Grid scheduler (ID: %s)")
+            self.logger.info("Waiting for the scheduler to report back the status of your task")
+            return crabDBInfo, None
+
+        self.logger.debug("Webdir is located at %s", webdir)
         # Download status_cache file
+        self.logger.debug("Retrieving 'status_cache' file from webdir")
         url = webdir + '/' + "status_cache"
-        longStReportFile = open(getFileFromURL(url, proxyfilename=self.proxyfilename))
 
-        # TODO - protect against a missing webdir if task hasn't bootstrapped on the schedd yet.
+        statusCacheInfo = None
+        statusCacheFilename = getFileFromURL(url, proxyfilename=self.proxyfilename)
+        with open(statusCacheFilename) as fd:
+            # Skip first line of the file (it contains info for the caching script) and load job_report summary
+            fd.readline()
+            statusCacheInfo = literal_eval(fd.readline())
+        self.logger.debug("Got information from status cache file: %s", statusCacheInfo)
 
-        # Skip first line of the file (it contains info for the caching script) and load job_report summary 
-        longStReportFile.readline()
-        self.cachedInfo = ast.literal_eval(longStReportFile.readline())
+        self.printDAGStatus(statusCacheInfo)
 
-        # Get information about a task from the database. Contains task/job status, error/warning messages.
-        DBInfo, _, _ = server.get(self.uri, data = {'workflow': self.cachedinfo['RequestName'], 'verbose': 0})
-        DBInfo = DBInfo['result'][0]
-
-        user = self.cachedinfo['RequestName'].split("_")[2].split(":")[-1]
-
-        self.printTaskInfo(DBInfo, user)
-        self.printShort(self.cachedInfo)
-        self.printErrors(self.cachedInfo)
+        shortResult = self.printShort(statusCacheInfo)
+        self.printErrors(statusCacheInfo)
         if self.options.summary:
-            self.printSummary(self.cachedInfo)
+            self.printSummary(statusCacheInfo)
         if self.options.long or self.options.sort:
-            sortdict = self.printLong(self.cachedInfo, quiet = (not self.options.long))
+            sortdict = self.printLong(statusCacheInfo, quiet = (not self.options.long))
             if self.options.sort:
                 self.printSort(sortdict, self.options.sort)
         if self.options.json:
-            self.logger.info(json.dumps(self.cachedInfo))
+            self.logger.info(json.dumps(statusCacheInfo))
+
+        return crabDBInfo, shortResult
 
     def _percentageString(self, state, value, total):
         state = PUBLICATION_STATES.get(state, state)
@@ -90,36 +106,41 @@ class status2(SubCommand):
         else:
             return colors.NORMAL
 
+    def printDAGStatus(self, statusCacheInfo):
+        # Get dag status from the node_state/job_log summary
+        dagman_codes = {1:'SUBMITTED', 2:'SUBMITTED', 3:'SUBMITTED', 4:'SUBMITTED', 5:'COMPLETED', 6:'FAILED'}
+        dag_status = dagman_codes.get(statusCacheInfo['DagStatus']['DagStatus'])
+        msg = "Status on the scheduler:\t" + dag_status
+        self.logger.info(msg)
+        return msg
 
     def printTaskInfo(self, dictresult, username):
         """ Print general information like project directory, task name, scheduler, task status (in the database),
             dashboard URL, warnings and failire messages in the database.
         """
-        self.logger.debug(dictresult) #should be something like {u'result': [[123, u'ciao'], [456, u'ciao']]}
+        schedd = self.getColumn(dictresult, 'tm_schedd')
+        status = self.getColumn(dictresult, 'tm_task_status')
+        command = self.getColumn(dictresult, 'tm_task_command')
+        warnings = literal_eval(self.getColumn(dictresult, 'tm_task_warnings'))
+        failure = literal_eval(self.getColumn(dictresult, 'tm_task_failure'))
 
         self.logger.info("CRAB project directory:\t\t%s" % (self.requestarea))
         self.logger.info("Task name:\t\t\t%s" % self.cachedinfo['RequestName'])
-        if dictresult['schedd']:
-            msg = "Grid scheduler:\t\t\t%s" % (dictresult['schedd'])
+        if schedd:
+            msg = "Grid scheduler:\t\t\t%s" % schedd
             self.logger.info(msg)
-        msg = "DB task status:\t\t\t"
-        if 'FAILED' in dictresult['status']:
-            msg += "%s%s%s" % (colors.RED, dictresult['status'], colors.NORMAL)
+        msg = "Status on the CRAB server:\t"
+        if 'FAILED' in status:
+            msg += "%s%s%s" % (colors.RED, status, colors.NORMAL)
         else:
-            if dictresult['status'] in TASKDBSTATUSES_TMP:
-                msg += "%s on command %s" % (dictresult['status'], dictresult['command'])
+            if status in TASKDBSTATUSES_TMP:
+                msg += "%s on command %s" % (status, command)
             else:
-                msg += "%s" % (dictresult['status'])
-        self.logger.info(msg)
-
-        # Get dag status from the node_state/job_log summary
-        dagman_codes = {1: 'SUBMITTED', 2: 'SUBMITTED', 3: 'SUBMITTED', 4: 'SUBMITTED', 5: 'COMPLETED', 6: 'FAILED'}
-        dag_status =  dagman_codes.get(self.cachedInfo['DagStatus']['DagStatus'])
-        msg = "DAG status:\t\t\t" + dag_status
+                msg += "%s" % (status)
         self.logger.info(msg)
 
         # Show dashboard URL for the task.
-        if dictresult['schedd']:
+        if schedd:
             ## Print the Dashboard monitoring URL for this task.
             taskname = urllib.quote(self.cachedinfo['RequestName'])
             dashboardURL = "http://dashb-cms-job.cern.ch/dashboard/templates/task-analysis/#user=" + username \
@@ -128,18 +149,13 @@ class status2(SubCommand):
 
         # Print the warning messages (these are the warnings in the Tasks DB,
         # and/or maybe some warning added by the REST Interface to the status result).
-        if dictresult['taskWarningMsg']:
-            for warningMsg in dictresult['taskWarningMsg']:
+        if warnings:
+            for warningMsg in warnings:
                 self.logger.warning("%sWarning%s:\t\t\t%s" % (colors.RED, colors.NORMAL, warningMsg))
-        if dictresult['taskFailureMsg'] or dictresult['statusFailureMsg']:
-            if dictresult['taskFailureMsg']:
-                msg  = "%sFailure message%s:" % (colors.RED, colors.NORMAL)
-                msg += "\t\t%s" % (dictresult['taskFailureMsg'].replace('\n', '\n\t\t\t\t'))
-                self.logger.error(msg)
-            if dictresult['statusFailureMsg']:
-                msg = "%sError retrieving task status%s:" % (colors.RED, colors.NORMAL)
-                msg += "\t%s" % (dictresult['statusFailureMsg'].replace('\n', '\n\t\t\t\t'))
-                self.logger.error(msg)
+        if failure:
+            msg  = "%sFailure message from the server%s:" % (colors.RED, colors.NORMAL)
+            msg += "\t\t%s" % (failure.replace('\n', '\n\t\t\t\t'))
+            self.logger.error(msg)
 
     def printLong(self, dictresult, quiet = False):
         """ Print detailed information about a task and each job.
@@ -160,8 +176,13 @@ class status2(SubCommand):
         cpu_max = 0
         cpu_sum = 0
         wall_sum = 0
-        # Iterate over the dictionary in jobId order
-        for jobid in sorted(dictresult.keys(), key=int):
+        def compareFunction(j1 ,j2):
+            # j's can be '1' or '1-1'.
+            x1 = map(int, j1.split('-'))
+            x2 = map(int, j2.split('-'))
+            return cmp(x1, x2) #using list comparison
+
+        for jobid in sorted(dictresult.keys(), cmp=compareFunction):
             info = dictresult[str(jobid)]
             state = info['State']
             site = ''
@@ -241,7 +262,7 @@ class status2(SubCommand):
 
         return sortdict
 
-    def printShort(self, dictresult):
+    def printShort(self, statusCacheInfo):
         """ Give a summary of the job statuses, keeping in mind that:
                 - If there is a job with id 0 then this is the probe job for the estimation
                   This is the so called automatic splitting
@@ -250,14 +271,13 @@ class status2(SubCommand):
         """
 
         # This record is no longer necessary and makes parsing more difficult.
-        if 'DagStatus' in dictresult:
-            del dictresult['DagStatus']
+        if 'DagStatus' in statusCacheInfo:
+            del statusCacheInfo['DagStatus']
 
         jobsPerStatus = {}
         jobList = []
         result= {}
-        for job, info in dictresult.items():
-            job = int(job)
+        for job, info in statusCacheInfo.items():
             status = info['State']
             jobsPerStatus.setdefault(status, 0)
             jobsPerStatus[status] += 1
@@ -266,16 +286,16 @@ class status2(SubCommand):
         result['jobList'] = jobList
 
         # Print information  about the single splitting job
-        if '0' in dictresult:
-            statusSplJob = dictresult['0']['State']
+        if '0' in statusCacheInfo:
+            statusSplJob = statusCacheInfo['0']['State']
             self.logger.info("\nSplitting job status:\t\t{0}".format(self._printState(statusSplJob, 13)))
 
         # Collect information about jobs
         # Create a dictionary like { 'finished' : 1, 'running' : 3}
         states = {}
-        for jobid, statusDict in dictresult.iteritems():
+        for jobid, statusDict in statusCacheInfo.iteritems():
             status = statusDict['State']
-            if jobid == '0' or '-' in jobid:
+            if jobid == '0' or '-' in jobid: #skip splitting and completing jobs
                 continue
             states[status] = states.setdefault(status, 0) + 1
 
@@ -283,9 +303,9 @@ class status2(SubCommand):
         # Collect information about subjobs
         # Create a dictionary like { 'finished' : 1, 'running' : 3}
         statesSJ = {}
-        for jobid, statusDict in dictresult.iteritems():
+        for jobid, statusDict in statusCacheInfo.iteritems():
             status = statusDict['State']
-            if jobid == '0' or '-' not in jobid:
+            if jobid == '0' or '-' not in jobid: #skip splitting and normal jobs
                 continue
             statesSJ[status] = statesSJ.setdefault(status, 0) + 1
 
@@ -294,9 +314,10 @@ class status2(SubCommand):
             if currStates:
                 total = sum( states[st] for st in states )
                 state_list = sorted(states)
-                self.logger.info("\n{0} status:\t\t\t{1} {2}".format(jobtype, self._printState(state_list[0], 13), self._percentageString(state_list[0], states[state_list[0]], total)))
+                self.logger.info("\n{0:32}{1} {2}".format(jobtype + ' status:', self._printState(state_list[0], 13), self._percentageString(state_list[0], states[state_list[0]], total)))
                 for status in state_list[1:]:
                     self.logger.info("\t\t\t\t{0} {1}".format(self._printState(status, 13), self._percentageString(status, states[status], total)))
+        return result
 
     def printErrors(self, dictresult):
         """ Iterate over dictresult['jobs'] if present, which is a dictionary like:
