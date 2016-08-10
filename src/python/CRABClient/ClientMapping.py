@@ -58,7 +58,7 @@ parametersMapping = {
                   'asourl'         : {'default': None,       'config': ['Debug.ASOURL'],                    'type': 'StringType',  'required': False},
                   'asodb'          : {'default': None,       'config': ['Debug.ASODB'],                     'type': 'StringType',  'required': False},
                   'scheddname'     : {'default': None,       'config': ['Debug.scheddName'],                'type': 'StringType',  'required': False},
-                  'extrajdl'       : {'default': None,       'config': ['Debug.extraJDL'],                  'type': 'ListType',    'required': False},
+                  'extrajdl'       : {'default': [],         'config': ['Debug.extraJDL'],                  'type': 'ListType',    'required': False},
                   'collector'      : {'default': None,       'config': ['Debug.collector'],                 'type': 'StringType',  'required': False},
                  },
     'other-config-params': [         {'default': None,       'config': ['General.workArea'],                'type': 'StringType',  'required': False},
@@ -69,6 +69,7 @@ parametersMapping = {
                                      {'default': False,      'config': ['JobType.sendPythonFolder'],        'type': 'BooleanType', 'required': False},
                                      {'default': None,       'config': ['JobType.pyCfgParams'],             'type': 'ListType',    'required': False},
                                      {'default': False,      'config': ['JobType.disableAutomaticOutputCollection'],'type': 'BooleanType', 'required': False},
+                                     {'default': False,      'config': ['Site.ignoreGlobalBlacklist'],      'type': 'BooleanType', 'required': False},
                            ]
 }
 
