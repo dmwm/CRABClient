@@ -312,11 +312,11 @@ class status2(SubCommand):
         # And if the dictionary is not empty, print it
         for jobtype, currStates in [('Jobs', states), ('Completing jobs', statesSJ)]:
             if currStates:
-                total = sum( states[st] for st in states )
-                state_list = sorted(states)
-                self.logger.info("\n{0:32}{1} {2}".format(jobtype + ' status:', self._printState(state_list[0], 13), self._percentageString(state_list[0], states[state_list[0]], total)))
+                total = sum( currStates[st] for st in currStates )
+                state_list = sorted(currStates)
+                self.logger.info("\n{0:32}{1} {2}".format(jobtype + ' status:', self._printState(state_list[0], 13), self._percentageString(state_list[0], currStates[state_list[0]], total)))
                 for status in state_list[1:]:
-                    self.logger.info("\t\t\t\t{0} {1}".format(self._printState(status, 13), self._percentageString(status, states[status], total)))
+                    self.logger.info("\t\t\t\t{0} {1}".format(self._printState(status, 13), self._percentageString(status, currStates[status], total)))
         return result
 
     def printErrors(self, dictresult):
