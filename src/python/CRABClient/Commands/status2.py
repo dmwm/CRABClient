@@ -1,16 +1,18 @@
 from __future__ import division # I want floating points
 from __future__ import print_function
 
-import CRABClient.Emulator
-import urllib
-from CRABClient import __version__
 import math
-from ast import literal_eval
 import json
+import urllib
+from ast import literal_eval
 
+import CRABClient.Emulator
+from CRABClient import __version__
+from CRABClient.ClientUtilities import colors
 from CRABClient.UserUtilities import getFileFromURL
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ClientUtilities import colors
+from CRABClient.ClientExceptions import ClientException
+
 from ServerUtilities import TASKDBSTATUSES_TMP
 
 
@@ -33,7 +35,10 @@ class status2(SubCommand):
     def getColumn(self, dictresult, columnName):
         columnIndex = dictresult['desc']['columns'].index(columnName)
         value = dictresult['result'][columnIndex]
-        return value
+        if value=='None':
+            return None
+        else:
+            return value
 
     def __call__(self):
         # Get all of the columns from the database for a certain task
@@ -50,11 +55,17 @@ class status2(SubCommand):
 
         #Print information from the database
         self.printTaskInfo(crabDBInfo, user)
-        if rootDagId and not webdir:
+        if not rootDagId:
+            self.logger.debug("The task has not been submitted to the Grid scheduler yet. Not printing job information.")
+            return crabDBInfo, None
+
+        self.logger.debug("The CRAB server submitted your task to the Grid scheduler (cluster ID: %s)" % rootDagId)
+
+        if not webdir:
             # if the dag is submitted and the webdir is not there we have to wait that AdjustSites run
             # and upload the webdir location to the server
-            self.logger.info("The CRAB server submitted your task to the Grid scheduler (ID: %s)")
-            self.logger.info("Waiting for the scheduler to report back the status of your task")
+            self.logger.info("Waiting for the Grid scheduler to bootstrap your task")
+            self.logger.debug("Schedd has not reported back the webdir (yet)")
             return crabDBInfo, None
 
         self.logger.debug("Webdir is located at %s", webdir)
@@ -63,12 +74,19 @@ class status2(SubCommand):
         url = webdir + '/' + "status_cache"
 
         statusCacheInfo = None
-        statusCacheFilename = getFileFromURL(url, proxyfilename=self.proxyfilename)
-        with open(statusCacheFilename) as fd:
-            # Skip first line of the file (it contains info for the caching script) and load job_report summary
-            fd.readline()
-            statusCacheInfo = literal_eval(fd.readline())
-        self.logger.debug("Got information from status cache file: %s", statusCacheInfo)
+        try:
+            statusCacheFilename = getFileFromURL(url, proxyfilename=self.proxyfilename)
+        except ClientException as ce:
+            self.logger.info("Waiting for the Grid scheduler to report back the status of your task")
+            self.logger.debug("Cannot retrieve the status_cache file. Maybe the task process has not run yet?")
+            self.logger.debug("Got: %s" % ce)
+            return crabDBInfo, None
+        else:
+            with open(statusCacheFilename) as fd:
+                # Skip first line of the file (it contains info for the caching script) and load job_report summary
+                fd.readline()
+                statusCacheInfo = literal_eval(fd.readline())
+            self.logger.debug("Got information from status cache file: %s", statusCacheInfo)
 
         self.printDAGStatus(statusCacheInfo)
 
@@ -122,7 +140,7 @@ class status2(SubCommand):
         status = self.getColumn(dictresult, 'tm_task_status')
         command = self.getColumn(dictresult, 'tm_task_command')
         warnings = literal_eval(self.getColumn(dictresult, 'tm_task_warnings'))
-        failure = literal_eval(self.getColumn(dictresult, 'tm_task_failure'))
+        failure = self.getColumn(dictresult, 'tm_task_failure')
 
         self.logger.info("CRAB project directory:\t\t%s" % (self.requestarea))
         self.logger.info("Task name:\t\t\t%s" % self.cachedinfo['RequestName'])
@@ -152,7 +170,7 @@ class status2(SubCommand):
         if warnings:
             for warningMsg in warnings:
                 self.logger.warning("%sWarning%s:\t\t\t%s" % (colors.RED, colors.NORMAL, warningMsg))
-        if failure:
+        if failure: #TODO failure should be ignored if the task is not in failure state in the task db
             msg  = "%sFailure message from the server%s:" % (colors.RED, colors.NORMAL)
             msg += "\t\t%s" % (failure.replace('\n', '\n\t\t\t\t'))
             self.logger.error(msg)
