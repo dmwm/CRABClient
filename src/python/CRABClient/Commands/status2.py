@@ -88,7 +88,7 @@ class status2(SubCommand):
                 statusCacheInfo = literal_eval(fd.readline())
             self.logger.debug("Got information from status cache file: %s", statusCacheInfo)
 
-        self.printDAGStatus(statusCacheInfo)
+        self.printDAGStatus(crabDBInfo, statusCacheInfo)
 
         shortResult = self.printShort(statusCacheInfo)
         self.printErrors(statusCacheInfo)
@@ -124,23 +124,29 @@ class status2(SubCommand):
         else:
             return colors.NORMAL
 
-    def printDAGStatus(self, statusCacheInfo):
+    def printDAGStatus(self, crabDBInfo, statusCacheInfo):
         # Get dag status from the node_state/job_log summary
         dagman_codes = {1:'SUBMITTED', 2:'SUBMITTED', 3:'SUBMITTED', 4:'SUBMITTED', 5:'COMPLETED', 6:'FAILED'}
         dag_status = dagman_codes.get(statusCacheInfo['DagStatus']['DagStatus'])
+        #Unfortunately DAG code for killed task is 6, just as like for finished DAGs with failed jobs
+        #Relabeling the status from 'FAILED' to 'FAILED (KILLED)'     if a successful kill command was issued
+        dbstatus = self.getColumn(crabDBInfo, 'tm_task_status')
+        if dag_status=='FAILED' and dbstatus=='KILLED':
+            dag_status = 'FAILED (KILLED)'
+
         msg = "Status on the scheduler:\t" + dag_status
         self.logger.info(msg)
         return msg
 
-    def printTaskInfo(self, dictresult, username):
+    def printTaskInfo(self, crabDBInfo, username):
         """ Print general information like project directory, task name, scheduler, task status (in the database),
             dashboard URL, warnings and failire messages in the database.
         """
-        schedd = self.getColumn(dictresult, 'tm_schedd')
-        status = self.getColumn(dictresult, 'tm_task_status')
-        command = self.getColumn(dictresult, 'tm_task_command')
-        warnings = literal_eval(self.getColumn(dictresult, 'tm_task_warnings'))
-        failure = self.getColumn(dictresult, 'tm_task_failure')
+        schedd = self.getColumn(crabDBInfo, 'tm_schedd')
+        status = self.getColumn(crabDBInfo, 'tm_task_status')
+        command = self.getColumn(crabDBInfo, 'tm_task_command')
+        warnings = literal_eval(self.getColumn(crabDBInfo, 'tm_task_warnings'))
+        failure = self.getColumn(crabDBInfo, 'tm_task_failure')
 
         self.logger.info("CRAB project directory:\t\t%s" % (self.requestarea))
         self.logger.info("Task name:\t\t\t%s" % self.cachedinfo['RequestName'])
