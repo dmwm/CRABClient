@@ -21,10 +21,16 @@ def to_hms(val):
     return "%d:%02d:%02d" % (h, m, s)
 
 PUBLICATION_STATES = {
+    #These are for couch
     'not_published': 'idle',
     'publication_failed': 'failed',
     'published': 'finished',
     'publishing': 'running',
+
+    #These are for oracle
+    'new': 'idle',
+    'done': 'finished',
+    'acquired': 'running',
 }
 
 
