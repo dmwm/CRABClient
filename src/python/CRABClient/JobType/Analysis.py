@@ -294,7 +294,13 @@ class Analysis(BasicJobType):
             return False, msg
 
         ## Make sure the splitting algorithm is valid.
-        allowedSplitAlgos = ['Automatic', 'FileBased', 'LumiBased', 'EventAwareLumiBased']
+        allowedSplitAlgos = ['FileBased', 'LumiBased', 'EventAwareLumiBased']
+
+        scram = ScramEnvironment(logger=self.logger)
+        major, minor = [int(v) for v in scram.getCmsswVersion().split('_', 3)[1:-1]]
+        if major > 7 or (major == 7 and minor >= 2):
+            allowedSplitAlgos.append('Automatic')
+
         if self.splitAlgo not in allowedSplitAlgos:
             msg  = "Invalid CRAB configuration: Parameter Data.splitting has an invalid value ('%s')." % (self.splitAlgo)
             msg += "\nAnalysis job type only supports the following splitting algorithms: %s." % (allowedSplitAlgos)
