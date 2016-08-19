@@ -34,6 +34,15 @@ class submit(SubCommand):
         SubCommand.__init__(self, logger, cmdargs, disable_interspersed_args=True)
 
 
+    def fixupArguments(self):
+        """ Function used to propagate arguments to the taskworker abusing the extraJDL parameter. Not the best way
+            but for 1608 we had to do that in order to quickly implement a feature request
+        """
+        #XXX: has to be removed
+        if getattr(self.configuration.Site, 'ignoreGlobalBlacklist', getParamDefaultValue('JobType.ignoreGlobalBlacklist')):
+            self.configreq['extrajdl'] += ['CRAB_IgnoreGlobalBlacklist=True']
+
+
     def __call__(self):
         self.logger.debug("Started submission")
         serverFactory = CRABClient.Emulator.getEmulator('rest')
@@ -117,6 +126,7 @@ class submit(SubCommand):
         ## TODO: this shouldn't be hard-coded.
         listParams = ['adduserfiles', 'addoutputfiles', 'sitewhitelist', 'siteblacklist', 'blockwhitelist', 'blockblacklist', \
                       'tfileoutfiles', 'edmoutfiles', 'runs', 'lumis', 'userfiles', 'scriptargs', 'extrajdl']
+        self.fixupArguments()
         self.configreq_encoded = self._encodeRequest(self.configreq, listParams)
         self.logger.debug('Encoded submit request: %s' % (self.configreq_encoded))
 
