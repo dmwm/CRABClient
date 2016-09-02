@@ -103,8 +103,8 @@ class UserTarball(object):
         """
         Add monitoring files the debug tarball.
         """
-        configtmp = tempfile.NamedTemporaryFile(delete=True) 
-        configtmp.write(str(self.config)) 
+        configtmp = tempfile.NamedTemporaryFile(delete=True)
+        configtmp.write(str(self.config))
         configtmp.flush()
         psetfilename = getattr(self.config.JobType, 'psetName', None)
         if not psetfilename == None:

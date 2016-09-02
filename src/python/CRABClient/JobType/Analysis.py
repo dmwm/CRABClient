@@ -244,6 +244,13 @@ class Analysis(BasicJobType):
         return tarFilename, configArguments
 
 
+
+    def checkAutomaticAvail(self, allowedSplitAlgos):
+        scram = ScramEnvironment(logger=self.logger)
+        major, minor = [int(v) for v in scram.getCmsswVersion().split('_', 3)[1:-1]]
+        if major > 7 or (major == 7 and minor >= 2):
+            allowedSplitAlgos.append('Automatic')
+
     def validateConfig(self, config):
         """
         Validate the CMSSW portion of the config file making sure
@@ -295,6 +302,9 @@ class Analysis(BasicJobType):
 
         ## Make sure the splitting algorithm is valid.
         allowedSplitAlgos = ['FileBased', 'LumiBased', 'EventAwareLumiBased']
+
+        self.checkAutomaticAvail(allowedSplitAlgos)
+
         if self.splitAlgo not in allowedSplitAlgos:
             msg  = "Invalid CRAB configuration: Parameter Data.splitting has an invalid value ('%s')." % (self.splitAlgo)
             msg += "\nAnalysis job type only supports the following splitting algorithms: %s." % (allowedSplitAlgos)

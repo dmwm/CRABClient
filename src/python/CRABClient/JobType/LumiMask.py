@@ -24,12 +24,12 @@ def getLumiList(lumi_mask_name, logger = None):
         try:
             lumi_list = LumiList(url = lumi_mask_name)
         except urllib2.HTTPError as err:
-            raise ConfigurationException("Problem downloading lumi-mask file; %s %s" 
+            raise ConfigurationException("Problem downloading lumi-mask file; %s %s"
                     % (err.code, err.msg))
     else:
         if logger:
             logger.debug('Reading lumi-mask from %s' % lumi_mask_name)
-        try:    
+        try:
             lumi_list = LumiList(filename = lumi_mask_name)
         except IOError as err:
             raise ConfigurationException("Problem loading lumi-mask file; %s" % str(err))

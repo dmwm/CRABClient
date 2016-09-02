@@ -19,7 +19,7 @@ DBS3_PYCURL_ROOT=$(getVariableValue \$DBS3_PYCURL_CLIENT_ROOT \$PYTHON_LIB_SITE_
 if [ $# -gt 0 ] && [ "$1" == "-csh" ]; then
     echo "setenv PYTHONPATH $PYTHONPATH:$CRAB3_PY_ROOT:$DBS3_PY_ROOT:$DBS3_PYCURL_ROOT; \
                    setenv PATH $PATH:$CRAB3_BIN_ROOT"
-else 
+else
     export PYTHONPATH=$PYTHONPATH:$CRAB3_PY_ROOT:$DBS3_PY_ROOT:$DBS3_PYCURL_ROOT
     export PATH=$PATH:$CRAB3_BIN_ROOT
     if [ -n "$BASH" ]; then
