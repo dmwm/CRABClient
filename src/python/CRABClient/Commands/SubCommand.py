@@ -216,8 +216,6 @@ class SubCommand(ConfigCommand):
             return BASEURL + instance + '/' + resource
         elif instance == 'private':
             return BASEURL + 'dev' + '/' + resource
-        elif instance == 'matze':
-            return BASEURL + 'matze' + '/' + resource
         raise ConfigurationException('Error: only %s instances can be used.' % str(SERVICE_INSTANCES.keys()))
 
 

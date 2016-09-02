@@ -21,10 +21,16 @@ def to_hms(val):
     return "%d:%02d:%02d" % (h, m, s)
 
 PUBLICATION_STATES = {
+    #These are for couch
     'not_published': 'idle',
     'publication_failed': 'failed',
     'published': 'finished',
     'publishing': 'running',
+
+    #These are for oracle
+    'new': 'idle',
+    'done': 'finished',
+    'acquired': 'running',
 }
 
 
@@ -77,10 +83,9 @@ class status(SubCommand):
         dictresult = dictresult['result'][0] #take just the significant part
         username = dictresult['username']
 
-        self.printTaskInfo(dictresult, user)
+        self.printShort(dictresult, username)
 
         if 'jobs' in dictresult:
-            self.printShort(dictresult)
             self.printPublication(dictresult)
             self.printErrors(dictresult)
             # Note several options could be combined
@@ -98,10 +103,7 @@ class status(SubCommand):
         return dictresult
 
 
-    def printTaskInfo(self, dictresult, username):
-        """ Print general information like project directory, task name, scheduler, task status (in the database),
-            dashboard URL, warnings and failire messages in the database.
-        """
+    def printShort(self, dictresult, username):
         self.logger.debug(dictresult) #should be something like {u'result': [[123, u'ciao'], [456, u'ciao']]}
 
         self.logger.info("CRAB project directory:\t\t%s" % (self.requestarea))
@@ -142,47 +144,16 @@ class status(SubCommand):
                 msg += "\t%s" % (dictresult['statusFailureMsg'].replace('\n', '\n\t\t\t\t'))
                 self.logger.error(msg)
 
-
-    def printShort(self, statusCacheInfo):
-        """ Give a summary of the job statuses, keeping in mind that:
-                - If there is a job with id 0 then this is the probe job for the estimation
-                  This is the so called automatic splitting
-                - Then you have normal jobs
-                - Jobs that are line 1-1, 1-2 and so on are completing
-        """
-
-        ## Print information  about the single splitting job
-        if '0' in statusCacheInfo['jobs']:
-            statusSplJob = statusCacheInfo['jobs']['0']['State']
-            self.logger.info("\nSplitting job status:\t\t{0}".format(self._printState(statusSplJob, 13)))
-
-        ## Collect information about jobs
-        # Create a dictionary like { 'finished' : 1, 'running' : 3}
-        states = {}
-        for jobid, statusDict in statusCacheInfo['jobs'].iteritems():
-            status = statusDict['State']
-            if jobid == '0' or '-' in jobid:
-                continue
-            states[status] = states.setdefault(status, 0) + 1
-
-
-        ## Collect information about subjobs
-        # Create a dictionary like { 'finished' : 1, 'running' : 3}
-        statesSJ = {}
-        for jobid, statusDict in statusCacheInfo['jobs'].iteritems():
-            status = statusDict['State']
-            if jobid == '0' or '-' not in jobid:
-                continue
-            statesSJ[status] = statesSJ.setdefault(status, 0) + 1
-
-        # And if the dictionary is not empy print it
-        for jobtype, currStates in [('Jobs', states), ('Completing jobs', statesSJ)]:
-            if currStates:
-                total = sum( states[st] for st in states )
-                state_list = sorted(states)
-                self.logger.info("\n{0} status:\t\t\t{1} {2}".format(jobtype, self._printState(state_list[0], 13), self._percentageString(state_list[0], states[state_list[0]], total)))
-                for status in state_list[1:]:
-                    self.logger.info("\t\t\t\t{0} {1}".format(self._printState(status, 13), self._percentageString(status, states[status], total)))
+        #Print information about jobs
+        states = dictresult['jobsPerStatus']
+        if states:
+            total = sum( states[st] for st in states )
+            state_list = sorted(states)
+            self.logger.info("\nJobs status:\t\t\t{0} {1}".format(self._printState(state_list[0], 13), self._percentageString(state_list[0], states[state_list[0]], total)))
+            for status in state_list[1:]:
+                self.logger.info("\t\t\t\t{0} {1}".format(self._printState(status, 13), self._percentageString(status, states[status], total)))
+        elif not (dictresult['taskFailureMsg'] or dictresult['statusFailureMsg']):
+            self.logger.info("\nNo jobs created yet!")
 
 
     def printErrors(self, dictresult):
@@ -480,7 +451,7 @@ class status(SubCommand):
         cpu_max = 0
         cpu_sum = 0
         wall_sum = 0
-        for jobid in dictresult['jobs'].keys():
+        for jobid in range(1, len(dictresult['jobs'])+1):
             info = dictresult['jobs'][str(jobid)]
             state = info['State']
             site = ''
@@ -529,17 +500,17 @@ class status(SubCommand):
                 ec = '0'
             sortdict[str(jobid)] = {'state': state, 'site': site, 'runtime': wall_str, 'memory': mem, 'cpu': cpu, \
                                     'retries': info.get('Retries', 0), 'restarts': info.get('Restarts', 0), 'waste': waste, 'exitcode': ec}
-            outputMsg += "\n%4s %-12s %-20s %10s %10s %10s %10s %10s %10s %15s" \
+            outputMsg += "\n%4d %-12s %-20s %10s %10s %10s %10s %10s %10s %15s" \
                        % (jobid, state, site, wall_str, mem, cpu, info.get('Retries', 0), info.get('Restarts', 0), waste, ' Postprocessing failed' if ec == '90000' else ec)
         if not quiet:
             self.logger.info(outputMsg)
 
         ## Print (to the log file) a table with the HTCondor cluster id for each job.
         msg = "\n%4s %-10s" % ("Job", "Cluster Id")
-        for jobid in dictresult['jobs'].keys():
+        for jobid in range(1, len(dictresult['jobs'])+1):
             info = dictresult['jobs'][str(jobid)]
             clusterid = str(info.get('JobIds', 'Unknown'))
-            msg += "\n%4s %10s" % (jobid, clusterid)
+            msg += "\n%4d %10s" % (jobid, clusterid)
         if not quiet:
             self.logger.debug(msg)
 
