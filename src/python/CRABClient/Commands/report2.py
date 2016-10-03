@@ -16,10 +16,10 @@ from WMCore.Services.DBS.DBSReader import DBSReader
 from WMCore.Services.pycurl_manager import ResponseHeader
 
 from CRABClient import __version__
-from CRABClient.ClientUtilities import LOGLEVEL_MUTE, colors
+from CRABClient.ClientUtilities import colors
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.JobType.BasicJobType import BasicJobType
-from CRABClient.UserUtilities import setConsoleLogLevel, getConsoleLogLevel, getMutedStatusInfo
+from CRABClient.UserUtilities import getMutedStatusInfo
 from CRABClient.ClientExceptions import RESTCommunicationException, ConfigurationException, \
     UnknownOptionException, ClientException
 
