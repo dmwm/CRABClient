@@ -17,7 +17,7 @@ from WMCore.Configuration import Configuration
 from WMCore.DataStructs.LumiList import LumiList
 
 ## CRAB dependencies
-from CRABClient.ClientUtilities import DBSURLS, colors
+from CRABClient.ClientUtilities import DBSURLS, LOGLEVEL_MUTE, colors
 from CRABClient.ClientExceptions import ClientException, UsernameException, ProxyException
 
 
@@ -213,3 +213,14 @@ def setConsoleLogLevel(lvl):
         for h in logging.getLogger('CRAB3.all').handlers:
             h.setLevel(lvl)
 
+def getMutedStatusInfo(logger):
+    """
+    Mute the status console output before calling status and change it back to normal afterwards.
+    """
+    mod = __import__('CRABClient.Commands.status2', fromlist='status2')
+    cmdobj = getattr(mod, 'status2')(logger)
+    loglevel = getConsoleLogLevel()
+    setConsoleLogLevel(LOGLEVEL_MUTE)
+    crabDBInfo, shortResult = cmdobj.__call__()
+    setConsoleLogLevel(loglevel)
+    return crabDBInfo, shortResult

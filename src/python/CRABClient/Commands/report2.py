@@ -1,3 +1,5 @@
+from __future__ import print_function, division
+
 import os
 import json
 import tempfile
@@ -14,15 +16,14 @@ from WMCore.Services.DBS.DBSReader import DBSReader
 from WMCore.Services.pycurl_manager import ResponseHeader
 
 from CRABClient import __version__
-from CRABClient.ClientUtilities import colors
+from CRABClient.ClientUtilities import LOGLEVEL_MUTE, colors
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.JobType.BasicJobType import BasicJobType
+from CRABClient.UserUtilities import setConsoleLogLevel, getConsoleLogLevel, getMutedStatusInfo
 from CRABClient.ClientExceptions import RESTCommunicationException, ConfigurationException, \
     UnknownOptionException, ClientException
-from CRABClient.UserUtilities import setConsoleLogLevel, getConsoleLogLevel
-from CRABClient.ClientUtilities import LOGLEVEL_MUTE
 
-from ServerUtilities import FEEDBACKMAIL
+from ServerUtilities import FEEDBACKMAIL, getColumn
 
 class report2(SubCommand):
     """
@@ -32,14 +33,6 @@ class report2(SubCommand):
     """
     name = 'report2'
     shortnames = ['rep2']
-
-    def getColumn(self, dictresult, columnName):
-        columnIndex = dictresult['desc']['columns'].index(columnName)
-        value = dictresult['result'][columnIndex]
-        if value == 'None':
-            return None
-        else:
-            return value
 
     def __init__(self, logger, cmdargs=None):
         SubCommand.__init__(self, logger, cmdargs)
@@ -131,20 +124,20 @@ class report2(SubCommand):
         processedLumis = BasicJobType.mergeLumis(poolInOnlyRes)
         returndict['processedLumis'] = processedLumis
 
-        ## Get the run-lumi and number of events information about the output datasets.
-        outputDatasetsInfo = reportData['outputDatasetsInfo']['outputDatasets']
 
 
         outputDatasetsLumis = {}
         outputDatasetsNumEvents = {}
         if reportData['publication']:
+            ## Get the run-lumi and number of events information about the output datasets.
+            outputDatasetsInfo = reportData['outputDatasetsInfo']['outputDatasets']
             for dataset in outputDatasetsInfo:
                 if outputDatasetsInfo[dataset]['lumis']:
                     outputDatasetsLumis[dataset] = outputDatasetsInfo[dataset]['lumis']
                 outputDatasetsNumEvents[dataset] = outputDatasetsInfo[dataset]['numEvents']
         returndict['outputDatasetsLumis'] = outputDatasetsLumis
         returndict['outputDatasetsNumEvents'] = outputDatasetsNumEvents
-        numOutputDatasets = len(reportData['outputDatasetsInfo'])
+        numOutputDatasets = len(reportData['outputDatasetsInfo']) if 'outputDatasetsInfo' in reportData else 0
 
 
         ## Get the duplicate runs-lumis in the output files. Use for this the run-lumi
@@ -304,7 +297,7 @@ class report2(SubCommand):
         self.logger.debug("Result: %s" % dictresult)
         self.logger.info("Running crab status2 first to fetch necessary information.")
         # Get job statuses
-        crabDBInfo, shortResult = self.getMutedStatusInfo()
+        crabDBInfo, shortResult = getMutedStatusInfo(self.logger)
 
         if not shortResult:
             # No point in continuing if the job list is empty.
@@ -325,12 +318,12 @@ class report2(SubCommand):
             if jobStatusDict.get(jobId) in ['finished']:
                 reportData['runsAndLumis'][jobId] = dictresult['result'][0]['runsAndLumis'][jobId]
 
-        reportData['publication'] = self.getColumn(crabDBInfo, 'tm_publication')
-        userWebDirURL = self.getColumn(crabDBInfo, 'tm_user_webdir')
+        reportData['publication'] = True if getColumn(crabDBInfo, 'tm_publication') == "T" else False
+        userWebDirURL = getColumn(crabDBInfo, 'tm_user_webdir')
         numJobs = len(shortResult['jobList'])
 
         reportData['lumisToProcess'] = self.getLumisToProcess(userWebDirURL, numJobs, self.cachedinfo['RequestName'])
-        reportData['inputDataset'] = self.getColumn(crabDBInfo, 'tm_input_dataset')
+        reportData['inputDataset'] = getColumn(crabDBInfo, 'tm_input_dataset')
 
         inputDatasetInfo = self.getInputDatasetLumis(reportData['inputDataset'], userWebDirURL)['inputDataset']
         reportData['inputDatasetLumis'] = inputDatasetInfo['lumis']
@@ -341,19 +334,6 @@ class report2(SubCommand):
             reportData['outputDatasetsInfo'] = self.getDBSPublicationInfo(reportData['outputDatasets'])
 
         return reportData
-
-    def getMutedStatusInfo(self):
-        """
-        Mute the status console output before calling status and change it back to normal afterwards.
-        """
-        mod = __import__('CRABClient.Commands.status2', fromlist='status2')
-        cmdobj = getattr(mod, 'status2')(self.logger)
-        loglevel = getConsoleLogLevel()
-        setConsoleLogLevel(LOGLEVEL_MUTE)
-        crabDBInfo, shortResult = cmdobj.__call__()
-        setConsoleLogLevel(loglevel)
-
-        return crabDBInfo, shortResult
 
     def compactLumis(self, datasetInfo):
         """ Help function that allow to convert from runLumis divided per file (result of listDatasetFileDetails)
