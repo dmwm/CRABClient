@@ -1,3 +1,5 @@
+from __future__ import print_function, division
+
 import re
 import urllib
 
@@ -56,7 +58,7 @@ class resubmit2(SubCommand):
 
         self.jobids = self.processJobIds(jobList)
 
-        configreq = self.getQueryParams(crabDBInfo, jobList)
+        configreq = self.getQueryParams()
         self.logger.info("Sending resubmit request to the server.")
         self.logger.debug("Submitting %s " % str(configreq))
         configreq_encoded = self._encodeRequest(configreq)
@@ -152,7 +154,7 @@ class resubmit2(SubCommand):
 
             return possibleToResubmitJobIds
 
-    def getQueryParams(self, crabDBInfo, jobList):
+    def getQueryParams(self):
         """
         Create the parameter dictionary that's passed to the server.
         """
