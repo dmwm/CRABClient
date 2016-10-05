@@ -3,6 +3,9 @@ from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ConfigurationException , RESTCommunicationException
 from CRABClient.ClientUtilities import validateJobids, colors
 from CRABClient import __version__
+
+from WMCore.Services.PhEDEx.PhEDEx import PhEDEx
+
 import CRABClient.Emulator
 
 import os
@@ -20,12 +23,16 @@ class getcommand(SubCommand):
 
 
     def __call__(self, **argv):
+        # TODO: remove this 'if' once transition to status2 is complete
+        if argv.get('subresource') in ['data2', 'logs2']:
+            self.processAndStoreJobIds()
+
         ## Retrieve the transferLogs parameter from the task database.
         taskdbparam, configparam = '', ''
-        if argv.get('subresource') == 'logs':
+        if argv.get('subresource') in ['logs', 'logs2']:
             taskdbparam = 'tm_save_logs'
             configparam = "General.transferLogs"
-        elif argv.get('subresource') == 'data':
+        elif argv.get('subresource') in ['data', 'data2']:
             taskdbparam = 'tm_transfer_outputs'
             configparam = "General.transferOutputs"
 
@@ -34,22 +41,22 @@ class getcommand(SubCommand):
         serverFactory = CRABClient.Emulator.getEmulator('rest')
         server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
         uri = self.getUrl(self.instance, resource = 'task')
-        dictresult, status, reason =  server.get(uri, data = inputlist)
+        dictresult, status, _ =  server.get(uri, data = inputlist)
         self.logger.debug('Server result: %s' % dictresult)
         if status == 200:
             if 'desc' in dictresult and 'columns' in dictresult['desc']:
-                position = dictresult['desc']['columns'].index(taskdbparam)    
+                position = dictresult['desc']['columns'].index(taskdbparam)
                 transferFlag = dictresult['result'][position] #= 'T' or 'F'
             else:
                 self.logger.debug("Unable to locate %s in server result." % (taskdbparam))
         ## If transferFlag = False, there is nothing to retrieve.
         if transferFlag == 'F':
-            msg = "No files to retrieve. Files not transferred to storage since task configuration parameter %s is False." % (configparam) 
+            msg = "No files to retrieve. Files not transferred to storage since task configuration parameter %s is False." % (configparam)
             self.logger.info(msg)
             return {'success': {}, 'failed': {}}
 
         ## Retrieve tm_edm_outfiles, tm_tfile_outfiles and tm_outfiles from the task database and check if they are empty.
-        if argv.get('subresource') == 'data' and status == 200:
+        if argv.get('subresource') in ['data', 'data2'] and status == 200:
             if 'desc' in dictresult and 'columns' in dictresult['desc']:
                 position = dictresult['desc']['columns'].index('tm_edm_outfiles')
                 tm_edm_outfiles = dictresult['result'][position]
@@ -86,8 +93,13 @@ class getcommand(SubCommand):
             raise RESTCommunicationException(msg)
 
         totalfiles = len(dictresult['result'])
-        workflow = dictresult['result']
-        if len(workflow) > 0:
+        fileInfoList = dictresult['result']
+
+        # TODO: remove this 'if' once transition to status2 is complete
+        if argv.get('subresource') in ['data2', 'logs2']:
+            self.insertPfns(fileInfoList)
+
+        if len(fileInfoList) > 0:
             if self.options.dump or self.options.xroot:
                 self.logger.debug("Getting url info")
             else:
@@ -95,11 +107,11 @@ class getcommand(SubCommand):
                 self.logger.info("Setting the destination to %s " % self.dest)
             if self.options.xroot:
                 self.logger.debug("XRootD urls are requested")
-                xrootlfn = ["root://cms-xrd-global.cern.ch/%s" % link['lfn'] for link in workflow]
+                xrootlfn = ["root://cms-xrd-global.cern.ch/%s" % link['lfn'] for link in fileInfoList]
                 self.logger.info("\n".join(xrootlfn))
                 returndict = {'xrootd': xrootlfn}
             elif self.options.dump:
-                jobid_pfn_lfn_list = sorted(map(lambda x: (x['jobid'], x['pfn'], x['lfn']), workflow))
+                jobid_pfn_lfn_list = sorted(map(lambda x: (x['jobid'], x['pfn'], x['lfn']), fileInfoList))
                 lastjobid = -1
                 filecounter = 1
                 msg = ""
@@ -115,7 +127,7 @@ class getcommand(SubCommand):
                 returndict = {'pfn': [pfn for _, pfn, _ in jobid_pfn_lfn_list], 'lfn': [lfn for _, _, lfn in jobid_pfn_lfn_list]}
             else:
                 self.logger.info("Retrieving %s files" % (totalfiles))
-                arglist = ['--destination', self.dest, '--input', workflow, '--dir', self.options.projdir, \
+                arglist = ['--destination', self.dest, '--input', fileInfoList, '--dir', self.options.projdir, \
                            '--proxy', self.proxyfilename, '--parallel', self.options.nparallel, '--wait', self.options.waittime, \
                            '--checksum', self.checksum, '--command', self.command]
                 copyoutput = remote_copy(self.logger, arglist)
@@ -134,6 +146,52 @@ class getcommand(SubCommand):
 
         return returndict
 
+    def processAndStoreJobIds(self):
+        """
+        Call the status command to check that the jobids passed by the user are in a valid
+        state to retrieve files. Otherwise, if no jobids are passed by the user, populate the
+        list with all possible jobids.
+
+        Also store some information which is used later when deciding the correct pfn.
+        """
+        mod = __import__('CRABClient.Commands.status2', fromlist='status2')
+
+        cmdobj = getattr(mod, 'status2')(self.logger)
+        _, jobList = cmdobj.__call__()
+        jobList = jobList['jobList']
+        transferringIds = [x[1] for x in jobList if x[0] in ['transferring', 'cooloff', 'held']]
+        finishedIds = [x[1] for x in jobList if x[0] in ['finished', 'failed', 'transferred']]
+        possibleJobIds = transferringIds + finishedIds
+
+        if self.options.jobids:
+            for jobid in self.options.jobids:
+                if not str(jobid[1]) in possibleJobIds:
+                    raise ConfigurationException("The job with id %s is not in a valid state to retrieve output files" % jobid[1])
+        else:
+            ## If the user does not give us jobids, set them to all possible ids.
+            self.options.jobids = []
+            for jobid in possibleJobIds:
+                self.options.jobids.append(('jobids', jobid))
+
+        self.transferringIds = transferringIds
+
+    def insertPfns(self, fileInfoList):
+        """
+        Query phedex to retrieve the pfn for each file and store it in the passed fileInfoList.
+        """
+        phedex = PhEDEx({'cert': self.proxyfilename, 'key': self.proxyfilename, 'logger': self.logger, 'pycurl': True})
+
+        # Pick out the correct lfns and sites
+        if len(fileInfoList) > 0:
+            for fileInfo in fileInfoList:
+                if str(fileInfo['jobid']) in self.transferringIds:
+                    lfn = fileInfo['tmplfn']
+                    site = fileInfo['tmpsite']
+                else:
+                    lfn = fileInfo['lfn']
+                    site = fileInfo['site']
+                pfn = phedex.getPFN(site, lfn)[(site, lfn)]
+                fileInfo['pfn'] = pfn
 
     def setDestination(self):
         #Setting default destination if -o is not provided
