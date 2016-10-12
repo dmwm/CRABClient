@@ -290,9 +290,6 @@ class report2(SubCommand):
 
         # Query server for information from the taskdb, intput/output file metadata from metadatadb
         dictresult, status, reason = server.get(self.uri, data = {'workflow': self.cachedinfo['RequestName'], 'subresource': 'report2'})
-        if status != 200:
-            msg = "Problem retrieving report:\ninput:%s\noutput:%s\nreason:%s" % (str(self.cachedinfo['RequestName']), str(dictresult), str(reason))
-            raise RESTCommunicationException(msg)
 
         self.logger.debug("Result: %s" % dictresult)
         self.logger.info("Running crab status2 first to fetch necessary information.")
