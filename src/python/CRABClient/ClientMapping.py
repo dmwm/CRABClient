@@ -60,6 +60,7 @@ parametersMapping = {
                   'scheddname'     : {'default': None,       'config': ['Debug.scheddName'],                'type': 'StringType',  'required': False},
                   'extrajdl'       : {'default': [],         'config': ['Debug.extraJDL'],                  'type': 'ListType',    'required': False},
                   'collector'      : {'default': None,       'config': ['Debug.collector'],                 'type': 'StringType',  'required': False},
+                  'ignoreglobalblacklist':{'default': False, 'config': ['Site.ignoreGlobalBlacklist'],      'type': 'BooleanType', 'required': False},
                  },
     'other-config-params': [         {'default': None,       'config': ['General.workArea'],                'type': 'StringType',  'required': False},
                                      {'default': 'prod',     'config': ['General.instance'],                'type': 'StringType',  'required': True },
@@ -69,8 +70,7 @@ parametersMapping = {
                                      {'default': False,      'config': ['JobType.sendPythonFolder'],        'type': 'BooleanType', 'required': False},
                                      {'default': False,      'config': ['JobType.sendExternalFolder'],      'type': 'BooleanType', 'required': False},
                                      {'default': None,       'config': ['JobType.pyCfgParams'],             'type': 'ListType',    'required': False},
-                                     {'default': False,      'config': ['JobType.disableAutomaticOutputCollection'],'type': 'BooleanType', 'required': False},
-                                     {'default': False,      'config': ['Site.ignoreGlobalBlacklist'],      'type': 'BooleanType', 'required': False},
+                                     {'default': False,      'config': ['JobType.disableAutomaticOutputCollection'],'type': 'BooleanType', 'required': False}
                            ]
 }
 
