@@ -17,7 +17,7 @@ from WMCore.Configuration import Configuration
 from WMCore.DataStructs.LumiList import LumiList
 
 ## CRAB dependencies
-from CRABClient.ClientUtilities import DBSURLS, colors, LOGLEVEL_MUTE
+from CRABClient.ClientUtilities import DBSURLS, LOGLEVEL_MUTE, colors
 from CRABClient.ClientExceptions import ClientException, UsernameException, ProxyException
 
 

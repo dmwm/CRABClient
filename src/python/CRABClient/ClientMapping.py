@@ -60,6 +60,7 @@ parametersMapping = {
                   'scheddname'     : {'default': None,       'config': ['Debug.scheddName'],                'type': 'StringType',  'required': False},
                   'extrajdl'       : {'default': [],         'config': ['Debug.extraJDL'],                  'type': 'ListType',    'required': False},
                   'collector'      : {'default': None,       'config': ['Debug.collector'],                 'type': 'StringType',  'required': False},
+                  'ignoreglobalblacklist':{'default': False, 'config': ['Site.ignoreGlobalBlacklist'],      'type': 'BooleanType', 'required': False},
                  },
     'other-config-params': [         {'default': None,       'config': ['General.workArea'],                'type': 'StringType',  'required': False},
                                      {'default': 'prod',     'config': ['General.instance'],                'type': 'StringType',  'required': True },
@@ -69,8 +70,7 @@ parametersMapping = {
                                      {'default': False,      'config': ['JobType.sendPythonFolder'],        'type': 'BooleanType', 'required': False},
                                      {'default': False,      'config': ['JobType.sendExternalFolder'],      'type': 'BooleanType', 'required': False},
                                      {'default': None,       'config': ['JobType.pyCfgParams'],             'type': 'ListType',    'required': False},
-                                     {'default': False,      'config': ['JobType.disableAutomaticOutputCollection'],'type': 'BooleanType', 'required': False},
-                                     {'default': False,      'config': ['Site.ignoreGlobalBlacklist'],      'type': 'BooleanType', 'required': False},
+                                     {'default': False,      'config': ['JobType.disableAutomaticOutputCollection'],'type': 'BooleanType', 'required': False}
                            ]
 }
 
@@ -124,18 +124,21 @@ commandsConfiguration = {
     'checkusername' : {'acceptsArguments': False, 'requiresREST': False, 'initializeProxy': True,  'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False, 'requiresLocalCache': False},
     'checkwrite'    : {'acceptsArguments': False, 'requiresREST': False, 'initializeProxy': True,  'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': True,  'doProxyGroupRoleCheck': True,  'requiresLocalCache': False},
     'getlog'        : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': True,  'doProxyGroupRoleCheck': True,  'requiresLocalCache': True },
+    'getlog2'       : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': True,  'doProxyGroupRoleCheck': True,  'requiresLocalCache': True },
     'getoutput'     : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': True,  'doProxyGroupRoleCheck': True,  'requiresLocalCache': True },
+    'getoutput2'    : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': True,  'doProxyGroupRoleCheck': True,  'requiresLocalCache': True },
     'kill'          : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': False, 'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False, 'requiresLocalCache': True },
     'proceed'       : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False, 'requiresLocalCache': True },
     'purge'         : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': False, 'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False, 'requiresLocalCache': True },
     'remake'        : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False, 'requiresLocalCache': False},
     'remote_copy'   : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': False, 'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False, 'requiresLocalCache': True },
     'report'        : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False, 'requiresLocalCache': True },
+    'report2'       : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False, 'requiresLocalCache': True },
     'request_type'  : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False, 'requiresLocalCache': True },
     'resubmit'      : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False, 'requiresLocalCache': True },
     'resubmit2'     : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False, 'requiresLocalCache': True },
     'status'        : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False, 'requiresLocalCache': True },
-    'status2'        : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False, 'requiresLocalCache': True },
+    'status2'       : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False, 'requiresLocalCache': True },
     'submit'        : {'acceptsArguments': True,  'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': True , 'requiresLocalCache': False},
     'tasks'         : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False, 'requiresLocalCache': False},
     'uploadlog'     : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'doProxyGroupRoleCheck': False, 'requiresLocalCache': False}
