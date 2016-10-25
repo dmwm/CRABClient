@@ -224,3 +224,11 @@ def getMutedStatusInfo(logger):
     crabDBInfo, shortResult = cmdobj.__call__()
     setConsoleLogLevel(loglevel)
     return crabDBInfo, shortResult
+
+def getColumn(dictresult, columnName):
+    columnIndex = dictresult['desc']['columns'].index(columnName)
+    value = dictresult['result'][columnIndex]
+    if value=='None':
+        return None
+    else:
+        return value
