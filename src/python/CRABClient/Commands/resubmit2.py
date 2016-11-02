@@ -115,7 +115,9 @@ class resubmit2(SubCommand):
             return None
 
         # Build a dictionary from the jobList
-        jobStatusDict = {jobId: jobStatus for jobStatus, jobId in jobList['jobList']}
+        jobStatusDict = {}
+        for jobStatus, jobId in jobList['jobList']:
+            jobStatusDict[jobId] = jobStatus
 
         failedJobStatus = 'failed'
         finishedJobStatus = 'finished'
