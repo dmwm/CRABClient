@@ -149,7 +149,7 @@ class Analysis(BasicJobType):
             tb.addFiles(userFiles=inputFiles, cfgOutputName=cfgOutputName)
             configArguments['adduserfiles'] = [os.path.basename(f) for f in inputFiles]
             try:
-                # convert from unicode to ascii to make it work with CMSSW_5_3_22
+                # convert from unicode to ascii to make it work with older pycurl versions
                 uploadResult = tb.upload(filecacheurl = filecacheurl.encode('ascii', 'ignore'))
             except HTTPException as hte:
                 if 'X-Error-Info' in hte.headers:
@@ -179,7 +179,8 @@ class Analysis(BasicJobType):
         with UserTarball(name=debugTarFilename, logger=self.logger, config=self.config) as dtb:
             dtb.addMonFiles()
             try:
-                debugFilesUploadResult = dtb.upload(filecacheurl = filecacheurl)
+                # convert from unicode to ascii to make it work with older pycurl versions
+                debugFilesUploadResult = dtb.upload(filecacheurl = filecacheurl.encode('ascii', 'ignore'))
             except Exception as e:
                 msg = ("Problem uploading debug_files.tar.gz.\nError message: %s.\n"
                        "More details can be found in %s" % (e, self.logger.logfile))
