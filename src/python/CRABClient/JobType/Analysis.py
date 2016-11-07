@@ -149,7 +149,8 @@ class Analysis(BasicJobType):
             tb.addFiles(userFiles=inputFiles, cfgOutputName=cfgOutputName)
             configArguments['adduserfiles'] = [os.path.basename(f) for f in inputFiles]
             try:
-                uploadResult = tb.upload(filecacheurl = filecacheurl)
+                # convert from unicode to ascii to make it work with CMSSW_5_3_22
+                uploadResult = tb.upload(filecacheurl = filecacheurl.encode('ascii', 'ignore'))
             except HTTPException as hte:
                 if 'X-Error-Info' in hte.headers:
                     reason = hte.headers['X-Error-Info']
