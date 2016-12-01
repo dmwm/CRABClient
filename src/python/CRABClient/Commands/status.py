@@ -121,10 +121,16 @@ class status(SubCommand):
                 msg += "%s" % (dictresult['status'])
         self.logger.info(msg)
 
-        ## Show dashboard URL for the task.
+        ## Show server and dashboard URL for the task.
+
+        taskname = urllib.quote(self.cachedinfo['RequestName'])
+        ## CRAB Server UI URL for this task is always useful
+        crabServerUIURL = "https://cmsweb.cern.ch/crabserver/ui/task/" + taskname
+        msg = "%sTask URL to use in HELP reqest:\t%s%s" % (colors.GREEN, crabServerUIURL, colors.NORMAL)
+	self.logger.info(msg)
+
         if dictresult['schedd']:
-            ## Print the Dashboard monitoring URL for this task.
-            taskname = urllib.quote(self.cachedinfo['RequestName'])
+            ##  Dashboard monitoring URL only makes sense if submitted to schedd
             dashboardURL = "http://dashb-cms-job.cern.ch/dashboard/templates/task-analysis/#user=" + username \
                          + "&table=Mains&pattern=" + taskname
             self.logger.info("Dashboard monitoring URL:\t%s" % (dashboardURL))
