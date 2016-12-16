@@ -20,6 +20,7 @@ class BasicJobType(object):
 
     def __init__(self, config, logger, workingdir):
         self.logger = logger
+        self.automaticAvail = False
         ## Before everything, check if the config is ok.
         if config:
             valid, msg = self.validateConfig(config)
