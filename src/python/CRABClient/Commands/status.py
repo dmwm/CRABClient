@@ -128,7 +128,7 @@ class status(SubCommand):
         crabServerUIURL = "https://cmsweb.cern.ch/crabserver/ui/task/" + taskname
         msg = "%sTask URL to use for HELP:\t%s%s" % (colors.GREEN, crabServerUIURL, colors.NORMAL)
 
-	self.logger.info(msg)
+        self.logger.info(msg)
 
         if dictresult['schedd']:
             ##  Dashboard monitoring URL only makes sense if submitted to schedd
@@ -335,7 +335,7 @@ class status(SubCommand):
                 if includeDASURL:
                     for outputDataset in outputDatasets:
                         msg += "\nOutput dataset:\t\t\t%s" % (outputDataset)
-                       	msg += "\nOutput dataset DAS URL:\t\thttps://cmsweb.cern.ch/das/request?input={0}&instance=prod%2Fphys03".format(urllib.quote(outputDataset, ''))
+                        msg += "\nOutput dataset DAS URL:\t\thttps://cmsweb.cern.ch/das/request?input={0}&instance=prod%2Fphys03".format(urllib.quote(outputDataset, ''))
                 else:
                     extratab = "\t" if len(outputDatasets) == 1 else ""
                     msg += "\nOutput dataset%s:\t\t%s%s" % ("s" if len(outputDatasets) > 1 else "", extratab, outputDatasets[0])
