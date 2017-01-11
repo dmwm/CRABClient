@@ -121,10 +121,17 @@ class status(SubCommand):
                 msg += "%s" % (dictresult['status'])
         self.logger.info(msg)
 
-        ## Show dashboard URL for the task.
+        ## Show server and dashboard URL for the task.
+
+        taskname = urllib.quote(self.cachedinfo['RequestName'])
+        ## CRAB Server UI URL for this task is always useful
+        crabServerUIURL = "https://cmsweb.cern.ch/crabserver/ui/task/" + taskname
+        msg = "%sTask URL to use for HELP:\t%s%s" % (colors.GREEN, crabServerUIURL, colors.NORMAL)
+
+        self.logger.info(msg)
+
         if dictresult['schedd']:
-            ## Print the Dashboard monitoring URL for this task.
-            taskname = urllib.quote(self.cachedinfo['RequestName'])
+            ##  Dashboard monitoring URL only makes sense if submitted to schedd
             dashboardURL = "http://dashb-cms-job.cern.ch/dashboard/templates/task-analysis/#user=" + username \
                          + "&table=Mains&pattern=" + taskname
             self.logger.info("Dashboard monitoring URL:\t%s" % (dashboardURL))
@@ -328,7 +335,7 @@ class status(SubCommand):
                 if includeDASURL:
                     for outputDataset in outputDatasets:
                         msg += "\nOutput dataset:\t\t\t%s" % (outputDataset)
-                       	msg += "\nOutput dataset DAS URL:\t\thttps://cmsweb.cern.ch/das/request?input={0}&instance=prod%2Fphys03".format(urllib.quote(outputDataset, ''))
+                        msg += "\nOutput dataset DAS URL:\t\thttps://cmsweb.cern.ch/das/request?input={0}&instance=prod%2Fphys03".format(urllib.quote(outputDataset, ''))
                 else:
                     extratab = "\t" if len(outputDatasets) == 1 else ""
                     msg += "\nOutput dataset%s:\t\t%s%s" % ("s" if len(outputDatasets) > 1 else "", extratab, outputDatasets[0])
