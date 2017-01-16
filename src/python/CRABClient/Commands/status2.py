@@ -83,8 +83,11 @@ class status2(SubCommand):
             return crabDBInfo, None
         else:
             with open(statusCacheFilename) as fd:
-                # Skip first line of the file (it contains info for the caching script) and load job_report summary
+                # Skip first two lines of the file. They contain the checkpoint locations for the job_log / fjr_parse_results 
+                # files and are used by the status caching script.
                 fd.readline()
+                fd.readline()
+                # Load the job_report summary
                 statusCacheInfo = literal_eval(fd.readline())
             self.logger.debug("Got information from status cache file: %s", statusCacheInfo)
 
