@@ -234,5 +234,28 @@ class CMSSWConfig(object):
             msg = "Invalid CMSSW configuration: 'process' object is missing attribute 'source' or the attribute is wrongly defined."
             return False, msg
 
+        #Assumes a default of 1 if the parameter is not specified
+        cfgNumCores = getattr(self.config.JobType, 'numCores', None)
+        numPSetCores = getattr(getattr(self.fullConfig.process, 'options', object), 'numberOfThreads', None)
+        if cfgNumCores != numPSetCores:
+            if cfgNumCores == None:
+                msg = "You did not set config.JobType.numCores in the crab configuration file "
+            else:
+                msg = "You specified config.JobType.numCores=%s in the crab configuration file " % cfgNumCores
+            if numPSetCores == None:
+                msg += "but process.options.numberOfThreads is not specified. "
+            else:
+                msg += "but process.options.numberOfThreads=%s. " % numPSetCores
+            msg += "Please make sure the two parameters are consistent and have the same value (or they are both missing) "
+            ##MM In the following message it is not simple to get the CRAB cfg filename: you have to take care
+            ##of the case of the CRAB library where the cfg is an object. I think it is good as it is now
+            msg += "in the crab configuration file and in the CMSSW PSet (%s)" % self.config.JobType.psetName
+            return False, msg
+        #At this point cfgNumCores and numPSetCores are the same
+        if numPSetCores not in [None, 1, 4, 8]:
+            msg = "The only values allowed for config.JobType.numCores are 1, 4, 8"
+            return False, msg
+
+
         return True, "Valid configuration"
 
