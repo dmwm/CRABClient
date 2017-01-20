@@ -237,7 +237,7 @@ class CMSSWConfig(object):
         #Assumes a default of 1 if the parameter is not specified
         cfgNumCores = getattr(self.config.JobType, 'numCores', None)
         numPSetCores = getattr(getattr(self.fullConfig.process, 'options', object), 'numberOfThreads', None)
-        if cfgNumCores != numPSetCores:
+        if (cfgNumCores or 1) != (numPSetCores or 1):
             if cfgNumCores == None:
                 msg = "You did not set config.JobType.numCores in the crab configuration file "
             else:
