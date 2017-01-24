@@ -9,7 +9,7 @@ from ast import literal_eval
 import CRABClient.Emulator
 from CRABClient import __version__
 from CRABClient.ClientUtilities import colors
-from CRABClient.UserUtilities import getFileFromURL
+from CRABClient.UserUtilities import getFileFromURL, getColumn
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ClientException
 
@@ -52,6 +52,8 @@ class status2(SubCommand):
         user = self.getColumn(crabDBInfo, 'tm_username')
         webdir = self.getColumn(crabDBInfo, 'tm_user_webdir')
         rootDagId = self.getColumn(crabDBInfo, 'clusterid') #that's the condor id from the TW
+        asourl = self.getColumn(crabDBInfo, 'tm_asourl')
+        asodb = self.getColumn(crabDBInfo, 'tm_asodb')
 
         #Print information from the database
         self.printTaskInfo(crabDBInfo, user)
@@ -94,6 +96,29 @@ class status2(SubCommand):
         self.printDAGStatus(crabDBInfo, statusCacheInfo)
 
         shortResult = self.printShort(statusCacheInfo)
+
+        # Collecting publication information
+        pubInfo = {}
+        publicationEnabled = True if self.getColumn(crabDBInfo, 'tm_publication') == 'T' else False
+
+        publicationInfo = {}
+        if (publicationEnabled and 'finished' in shortResult['jobsPerStatus']):
+            #let's default asodb to asynctransfer, for old task this is empty!
+            asodb = asodb or 'asynctransfer'
+            publicationInfo = self.publicationStatus(taskname, asourl, asodb, user)
+        elif not publicationEnabled:
+            publicationInfo['status'] = {'disabled': []}
+        pubInfo['publication'] = publicationInfo.get('status', {})
+        pubInfo['publicationFailures'] = publicationInfo.get('failure_reasons', {})
+
+        ## The output datasets are written into the Task DB by the post-job
+        ## when uploading the output files metadata.
+        outdatasets = literal_eval(getColumn(crabDBInfo, 'tm_output_dataset') if getColumn(crabDBInfo, 'tm_output_dataset') else 'None')
+        pubInfo['outdatasets'] = outdatasets
+        pubInfo['jobsPerStatus'] = shortResult['jobsPerStatus']
+
+        self.printPublication(pubInfo)
+
         self.printErrors(statusCacheInfo)
         if self.options.summary:
             self.printSummary(statusCacheInfo)
@@ -126,6 +151,22 @@ class status2(SubCommand):
             return colors.GRAY
         else:
             return colors.NORMAL
+
+    def publicationStatus(self, workflow, asourl, asodb, user):
+        """Gets some information about the state of publication of jobs from the server.
+        """
+        uri = self.getUrl(self.instance, resource = 'workflow')
+        serverFactory = CRABClient.Emulator.getEmulator('rest')
+        server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
+
+        pubInfo, _, _ =  server.get(uri, data = {'subresource': 'publicationstatus', 'workflow': workflow, 'asourl': asourl, 'asodb': asodb, 'username': user})
+
+        # Dictionary received from the server should have a structure like this:
+        # {"result": [
+        #  {"status": {"published": 2, "publication_failed": 0, "not_published": 15, "publishing": 0}, "failure_reasons": {}}
+        # ]}
+        # so return only the inner dict.
+        return pubInfo['result'][0]
 
     def printDAGStatus(self, crabDBInfo, statusCacheInfo):
         # Get dag status from the node_state/job_log summary
@@ -623,6 +664,93 @@ class status2(SubCommand):
             self.logger.info(msg)
 
         self.logger.info('')
+
+    def printPublication(self, dictresult):
+        """
+        Print information about the publication of the output files in DBS.
+        """
+        if 'publication' not in dictresult:
+            return
+        ## If publication was disabled, print a pertinent message and return.
+        if 'disabled' in dictresult['publication']:
+            msg = "\nNo publication information (publication has been disabled in the CRAB configuration file)"
+            self.logger.info(msg)
+            return
+        ## List of output datasets that are going to be (or are already) published. This
+        ## list is written into the Tasks DB by the post-job when it does the upload of
+        ## the output files metadata. This means that the list will be empty until one
+        ## of the post-jobs will finish executing.
+        outputDatasets = dictresult.get('outdatasets')
+        ## Function to print the list of output datasets (with or without the DAS URL).
+        def printOutputDatasets(includeDASURL = False):
+            if outputDatasets:
+                msg = ""
+                if includeDASURL:
+                    for outputDataset in outputDatasets:
+                        msg += "\nOutput dataset:\t\t\t%s" % (outputDataset)
+                        msg += "\nOutput dataset DAS URL:\t\thttps://cmsweb.cern.ch/das/request?input={0}&instance=prod%2Fphys03".format(urllib.quote(outputDataset, ''))
+                else:
+                    extratab = "\t" if len(outputDatasets) == 1 else ""
+                    msg += "\nOutput dataset%s:\t\t%s%s" % ("s" if len(outputDatasets) > 1 else "", extratab, outputDatasets[0])
+                    for outputDataset in outputDatasets[1:]:
+                        msg += "\n\t\t\t\t%s%s" % (extratab, outputDataset)
+                self.logger.info(msg)
+        ## If publication information is not available yet, print a pertinent message
+        ## (print first the list of output datasets, without the DAS URL) and return.
+        if not dictresult['publication']:
+            printOutputDatasets()
+            msg = "\nNo publication information available yet"
+            self.logger.info(msg)
+            return
+        ## Case in which there was an error in retrieving the publication status.
+        if 'error' in dictresult['publication']:
+            msg = "\nPublication status:\t\t%s" % (dictresult['publication']['error'])
+            self.logger.info(msg)
+            ## Print the output datasets with the corresponding DAS URL.
+            printOutputDatasets(includeDASURL = True)
+            return
+        if dictresult['publication'] and outputDatasets:
+            states = dictresult['publication']
+            ## Don't consider publication states for which 0 files are in this state.
+            states_tmp = states.copy()
+            for status in states:
+                if states[status] == 0:
+                    del states_tmp[status]
+            states = states_tmp.copy()
+            ## Count the total number of files to publish. For this we count the number of
+            ## jobs and the number of files to publish per job (which is equal to the number
+            ## of output datasets produced by the task, because, when multiple EDM files are
+            ## produced, each EDM file goes into a different output dataset).
+            numJobs = sum(dictresult['jobsPerStatus'].values())
+            numOutputDatasets = len(outputDatasets)
+            numFilesToPublish = numJobs * numOutputDatasets
+            ## Count how many of these files have already started the publication process.
+            numSubmittedFiles = sum(states.values())
+            ## Substract the above two numbers to obtain how many files have not yet been
+            ## considered for publication.
+            states['unsubmitted'] = numFilesToPublish - numSubmittedFiles
+            ## Print the publication status.
+            statesList = sorted(states)
+            msg = "\nPublication status:\t\t{0} {1}".format(self._printState(statesList[0], 13), \
+                                                            self._percentageString(statesList[0], states[statesList[0]], numFilesToPublish))
+            for status in statesList[1:]:
+                if states[status]:
+                    msg += "\n\t\t\t\t{0} {1}".format(self._printState(status, 13), \
+                                                      self._percentageString(status, states[status], numFilesToPublish))
+            self.logger.info(msg)
+            ## Print the publication errors.
+            if dictresult.get('publicationFailures'):
+                msg = "\nPublication error summary:"
+                if 'error' in dictresult['publicationFailures']:
+                    msg += "\t%s" % (dictresult['publicationFailures']['error'])
+                elif dictresult['publicationFailures'].get('result'):
+                    ndigits = int(math.ceil(math.log(numFilesToPublish+1, 10)))
+                    for failureReason, numFailedFiles in dictresult['publicationFailures']['result']:
+                        msg += ("\n\n\t%" + str(ndigits) + "s files failed to publish with following error message:\n\n\t\t%s") % (numFailedFiles, failureReason)
+                self.logger.info(msg)
+            ## Print the output datasets with the corresponding DAS URL.
+            printOutputDatasets(includeDASURL = True)
+
 
 
     def setOptions(self):
