@@ -31,15 +31,6 @@ class status2(SubCommand):
 
     shortnames = ['st2']
 
-
-    def getColumn(self, dictresult, columnName):
-        columnIndex = dictresult['desc']['columns'].index(columnName)
-        value = dictresult['result'][columnIndex]
-        if value=='None':
-            return None
-        else:
-            return value
-
     def __call__(self):
         # Get all of the columns from the database for a certain task
         taskname = self.cachedinfo['RequestName']
@@ -49,11 +40,11 @@ class status2(SubCommand):
         crabDBInfo, _, _ =  server.get(uri, data = {'subresource': 'search', 'workflow': taskname})
         self.logger.debug("Got information from server oracle database: %s", crabDBInfo)
 
-        user = self.getColumn(crabDBInfo, 'tm_username')
-        webdir = self.getColumn(crabDBInfo, 'tm_user_webdir')
-        rootDagId = self.getColumn(crabDBInfo, 'clusterid') #that's the condor id from the TW
-        asourl = self.getColumn(crabDBInfo, 'tm_asourl')
-        asodb = self.getColumn(crabDBInfo, 'tm_asodb')
+        user = getColumn(crabDBInfo, 'tm_username')
+        webdir = getColumn(crabDBInfo, 'tm_user_webdir')
+        rootDagId = getColumn(crabDBInfo, 'clusterid') #that's the condor id from the TW
+        asourl = getColumn(crabDBInfo, 'tm_asourl')
+        asodb = getColumn(crabDBInfo, 'tm_asodb')
 
         #Print information from the database
         self.printTaskInfo(crabDBInfo, user)
@@ -99,7 +90,7 @@ class status2(SubCommand):
 
         # Collecting publication information
         pubInfo = {}
-        publicationEnabled = True if self.getColumn(crabDBInfo, 'tm_publication') == 'T' else False
+        publicationEnabled = True if getColumn(crabDBInfo, 'tm_publication') == 'T' else False
 
         publicationInfo = {}
         if (publicationEnabled and 'finished' in shortResult['jobsPerStatus']):
@@ -174,7 +165,7 @@ class status2(SubCommand):
         dag_status = dagman_codes.get(statusCacheInfo['DagStatus']['DagStatus'])
         #Unfortunately DAG code for killed task is 6, just as like for finished DAGs with failed jobs
         #Relabeling the status from 'FAILED' to 'FAILED (KILLED)'     if a successful kill command was issued
-        dbstatus = self.getColumn(crabDBInfo, 'tm_task_status')
+        dbstatus = getColumn(crabDBInfo, 'tm_task_status')
         if dag_status=='FAILED' and dbstatus=='KILLED':
             dag_status = 'FAILED (KILLED)'
 
@@ -186,11 +177,11 @@ class status2(SubCommand):
         """ Print general information like project directory, task name, scheduler, task status (in the database),
             dashboard URL, warnings and failire messages in the database.
         """
-        schedd = self.getColumn(crabDBInfo, 'tm_schedd')
-        status = self.getColumn(crabDBInfo, 'tm_task_status')
-        command = self.getColumn(crabDBInfo, 'tm_task_command')
-        warnings = literal_eval(self.getColumn(crabDBInfo, 'tm_task_warnings'))
-        failure = self.getColumn(crabDBInfo, 'tm_task_failure')
+        schedd = getColumn(crabDBInfo, 'tm_schedd')
+        status = getColumn(crabDBInfo, 'tm_task_status')
+        command = getColumn(crabDBInfo, 'tm_task_command')
+        warnings = literal_eval(getColumn(crabDBInfo, 'tm_task_warnings'))
+        failure = getColumn(crabDBInfo, 'tm_task_failure')
 
         self.logger.info("CRAB project directory:\t\t%s" % (self.requestarea))
         self.logger.info("Task name:\t\t\t%s" % self.cachedinfo['RequestName'])
