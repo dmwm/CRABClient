@@ -140,17 +140,17 @@ class UserTarball(object):
 
         self.close()
         archiveName = self.tarfile.name
-	archiveSizeKB = os.path.getsize(archiveName)/1024
-	if archiveSizeKB <= 512 :
-	  archiveSize = "%d KB" % archiveSizeKB
-	elif archiveSizeKB < 1024*10 :
-	  archiveSize = "%3f.1 MB" % (archiveSizeKB/1024.)
-	else:
-	  archiveSize = "%d MB" % (archiveSizeKB/1024)
-	msg=("Uploading archive %s (%s) to the CRAB cache. Using URI %s" % (archiveName, archiveSize, filecacheurl))
-	self.logger.debug(msg)
+        archiveSizeKB = os.path.getsize(archiveName)/1024
+        if archiveSizeKB <= 512 :
+          archiveSize = "%d KB" % archiveSizeKB
+        elif archiveSizeKB < 1024*10 :
+          archiveSize = "%3f.1 MB" % (archiveSizeKB/1024.)
+        else:
+          archiveSize = "%d MB" % (archiveSizeKB/1024)
+        msg=("Uploading archive %s (%s) to the CRAB cache. Using URI %s" % (archiveName, archiveSize, filecacheurl))
+        self.logger.debug(msg)
 
-	ufc = CRABClient.Emulator.getEmulator('ufc')({'endpoint' : filecacheurl, "pycurl": True})
+        ufc = CRABClient.Emulator.getEmulator('ufc')({'endpoint' : filecacheurl, "pycurl": True})
         result = ufc.upload(archiveName, excludeList = NEW_USER_SANDBOX_EXCLUSIONS)
         if 'hashkey' not in result:
             self.logger.error("Failed to upload source files: %s" % str(result))
