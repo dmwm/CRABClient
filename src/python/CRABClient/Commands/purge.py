@@ -10,6 +10,7 @@ from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientUtilities import colors, server_info, getUrl
 from CRABClient.ClientExceptions import ConfigurationException, ConfigException, RESTCommunicationException
 
+from ServerUtilities import getColumn
 
 class purge(SubCommand):
     """
@@ -31,6 +32,11 @@ class purge(SubCommand):
                 position = dictresult['desc']['columns'].index('tm_user_sandbox')
                 tm_user_sandbox = dictresult['result'][position]
                 hashkey = tm_user_sandbox.replace(".tar.gz","")
+
+                # Get the schedd address from the DB info and strip off the 'crab3@' prefix if it exists
+                scheddaddress = getColumn(dictresult, 'tm_schedd')
+                index = scheddaddress.find('@')
+                scheddaddress = scheddaddress[index+1:] if index else scheddaddress
             else:
                 self.logger.info('%sError%s: Could not find tarball or there is more than one tarball'% (colors.RED, colors.NORMAL))
                 raise ConfigurationException
@@ -73,7 +79,7 @@ class purge(SubCommand):
             except HTTPException as re:
                 if 'X-Error-Info' in re.headers and 'Not such file' in re.headers['X-Error-Info']:
                     self.logger.info('%sError%s: Failed to find task file in crab server cache; the file might have been already purged' % (colors.RED,colors.NORMAL))
-                    raise
+                raise
 
             if ufcresult == '':
                 self.logger.info('%sSuccess%s: Successfully removed task files from crab server cache' % (colors.GREEN, colors.NORMAL))
@@ -83,13 +89,6 @@ class purge(SubCommand):
                 cacheresult = 'FAILED'
 
         if not self.options.cacheonly:
-            self.logger.info('Getting schedd address')
-            baseurl=self.getUrl(self.instance, resource='info')
-            try:
-                scheddaddress = server_info('scheddaddress', self.serverurl, self.proxyfilename, baseurl, workflow = self.cachedinfo['RequestName'] )
-            except HTTPException as he:
-                self.logger.info('%sError%s: Failed to get schedd address' % (colors.RED, colors.NORMAL))
-                raise HTTPException(he)
             self.logger.debug('%sSuccess%s: Successfully got schedd address' % (colors.GREEN, colors.NORMAL))
             self.logger.debug('Schedd address: %s' % scheddaddress)
             self.logger.info('Attempting to remove task from schedd')
