@@ -43,7 +43,7 @@ class purge(SubCommand):
         dictresult = dictresult['result'][0] #take just the significant part
 
         self.logger.info('Task status: %s' % dictresult['status'])
-        accepstate = ['SUBMITFAILED','KILLED','FINISHED','FAILED','KILLFAILED', 'COMPLETED']
+        accepstate = ['SUBMITTED','SUBMITFAILED','KILLED','FINISHED','FAILED','KILLFAILED', 'COMPLETED']
         if dictresult['status'] not in accepstate:
             msg = ('%sError%s: Only tasks with these status can be purged: {0}'.format(accepstate) % (colors.RED, colors.NORMAL))
             raise ConfigurationException(msg)
