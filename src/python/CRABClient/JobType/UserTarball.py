@@ -4,12 +4,12 @@
     UserTarball class, a subclass of TarFile
 """
 
+from  __future__ import division
+
 import os
 import glob
 import tarfile
 import tempfile
-
-from  __future__ import division
 
 import CRABClient.Emulator
 from CRABClient.ClientMapping import configParametersInfo
