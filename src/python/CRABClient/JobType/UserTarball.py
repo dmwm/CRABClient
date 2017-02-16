@@ -9,6 +9,8 @@ import glob
 import tarfile
 import tempfile
 
+from  __future__ import division
+
 import CRABClient.Emulator
 from CRABClient.ClientMapping import configParametersInfo
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
@@ -140,13 +142,13 @@ class UserTarball(object):
 
         self.close()
         archiveName = self.tarfile.name
-        archiveSizeKB = os.path.getsize(archiveName)/1024
+        archiveSizeKB = os.path.getsize(archiveName)//1024
         if archiveSizeKB <= 512 :
           archiveSize = "%d KB" % archiveSizeKB
         elif archiveSizeKB < 1024*10 :
           archiveSize = "%3f.1 MB" % (archiveSizeKB/1024.)
         else:
-          archiveSize = "%d MB" % (archiveSizeKB/1024)
+          archiveSize = "%d MB" % (archiveSizeKB//1024)
         msg=("Uploading archive %s (%s) to the CRAB cache. Using URI %s" % (archiveName, archiveSize, filecacheurl))
         self.logger.debug(msg)
 
