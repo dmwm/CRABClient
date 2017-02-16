@@ -4,7 +4,7 @@
     UserTarball class, a subclass of TarFile
 """
 
-from  __future__ import division
+from  __future__ import division   # make division work like in python3
 
 import os
 import glob
@@ -142,11 +142,13 @@ class UserTarball(object):
 
         self.close()
         archiveName = self.tarfile.name
+	# in python3 and python2 with __future__ division, double / means integer division
         archiveSizeKB = os.path.getsize(archiveName)//1024
         if archiveSizeKB <= 512 :
           archiveSize = "%d KB" % archiveSizeKB
         elif archiveSizeKB < 1024*10 :
-          archiveSize = "%3f.1 MB" % (archiveSizeKB/1024.)
+          # in python3 and python2 with __future__ division, single / means floating point division
+          archiveSize = "%3f.1 MB" % (archiveSizeKB/1024)
         else:
           archiveSize = "%d MB" % (archiveSizeKB//1024)
         msg=("Uploading archive %s (%s) to the CRAB cache. Using URI %s" % (archiveName, archiveSize, filecacheurl))
