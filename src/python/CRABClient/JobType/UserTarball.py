@@ -4,6 +4,8 @@
     UserTarball class, a subclass of TarFile
 """
 
+from  __future__ import division   # make division work like in python3
+
 import os
 import glob
 import tarfile
@@ -137,9 +139,21 @@ class UserTarball(object):
         """
         Upload the tarball to the File Cache
         """
+
         self.close()
         archiveName = self.tarfile.name
-        self.logger.debug("Uploading archive %s to the CRAB cache. Using URI %s" % (archiveName, filecacheurl))
+	# in python3 and python2 with __future__ division, double / means integer division
+        archiveSizeKB = os.path.getsize(archiveName)//1024
+        if archiveSizeKB <= 512 :
+          archiveSize = "%d KB" % archiveSizeKB
+        elif archiveSizeKB < 1024*10 :
+          # in python3 and python2 with __future__ division, single / means floating point division
+          archiveSize = "%3f.1 MB" % (archiveSizeKB/1024)
+        else:
+          archiveSize = "%d MB" % (archiveSizeKB//1024)
+        msg=("Uploading archive %s (%s) to the CRAB cache. Using URI %s" % (archiveName, archiveSize, filecacheurl))
+        self.logger.debug(msg)
+
         ufc = CRABClient.Emulator.getEmulator('ufc')({'endpoint' : filecacheurl, "pycurl": True})
         result = ufc.upload(archiveName, excludeList = NEW_USER_SANDBOX_EXCLUSIONS)
         if 'hashkey' not in result:
