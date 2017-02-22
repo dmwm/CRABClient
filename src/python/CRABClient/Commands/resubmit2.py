@@ -135,7 +135,7 @@ class resubmit2(SubCommand):
                 allowedJobStates += [finishedJobStatus]
             # Go through the jobids and check if it's possible to resubmit them
             for jobId in self.jobids:
-                if jobStatusDict[jobId] not in allowedJobStates:
+                if (jobId not in jobStatusDict) or (jobStatusDict[jobId] not in allowedJobStates):
                     possibleAndWantedJobIds = list(set(possibleToResubmitJobIds) & set(self.jobids))
                     notPossibleAndWantedJobIds = list(set(self.jobids) - set(possibleAndWantedJobIds))
                     msg = "Not possible to resubmit the following jobs:\n%s\n" % notPossibleAndWantedJobIds
