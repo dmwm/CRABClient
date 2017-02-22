@@ -311,9 +311,10 @@ class report2(SubCommand):
             jobStatusDict[jobId] = status
 
         # Filter output/input file metadata by finished job state
-        for jobId in jobStatusDict:
-            if jobStatusDict.get(jobId) in ['finished']:
-                reportData['runsAndLumis'][jobId] = dictresult['result'][0]['runsAndLumis'][jobId]
+        if dictresult['result'][0]['runsAndLumis']:
+            for jobId in jobStatusDict:
+                if jobStatusDict.get(jobId) in ['finished']:
+                    reportData['runsAndLumis'][jobId] = dictresult['result'][0]['runsAndLumis'][jobId]
 
         reportData['publication'] = True if getColumn(crabDBInfo, 'tm_publication') == "T" else False
         userWebDirURL = getColumn(crabDBInfo, 'tm_user_webdir')
