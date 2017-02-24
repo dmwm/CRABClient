@@ -2,6 +2,7 @@ from CRABClient.Commands.remote_copy import remote_copy
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ConfigurationException , RESTCommunicationException
 from CRABClient.ClientUtilities import validateJobids, colors
+from CRABClient.UserUtilities import getMutedStatusInfo
 from CRABClient import __version__
 
 from WMCore.Services.PhEDEx.PhEDEx import PhEDEx
@@ -154,10 +155,7 @@ class getcommand(SubCommand):
 
         Also store some information which is used later when deciding the correct pfn.
         """
-        mod = __import__('CRABClient.Commands.status2', fromlist='status2')
-
-        cmdobj = getattr(mod, 'status2')(self.logger)
-        _, jobList = cmdobj.__call__()
+        _, jobList = getMutedStatusInfo(self.logger)
         jobList = jobList['jobList']
         transferringIds = [x[1] for x in jobList if x[0] in ['transferring', 'cooloff', 'held']]
         finishedIds = [x[1] for x in jobList if x[0] in ['finished', 'failed', 'transferred']]
