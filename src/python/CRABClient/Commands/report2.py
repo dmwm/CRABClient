@@ -443,7 +443,8 @@ class report2(SubCommand):
         for outputDataset in outputDatasets:
             res['outputDatasets'][outputDataset] = {'lumis': {}, 'numEvents': 0}
             try:
-                dbs = DBSReader("https://cmsweb.cern.ch/dbs/prod/phys03/DBSReader")
+                dbs = DBSReader("https://cmsweb.cern.ch/dbs/prod/phys03/DBSReader",
+                                cert=self.proxyfilename, key=self.proxyfilename)
                 outputDatasetDetails = dbs.listDatasetFileDetails(outputDataset)
             except Exception as ex:
                 msg  = "Failed to retrieve information from DBS for output dataset %s." % (outputDataset)
