@@ -359,7 +359,7 @@ class report2(SubCommand):
             curl.setopt(pycurl.HEADERFUNCTION, hbuf.write)
             try:
                 url = userWebDirURL + "/run_and_lumis.tar.gz"
-                curl.setopt(pycurl.URL, url)
+                curl.setopt(pycurl.URL, url.encode("ascii", "ignore"))
                 self.myPerform(curl, url)
                 header = ResponseHeader(hbuf.getvalue())
                 if header.status == 200:
@@ -404,7 +404,7 @@ class report2(SubCommand):
             try:
                 ## Retrieve the lumis in the input dataset.
                 url = userWebDirURL + "/input_dataset_lumis.json"
-                curl.setopt(pycurl.URL, url)
+                curl.setopt(pycurl.URL, url.encode("ascii", "ignore"))
                 self.myPerform(curl, url)
                 header = ResponseHeader(hbuf.getvalue())
                 if header.status == 200:
@@ -418,7 +418,7 @@ class report2(SubCommand):
                 hbuf.truncate(0)
                 ## Retrieve the lumis split across files in the input dataset.
                 url = userWebDirURL + "/input_dataset_duplicate_lumis.json"
-                curl.setopt(pycurl.URL, url)
+                curl.setopt(pycurl.URL, url.encode("ascii", "ignore"))
                 self.myPerform(curl, url)
                 header = ResponseHeader(hbuf.getvalue())
                 if header.status == 200:
@@ -443,9 +443,7 @@ class report2(SubCommand):
         for outputDataset in outputDatasets:
             res['outputDatasets'][outputDataset] = {'lumis': {}, 'numEvents': 0}
             try:
-                dbs = DBSReader("https://cmsweb.cern.ch/dbs/prod/phys03/DBSReader",
-                                cfg_dict = {"cert": self.proxyfilename, "key": self.proxyfilename,
-                                            "logger": self.logger, "pycurl" : True}) #We can only publish here with DBS3
+                dbs = DBSReader("https://cmsweb.cern.ch/dbs/prod/phys03/DBSReader")
                 outputDatasetDetails = dbs.listDatasetFileDetails(outputDataset)
             except Exception as ex:
                 msg  = "Failed to retrieve information from DBS for output dataset %s." % (outputDataset)
