@@ -40,7 +40,6 @@ parametersMapping = {
                                                                         'JobType.externalPluginFile'],      'type': 'StringType',  'required': False},
                   'generator'      : {'default': 'pythia',   'config': ['JobType.generator'],               'type': 'StringType',  'required': False},
                   'eventsperlumi'  : {'default': None,       'config': ['JobType.eventsPerLumi'],           'type': 'IntType',     'required': False},
-                  'adduserfiles'   : {'default': [],         'config': ['JobType.inputFiles'],              'type': 'ListType',    'required': False},
                   'addoutputfiles' : {'default': [],         'config': ['JobType.outputFiles'],             'type': 'ListType',    'required': False},
                   'maxjobruntime'  : {'default': 1250,       'config': ['JobType.maxJobRuntimeMin'],        'type': 'IntType',     'required': False},
                   'numcores'       : {'default': 1,          'config': ['JobType.numCores'],                'type': 'IntType',     'required': False},
@@ -70,7 +69,8 @@ parametersMapping = {
                                      {'default': False,      'config': ['JobType.sendPythonFolder'],        'type': 'BooleanType', 'required': False},
                                      {'default': False,      'config': ['JobType.sendExternalFolder'],      'type': 'BooleanType', 'required': False},
                                      {'default': None,       'config': ['JobType.pyCfgParams'],             'type': 'ListType',    'required': False},
-                                     {'default': False,      'config': ['JobType.disableAutomaticOutputCollection'],'type': 'BooleanType', 'required': False}
+                                     {'default': False,      'config': ['JobType.disableAutomaticOutputCollection'],'type': 'BooleanType', 'required': False},
+                                     {'default': [],         'config': ['JobType.inputFiles'],              'type': 'ListType',    'required': False}
                            ]
 }
 
