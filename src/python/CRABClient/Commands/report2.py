@@ -350,7 +350,6 @@ class report2(SubCommand):
         Get the lumis to process by each job in the workflow.
         """
         res = {}
-        res['lumisToProcess'] = {}
         if userWebDirURL:
             curl = self.prepareCurl()
             fp = tempfile.NamedTemporaryFile()
@@ -375,7 +374,7 @@ class report2(SubCommand):
                             else:
                                 fd = tarball.extractfile(member)
                                 try:
-                                    res['lumisToProcess'][str(jobid)] = json.load(fd)
+                                    res[str(jobid)] = json.load(fd)
                                 finally:
                                     fd.close()
                     finally:
