@@ -1,6 +1,7 @@
 from __future__ import division # I want floating points
 from __future__ import print_function
 
+import os
 import math
 import json
 import urllib
@@ -69,7 +70,8 @@ class status2(SubCommand):
 
         statusCacheInfo = None
         try:
-            statusCacheFilename = getFileFromURL(url, proxyfilename=self.proxyfilename)
+            filename = os.path.join(self.requestarea, 'results/status_cache')
+            statusCacheFilename = getFileFromURL(url, filename=filename, proxyfilename=self.proxyfilename)
         except ClientException as ce:
             self.logger.info("Waiting for the Grid scheduler to report back the status of your task")
             self.logger.debug("Cannot retrieve the status_cache file. Maybe the task process has not run yet?")
