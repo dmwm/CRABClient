@@ -40,7 +40,6 @@ class Analysis(BasicJobType):
         Override run() for JobType
         """
         configArguments = {'addoutputfiles'            : [],
-                           'adduserfiles'              : [],
                            'tfileoutfiles'             : [],
                            'edmoutfiles'               : [],
                           }
@@ -147,7 +146,6 @@ class Analysis(BasicJobType):
         with UserTarball(name=tarFilename, logger=self.logger, config=self.config) as tb:
             inputFiles = [re.sub(r'^file:', '', file) for file in getattr(self.config.JobType, 'inputFiles', [])]
             tb.addFiles(userFiles=inputFiles, cfgOutputName=cfgOutputName)
-            configArguments['adduserfiles'] = [os.path.basename(f) for f in inputFiles]
             try:
                 # convert from unicode to ascii to make it work with older pycurl versions
                 uploadResult = tb.upload(filecacheurl = filecacheurl.encode('ascii', 'ignore'))
