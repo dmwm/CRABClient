@@ -616,23 +616,23 @@ class status2(SubCommand):
         elif sortby in ['memory', 'cpu', 'retries']:
             msg = "Jobs sorted by %s used:\n" % (sortby)
             if sortby == 'memory':
-                msg += "%-10s %-10s" % ("Memory (MB)".center(10), "Job Id".center(10))
+                msg += "%-10s %-10s\n" % ("Memory (MB)".center(10), "Job Id".center(10))
             elif sortby == 'cpu':
-                msg += "%-10s %-10s" % ("CPU".center(10), "Job Id".center(10))
+                msg += "%-10s %-10s\n" % ("CPU".center(10), "Job Id".center(10))
             elif sortby == 'retries':
-                msg += "%-10s %-10s" % ("Retries".center(10), "Job Id".center(10))
+                msg += "%-10s %-10s\n" % ("Retries".center(10), "Job Id".center(10))
             for value in sortmatrix:
                 if value[0] == 999999:
                     esignvalue = 'Unknown'
                 else:
                     esignvalue = value[0]
-                msg += "%10s %10s" % (str(esignvalue).center(10), value[1].center(10))
+                msg += "%10s %10s\n" % (str(esignvalue).center(10), value[1].center(10))
             self.logger.info(msg)
         elif sortby in ['runtime' ,'waste']:
             msg  = "Jobs sorted by %s used:\n" % (sortby)
             msg += "%-10s %-5s\n" % (sortby.title(), "Job Id")
             for value in sortmatrix:
-                msg += "%-10s %-5s" % (value[1], value[2].center(5))
+                msg += "%-10s %-5s\n" % (value[1], value[2].center(5))
             self.logger.info(msg)
 
         self.logger.info('')
