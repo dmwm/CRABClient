@@ -9,10 +9,10 @@ from ast import literal_eval
 
 import CRABClient.Emulator
 from CRABClient import __version__
-from CRABClient.ClientUtilities import colors
+from CRABClient.ClientUtilities import colors, validateJobids
 from CRABClient.UserUtilities import getFileFromURL, getColumn
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ClientExceptions import ClientException
+from CRABClient.ClientExceptions import ClientException, ConfigurationException
 
 from ServerUtilities import TASKDBSTATUSES_TMP
 
@@ -31,6 +31,10 @@ class status2(SubCommand):
     """
 
     shortnames = ['st2']
+
+    def __init__(self, logger, cmdargs = None):
+        self.jobids = None
+        SubCommand.__init__(self, logger, cmdargs)
 
     def __call__(self):
         # Get all of the columns from the database for a certain task
@@ -92,10 +96,15 @@ class status2(SubCommand):
         self.printPublication(publicationEnabled, shortResult['jobsPerStatus'], asourl, asodb,
                               taskname, user, crabDBInfo)
         self.printErrors(statusCacheInfo)
+
         if self.options.summary:
             self.printSummary(statusCacheInfo)
         if self.options.long or self.options.sort:
-            sortdict = self.printLong(statusCacheInfo, quiet = (not self.options.long))
+            # If user correctly passed some jobid CSVs to use in the status --long, self.jobids
+            # will be a list of strings already parsed from the input by the validateOptions()
+            if self.jobids:
+                self.checkUserJobids(statusCacheInfo, self.jobids)
+            sortdict = self.printLong(statusCacheInfo, self.jobids, quiet = (not self.options.long))
             if self.options.sort:
                 self.printSort(sortdict, self.options.sort)
         if self.options.json:
@@ -203,7 +212,15 @@ class status2(SubCommand):
             msg += "\t\t%s" % (failure.replace('\n', '\n\t\t\t\t'))
             self.logger.error(msg)
 
-    def printLong(self, dictresult, quiet = False):
+    def checkUserJobids(self, statusCacheInfo, userJobids):
+        """ Checks that the job information taken from the status_cache file on the schedd
+            contains all of the jobids passed by the user.
+        """
+        wrongJobIds = [uJobid for uJobid in userJobids if uJobid not in statusCacheInfo.keys()]
+        if wrongJobIds:
+            raise ConfigurationException("The following jobids were not found in the task: %s" % wrongJobIds)
+
+    def printLong(self, dictresult, jobids = None, quiet = False):
         """ Print detailed information about a task and each job.
         """
         sortdict = {}
@@ -228,7 +245,9 @@ class status2(SubCommand):
             x2 = map(int, j2.split('-'))
             return cmp(x1, x2) #using list comparison
 
-        for jobid in sorted(dictresult.keys(), cmp=compareFunction):
+        # Chose between the jobids passed by the user or all jobids that are in the task
+        jobidsToUse = jobids if jobids else dictresult.keys()
+        for jobid in sorted(jobidsToUse, cmp=compareFunction):
             info = dictresult[str(jobid)]
             state = info['State']
             site = ''
@@ -284,7 +303,7 @@ class status2(SubCommand):
 
         # Print (to the log file) a table with the HTCondor cluster id for each job.
         msg = "\n%4s %-10s" % ("Job", "Cluster Id")
-        for jobid in dictresult.keys():
+        for jobid in jobidsToUse:
             info = dictresult[str(jobid)]
             clusterid = str(info.get('JobIds', 'Unknown'))
             msg += "\n%4s %10s" % (jobid, clusterid)
@@ -779,10 +798,30 @@ class status2(SubCommand):
                                default = False,
                                action = "store_true",
                                help = "Expand error summary, showing error messages for all failed jobs.")
+        self.parser.add_option("--jobids",
+                               dest = "jobids",
+                               default = None,
+                               help = "The ids of jobs to print in crab status --long or --sort."
+                                    " Comma separated list of integers.")
 
 
     def validateOptions(self):
         SubCommand.validateOptions(self)
+
+        if self.options.sort is not None:
+            sortOpts = ["state", "site", "runtime", "memory", "cpu", "retries", "waste", "exitcode"]
+            if self.options.sort not in sortOpts:
+                msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
+                msg += " Only the following values are accepted for --sort option: %s" % (sortOpts)
+                raise ConfigurationException(msg)
+
+        if self.options.jobids:
+            jobidstuple = validateJobids(self.options.jobids)
+            self.jobids = [str(jobid) for (_, jobid) in jobidstuple]
+
+        if self.options.jobids and not (self.options.long or self.options.sort):
+            raise ConfigurationException("Parameter --jobids can only be used in combination "
+                                         "with --long or --sort options.")
 
 def to_hms(val):
     s = val % 60
