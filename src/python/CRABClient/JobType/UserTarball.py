@@ -172,8 +172,8 @@ class UserTarball(object):
           archiveSize = "%d MB" % (archiveSizeKB//1024)
         if archiveSizeBytes > FILE_SIZE_LIMIT :
           msg=("%sError%s: input tarball size %s exceeds maximum allowed limit of %d MB" % (colors.RED, colors.NORMAL, archiveSize, FILE_SIZE_LIMIT//1024//1024))
-          self.logger.error(msg)
-          raise SandboxTooBigException
+          msg += self.printSortedContent()
+          raise SandboxTooBigException(msg)
 
         msg=("Uploading archive %s (%s) to the CRAB cache. Using URI %s" % (archiveName, archiveSize, filecacheurl))
         self.logger.debug(msg)

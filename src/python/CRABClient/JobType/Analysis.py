@@ -161,10 +161,6 @@ class Analysis(BasicJobType):
                         reason += " Input sandbox size is ~%sMB. This is bigger than the maximum allowed size of %sMB." % (ISBSize/1024/1024, ISBSizeLimit/1024/1024)
                         reason += tb.printSortedContent()
                         raise ClientException(reason)
-            except SandboxTooBigException as e:
-                reason = "SandboxTooBigException detected"
-                reason += tb.printSortedContent()
-                raise ClientException(reason)
             except Exception as e:
                 msg = ("Impossible to upload the sandbox tarball.\nError message: %s.\n"
                        "More details can be found in %s" % (e, self.logger.logfile))
