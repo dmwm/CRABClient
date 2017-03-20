@@ -82,8 +82,16 @@ class UnknownOptionException(ClientException):
     """
     exitcode = 3014
 
+class SandboxTooBigException(ClientException):
+    """
+    Raised when user ask client to send to server more bytes then we allow
+    """
+    exitcode = 3015
+
+
 class PanDaException(ClientException):
     """
     Specific errors coming from interaction with PanDa
     """
     exitcode = 3100
+

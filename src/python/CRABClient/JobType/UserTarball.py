@@ -8,6 +8,7 @@ from  __future__ import division   # make division work like in python3
 
 import os
 import glob
+import math
 import tarfile
 import tempfile
 
@@ -15,9 +16,11 @@ import CRABClient.Emulator
 from CRABClient.ClientMapping import configParametersInfo
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
 from CRABClient.ClientUtilities import colors, BOOTSTRAP_CFGFILE, BOOTSTRAP_CFGFILE_PKL
-from CRABClient.ClientExceptions import EnvironmentException, InputFileNotFoundException, CachefileNotFoundException
+from CRABClient.ClientExceptions import EnvironmentException, InputFileNotFoundException, CachefileNotFoundException, SandboxTooBigException
 
 from ServerUtilities import NEW_USER_SANDBOX_EXCLUSIONS, BOOTSTRAP_CFGFILE_DUMP
+from ServerUtilities import FILE_SIZE_LIMIT
+
 
 
 class UserTarball(object):
@@ -134,6 +137,20 @@ class UserTarball(object):
         self.writeContent()
         return self.tarfile.close()
 
+    def printSortedContent(self):
+        """
+	To be used for diagnostic printouts
+        returns a string containing tarball content as a list of files sorted by size
+        already formatted for use in a print statement
+        """
+        sortedContent = sorted(self.content, reverse=True)
+        biggestFileSize = sortedContent[0][0]
+        ndigits = int(math.ceil(math.log(biggestFileSize+1, 10)))
+        contentList  = "\nsandbox content sorted by size[Bytes]:"
+        for (size, name) in sortedContent:
+           contentList += ("\n%" + str(ndigits) + "s\t%s") % (size, name)
+        return contentList
+
 
     def upload(self, filecacheurl=None):
         """
@@ -142,8 +159,10 @@ class UserTarball(object):
 
         self.close()
         archiveName = self.tarfile.name
+        archiveSizeBytes = os.path.getsize(archiveName)
+
 	# in python3 and python2 with __future__ division, double / means integer division
-        archiveSizeKB = os.path.getsize(archiveName)//1024
+        archiveSizeKB = archiveSizeBytes//1024
         if archiveSizeKB <= 512 :
           archiveSize = "%d KB" % archiveSizeKB
         elif archiveSizeKB < 1024*10 :
@@ -151,13 +170,18 @@ class UserTarball(object):
           archiveSize = "%3f.1 MB" % (archiveSizeKB/1024)
         else:
           archiveSize = "%d MB" % (archiveSizeKB//1024)
+        if archiveSizeBytes > FILE_SIZE_LIMIT :
+          msg=("%sError%s: input tarball size %s exceeds maximum allowed limit of %d MB" % (colors.RED, colors.NORMAL, archiveSize, FILE_SIZE_LIMIT//1024//1024))
+          self.logger.error(msg)
+          raise SandboxTooBigException
+
         msg=("Uploading archive %s (%s) to the CRAB cache. Using URI %s" % (archiveName, archiveSize, filecacheurl))
         self.logger.debug(msg)
 
         ufc = CRABClient.Emulator.getEmulator('ufc')({'endpoint' : filecacheurl, "pycurl": True})
         result = ufc.upload(archiveName, excludeList = NEW_USER_SANDBOX_EXCLUSIONS)
         if 'hashkey' not in result:
-            self.logger.error("Failed to upload source files: %s" % str(result))
+            self.logger.error("Failed to upload archive: %s" % str(result))
             raise CachefileNotFoundException
         return str(result['hashkey'])
 
