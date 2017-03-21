@@ -14,7 +14,7 @@ from CRABClient.UserUtilities import getFileFromURL, getColumn
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ClientException
 
-from ServerUtilities import TASKDBSTATUSES_TMP
+from ServerUtilities import TASKDBSTATUSES_TMP, FEEDBACKMAIL
 
 
 PUBLICATION_STATES = {
@@ -57,10 +57,24 @@ class status2(SubCommand):
         self.logger.debug("The CRAB server submitted your task to the Grid scheduler (cluster ID: %s)" % rootDagId)
 
         if not webdir:
-            # if the dag is submitted and the webdir is not there we have to wait that AdjustSites run
-            # and upload the webdir location to the server
-            self.logger.info("Waiting for the Grid scheduler to bootstrap your task")
-            self.logger.debug("Schedd has not reported back the webdir (yet)")
+            # Query condor through the server for information about this task
+            uri = self.getUrl(self.instance, resource = 'workflow')
+            params = {'subresource': 'taskads', 'workflow': taskname}
+
+            res = server.get(uri, data = params)[0]['result'][0]
+
+            # 1 = idle, 2 = running
+            if res['JobStatus'] != 1 and res['JobStatus'] != 2:
+                dagmanHoldReason = res['DagmanHoldReason'] if 'DagmanHoldReason' in res else None
+                msg  = "The task failed to bootstrap on the Grid scheduler."
+                msg += " Please send an e-mail to %s." % (FEEDBACKMAIL)
+                msg += " Hold reason: %s" % (dagmanHoldReason)
+                self.logger.info(msg)
+            else:
+                # if the dag is submitted and the webdir is not there we have to wait that AdjustSites run
+                # and upload the webdir location to the server
+                self.logger.info("Waiting for the Grid scheduler to bootstrap your task")
+                self.logger.debug("Schedd has not reported back the webdir (yet)")
             return crabDBInfo, None
 
         self.logger.debug("Webdir is located at %s", webdir)
