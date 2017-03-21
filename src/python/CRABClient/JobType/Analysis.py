@@ -164,7 +164,6 @@ class Analysis(BasicJobType):
             except Exception as e:
                 msg = ("Impossible to upload the sandbox tarball.\nError message: %s.\n"
                        "More details can be found in %s" % (e, self.logger.logfile))
-                LOGGERS['CRAB3'].exception(msg) #the traceback is only printed into the logfile
                 raise ClientException(msg)
 
         debugFilesUploadResult = None
