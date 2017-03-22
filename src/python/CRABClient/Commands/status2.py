@@ -62,13 +62,14 @@ class status2(SubCommand):
             params = {'subresource': 'taskads', 'workflow': taskname}
 
             res = server.get(uri, data = params)[0]['result'][0]
-
-            # 1 = idle, 2 = running
-            if res['JobStatus'] != 1 and res['JobStatus'] != 2:
-                dagmanHoldReason = res['DagmanHoldReason'] if 'DagmanHoldReason' in res else None
+            # JobStatus 5 = Held
+            if res['JobStatus'] == '5' and 'DagmanHoldReason' in res:
+                # If we didn't find a webdir in the DB and the DAG is held,
+                # the task bootstrapping failed before or during the webdir
+                # upload and the reason should be printed.
                 msg  = "The task failed to bootstrap on the Grid scheduler."
                 msg += " Please send an e-mail to %s." % (FEEDBACKMAIL)
-                msg += " Hold reason: %s" % (dagmanHoldReason)
+                msg += "\nHold reason: %s" % (res['DagmanHoldReason'])
                 self.logger.info(msg)
             else:
                 # if the dag is submitted and the webdir is not there we have to wait that AdjustSites run
