@@ -4,7 +4,6 @@ CMSSW job type plug-in
 
 import os
 import re
-import math
 import shutil
 import string
 import tempfile
