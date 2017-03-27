@@ -4,7 +4,6 @@ CMSSW job type plug-in
 
 import os
 import re
-import math
 import shutil
 import string
 import tempfile
@@ -26,7 +25,7 @@ from CRABClient.ClientMapping import getParamDefaultValue
 from CRABClient.JobType.LumiMask import getLumiList, getRunList
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
 from CRABClient.ClientUtilities import bootstrapDone, BOOTSTRAP_CFGFILE, BOOTSTRAP_CFGFILE_PKL
-from CRABClient.ClientExceptions import ClientException, EnvironmentException, ConfigurationException
+from CRABClient.ClientExceptions import ClientException, EnvironmentException, ConfigurationException, SandboxTooBigException
 
 
 class Analysis(BasicJobType):
@@ -158,19 +157,12 @@ class Analysis(BasicJobType):
                         ISBSize = int(re_match.group(1))
                         ISBSizeLimit = int(re_match.group(2))
                         reason  = "%sError%s:" % (colors.RED, colors.NORMAL)
-                        reason += " Input sanbox size is ~%sMB. This is bigger than the maximum allowed size of %sMB." % (ISBSize/1024/1024, ISBSizeLimit/1024/1024)
-                        ISBContent = sorted(tb.content, reverse=True)
-                        biggestFileSize = ISBContent[0][0]
-                        ndigits = int(math.ceil(math.log(biggestFileSize+1, 10)))
-                        reason += "\nInput sanbox content sorted by size[Bytes]:"
-                        for (size, name) in ISBContent:
-                            reason += ("\n%" + str(ndigits) + "s\t%s") % (size, name)
+                        reason += " Input sandbox size is ~%sMB. This is bigger than the maximum allowed size of %sMB." % (ISBSize/1024/1024, ISBSizeLimit/1024/1024)
+                        reason += tb.printSortedContent()
                         raise ClientException(reason)
-                raise hte
             except Exception as e:
-                msg = ("Impossible to calculate the checksum of the sandbox tarball.\nError message: %s.\n"
+                msg = ("Impossible to upload the sandbox tarball.\nError message: %s.\n"
                        "More details can be found in %s" % (e, self.logger.logfile))
-                LOGGERS['CRAB3'].exception(msg) #the traceback is only printed into the logfile
                 raise ClientException(msg)
 
         debugFilesUploadResult = None
