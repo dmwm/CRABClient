@@ -141,7 +141,7 @@ class CRABClient(object):
             sub_cmd = next( v for k,v in self.subCommands.items() if args[0] in v.shortnames or args[0]==v.name)
         except StopIteration:
             print("'" + str(args[0]) + "' is not a valid command.")
-            print(self.parser.print_help())
+            self.parser.print_help()
             sys.exit(-1)
         self.cmd = sub_cmd(self.logger, args[1:])
 
