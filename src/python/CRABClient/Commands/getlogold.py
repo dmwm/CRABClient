@@ -1,6 +1,3 @@
-from __future__ import print_function
-from __future__ import division
-
 import CRABClient.Emulator
 from CRABClient import __version__
 from CRABClient.ClientUtilities import colors
@@ -11,21 +8,14 @@ from CRABClient.ClientExceptions import RESTCommunicationException, ClientExcept
 from ServerUtilities import getProxiedWebDir
 
 
-class getlog2(getcommand):
+class getlogold(getcommand):
     """
-    Important: code here is identical to the old getlog implementation (aside from setting the subresource to
-    'logs2' when calling getcommand and the names of the command/class themselves). This was done because trying to
-    avoid copy-paste code isn't worth the effort in this case. When the status2 is working correctly, old code will
-    be easily removed and replaced with the 'getlog2' version. Also, the command 'getlog' itself is deprecated and
-    we don't expect to make any changes to it until it's removed.
-
-    Class description:
     Retrieve the log files of a number of jobs specified by the -q/--quantity option.
     -q logfiles per exit code are returned if transferLogs = False; otherwise all the log files
     collected by the LogCollect job are returned. The task is identified by the -d/--dir option.
     """
-    name = 'getlog2'
-    shortnames = ['log2']
+    name = 'getlogold'
+    shortnames = ['logold']
     visible = True #overwrite getcommand
 
     def __call__(self):
@@ -53,8 +43,7 @@ class getlog2(getcommand):
                 self.logger.info("%sSuccess%s: All files successfully retrieved." % (colors.GREEN,colors.NORMAL))
             returndict = {'success': success, 'failed': failed}
         else:
-            # Different from the old getlog code: set 'logs2' as subresource so that 'getcommand' uses the new logic.
-            returndict = getcommand.__call__(self, subresource = 'logs2')
+            returndict = getcommand.__call__(self, subresource = 'logs')
             if ('success' in returndict and not returndict['success']) or \
                ('failed'  in returndict and returndict['failed']):
                 msg = "You can use the --short option to retrieve a short version of the log files from the Grid scheduler."
