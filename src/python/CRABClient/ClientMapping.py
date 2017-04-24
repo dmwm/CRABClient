@@ -28,7 +28,7 @@ parametersMapping = {
                   'secondarydata'  : {'default': None,       'config': ['Data.secondaryInputDataset'],      'type': 'StringType',  'required': False},
                   'ignorelocality' : {'default': False,      'config': ['Data.ignoreLocality'],             'type': 'BooleanType', 'required': False},
                   'splitalgo'      : {'default': None,       'config': ['Data.splitting'],                  'type': 'StringType',  'required': True },
-                  'algoargs'       : {'default': None,       'config': ['Data.unitsPerJob'],                'type': 'IntType',     'required': True },
+                  'algoargs'       : {'default': 8 * 60**2,  'config': ['Data.unitsPerJob'],                'type': 'IntType',     'required': False },
                   'totalunits'     : {'default': 0,          'config': ['Data.totalUnits'],                 'type': 'IntType',     'required': False},
                   'lfn'            : {'default': None,       'config': ['Data.outLFNDirBase'],              'type': 'StringType',  'required': False},
                   'publication'    : {'default': True,       'config': ['Data.publication'],                'type': 'BooleanType', 'required': False},

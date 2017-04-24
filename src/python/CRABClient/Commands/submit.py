@@ -197,6 +197,10 @@ class submit(SubCommand):
             except ValueError:
                 msg = "Invalid CRAB configuration: Parameter Data.unitsPerJob must be a valid number, not %s." % (self.configuration.Data.unitsPerJob)
                 return False, msg
+        elif getattr(self.configuration.Data, 'splitting', 'invalid') != 'Automatic':
+            # The default value is only valid for automatic splitting!
+            msg = "Invalid CRAB configuration: Parameter Data.unitsPerJob is missing."
+            return False, msg
 
         ## Check that JobType.pluginName and JobType.externalPluginFile are not both specified.
         if hasattr(self.configuration.JobType, 'pluginName') and hasattr(self.configuration.JobType, 'externalPluginFile'):
