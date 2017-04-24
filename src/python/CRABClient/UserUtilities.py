@@ -217,8 +217,8 @@ def getMutedStatusInfo(logger):
     """
     Mute the status console output before calling status and change it back to normal afterwards.
     """
-    mod = __import__('CRABClient.Commands.status2', fromlist='status2')
-    cmdobj = getattr(mod, 'status2')(logger)
+    mod = __import__('CRABClient.Commands.status', fromlist='status')
+    cmdobj = getattr(mod, 'status')(logger)
     loglevel = getConsoleLogLevel()
     setConsoleLogLevel(LOGLEVEL_MUTE)
     crabDBInfo, shortResult = cmdobj.__call__()

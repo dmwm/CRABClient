@@ -1,7 +1,7 @@
-from CRABClient.Commands.SubCommand import SubCommand
+from __future__ import print_function
+from __future__ import division
+
 from CRABClient.Commands.getcommand import getcommand
-from CRABClient.ClientExceptions import ConfigurationException
-import os
 
 class getoutput(getcommand):
     """ Retrieve the output files of a number of jobs specified by the -q/--quantity option. The task
@@ -12,7 +12,7 @@ class getoutput(getcommand):
     visible = True #overwrite getcommand
 
     def __call__(self):
-        returndict = getcommand.__call__(self, subresource = 'data')
+        returndict = getcommand.__call__(self, subresource = 'data2')
 
         return returndict
 

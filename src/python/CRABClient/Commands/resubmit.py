@@ -1,3 +1,5 @@
+from __future__ import print_function, division
+
 import re
 import urllib
 
@@ -5,9 +7,9 @@ import urllib
 import CRABClient.Emulator
 from CRABClient import __version__
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ClientUtilities import validateJobids, checkStatusLoop
-from CRABClient.ClientExceptions import ConfigurationException, RESTCommunicationException
-
+from CRABClient.ClientExceptions import ConfigurationException
+from CRABClient.UserUtilities import getMutedStatusInfo, getColumn
+from CRABClient.ClientUtilities import validateJobids, checkStatusLoop, colors
 
 class resubmit(SubCommand):
     """
@@ -25,43 +27,45 @@ class resubmit(SubCommand):
 
         SubCommand.__init__(self, logger, cmdargs)
 
-
     def __call__(self):
 
         serverFactory = CRABClient.Emulator.getEmulator('rest')
         server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version = __version__)
 
-        if self.jobids:
-            msg = "Requesting resubmission of jobs %s in task %s" % (self.jobids, self.cachedinfo['RequestName'])
-        else:
-            msg = "Requesting resubmission of failed jobs in task %s" % (self.cachedinfo['RequestName'])
-        self.logger.debug(msg)
+        crabDBInfo, jobList = getMutedStatusInfo(self.logger)
 
-        configreq = {'workflow': self.cachedinfo['RequestName'], 'subresource': 'resubmit'}
-        for attr_name in ['jobids', 'sitewhitelist', 'siteblacklist']:
-            attr_value = getattr(self, attr_name)
-            ## For 'jobids', 'sitewhitelist' and 'siteblacklist', attr_value is either a list of strings or None.
-            if attr_value is not None:
-                configreq[attr_name] = attr_value
-        for attr_name in ['maxjobruntime', 'maxmemory', 'numcores', 'priority']:
-            attr_value = getattr(self.options, attr_name)
-            ## For 'maxjobruntime', 'maxmemory', 'numcores', and 'priority', attr_value is either an integer or None.
-            if attr_value is not None:
-                configreq[attr_name] = attr_value
-        configreq['force'] = 1 if self.options.force else 0
-        configreq['publication'] = 1 if self.options.publication else 0
+        if not jobList:
+            msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
+            msg += " Status information is unavailable, will not proceed with the resubmission."
+            msg += " Try again a few minutes later if the task has just been submitted."
+            self.logger.info(msg)
+            return None
 
+        publicationEnabled = getColumn(crabDBInfo, "tm_publication")
+        jobsPerStatus = jobList['jobsPerStatus']
+
+        if self.options.publication:
+            if publicationEnabled == "F":
+                msg = "Publication was disabled for this task. Therefore, "
+                msg += "there are no publications to resubmit."
+                self.logger.info(msg)
+                return None
+            else:
+                if "finished" not in jobsPerStatus:
+                    msg = "No files found to publish"
+                    self.logger.info(msg)
+                    return None
+
+        self.jobids = self.processJobIds(jobList)
+
+        configreq = self.getQueryParams()
         self.logger.info("Sending resubmit request to the server.")
         self.logger.debug("Submitting %s " % str(configreq))
         configreq_encoded = self._encodeRequest(configreq)
         self.logger.debug("Encoded resubmit request: %s" % (configreq_encoded))
 
-        dictresult, status, reason = server.post(self.uri, data = configreq_encoded)
+        dictresult, _, _ = server.post(self.uri, data = configreq_encoded)
         self.logger.debug("Result: %s" % (dictresult))
-        if status != 200:
-            msg = "Problem resubmitting the task to the server:\ninput:%s\noutput:%s\nreason:%s" \
-                  % (str(configreq_encoded), str(dictresult), str(reason))
-            raise RESTCommunicationException(msg)
         self.logger.info("Resubmit request sent to the server.")
         if dictresult['result'][0]['result'] != 'ok':
             msg = "Server responded with: '%s'" % (dictresult['result'][0]['result'])
@@ -79,7 +83,6 @@ class resubmit(SubCommand):
 
         return returndict
 
-
     ## TODO: This method is shared with submit. Put it in a common place.
     def _encodeRequest(self, configreq):
         """
@@ -96,6 +99,83 @@ class resubmit(SubCommand):
         encoded = urllib.urlencode(configreq) + encodedLists
         return str(encoded)
 
+    def processJobIds(self, jobList):
+        """
+        If this is a publication resubmission, return None since jobIds are not taken
+        into account for publication resubmissions.
+
+        If the user provides a list of jobIds to be resubmitted, validate it and 
+        return the same list in case of success.
+
+        If no jobIds are provided, create a list of jobs that need resubmitting and
+        return it.
+        """
+
+        if self.options.publication:
+            return None
+
+        # Build a dictionary from the jobList
+        jobStatusDict = {}
+        for jobStatus, jobId in jobList['jobList']:
+            jobStatusDict[jobId] = jobStatus
+
+        failedJobStatus = 'failed'
+        finishedJobStatus = 'finished'
+
+        possibleToResubmitJobIds = []
+        for jobStatus, jobId in jobList['jobList']:
+            if (self.options.force and jobStatus == finishedJobStatus) or jobStatus == failedJobStatus:
+                possibleToResubmitJobIds.append(jobId)
+
+        allowedJobStates = [failedJobStatus]
+        if self.jobids:
+            msg = "Requesting resubmission of jobs %s in task %s" % (self.jobids, self.cachedinfo['RequestName'])
+            self.logger.debug(msg)
+            if self.options.force:
+                allowedJobStates += [finishedJobStatus]
+            # Go through the jobids and check if it's possible to resubmit them
+            for jobId in self.jobids:
+                if (jobId not in jobStatusDict) or (jobStatusDict[jobId] not in allowedJobStates):
+                    possibleAndWantedJobIds = list(set(possibleToResubmitJobIds) & set(self.jobids))
+                    notPossibleAndWantedJobIds = list(set(self.jobids) - set(possibleAndWantedJobIds))
+                    msg = "Not possible to resubmit the following jobs:\n%s\n" % notPossibleAndWantedJobIds
+                    msg += "Only jobs in status %s can be resubmitted. " % failedJobStatus
+                    msg += "Jobs in status %s can also be resubmitted, " % finishedJobStatus
+                    msg += "but only if the jobid is specified and the force option is set."
+                    raise ConfigurationException(msg)
+            return self.jobids
+        else:
+            msg = "Requesting resubmission of failed jobs in task %s" % (self.cachedinfo['RequestName'])
+            self.logger.debug(msg)
+
+            if not possibleToResubmitJobIds:
+                msg = "Found no jobs to resubmit. Only jobs in status %s can be resubmitted. " % failedJobStatus
+                msg += "Jobs in status %s can also be resubmitted, but only if the jobids " % finishedJobStatus
+                msg += "are specified and the force option is set."
+                raise ConfigurationException(msg)
+
+            return possibleToResubmitJobIds
+
+    def getQueryParams(self):
+        """
+        Create the parameter dictionary that's passed to the server.
+        """
+        configreq = {'workflow': self.cachedinfo['RequestName'], 'subresource': 'resubmit2'}
+
+        for attr_name in ['jobids', 'sitewhitelist', 'siteblacklist']:
+            attr_value = getattr(self, attr_name)
+            ## For 'jobids', 'sitewhitelist' and 'siteblacklist', attr_value is either a list of strings or None.
+            if attr_value is not None:
+                configreq[attr_name] = attr_value
+        for attr_name in ['maxjobruntime', 'maxmemory', 'numcores', 'priority']:
+            attr_value = getattr(self.options, attr_name)
+            ## For 'maxjobruntime', 'maxmemory', 'numcores', and 'priority', attr_value is either an integer or None.
+            if attr_value is not None:
+                configreq[attr_name] = attr_value
+
+        configreq['publication'] = 1 if self.options.publication else 0
+
+        return configreq
 
     def setOptions(self):
         """
@@ -269,4 +349,3 @@ class resubmit(SubCommand):
             if self.options.priority < 1:
                 msg = "The requested priority (%d) must be greater than 0." % (self.options.priority)
                 raise ConfigurationException(msg)
-

@@ -1,18 +1,18 @@
-from __future__ import print_function
-from __future__ import division
-
+from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.Commands.getcommand import getcommand
+from CRABClient.ClientExceptions import ConfigurationException
+import os
 
-class getoutput2(getcommand):
+class getoutputold(getcommand):
     """ Retrieve the output files of a number of jobs specified by the -q/--quantity option. The task
         is identified by the -d/--dir option
     """
-    name = 'getoutput2'
-    shortnames = ['output2', 'out2']
+    name = 'getoutputold'
+    shortnames = ['outputold', 'outold']
     visible = True #overwrite getcommand
 
     def __call__(self):
-        returndict = getcommand.__call__(self, subresource = 'data2')
+        returndict = getcommand.__call__(self, subresource = 'data')
 
         return returndict
 
