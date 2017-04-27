@@ -8,7 +8,7 @@ import CRABClient.Emulator
 from CRABClient import __version__
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ConfigurationException
-from CRABClient.UserUtilities import getMutedStatusInfo, getColumn
+from CRABClient.UserUtilities import getMutedStatusInfo
 from CRABClient.ClientUtilities import validateJobids, checkStatusLoop, colors
 
 class resubmit(SubCommand):
@@ -32,7 +32,7 @@ class resubmit(SubCommand):
         serverFactory = CRABClient.Emulator.getEmulator('rest')
         server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version = __version__)
 
-        crabDBInfo, jobList = getMutedStatusInfo(self.logger)
+        statusDict, jobList = getMutedStatusInfo(self.logger)
 
         if not jobList:
             msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
@@ -41,11 +41,11 @@ class resubmit(SubCommand):
             self.logger.info(msg)
             return None
 
-        publicationEnabled = getColumn(crabDBInfo, "tm_publication")
+        publicationEnabled = statusDict['publicationEnabled']
         jobsPerStatus = jobList['jobsPerStatus']
 
         if self.options.publication:
-            if publicationEnabled == "F":
+            if publicationEnabled:
                 msg = "Publication was disabled for this task. Therefore, "
                 msg += "there are no publications to resubmit."
                 self.logger.info(msg)
