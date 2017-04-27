@@ -20,10 +20,10 @@ from CRABClient.ClientUtilities import colors
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.JobType.BasicJobType import BasicJobType
 from CRABClient.UserUtilities import getMutedStatusInfo
-from CRABClient.ClientExceptions import RESTCommunicationException, ConfigurationException, \
+from CRABClient.ClientExceptions import ConfigurationException, \
     UnknownOptionException, ClientException
 
-from ServerUtilities import FEEDBACKMAIL, getColumn
+from ServerUtilities import FEEDBACKMAIL
 
 class report(SubCommand):
     """
@@ -289,12 +289,12 @@ class report(SubCommand):
         self.logger.debug('Looking up report for task %s' % self.cachedinfo['RequestName'])
 
         # Query server for information from the taskdb, intput/output file metadata from metadatadb
-        dictresult, status, reason = server.get(self.uri, data = {'workflow': self.cachedinfo['RequestName'], 'subresource': 'report2'})
+        dictresult, status, _ = server.get(self.uri, data = {'workflow': self.cachedinfo['RequestName'], 'subresource': 'report2'})
 
         self.logger.debug("Result: %s" % dictresult)
         self.logger.info("Running crab status2 first to fetch necessary information.")
         # Get job statuses
-        crabDBInfo, shortResult = getMutedStatusInfo(self.logger)
+        statusDict, shortResult = getMutedStatusInfo(self.logger)
 
         if not shortResult:
             # No point in continuing if the job list is empty.
@@ -316,12 +316,12 @@ class report(SubCommand):
                 if jobStatusDict.get(jobId) in ['finished']:
                     reportData['runsAndLumis'][jobId] = dictresult['result'][0]['runsAndLumis'][jobId]
 
-        reportData['publication'] = True if getColumn(crabDBInfo, 'tm_publication') == "T" else False
-        userWebDirURL = getColumn(crabDBInfo, 'tm_user_webdir')
+        reportData['publication'] = statusDict['publicationEnabled']
+        userWebDirURL = statusDict['userWebDirURL']
         numJobs = len(shortResult['jobList'])
 
         reportData['lumisToProcess'] = self.getLumisToProcess(userWebDirURL, numJobs, self.cachedinfo['RequestName'])
-        reportData['inputDataset'] = getColumn(crabDBInfo, 'tm_input_dataset')
+        reportData['inputDataset'] = statusDict['inputDataset']
 
         inputDatasetInfo = self.getInputDatasetLumis(reportData['inputDataset'], userWebDirURL)['inputDataset']
         reportData['inputDatasetLumis'] = inputDatasetInfo['lumis']
