@@ -2,9 +2,7 @@ from __future__ import print_function, division
 
 import os
 import json
-import tempfile
 import pycurl
-import StringIO
 import tarfile
 
 import CRABClient.Emulator
@@ -13,13 +11,12 @@ from ast import literal_eval
 
 from WMCore.DataStructs.LumiList import LumiList
 from WMCore.Services.DBS.DBSReader import DBSReader
-from WMCore.Services.pycurl_manager import ResponseHeader
 
 from CRABClient import __version__
 from CRABClient.ClientUtilities import colors
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.JobType.BasicJobType import BasicJobType
-from CRABClient.UserUtilities import getMutedStatusInfo
+from CRABClient.UserUtilities import getMutedStatusInfo, getFileFromURL
 from CRABClient.ClientExceptions import ConfigurationException, \
     UnknownOptionException, ClientException
 
@@ -317,7 +314,7 @@ class report(SubCommand):
                     reportData['runsAndLumis'][jobId] = dictresult['result'][0]['runsAndLumis'][jobId]
 
         reportData['publication'] = statusDict['publicationEnabled']
-        userWebDirURL = statusDict['userWebDirURL']
+        userWebDirURL = statusDict['proxiedWebDir']
         numJobs = len(shortResult['jobList'])
 
         reportData['lumisToProcess'] = self.getLumisToProcess(userWebDirURL, numJobs, self.cachedinfo['RequestName'])
@@ -351,37 +348,26 @@ class report(SubCommand):
         """
         res = {}
         if userWebDirURL:
-            curl = self.prepareCurl()
-            fp = tempfile.NamedTemporaryFile()
-            curl.setopt(pycurl.WRITEFUNCTION, fp.write)
-            hbuf = StringIO.StringIO()
-            curl.setopt(pycurl.HEADERFUNCTION, hbuf.write)
+            url = userWebDirURL + "/run_and_lumis.tar.gz"
+            tarFilename = os.path.join(self.requestarea, 'results/run_and_lumis.tar.gz')
             try:
-                url = userWebDirURL + "/run_and_lumis.tar.gz"
-                curl.setopt(pycurl.URL, url.encode("ascii", "ignore"))
-                self.myPerform(curl, url)
-                header = ResponseHeader(hbuf.getvalue())
-                if header.status == 200:
-                    fp.seek(0)
-                    tarball = tarfile.open(fp.name)
-                    try:
-                        for jobid in xrange(1, numJobs+1):
-                            filename = "job_lumis_%d.json" % (jobid)
+                getFileFromURL(url, filename=tarFilename, proxyfilename=self.proxyfilename)
+                with tarfile.open(tarFilename) as tarball:
+                    for jobid in xrange(1, numJobs+1):
+                        filename = "job_lumis_%d.json" % (jobid)
+                        try:
+                            member = tarball.getmember(filename)
+                        except KeyError:
+                            self.logger.warning("File %s not found in run_and_lumis.tar.gz for task %s" % (filename, workflow))
+                        else:
+                            fd = tarball.extractfile(member)
                             try:
-                                member = tarball.getmember(filename)
-                            except KeyError:
-                                self.logger.warning("File %s not found in run_and_lumis.tar.gz for task %s" % (filename, workflow))
-                            else:
-                                fd = tarball.extractfile(member)
-                                try:
-                                    res[str(jobid)] = json.load(fd)
-                                finally:
-                                    fd.close()
-                    finally:
-                        tarball.close()
-            finally:
-                fp.close()
-                hbuf.close()
+                                res[str(jobid)] = json.load(fd)
+                            finally:
+                                fd.close()
+            except ClientException as ce:
+                self.logger.error("Failed to retrieve input dataset duplicate lumis.")
+                self.logger.debug(ce)
         return res
 
     def getInputDatasetLumis(self, inputDataset, userWebDirURL):
@@ -395,39 +381,28 @@ class report(SubCommand):
         res = {}
         res['inputDataset'] = {'lumis': {}, 'duplicateLumis': {}}
         if inputDataset and userWebDirURL:
-            curl = self.prepareCurl()
-            fp = tempfile.TemporaryFile()
-            curl.setopt(pycurl.WRITEFUNCTION, fp.write)
-            hbuf = StringIO.StringIO()
-            curl.setopt(pycurl.HEADERFUNCTION, hbuf.write)
+            url = userWebDirURL + "/input_dataset_lumis.json"
+            filename = os.path.join(self.requestarea, 'results/input_dataset_lumis.json')
             try:
                 ## Retrieve the lumis in the input dataset.
-                url = userWebDirURL + "/input_dataset_lumis.json"
-                curl.setopt(pycurl.URL, url.encode("ascii", "ignore"))
-                self.myPerform(curl, url)
-                header = ResponseHeader(hbuf.getvalue())
-                if header.status == 200:
-                    fp.seek(0)
-                    res['inputDataset']['lumis'] = json.load(fp)
-                else:
-                    self.logger.error("Failed to retrieve input dataset lumis.")
-                ## Clean temp file and buffer.
-                fp.seek(0)
-                fp.truncate(0)
-                hbuf.truncate(0)
+                getFileFromURL(url, filename=filename, proxyfilename=self.proxyfilename)
+                with open(filename) as fd:
+                    res['inputDataset']['lumis'] = json.load(fd)
+            except ClientException as ce:
+                self.logger.error("Failed to retrieve input dataset lumis.")
+                self.logger.debug(ce)
+
+            url = userWebDirURL + "/input_dataset_duplicate_lumis.json"
+            filename = os.path.join(self.requestarea, 'results/input_dataset_duplicate_lumis.json')
+            try:
                 ## Retrieve the lumis split across files in the input dataset.
-                url = userWebDirURL + "/input_dataset_duplicate_lumis.json"
-                curl.setopt(pycurl.URL, url.encode("ascii", "ignore"))
-                self.myPerform(curl, url)
-                header = ResponseHeader(hbuf.getvalue())
-                if header.status == 200:
-                    fp.seek(0)
-                    res['inputDataset']['duplicateLumis'] = json.load(fp)
-                else:
-                    self.logger.error("Failed to retrieve input dataset duplicate lumis.")
-            finally:
-                fp.close()
-                hbuf.close()
+                getFileFromURL(url, filename=filename, proxyfilename=self.proxyfilename)
+                with open(filename) as fd:
+                    res['inputDataset']['duplicateLumis'] = json.load(fd)
+            except ClientException as ce:
+                self.logger.error("Failed to retrieve input dataset duplicate lumis.")
+                self.logger.debug(ce)
+
         return res
 
     def getDBSPublicationInfo(self, outputDatasets):
