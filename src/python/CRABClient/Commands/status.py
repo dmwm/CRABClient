@@ -10,7 +10,7 @@ from datetime import datetime
 
 import CRABClient.Emulator
 from CRABClient import __version__
-from CRABClient.ClientUtilities import colors, validateJobids
+from CRABClient.ClientUtilities import colors, validateJobids, LOGGERS
 from CRABClient.UserUtilities import getFileFromURL, getColumn
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ClientException, ConfigurationException
@@ -108,6 +108,7 @@ class status(SubCommand):
             failureMsg = "Cannot retrieve the status_cache file. Maybe the task process has not run yet?"
             failureMsg += "\nGot: %s" % ce
             self.logger.debug(failureMsg)
+            LOGGERS['CRAB3'].exception(ce)
             return self.makeStatusReturnDict(crabDBInfo, statusFailureMsg=failureMsg), None
         else:
             with open(statusCacheFilename) as fd:
