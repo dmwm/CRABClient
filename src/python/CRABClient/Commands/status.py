@@ -15,7 +15,8 @@ from CRABClient.UserUtilities import getFileFromURL, getColumn
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ClientException, ConfigurationException
 
-from ServerUtilities import getEpochFromDBTime, TASKDBSTATUSES_TMP, FEEDBACKMAIL
+from ServerUtilities import getEpochFromDBTime, TASKDBSTATUSES_TMP, FEEDBACKMAIL,\
+    getProxiedWebDir
 
 PUBLICATION_STATES = {
     'not_published': 'idle',
@@ -84,9 +85,19 @@ class status(SubCommand):
             return self.makeStatusReturnDict(crabDBInfo, statusFailureMsg=failureMsg), None
 
         self.logger.debug("Webdir is located at %s", webdir)
+
+        proxiedWebDir = getProxiedWebDir(taskname, self.serverurl, uri, self.proxyfilename, self.logger.debug)
+        if not proxiedWebDir:
+            msg = "Failed to get the proxied webdir from CRABServer. "
+            msg += "\nWill fall back to the regular webdir url for file downloads "
+            msg += "but will likely fail if the client is located outside CERN."
+            self.logger.debug(msg)
+            proxiedWebDir = webdir
+        self.logger.debug("Proxied webdir is located at %s", proxiedWebDir)
+
         # Download status_cache file
-        self.logger.debug("Retrieving 'status_cache' file from webdir")
-        url = webdir + '/' + "status_cache"
+        url = proxiedWebDir + '/' + "status_cache"
+        self.logger.debug("Retrieving 'status_cache' file from %s", url)
 
         statusCacheInfo = None
         try:
@@ -127,12 +138,13 @@ class status(SubCommand):
         if self.options.json:
             self.logger.info(json.dumps(statusCacheInfo))
 
-        statusDict = self.makeStatusReturnDict(crabDBInfo, '', shortResult, statusCacheInfo, pubStatus)
+        statusDict = self.makeStatusReturnDict(crabDBInfo, '', shortResult, statusCacheInfo, pubStatus,
+                                               proxiedWebDir)
         return statusDict, shortResult
 
     def makeStatusReturnDict(self, crabDBInfo, statusFailureMsg = '',
                        shortResult = {}, statusCacheInfo = {},
-                       pubStatus = {}):
+                       pubStatus = {}, proxiedWebDir = ''):
         """ Create a dictionary which is mostly identical to the dictionary
             that was being returned by the old status (plus a few other keys
             needed by the other client commands). This is to ensure backward
@@ -159,6 +171,7 @@ class status(SubCommand):
             datetime.strptime(dbStartTime, '%Y-%m-%d %H:%M:%S.%f'))
 
         statusDict['statusFailureMsg'] = statusFailureMsg
+        statusDict['proxiedWebDir'] = proxiedWebDir
         statusDict['jobsPerStatus'] = shortResult.get('jobsPerStatus', {})
         statusDict['publication'] = pubStatus.get('status', {})
         statusDict['publicationFailures'] = pubStatus.get('failure_reasons', {})
