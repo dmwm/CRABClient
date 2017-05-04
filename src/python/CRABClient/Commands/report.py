@@ -13,7 +13,7 @@ from WMCore.DataStructs.LumiList import LumiList
 from WMCore.Services.DBS.DBSReader import DBSReader
 
 from CRABClient import __version__
-from CRABClient.ClientUtilities import colors
+from CRABClient.ClientUtilities import colors, LOGGERS
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.JobType.BasicJobType import BasicJobType
 from CRABClient.UserUtilities import getMutedStatusInfo, getFileFromURL
@@ -367,7 +367,8 @@ class report(SubCommand):
                                 fd.close()
             except ClientException as ce:
                 self.logger.error("Failed to retrieve input dataset duplicate lumis.")
-                self.logger.debug(ce)
+                LOGGERS['CRAB3'].exception(ce)
+
         return res
 
     def getInputDatasetLumis(self, inputDataset, userWebDirURL):
@@ -390,7 +391,7 @@ class report(SubCommand):
                     res['inputDataset']['lumis'] = json.load(fd)
             except ClientException as ce:
                 self.logger.error("Failed to retrieve input dataset lumis.")
-                self.logger.debug(ce)
+                LOGGERS['CRAB3'].exception(ce)
 
             url = userWebDirURL + "/input_dataset_duplicate_lumis.json"
             filename = os.path.join(self.requestarea, 'results/input_dataset_duplicate_lumis.json')
@@ -401,7 +402,7 @@ class report(SubCommand):
                     res['inputDataset']['duplicateLumis'] = json.load(fd)
             except ClientException as ce:
                 self.logger.error("Failed to retrieve input dataset duplicate lumis.")
-                self.logger.debug(ce)
+                LOGGERS['CRAB3'].exception(ce)
 
         return res
 
