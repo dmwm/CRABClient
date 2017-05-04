@@ -26,7 +26,12 @@ class getcommand(SubCommand):
     def __call__(self, **argv):
         # TODO: remove this 'if' once transition to status2 is complete
         if argv.get('subresource') in ['data2', 'logs2']:
-            self.processAndStoreJobIds()
+            exitCode = self.processAndStoreJobIds()
+            if exitCode:
+                msg = "%sError%s:" % (colors.RED, colors.NORMAL)
+                msg += " Status information is unavailable, will not proceed with the file retrieval."
+                self.logger.info(msg)
+                return {'success': {}, 'failed': {}}
 
         ## Retrieve the transferLogs parameter from the task database.
         taskdbparam, configparam = '', ''
@@ -156,6 +161,10 @@ class getcommand(SubCommand):
         Also store some information which is used later when deciding the correct pfn.
         """
         _, jobList = getMutedStatusInfo(self.logger)
+        if not jobList:
+            # Status somehow failed and did not provide a joblist, no point in continuing.
+            return 1
+
         jobList = jobList['jobList']
         transferringIds = [x[1] for x in jobList if x[0] in ['transferring', 'cooloff', 'held']]
         finishedIds = [x[1] for x in jobList if x[0] in ['finished', 'failed', 'transferred']]
@@ -172,6 +181,8 @@ class getcommand(SubCommand):
                 self.options.jobids.append(('jobids', jobid))
 
         self.transferringIds = transferringIds
+
+        return 0
 
     def insertPfns(self, fileInfoList):
         """
