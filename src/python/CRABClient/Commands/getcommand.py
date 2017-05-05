@@ -171,6 +171,12 @@ class getcommand(SubCommand):
             for jobid in possibleJobIds:
                 self.options.jobids.append(('jobids', jobid))
 
+        if len(self.options.jobids) > 500:
+            msg = "You requested to process files for %d jobs." % len(self.options.jobids)
+            msg += "\nThe limit is 500. Please use the '--jobids'"
+            msg += "option to select up to 500 jobs."
+            raise ConfigurationException(msg)
+
         self.transferringIds = transferringIds
 
     def insertPfns(self, fileInfoList):
