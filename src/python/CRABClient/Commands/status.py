@@ -57,7 +57,7 @@ class status(SubCommand):
         if not rootDagId:
             failureMsg = "The task has not been submitted to the Grid scheduler yet. Not printing job information."
             self.logger.debug(failureMsg)
-            return self.makeStatusReturnDict(crabDBInfo, statusFailureMsg=failureMsg), None
+            return self.makeStatusReturnDict(crabDBInfo, statusFailureMsg=failureMsg)
 
         self.logger.debug("The CRAB server submitted your task to the Grid scheduler (cluster ID: %s)" % rootDagId)
 
@@ -82,7 +82,7 @@ class status(SubCommand):
                 self.logger.info("Waiting for the Grid scheduler to bootstrap your task")
                 failureMsg = "Schedd has not reported back the webdir (yet)"
                 self.logger.debug(failureMsg)
-            return self.makeStatusReturnDict(crabDBInfo, statusFailureMsg=failureMsg), None
+            return self.makeStatusReturnDict(crabDBInfo, statusFailureMsg=failureMsg)
 
         self.logger.debug("Webdir is located at %s", webdir)
 
@@ -109,7 +109,7 @@ class status(SubCommand):
             failureMsg += "\nGot: %s" % ce
             self.logger.debug(failureMsg)
             LOGGERS['CRAB3'].exception(ce)
-            return self.makeStatusReturnDict(crabDBInfo, statusFailureMsg=failureMsg), None
+            return self.makeStatusReturnDict(crabDBInfo, statusFailureMsg=failureMsg)
         else:
             with open(statusCacheFilename) as fd:
                 # Skip first two lines of the file. They contain the checkpoint locations for the job_log / fjr_parse_results 
@@ -141,7 +141,7 @@ class status(SubCommand):
 
         statusDict = self.makeStatusReturnDict(crabDBInfo, '', shortResult, statusCacheInfo, pubStatus,
                                                proxiedWebDir)
-        return statusDict, shortResult
+        return statusDict
 
     def makeStatusReturnDict(self, crabDBInfo, statusFailureMsg = '',
                        shortResult = {}, statusCacheInfo = {},
@@ -184,6 +184,7 @@ class status(SubCommand):
                 if status['State'] == 'failed' and 'Error' in status:
                     jobs[jobid]['Error'] = status['Error']
         statusDict['jobs'] = jobs
+        statusDict['shortResult'] = shortResult
         return statusDict
 
     def _percentageString(self, state, value, total):
