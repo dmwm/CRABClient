@@ -221,9 +221,9 @@ def getMutedStatusInfo(logger):
     cmdobj = getattr(mod, 'status')(logger)
     loglevel = getConsoleLogLevel()
     setConsoleLogLevel(LOGLEVEL_MUTE)
-    statusDict, shortResult = cmdobj.__call__()
+    statusDict = cmdobj.__call__()
     setConsoleLogLevel(loglevel)
-    return statusDict, shortResult
+    return statusDict
 
 def getColumn(dictresult, columnName):
     columnIndex = dictresult['desc']['columns'].index(columnName)

@@ -155,8 +155,8 @@ class getcommand(SubCommand):
 
         Also store some information which is used later when deciding the correct pfn.
         """
-        _, jobList = getMutedStatusInfo(self.logger)
-        jobList = jobList['jobList']
+        statusDict = getMutedStatusInfo(self.logger)
+        jobList = statusDict['shortResult']['jobList']
         transferringIds = [x[1] for x in jobList if x[0] in ['transferring', 'cooloff', 'held']]
         finishedIds = [x[1] for x in jobList if x[0] in ['finished', 'failed', 'transferred']]
         possibleJobIds = transferringIds + finishedIds

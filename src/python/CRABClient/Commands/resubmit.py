@@ -32,7 +32,8 @@ class resubmit(SubCommand):
         serverFactory = CRABClient.Emulator.getEmulator('rest')
         server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version = __version__)
 
-        statusDict, jobList = getMutedStatusInfo(self.logger)
+        statusDict = getMutedStatusInfo(self.logger)
+        jobList = statusDict['shortResult']
 
         if not jobList:
             msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
