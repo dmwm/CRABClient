@@ -7,7 +7,6 @@ import os
 import re
 import copy
 import datetime
-import logging
 import logging.handlers
 import time
 import pkgutil

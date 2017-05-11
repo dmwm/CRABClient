@@ -1,7 +1,6 @@
 from __future__ import division # I want floating points
 from __future__ import print_function
 
-import os
 import math
 import json
 import urllib
@@ -11,7 +10,7 @@ from datetime import datetime
 import CRABClient.Emulator
 from CRABClient import __version__
 from CRABClient.ClientUtilities import colors, validateJobids, LOGGERS
-from CRABClient.UserUtilities import getFileFromURL, getColumn
+from CRABClient.UserUtilities import getDataFromURL, getColumn
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ClientException, ConfigurationException
 
@@ -96,28 +95,24 @@ class status(SubCommand):
         self.logger.debug("Proxied webdir is located at %s", proxiedWebDir)
 
         # Download status_cache file
-        url = proxiedWebDir + '/' + "status_cache"
+        url = proxiedWebDir + "/status_cache"
         self.logger.debug("Retrieving 'status_cache' file from %s", url)
 
         statusCacheInfo = None
         try:
-            filename = os.path.join(self.requestarea, 'results/status_cache')
-            statusCacheFilename = getFileFromURL(url, filename=filename, proxyfilename=self.proxyfilename)
+            statusCacheData = getDataFromURL(url, self.proxyfilename)
         except ClientException as ce:
             self.logger.info("Waiting for the Grid scheduler to report back the status of your task")
             failureMsg = "Cannot retrieve the status_cache file. Maybe the task process has not run yet?"
             failureMsg += "\nGot: %s" % ce
-            self.logger.debug(failureMsg)
+            self.logger.error(failureMsg)
             LOGGERS['CRAB3'].exception(ce)
             return self.makeStatusReturnDict(crabDBInfo, statusFailureMsg=failureMsg)
         else:
-            with open(statusCacheFilename) as fd:
-                # Skip first two lines of the file. They contain the checkpoint locations for the job_log / fjr_parse_results 
-                # files and are used by the status caching script.
-                fd.readline()
-                fd.readline()
-                # Load the job_report summary
-                statusCacheInfo = literal_eval(fd.readline())
+            # We skip first two lines of the file because they contain the checkpoint locations 
+            # for the job_log / fjr_parse_results files and are used by the status caching script.
+            # Load the job_report summary
+            statusCacheInfo = literal_eval(statusCacheData.split('\n')[2])
             self.logger.debug("Got information from status cache file: %s", statusCacheInfo)
 
         self.printDAGStatus(crabDBInfo, statusCacheInfo)

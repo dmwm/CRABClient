@@ -8,6 +8,7 @@ import tarfile
 import CRABClient.Emulator
 
 from ast import literal_eval
+from cStringIO import StringIO
 
 from WMCore.DataStructs.LumiList import LumiList
 from WMCore.Services.DBS.DBSReader import DBSReader
@@ -16,7 +17,7 @@ from CRABClient import __version__
 from CRABClient.ClientUtilities import colors, LOGGERS
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.JobType.BasicJobType import BasicJobType
-from CRABClient.UserUtilities import getMutedStatusInfo, getFileFromURL
+from CRABClient.UserUtilities import getMutedStatusInfo, getDataFromURL
 from CRABClient.ClientExceptions import ConfigurationException, \
     UnknownOptionException, ClientException
 
@@ -289,7 +290,7 @@ class report(SubCommand):
         dictresult, status, _ = server.get(self.uri, data = {'workflow': self.cachedinfo['RequestName'], 'subresource': 'report2'})
 
         self.logger.debug("Result: %s" % dictresult)
-        self.logger.info("Running crab status2 first to fetch necessary information.")
+        self.logger.info("Running crab status first to fetch necessary information.")
         # Get job statuses
         statusDict = getMutedStatusInfo(self.logger)
         shortResult = statusDict['shortResult']
@@ -350,10 +351,9 @@ class report(SubCommand):
         res = {}
         if userWebDirURL:
             url = userWebDirURL + "/run_and_lumis.tar.gz"
-            tarFilename = os.path.join(self.requestarea, 'results/run_and_lumis.tar.gz')
             try:
-                getFileFromURL(url, filename=tarFilename, proxyfilename=self.proxyfilename)
-                with tarfile.open(tarFilename) as tarball:
+                data = getDataFromURL(url, self.proxyfilename)
+                with tarfile.open(fileobj=StringIO(data)) as tarball:
                     for jobid in xrange(1, numJobs+1):
                         filename = "job_lumis_%d.json" % (jobid)
                         try:
@@ -384,23 +384,19 @@ class report(SubCommand):
         res['inputDataset'] = {'lumis': {}, 'duplicateLumis': {}}
         if inputDataset and userWebDirURL:
             url = userWebDirURL + "/input_dataset_lumis.json"
-            filename = os.path.join(self.requestarea, 'results/input_dataset_lumis.json')
             try:
                 ## Retrieve the lumis in the input dataset.
-                getFileFromURL(url, filename=filename, proxyfilename=self.proxyfilename)
-                with open(filename) as fd:
-                    res['inputDataset']['lumis'] = json.load(fd)
+                data = getDataFromURL(url, self.proxyfilename)
+                res['inputDataset']['lumis'] = json.loads(data)
             except ClientException as ce:
                 self.logger.error("Failed to retrieve input dataset lumis.")
                 LOGGERS['CRAB3'].exception(ce)
 
             url = userWebDirURL + "/input_dataset_duplicate_lumis.json"
-            filename = os.path.join(self.requestarea, 'results/input_dataset_duplicate_lumis.json')
             try:
                 ## Retrieve the lumis split across files in the input dataset.
-                getFileFromURL(url, filename=filename, proxyfilename=self.proxyfilename)
-                with open(filename) as fd:
-                    res['inputDataset']['duplicateLumis'] = json.load(fd)
+                data = getDataFromURL(url, self.proxyfilename)
+                res['inputDataset']['duplicateLumis'] = json.loads(data)
             except ClientException as ce:
                 self.logger.error("Failed to retrieve input dataset duplicate lumis.")
                 LOGGERS['CRAB3'].exception(ce)

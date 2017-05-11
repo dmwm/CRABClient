@@ -102,9 +102,9 @@ class getlog(getcommand):
         success = []
         failed = []
         for _, jobid in self.options.jobids:
-            ## We don't know a priori how many retries the job had. So we start with retry 0
-            ## and increase it by 1 until we are unable to retrieve a log file (interpreting
-            ## this as the fact that we reached the highest retry already).
+            # We don't know a priori how many retries the job had. So we start with retry 0
+            # and increase it by 1 until we are unable to retrieve a log file (interpreting
+            # this as the fact that we reached the highest retry already).
             retry = 0
             succeded = True
             while succeded:
@@ -117,10 +117,10 @@ class getlog(getcommand):
                     retry += 1 #To retrieve retried job log, if there is any.
                 except ClientException as ex:
                     succeded = False
-                    ## Ignore the exception if the HTTP status code is 404. Status 404 means file
-                    ## not found (see http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html). File
-                    ## not found error is expected, since we try all the job retries.
-                    if not hasattr(ex, "status") or ex.status!=404:
+                    # Ignore the exception if the HTTP status code is 404. Status 404 means file
+                    # not found (see http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html). File
+                    # not found error is expected, since we try all the job retries.
+                    if hasattr(ex.args[0], 'status') and ex.args[0].status != 404:
                         self.logger.debug(str(ex))
                         failed.append(filename)
 
