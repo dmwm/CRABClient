@@ -27,10 +27,7 @@ class getcommand(SubCommand):
     def __call__(self, **argv):
         # TODO: remove this 'if' once transition to status2 is complete
         if argv.get('subresource') in ['data2', 'logs2']:
-            try:
-                self.processAndStoreJobIds()
-            except ClientException:
-                raise
+            self.processAndStoreJobIds()
 
         ## Retrieve the transferLogs parameter from the task database.
         taskdbparam, configparam = '', ''

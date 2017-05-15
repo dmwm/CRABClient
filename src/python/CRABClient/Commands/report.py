@@ -17,7 +17,8 @@ from CRABClient import __version__
 from CRABClient.ClientUtilities import colors, LOGGERS
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.JobType.BasicJobType import BasicJobType
-from CRABClient.UserUtilities import getMutedStatusInfo, getDataFromURL
+from CRABClient.UserUtilities import getMutedStatusInfo, getDataFromURL,\
+    getFileFromURL
 from CRABClient.ClientExceptions import ConfigurationException, \
     UnknownOptionException, ClientException
 
@@ -351,9 +352,10 @@ class report(SubCommand):
         res = {}
         if userWebDirURL:
             url = userWebDirURL + "/run_and_lumis.tar.gz"
+            tarFilename = os.path.join(self.requestarea, 'results/run_and_lumis.tar.gz')
             try:
-                data = getDataFromURL(url, self.proxyfilename)
-                with tarfile.open(fileobj=StringIO(data)) as tarball:
+                getFileFromURL(url, tarFilename, self.proxyfilename)
+                with tarfile.open(tarFilename) as tarball:
                     for jobid in xrange(1, numJobs+1):
                         filename = "job_lumis_%d.json" % (jobid)
                         try:
@@ -384,19 +386,23 @@ class report(SubCommand):
         res['inputDataset'] = {'lumis': {}, 'duplicateLumis': {}}
         if inputDataset and userWebDirURL:
             url = userWebDirURL + "/input_dataset_lumis.json"
+            filename = os.path.join(self.requestarea, 'results/input_dataset_lumis.json')
             try:
                 ## Retrieve the lumis in the input dataset.
-                data = getDataFromURL(url, self.proxyfilename)
-                res['inputDataset']['lumis'] = json.loads(data)
+                getFileFromURL(url, filename, self.proxyfilename)
+                with open(filename) as fd:
+                    res['inputDataset']['lumis'] = json.load(fd)
             except ClientException as ce:
                 self.logger.error("Failed to retrieve input dataset lumis.")
                 LOGGERS['CRAB3'].exception(ce)
 
             url = userWebDirURL + "/input_dataset_duplicate_lumis.json"
+            filename = os.path.join(self.requestarea, 'results/input_dataset_duplicate_lumis.json')
             try:
                 ## Retrieve the lumis split across files in the input dataset.
-                data = getDataFromURL(url, self.proxyfilename)
-                res['inputDataset']['duplicateLumis'] = json.loads(data)
+                getFileFromURL(url, filename, self.proxyfilename)
+                with open(filename) as fd:
+                    res['inputDataset']['duplicateLumis'] = json.load(fd)
             except ClientException as ce:
                 self.logger.error("Failed to retrieve input dataset duplicate lumis.")
                 LOGGERS['CRAB3'].exception(ce)

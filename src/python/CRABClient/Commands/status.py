@@ -4,12 +4,13 @@ from __future__ import print_function
 import math
 import json
 import urllib
+import logging
 from ast import literal_eval
 from datetime import datetime
 
 import CRABClient.Emulator
 from CRABClient import __version__
-from CRABClient.ClientUtilities import colors, validateJobids, LOGGERS
+from CRABClient.ClientUtilities import colors, validateJobids
 from CRABClient.UserUtilities import getDataFromURL, getColumn
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ClientException, ConfigurationException
@@ -104,9 +105,9 @@ class status(SubCommand):
         except ClientException as ce:
             self.logger.info("Waiting for the Grid scheduler to report back the status of your task")
             failureMsg = "Cannot retrieve the status_cache file. Maybe the task process has not run yet?"
-            failureMsg += "\nGot: %s" % ce
+            failureMsg += " Got:\n%s" % ce
             self.logger.error(failureMsg)
-            LOGGERS['CRAB3'].exception(ce)
+            logging.getLogger("CRAB3").exception(ce)
             return self.makeStatusReturnDict(crabDBInfo, statusFailureMsg=failureMsg)
         else:
             # We skip first two lines of the file because they contain the checkpoint locations 

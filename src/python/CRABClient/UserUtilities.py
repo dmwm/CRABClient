@@ -7,6 +7,7 @@ import logging
 import traceback
 import subprocess
 from urlparse import urlparse
+from httplib import HTTPException
 
 ## DBS dependencies
 from dbs.apis.dbsClient import DbsApi
@@ -17,9 +18,9 @@ from WMCore.DataStructs.LumiList import LumiList
 from WMCore.Services.pycurl_manager import RequestHandler
 
 ## CRAB dependencies
+from RESTInteractions import HTTPRequests
 from CRABClient.ClientUtilities import DBSURLS, LOGLEVEL_MUTE, colors
 from CRABClient.ClientExceptions import ClientException, UsernameException, ProxyException
-
 
 def config():
     """
@@ -155,11 +156,6 @@ def getDataFromURL(url, proxyfilename = None):
     Returns binary data encoded as a string, which can be later processed
     according to what kind of content it represents.
     """
-
-    from httplib import HTTPException
-    #CRABServer dependency
-    from RESTInteractions import HTTPRequests
-
     reqHandler = RequestHandler()
     try:
         _, data = reqHandler.request(url=url, params={}, ckey=proxyfilename,
