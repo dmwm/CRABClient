@@ -769,8 +769,6 @@ class status(SubCommand):
         pubInfo['outdatasets'] = outdatasets
         pubInfo['jobsPerStatus'] = jobsPerStatus
 
-        pubInfo = pubInfo
-
         if 'publication' not in pubInfo:
             return pubStatus
         ## If publication was disabled, print a pertinent message and return.
