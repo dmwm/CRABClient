@@ -46,7 +46,7 @@ class resubmit(SubCommand):
         jobsPerStatus = jobList['jobsPerStatus']
 
         if self.options.publication:
-            if publicationEnabled:
+            if not publicationEnabled:
                 msg = "Publication was disabled for this task. Therefore, "
                 msg += "there are no publications to resubmit."
                 self.logger.info(msg)
