@@ -3,11 +3,11 @@ This module contains the utility methods available for users.
 """
 
 import os
-import urllib
 import logging
 import traceback
 import subprocess
 from urlparse import urlparse
+from httplib import HTTPException
 
 ## DBS dependencies
 from dbs.apis.dbsClient import DbsApi
@@ -15,11 +15,12 @@ from dbs.apis.dbsClient import DbsApi
 ## WMCore dependencies
 from WMCore.Configuration import Configuration
 from WMCore.DataStructs.LumiList import LumiList
+from WMCore.Services.pycurl_manager import RequestHandler
 
 ## CRAB dependencies
+from RESTInteractions import HTTPRequests
 from CRABClient.ClientUtilities import DBSURLS, LOGLEVEL_MUTE, colors
 from CRABClient.ClientExceptions import ClientException, UsernameException, ProxyException
-
 
 def config():
     """
@@ -120,44 +121,49 @@ def getFileFromURL(url, filename = None, proxyfilename = None):
     url: the link you would like to retrieve
     filename: the local filename where the url is saved to. Defaults to the filename in the url
     proxyfilename: the x509 proxy certificate to be used in case auth is required
-
-    Return the filename used to save the file or raises ClientException in case of errors (a status attribute is added if the error is an http one).
     """
-    parsedurl = urlparse(url)
+    parsedUrl = urlparse(url)
     if filename == None:
-        path = parsedurl.path
+        path = parsedUrl.path
         filename = os.path.basename(path)
-    try:
-        opener = urllib.URLopener(key_file = proxyfilename, cert_file = proxyfilename)
-        socket = opener.open(url)
-        status = socket.getcode()
-        # Read the file by chunks instead of all at once, appending each chunk to the final result.
-        # This lowers the memory overhead, which can be a problem with big files.
-        with open (filename, 'a') as f:
-            f.seek(0)
-            f.truncate()
-            while True:
-                piece = socket.read(1024)
-                if not piece:
-                    break
-                f.write(piece)
-    except IOError as ioex:
-        msg = "Error while trying to retrieve file from %s: %s" % (url, ioex)
-        msg += "\nMake sure the URL is correct."
-        exc = ClientException(msg)
-        if ioex[0] == 'http error':
-            exc.status = ioex[1]
-        raise exc
-    except Exception as ex:
-        tblogger = logging.getLogger('CRAB3')
-        tblogger.exception(ex)
-        msg = "Unexpected error while trying to retrieve file from %s: %s" % (url, ex)
-        raise ClientException(msg)
-    if status != 200 and parsedurl.scheme in ['http', 'https']:
-        exc = ClientException("Unable to retieve the file from %s. HTTP status code %s. HTTP content: %s" % (url, status, socket.info()))
-        exc.status = status
-        raise exc
+
+    data = getDataFromURL(url, proxyfilename)
+
+    if data:
+        try:
+            with open(filename, 'a') as f:
+                f.seek(0)
+                f.truncate()
+                f.write(data)
+        except IOError as ex:
+            logger = logging.getLogger('CRAB3')
+            logger.exception(ex)
+            msg = "Error while writing %s. Got:\n%s" \
+                    % (filename, ex)
+            raise ClientException(msg)
+
     return filename
+
+
+def getDataFromURL(url, proxyfilename = None):
+    """
+    Read the content of a URL and return it as a string.
+    Type of content should not matter, it can be a json file or a tarball for example.
+
+    url: the link you would like to retrieve
+    proxyfilename: the x509 proxy certificate to be used in case auth is required
+
+    Returns binary data encoded as a string, which can be later processed
+    according to what kind of content it represents.
+    """
+    reqHandler = RequestHandler()
+    try:
+        _, data = reqHandler.request(url=url, params={}, ckey=proxyfilename,
+                cert=proxyfilename, capath=HTTPRequests.getCACertPath())
+    except HTTPException as ex:
+        raise ClientException(ex)
+
+    return data
 
 
 def getLumiListInValidFiles(dataset, dbsurl = 'phys03'):
@@ -223,6 +229,12 @@ def getMutedStatusInfo(logger):
     setConsoleLogLevel(LOGLEVEL_MUTE)
     statusDict = cmdobj.__call__()
     setConsoleLogLevel(loglevel)
+
+    if statusDict['statusFailureMsg']:
+        # If something happens during status execution we still want to print it
+        logger.error("Error while getting status information. Got:\n%s " %
+                          statusDict['statusFailureMsg'])
+
     return statusDict
 
 def getColumn(dictresult, columnName):

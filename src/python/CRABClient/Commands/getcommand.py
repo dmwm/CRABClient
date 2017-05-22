@@ -1,6 +1,7 @@
 from CRABClient.Commands.remote_copy import remote_copy
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ClientExceptions import ConfigurationException , RESTCommunicationException
+from CRABClient.ClientExceptions import ConfigurationException , RESTCommunicationException,\
+    ClientException
 from CRABClient.ClientUtilities import validateJobids, colors
 from CRABClient.UserUtilities import getMutedStatusInfo
 from CRABClient import __version__
@@ -156,6 +157,10 @@ class getcommand(SubCommand):
         Also store some information which is used later when deciding the correct pfn.
         """
         statusDict = getMutedStatusInfo(self.logger)
+        if 'jobList' not in statusDict['shortResult']:
+            msg = "Cannot retrieve job list from the status command."
+            raise ClientException(msg)
+
         jobList = statusDict['shortResult']['jobList']
         transferringIds = [x[1] for x in jobList if x[0] in ['transferring', 'cooloff', 'held']]
         finishedIds = [x[1] for x in jobList if x[0] in ['finished', 'failed', 'transferred']]
