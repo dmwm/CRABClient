@@ -170,17 +170,10 @@ class status(SubCommand):
         statusDict['statusFailureMsg'] = statusFailureMsg
         statusDict['proxiedWebDir'] = proxiedWebDir
         statusDict['jobsPerStatus'] = shortResult.get('jobsPerStatus', {})
+        statusDict['jobList'] = shortResult.get('jobList', {})
         statusDict['publication'] = pubStatus.get('status', {})
         statusDict['publicationFailures'] = pubStatus.get('failure_reasons', {})
-
-        jobs = {}
-        if statusCacheInfo:
-            for jobid, status in statusCacheInfo.items():
-                jobs[jobid] = {'State': status['State']}
-                if status['State'] == 'failed' and 'Error' in status:
-                    jobs[jobid]['Error'] = status['Error']
-        statusDict['jobs'] = jobs
-        statusDict['shortResult'] = shortResult
+        statusDict['jobs'] = statusCacheInfo
         return statusDict
 
     def _percentageString(self, state, value, total):

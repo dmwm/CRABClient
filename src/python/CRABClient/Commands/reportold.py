@@ -265,7 +265,7 @@ class reportold(SubCommand):
                 json.dump(lumisToProcess, jsonFile)
                 jsonFile.write("\n")
                 self.logger.info("  Lumis to process written to lumisToProcess.json")
-            
+
         return returndict
 
 
