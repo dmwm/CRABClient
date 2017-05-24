@@ -156,9 +156,13 @@ def getDataFromURL(url, proxyfilename = None):
     Returns binary data encoded as a string, which can be later processed
     according to what kind of content it represents.
     """
+
+    # Get rid of unicode which may cause problems in pycurl
+    stringUrl = url.encode('ascii')
+
     reqHandler = RequestHandler()
     try:
-        _, data = reqHandler.request(url=url, params={}, ckey=proxyfilename,
+        _, data = reqHandler.request(url=stringUrl, params={}, ckey=proxyfilename,
                 cert=proxyfilename, capath=HTTPRequests.getCACertPath())
     except HTTPException as ex:
         raise ClientException(ex)
