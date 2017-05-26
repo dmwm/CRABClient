@@ -8,7 +8,6 @@ import tarfile
 import CRABClient.Emulator
 
 from ast import literal_eval
-from cStringIO import StringIO
 
 from WMCore.DataStructs.LumiList import LumiList
 from WMCore.Services.DBS.DBSReader import DBSReader
@@ -17,8 +16,7 @@ from CRABClient import __version__
 from CRABClient.ClientUtilities import colors, LOGGERS
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.JobType.BasicJobType import BasicJobType
-from CRABClient.UserUtilities import getMutedStatusInfo, getDataFromURL,\
-    getFileFromURL
+from CRABClient.UserUtilities import getMutedStatusInfo, getFileFromURL
 from CRABClient.ClientExceptions import ConfigurationException, \
     UnknownOptionException, ClientException
 
@@ -294,14 +292,13 @@ class report(SubCommand):
         self.logger.info("Running crab status first to fetch necessary information.")
         # Get job statuses
         statusDict = getMutedStatusInfo(self.logger)
-        shortResult = statusDict['shortResult']
 
-        if not shortResult:
+        if not statusDict['jobList']:
             # No point in continuing if the job list is empty.
             # Can happen when the task is very new / old and the files necessary for status2
             # are unavailable.
             return None
-        reportData['jobList'] = shortResult['jobList']
+        reportData['jobList'] = statusDict['jobList']
 
         reportData['runsAndLumis'] = {}
 
@@ -318,7 +315,7 @@ class report(SubCommand):
 
         reportData['publication'] = statusDict['publicationEnabled']
         userWebDirURL = statusDict['proxiedWebDir']
-        numJobs = len(shortResult['jobList'])
+        numJobs = len(statusDict['jobList'])
 
         reportData['lumisToProcess'] = self.getLumisToProcess(userWebDirURL, numJobs, self.cachedinfo['RequestName'])
         reportData['inputDataset'] = statusDict['inputDataset']

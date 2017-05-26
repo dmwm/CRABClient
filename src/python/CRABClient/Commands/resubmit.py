@@ -33,7 +33,7 @@ class resubmit(SubCommand):
         server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version = __version__)
 
         statusDict = getMutedStatusInfo(self.logger)
-        jobList = statusDict['shortResult']
+        jobList = statusDict['jobList']
 
         if not jobList:
             msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
@@ -43,7 +43,7 @@ class resubmit(SubCommand):
             return None
 
         publicationEnabled = statusDict['publicationEnabled']
-        jobsPerStatus = jobList['jobsPerStatus']
+        jobsPerStatus = statusDict['jobsPerStatus']
 
         if self.options.publication:
             if not publicationEnabled:
@@ -117,14 +117,14 @@ class resubmit(SubCommand):
 
         # Build a dictionary from the jobList
         jobStatusDict = {}
-        for jobStatus, jobId in jobList['jobList']:
+        for jobStatus, jobId in jobList:
             jobStatusDict[jobId] = jobStatus
 
         failedJobStatus = 'failed'
         finishedJobStatus = 'finished'
 
         possibleToResubmitJobIds = []
-        for jobStatus, jobId in jobList['jobList']:
+        for jobStatus, jobId in jobList:
             if (self.options.force and jobStatus == finishedJobStatus) or jobStatus == failedJobStatus:
                 possibleToResubmitJobIds.append(jobId)
 
