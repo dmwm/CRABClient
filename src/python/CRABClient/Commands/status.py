@@ -13,10 +13,11 @@ from CRABClient import __version__
 from CRABClient.ClientUtilities import colors, validateJobids
 from CRABClient.UserUtilities import getDataFromURL, getColumn
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ClientExceptions import ClientException, ConfigurationException
+from CRABClient.ClientExceptions import ConfigurationException
 
 from ServerUtilities import getEpochFromDBTime, TASKDBSTATUSES_TMP, FEEDBACKMAIL,\
     getProxiedWebDir
+from httplib import HTTPException
 
 PUBLICATION_STATES = {
     'not_published': 'idle',
@@ -111,7 +112,7 @@ class status(SubCommand):
         statusCacheInfo = None
         try:
             statusCacheData = getDataFromURL(url, self.proxyfilename)
-        except ClientException as ce:
+        except HTTPException as ce:
             self.logger.info("Waiting for the Grid scheduler to report back the status of your task")
             failureMsg = "Cannot retrieve the status_cache file. Maybe the task process has not run yet?"
             failureMsg += " Got:\n%s" % ce

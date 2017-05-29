@@ -21,6 +21,7 @@ from CRABClient.ClientExceptions import ConfigurationException, \
     UnknownOptionException, ClientException
 
 from ServerUtilities import FEEDBACKMAIL
+from httplib import HTTPException
 
 class report(SubCommand):
     """
@@ -365,9 +366,9 @@ class report(SubCommand):
                                 res[str(jobid)] = json.load(fd)
                             finally:
                                 fd.close()
-            except ClientException as ce:
+            except HTTPException as hte:
                 self.logger.error("Failed to retrieve input dataset duplicate lumis.")
-                LOGGERS['CRAB3'].exception(ce)
+                LOGGERS['CRAB3'].exception(hte)
 
         return res
 
@@ -389,9 +390,9 @@ class report(SubCommand):
                 getFileFromURL(url, filename, self.proxyfilename)
                 with open(filename) as fd:
                     res['inputDataset']['lumis'] = json.load(fd)
-            except ClientException as ce:
+            except HTTPException as hte:
                 self.logger.error("Failed to retrieve input dataset lumis.")
-                LOGGERS['CRAB3'].exception(ce)
+                LOGGERS['CRAB3'].exception(hte)
 
             url = userWebDirURL + "/input_dataset_duplicate_lumis.json"
             filename = os.path.join(self.requestarea, 'results/input_dataset_duplicate_lumis.json')
@@ -400,9 +401,9 @@ class report(SubCommand):
                 getFileFromURL(url, filename, self.proxyfilename)
                 with open(filename) as fd:
                     res['inputDataset']['duplicateLumis'] = json.load(fd)
-            except ClientException as ce:
+            except HTTPException as hte:
                 self.logger.error("Failed to retrieve input dataset duplicate lumis.")
-                LOGGERS['CRAB3'].exception(ce)
+                LOGGERS['CRAB3'].exception(hte)
 
         return res
 
