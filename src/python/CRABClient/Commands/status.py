@@ -7,6 +7,7 @@ import urllib
 import logging
 from ast import literal_eval
 from datetime import datetime
+from httplib import HTTPException
 
 import CRABClient.Emulator
 from CRABClient import __version__
@@ -17,7 +18,6 @@ from CRABClient.ClientExceptions import ConfigurationException
 
 from ServerUtilities import getEpochFromDBTime, TASKDBSTATUSES_TMP, FEEDBACKMAIL,\
     getProxiedWebDir
-from httplib import HTTPException
 
 PUBLICATION_STATES = {
     'not_published': 'idle',
@@ -80,18 +80,14 @@ class status(SubCommand):
                 failureMsg += " Please send an e-mail to %s." % (FEEDBACKMAIL)
                 failureMsg += "\nHold reason: %s" % (res['DagmanHoldReason'])
                 self.logger.info(failureMsg)
-
                 combinedStatus = "FAILED"
-
             else:
                 # if the dag is submitted and the webdir is not there we have to wait that AdjustSites run
                 # and upload the webdir location to the server
                 self.logger.info("Waiting for the Grid scheduler to bootstrap your task")
                 failureMsg = "Schedd has not reported back the webdir (yet)"
                 self.logger.debug(failureMsg)
-                
                 combinedStatus = "UNKNOWN"
-
             return self.makeStatusReturnDict(crabDBInfo, combinedStatus, statusFailureMsg=failureMsg)
 
         self.logger.debug("Webdir is located at %s", webdir)
@@ -118,9 +114,7 @@ class status(SubCommand):
             failureMsg += " Got:\n%s" % ce
             self.logger.error(failureMsg)
             logging.getLogger("CRAB3").exception(ce)
-
             combinedStatus = "UNKNOWN"
-            
             return self.makeStatusReturnDict(crabDBInfo, combinedStatus, statusFailureMsg=failureMsg)
         else:
             # We skip first two lines of the file because they contain the checkpoint locations 
