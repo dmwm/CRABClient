@@ -414,32 +414,29 @@ class status(SubCommand):
         result['jobsPerStatus'] = jobsPerStatus
         result['jobList'] = jobList
 
-        # Print information  about the single splitting job
-        if '0' in statusCacheInfo:
-            statusSplJob = statusCacheInfo['0']['State']
-            self.logger.info("\nSplitting job status:\t\t{0}".format(self._printState(statusSplJob, 13)))
-
         # Collect information about jobs
         # Create a dictionary like { 'finished' : 1, 'running' : 3}
         states = {}
         for jobid, statusDict in statusCacheInfo.iteritems():
             status = statusDict['State']
-            if jobid == '0' or '-' in jobid: #skip splitting and completing jobs
+            if '-' in jobid: #skip splitting and completing jobs
                 continue
             states[status] = states.setdefault(status, 0) + 1
 
 
-        # Collect information about subjobs
+        # Collect information about probejobs and subjobs
         # Create a dictionary like { 'finished' : 1, 'running' : 3}
+        statesPJ = {}
         statesSJ = {}
         for jobid, statusDict in statusCacheInfo.iteritems():
             status = statusDict['State']
-            if jobid == '0' or '-' not in jobid: #skip splitting and normal jobs
-                continue
-            statesSJ[status] = statesSJ.setdefault(status, 0) + 1
+            if jobid.startswith('0-'):
+                statesPJ[status] = statesPJ.setdefault(status, 0) + 1
+            elif '-' in jobid:
+                statesSJ[status] = statesSJ.setdefault(status, 0) + 1
 
         # And if the dictionary is not empty, print it
-        for jobtype, currStates in [('Jobs', states), ('Completing jobs', statesSJ)]:
+        for jobtype, currStates in [('Probe jobs', statesPJ), ('Jobs', states), ('Tail jobs', statesSJ)]:
             if currStates:
                 total = sum( currStates[st] for st in currStates )
                 state_list = sorted(currStates)
