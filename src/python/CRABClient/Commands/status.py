@@ -7,13 +7,14 @@ import urllib
 import logging
 from ast import literal_eval
 from datetime import datetime
+from httplib import HTTPException
 
 import CRABClient.Emulator
 from CRABClient import __version__
 from CRABClient.ClientUtilities import colors, validateJobids
 from CRABClient.UserUtilities import getDataFromURL, getColumn
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ClientExceptions import ClientException, ConfigurationException
+from CRABClient.ClientExceptions import ConfigurationException
 
 from ServerUtilities import getEpochFromDBTime, TASKDBSTATUSES_TMP, FEEDBACKMAIL,\
     getProxiedWebDir
@@ -45,6 +46,9 @@ class status(SubCommand):
         crabDBInfo, _, _ =  server.get(uri, data = {'subresource': 'search', 'workflow': taskname})
         self.logger.debug("Got information from server oracle database: %s", crabDBInfo)
 
+        # Until the task lands on a schedd we'll show the status from the DB
+        combinedStatus = getColumn(crabDBInfo, 'tm_task_status')
+
         user = getColumn(crabDBInfo, 'tm_username')
         webdir = getColumn(crabDBInfo, 'tm_user_webdir')
         rootDagId = getColumn(crabDBInfo, 'clusterid') #that's the condor id from the TW
@@ -57,7 +61,7 @@ class status(SubCommand):
         if not rootDagId:
             failureMsg = "The task has not been submitted to the Grid scheduler yet. Not printing job information."
             self.logger.debug(failureMsg)
-            return self.makeStatusReturnDict(crabDBInfo, statusFailureMsg=failureMsg)
+            return self.makeStatusReturnDict(crabDBInfo, combinedStatus, statusFailureMsg=failureMsg)
 
         self.logger.debug("The CRAB server submitted your task to the Grid scheduler (cluster ID: %s)" % rootDagId)
 
@@ -76,13 +80,15 @@ class status(SubCommand):
                 failureMsg += " Please send an e-mail to %s." % (FEEDBACKMAIL)
                 failureMsg += "\nHold reason: %s" % (res['DagmanHoldReason'])
                 self.logger.info(failureMsg)
+                combinedStatus = "FAILED"
             else:
                 # if the dag is submitted and the webdir is not there we have to wait that AdjustSites run
                 # and upload the webdir location to the server
                 self.logger.info("Waiting for the Grid scheduler to bootstrap your task")
                 failureMsg = "Schedd has not reported back the webdir (yet)"
                 self.logger.debug(failureMsg)
-            return self.makeStatusReturnDict(crabDBInfo, statusFailureMsg=failureMsg)
+                combinedStatus = "UNKNOWN"
+            return self.makeStatusReturnDict(crabDBInfo, combinedStatus, statusFailureMsg=failureMsg)
 
         self.logger.debug("Webdir is located at %s", webdir)
 
@@ -102,13 +108,14 @@ class status(SubCommand):
         statusCacheInfo = None
         try:
             statusCacheData = getDataFromURL(url, self.proxyfilename)
-        except ClientException as ce:
+        except HTTPException as ce:
             self.logger.info("Waiting for the Grid scheduler to report back the status of your task")
             failureMsg = "Cannot retrieve the status_cache file. Maybe the task process has not run yet?"
             failureMsg += " Got:\n%s" % ce
             self.logger.error(failureMsg)
             logging.getLogger("CRAB3").exception(ce)
-            return self.makeStatusReturnDict(crabDBInfo, statusFailureMsg=failureMsg)
+            combinedStatus = "UNKNOWN"
+            return self.makeStatusReturnDict(crabDBInfo, combinedStatus, statusFailureMsg=failureMsg)
         else:
             # We skip first two lines of the file because they contain the checkpoint locations 
             # for the job_log / fjr_parse_results files and are used by the status caching script.
@@ -116,7 +123,9 @@ class status(SubCommand):
             statusCacheInfo = literal_eval(statusCacheData.split('\n')[2])
             self.logger.debug("Got information from status cache file: %s", statusCacheInfo)
 
-        self.printDAGStatus(crabDBInfo, statusCacheInfo)
+        # If the task is already on the grid, show the dagman status
+        combinedStatus = dagStatus = self.printDAGStatus(crabDBInfo, statusCacheInfo)
+
         shortResult = self.printShort(statusCacheInfo)
         pubStatus = self.printPublication(publicationEnabled, shortResult['jobsPerStatus'], asourl, asodb,
                               taskname, user, crabDBInfo)
@@ -135,13 +144,16 @@ class status(SubCommand):
         if self.options.json:
             self.logger.info(json.dumps(statusCacheInfo))
 
-        statusDict = self.makeStatusReturnDict(crabDBInfo, '', shortResult, statusCacheInfo, pubStatus,
-                                               proxiedWebDir)
+        statusDict = self.makeStatusReturnDict(crabDBInfo, combinedStatus, dagStatus,
+                                               '', shortResult, statusCacheInfo,
+                                               pubStatus, proxiedWebDir)
+        
         return statusDict
 
-    def makeStatusReturnDict(self, crabDBInfo, statusFailureMsg = '',
-                       shortResult = {}, statusCacheInfo = {},
-                       pubStatus = {}, proxiedWebDir = ''):
+    def makeStatusReturnDict(self, crabDBInfo, combinedStatus, dagStatus = '',
+                             statusFailureMsg = '', shortResult = {},
+                             statusCacheInfo = {}, pubStatus = {},
+                             proxiedWebDir = ''):
         """ Create a dictionary which is mostly identical to the dictionary
             that was being returned by the old status (plus a few other keys
             needed by the other client commands). This is to ensure backward
@@ -150,7 +162,9 @@ class status(SubCommand):
         """
 
         statusDict = {}
-        statusDict['status'] = getColumn(crabDBInfo, 'tm_task_status')
+        statusDict['status'] = combinedStatus
+        statusDict['dbStatus'] = getColumn(crabDBInfo, 'tm_task_status')
+        statusDict['dagStatus'] = dagStatus
         statusDict['username'] = getColumn(crabDBInfo, 'tm_username')
         statusDict['taskFailureMsg'] = getColumn(crabDBInfo, 'tm_task_failure')
         statusDict['taskWarningMsg'] = getColumn(crabDBInfo, 'tm_task_warnings')
@@ -216,16 +230,16 @@ class status(SubCommand):
     def printDAGStatus(self, crabDBInfo, statusCacheInfo):
         # Get dag status from the node_state/job_log summary
         dagman_codes = {1:'SUBMITTED', 2:'SUBMITTED', 3:'SUBMITTED', 4:'SUBMITTED', 5:'COMPLETED', 6:'FAILED'}
-        dag_status = dagman_codes.get(statusCacheInfo['DagStatus']['DagStatus'])
+        dagStatus = dagman_codes.get(statusCacheInfo['DagStatus']['DagStatus'])
         #Unfortunately DAG code for killed task is 6, just as like for finished DAGs with failed jobs
         #Relabeling the status from 'FAILED' to 'FAILED (KILLED)'     if a successful kill command was issued
         dbstatus = getColumn(crabDBInfo, 'tm_task_status')
-        if dag_status == 'FAILED' and dbstatus == 'KILLED':
-            dag_status = 'FAILED (KILLED)'
+        if dagStatus == 'FAILED' and dbstatus == 'KILLED':
+            dagStatus = 'FAILED (KILLED)'
 
-        msg = "Status on the scheduler:\t" + dag_status
+        msg = "Status on the scheduler:\t" + dagStatus
         self.logger.info(msg)
-        return msg
+        return dagStatus
 
     def printTaskInfo(self, crabDBInfo, username):
         """ Print general information like project directory, task name, scheduler, task status (in the database),

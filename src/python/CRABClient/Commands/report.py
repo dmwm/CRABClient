@@ -3,6 +3,7 @@ from __future__ import print_function, division
 import os
 import json
 import pycurl
+import logging
 import tarfile
 
 import CRABClient.Emulator
@@ -13,7 +14,7 @@ from WMCore.DataStructs.LumiList import LumiList
 from WMCore.Services.DBS.DBSReader import DBSReader
 
 from CRABClient import __version__
-from CRABClient.ClientUtilities import colors, LOGGERS
+from CRABClient.ClientUtilities import colors
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.JobType.BasicJobType import BasicJobType
 from CRABClient.UserUtilities import getMutedStatusInfo, getFileFromURL
@@ -21,6 +22,7 @@ from CRABClient.ClientExceptions import ConfigurationException, \
     UnknownOptionException, ClientException
 
 from ServerUtilities import FEEDBACKMAIL
+from httplib import HTTPException
 
 class report(SubCommand):
     """
@@ -365,9 +367,9 @@ class report(SubCommand):
                                 res[str(jobid)] = json.load(fd)
                             finally:
                                 fd.close()
-            except ClientException as ce:
+            except HTTPException as hte:
                 self.logger.error("Failed to retrieve input dataset duplicate lumis.")
-                LOGGERS['CRAB3'].exception(ce)
+                logging.getLogger('CRAB3').exception(hte)
 
         return res
 
@@ -389,9 +391,9 @@ class report(SubCommand):
                 getFileFromURL(url, filename, self.proxyfilename)
                 with open(filename) as fd:
                     res['inputDataset']['lumis'] = json.load(fd)
-            except ClientException as ce:
+            except HTTPException as hte:
                 self.logger.error("Failed to retrieve input dataset lumis.")
-                LOGGERS['CRAB3'].exception(ce)
+                logging.getLogger('CRAB3').exception(hte)
 
             url = userWebDirURL + "/input_dataset_duplicate_lumis.json"
             filename = os.path.join(self.requestarea, 'results/input_dataset_duplicate_lumis.json')
@@ -400,9 +402,9 @@ class report(SubCommand):
                 getFileFromURL(url, filename, self.proxyfilename)
                 with open(filename) as fd:
                     res['inputDataset']['duplicateLumis'] = json.load(fd)
-            except ClientException as ce:
+            except HTTPException as hte:
                 self.logger.error("Failed to retrieve input dataset duplicate lumis.")
-                LOGGERS['CRAB3'].exception(ce)
+                logging.getLogger('CRAB3').exception(hte)
 
         return res
 

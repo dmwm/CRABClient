@@ -6,6 +6,7 @@ from CRABClient.Commands.getcommand import getcommand
 from CRABClient.ClientExceptions import RESTCommunicationException, ClientException, MissingOptionException
 
 from ServerUtilities import getProxiedWebDir
+from httplib import HTTPException
 
 
 class getlogold(getcommand):
@@ -104,13 +105,13 @@ class getlogold(getcommand):
                     self.logger.info('Retrieved %s' % (filename))
                     success.append(filename)
                     retry += 1 #To retrieve retried job log, if there is any.
-                except ClientException as ex:
+                except HTTPException as hte:
                     succeded = False
                     ## Ignore the exception if the HTTP status code is 404. Status 404 means file
                     ## not found (see http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html). File
                     ## not found error is expected, since we try all the job retries.
-                    if not hasattr(ex, "status") or ex.status!=404:
-                        self.logger.debug(str(ex))
+                    if not hasattr(hte, "status") or hte.status!=404:
+                        self.logger.debug(str(hte))
                         failed.append(filename)
 
         return failed, success

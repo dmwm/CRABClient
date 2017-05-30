@@ -161,11 +161,9 @@ def getDataFromURL(url, proxyfilename = None):
     stringUrl = url.encode('ascii')
 
     reqHandler = RequestHandler()
-    try:
-        _, data = reqHandler.request(url=stringUrl, params={}, ckey=proxyfilename,
-                cert=proxyfilename, capath=HTTPRequests.getCACertPath())
-    except HTTPException as ex:
-        raise ClientException(ex)
+    _, data = reqHandler.request(url=stringUrl, params={}, ckey=proxyfilename,
+                                 cert=proxyfilename,
+                                 capath=HTTPRequests.getCACertPath())
 
     return data
 
