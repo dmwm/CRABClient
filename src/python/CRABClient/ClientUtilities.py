@@ -577,17 +577,36 @@ def validURL(serverurl, attrtohave = ['scheme', 'netloc', 'hostname'], attrtonot
     return True
 
 
-def validateJobids(jobids):
+def compareJobids(a, b):
+    """ Compare two job IDs.  Probe jobs (0-*) come first, then processing
+        jobs (>1), then tail jobs (>1-*).
+    """
+    aa = [int(x) for x in a.split('-')]
+    bb = [int(x) for x in b.split('-')]
+    if len(aa) < len(bb):
+        if bb[0] == 0:
+            return 1
+        return -1
+    elif len(aa) > len(bb):
+        if aa[0] == 0:
+            return -1
+        return 1
+    elif aa[0] == bb[0]:
+        return cmp(aa[1], bb[1])
+    return cmp(aa[0], bb[0])
+
+
+def validateJobids(jobids, allowLists=True):
     #check the format of jobids
     if re.match('^\d+((?!(-\d+-))(\,|\-)\d+)*$', jobids):
         jobid = []
         element = jobids.split(',')
         for number in element:
-            if '-' in number:
+            if '-' in number and allowLists:
                 sub = number.split('-')
                 jobid.extend(range(int(sub[0]), int(sub[1])+1))
             else:
-                jobid.append(int(number))
+                jobid.append(int(number) if allowLists else number)
         #removing duplicate and sort the list
         jobid = list(set(jobid))
         return [('jobids', job) for job in jobid]
