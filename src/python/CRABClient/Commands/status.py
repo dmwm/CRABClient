@@ -11,7 +11,7 @@ from httplib import HTTPException
 
 import CRABClient.Emulator
 from CRABClient import __version__
-from CRABClient.ClientUtilities import colors, validateJobids
+from CRABClient.ClientUtilities import colors, validateJobids, compareJobids
 from CRABClient.UserUtilities import getDataFromURL, getColumn
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ConfigurationException
@@ -555,7 +555,7 @@ class status(SubCommand):
             ## of job ids, and that each job id is a string.
             for ec in ec_jobids.keys():
                 for i in range(len(ec_jobids[ec])):
-                    ec_jobids[ec][i] = [str(y) for y in sorted([int(x) for x in ec_jobids[ec][i]])]
+                    ec_jobids[ec][i] = [str(y) for y in sorted([x for x in ec_jobids[ec][i]], cmp=compareJobids)]
             ## Error summary header.
             msg = "\nError Summary:"
             if not self.options.verboseErrors:
@@ -698,7 +698,7 @@ class status(SubCommand):
                     esignvalue = 'Unknown'
                 else:
                     esignvalue = str(value)
-                jobids = [str(jobid) for jobid in sorted([int(jobid) for jobid in valuedict[value]])]
+                jobids = sorted(valuedict[value], cmp=compareJobids)
                 msg += "\n%-20s %-s" % (esignvalue, ", ".join(jobids))
             self.logger.info(msg)
         elif sortby in ['state' , 'site']:
