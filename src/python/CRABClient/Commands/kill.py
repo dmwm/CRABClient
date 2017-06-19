@@ -1,6 +1,7 @@
+from CRABClient.ClientUtilities import colors
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ClientExceptions import RESTCommunicationException
-from CRABClient.ClientUtilities import validateJobids
+from CRABClient.ClientExceptions import RESTCommunicationException,\
+    ConfigurationException
 from CRABClient import __version__
 import CRABClient.Emulator
 
@@ -19,12 +20,12 @@ class kill(SubCommand):
         serverFactory = CRABClient.Emulator.getEmulator('rest')
         server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
 
-        self.logger.debug('Killing task %s' % self.cachedinfo['RequestName'])
+        self.logger.debug("Killing task %s" % self.cachedinfo['RequestName'])
         inputs = {'workflow' : self.cachedinfo['RequestName']}
         if self.options.killwarning:
             inputs.update({'killwarning' : b64encode(self.options.killwarning)})
 
-        dictresult, status, reason = server.delete(self.uri, data = urlencode(inputs) + '&' + urlencode(self.jobids))
+        dictresult, status, reason = server.delete(self.uri, data=urlencode(inputs))
         self.logger.debug("Result: %s" % dictresult)
 
         if status != 200:
@@ -50,7 +51,7 @@ class kill(SubCommand):
         self.parser.add_option( '--jobids',
                                 dest = 'jobids',
                                 default = None,
-                                help = 'Ids of the jobs you want to kill. Comma separated list of integers.',
+                                help = 'No longer supported, please use "crab kill".',
                                 metavar = 'JOBIDS' )
 
         self.parser.add_option( '--killwarning',
@@ -60,8 +61,7 @@ class kill(SubCommand):
 
     def validateOptions(self):
         SubCommand.validateOptions(self)
-
-        #check the format of jobids
-        self.jobids = ''
-        if getattr(self.options, 'jobids', None):
-            self.jobids = validateJobids(self.options.jobids)
+        if self.options.jobids is not None:
+            msg = "%sError%s: " % (colors.RED, colors.NORMAL)
+            msg += "'crab kill --jobids' is no longer supported, please use 'crab kill' instead."
+            raise ConfigurationException(msg)
