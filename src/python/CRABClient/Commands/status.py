@@ -317,15 +317,10 @@ class status(SubCommand):
         cpu_max = 0
         cpu_sum = 0
         wall_sum = 0
-        def compareFunction(j1, j2):
-            # j's can be '1' or '1-1'.
-            x1 = map(int, j1.split('-'))
-            x2 = map(int, j2.split('-'))
-            return cmp(x1, x2) #using list comparison
 
         # Chose between the jobids passed by the user or all jobids that are in the task
         jobidsToUse = jobids if jobids else dictresult.keys()
-        for jobid in sorted(jobidsToUse, cmp=compareFunction):
+        for jobid in sorted(jobidsToUse, cmp=compareJobids):
             info = dictresult[str(jobid)]
             state = info['State']
             site = ''
