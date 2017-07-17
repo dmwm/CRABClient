@@ -231,7 +231,9 @@ def uploadlogfile(logger, proxyfilename, logfilename = None, logpath = None, ins
     baseurl = getUrl(instance = instance , resource = 'info')
     if doupload:
         cacheurl = server_info('backendurls', serverurl, proxyfilename, baseurl)
-        cacheurl = cacheurl['cacheSSL']
+        # Encode in ascii because old pycurl present in old CMSSW versions
+        # doesn't support unicode.
+        cacheurl = cacheurl['cacheSSL'].encode('ascii')
         cacheurldict = {'endpoint': cacheurl, "pycurl": True}
 
         ufc = UserFileCache(cacheurldict)
