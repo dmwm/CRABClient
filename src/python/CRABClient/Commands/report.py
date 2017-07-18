@@ -354,19 +354,24 @@ class report(SubCommand):
             tarFilename = os.path.join(self.requestarea, 'results/run_and_lumis.tar.gz')
             try:
                 getFileFromURL(url, tarFilename, self.proxyfilename)
-                with tarfile.open(tarFilename) as tarball:
-                    for jobid in xrange(1, numJobs+1):
-                        filename = "job_lumis_%d.json" % (jobid)
+
+                # Not using 'with tarfile.open(..) as t:' syntax because
+                # the tarfile module only received context manager protocol support
+                # in python 2.7, whereas CMSSW_5_* uses python 2.6 and breaks here.
+                tarball = tarfile.open(tarFilename)
+                for jobid in xrange(1, numJobs+1):
+                    filename = "job_lumis_%d.json" % (jobid)
+                    try:
+                        member = tarball.getmember(filename)
+                    except KeyError:
+                        self.logger.warning("File %s not found in run_and_lumis.tar.gz for task %s" % (filename, workflow))
+                    else:
+                        fd = tarball.extractfile(member)
                         try:
-                            member = tarball.getmember(filename)
-                        except KeyError:
-                            self.logger.warning("File %s not found in run_and_lumis.tar.gz for task %s" % (filename, workflow))
-                        else:
-                            fd = tarball.extractfile(member)
-                            try:
-                                res[str(jobid)] = json.load(fd)
-                            finally:
-                                fd.close()
+                            res[str(jobid)] = json.load(fd)
+                        finally:
+                            fd.close()
+                tarball.close()
             except HTTPException as hte:
                 self.logger.error("Failed to retrieve input dataset duplicate lumis.")
                 logging.getLogger('CRAB3').exception(hte)
