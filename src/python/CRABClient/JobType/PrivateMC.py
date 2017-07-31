@@ -1,8 +1,11 @@
 """
 PrivateMC job type plug-in
 """
+from __future__ import division
+from __future__ import print_function
 
 import os
+import math
 
 from CRABClient.ClientUtilities import colors
 from CRABClient.JobType.Analysis import Analysis
@@ -93,4 +96,17 @@ class PrivateMC(Analysis):
             msg += "\nMC generation job type only supports the following splitting algorithms: %s." % (allowedSplitAlgos)
             return False, msg
 
+        # Perform a check on the amount of lumis that the output files will have.
+        # First, get the eventsPerLumi param. It will default to 100 if not specified in crabConfig:
+        # https://github.com/dmwm/WMCore/blob/master/src/python/WMCore/JobSplitting/EventBased.py#L31
+        eventsPerLumi = getattr(config.JobType, 'eventsPerLumi', 100)
+        # Knowing eventsPerLumi and how many units the user wants to generate per job, we can tell
+        # how many lumis each output file will have:
+        lumisPerFile = math.ceil(config.Data.unitsPerJob / eventsPerLumi)
+        if lumisPerFile > 1000:
+            msg = "Given your input parameters, each output file will contain around %d lumis." % lumisPerFile
+            msg += "\nPlease modify your configuration so that the output files contain at most 1000 lumis. "
+            msg += "You can do so by increasing the 'config.JobType.eventsPerLumi' parameter "
+            msg += "or by decreasing the 'config.Data.totalUnits', 'config.Data.unitsPerJob' parameters."
+            return False, msg
         return True, "Valid configuration"
