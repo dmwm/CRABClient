@@ -31,7 +31,7 @@ class PrivateMC(Analysis):
             self.logger.debug("LHESource found in the CMSSW configuration.")
             configArguments['generator'] = getattr(self.config.JobType, 'generator', 'lhe')
 
-            major, minor, fix = os.environ['CMSSW_VERSION'].split('_')[1:4]
+            major, minor, _ = os.environ['CMSSW_VERSION'].split('_')[1:4]
             warn = True
             if int(major) >= 7:
                 if int(minor) >= 5:
@@ -76,23 +76,23 @@ class PrivateMC(Analysis):
         ## If publication is True, check that there is a primary dataset name specified.
         if getattr(config.Data, 'publication', getParamDefaultValue('Data.publication')):
             if not getattr(config.Data, 'outputPrimaryDataset', getParamDefaultValue('Data.outputPrimaryDataset')):
-                msg  = "Invalid CRAB configuration: Parameter Data.outputPrimaryDataset not specified."
+                msg = "Invalid CRAB configuration: Parameter Data.outputPrimaryDataset not specified."
                 msg += "\nMC generation job type requires this parameter for publication."
                 return False, msg
 
         if not hasattr(config.Data, 'totalUnits'):
-            msg  = "Invalid CRAB configuration: Parameter Data.totalUnits not specified."
+            msg = "Invalid CRAB configuration: Parameter Data.totalUnits not specified."
             msg += "\nMC generation job type requires this parameter to know how many events to generate."
             return False, msg
         elif config.Data.totalUnits <= 0:
-            msg  = "Invalid CRAB configuration: Parameter Data.totalUnits has an invalid value (%s)." % (config.Data.totalUnits)
+            msg = "Invalid CRAB configuration: Parameter Data.totalUnits has an invalid value (%s)." % (config.Data.totalUnits)
             msg += " It must be a natural number."
             return False, msg
 
         ## Make sure the splitting algorithm is valid.
         allowedSplitAlgos = ['EventBased']
         if self.splitAlgo not in allowedSplitAlgos:
-            msg  = "Invalid CRAB configuration: Parameter Data.splitting has an invalid value ('%s')." % (self.splitAlgo)
+            msg = "Invalid CRAB configuration: Parameter Data.splitting has an invalid value ('%s')." % (self.splitAlgo)
             msg += "\nMC generation job type only supports the following splitting algorithms: %s." % (allowedSplitAlgos)
             return False, msg
 
