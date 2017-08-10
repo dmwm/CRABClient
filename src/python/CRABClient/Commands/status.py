@@ -127,8 +127,8 @@ class status(SubCommand):
         combinedStatus = dagStatus = self.printDAGStatus(crabDBInfo, statusCacheInfo)
 
         shortResult = self.printShort(statusCacheInfo)
-        pubStatus = self.printPublication(publicationEnabled, shortResult['jobsPerStatus'], asourl, asodb,
-                              taskname, user, crabDBInfo)
+        pubStatus = self.printPublication(publicationEnabled, shortResult['jobsPerStatus'], shortResult['numProbes'],
+                              asourl, asodb, taskname, user, crabDBInfo)
         self.printErrors(statusCacheInfo)
 
         if self.options.summary:
@@ -443,6 +443,7 @@ class status(SubCommand):
                 statesPJ[status] = statesPJ.setdefault(status, 0) + 1
             elif '-' in jobid:
                 statesSJ[status] = statesSJ.setdefault(status, 0) + 1
+        result['numProbes'] = sum(statesPJ.values())
 
         # And if the dictionary is not empty, print it
         for jobtype, currStates in [('Probe jobs', statesPJ), ('Jobs', states), ('Tail jobs', statesSJ)]:
@@ -743,12 +744,12 @@ class status(SubCommand):
                     msg += "\n\t\t\t\t%s%s" % (extratab, outputDataset)
             self.logger.info(msg)
 
-    def printPublication(self, publicationEnabled, jobsPerStatus, asourl, asodb, taskname, user, crabDBInfo):
+    def printPublication(self, publicationEnabled, jobsPerStatus, numProbes, asourl, asodb, taskname, user, crabDBInfo):
         """Print information about the publication of the output files in DBS.
         """
         # Collecting publication information
         pubStatus = {}
-        if (publicationEnabled and 'finished' in jobsPerStatus):
+        if (publicationEnabled and 'finished' in jobsPerStatus and jobsPerStatus['finished'] > numProbes):
             #let's default asodb to asynctransfer, for old task this is empty!
             asodb = asodb or 'asynctransfer'
             pubStatus = self.publicationStatus(taskname, asourl, asodb, user)
@@ -803,7 +804,7 @@ class status(SubCommand):
             ## jobs and the number of files to publish per job (which is equal to the number
             ## of output datasets produced by the task, because, when multiple EDM files are
             ## produced, each EDM file goes into a different output dataset).
-            numJobs = sum(pubInfo['jobsPerStatus'].values())
+            numJobs = sum(pubInfo['jobsPerStatus'].values()) - numProbes
             numOutputDatasets = len(outputDatasets)
             numFilesToPublish = numJobs * numOutputDatasets
             ## Count how many of these files have already started the publication process.
