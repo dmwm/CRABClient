@@ -292,6 +292,11 @@ class submit(SubCommand):
                 msg = "Cannot find the file %s specified in the JobType.scriptExe configuration parameter." % (self.configuration.JobType.scriptExe)
                 return False, msg
 
+        if hasattr(self.configuration.General, 'failureLimit'):
+            msg = "You have specified deprecated parameter 'failureLimit' which will be removed in the near future."
+            msg += "\nIf you really need it write a mail to hn-cms-computingTools explaining your use case."
+            self.logger.warning("%sWARNING%s: %s" % (colors.RED, colors.NORMAL, msg))
+
         return True, "Valid configuration"
 
 
