@@ -152,6 +152,8 @@ class report(SubCommand):
         ## information of the input files to job X.
         outputFilesLumis = {}
         for jobid, reports in poolInOnlyRes.iteritems():
+            if jobid.startswith('0-'):  # skip probe-jobs
+                continue
             lumiDict = {}
             for rep in reports:
                 for run, lumis in literal_eval(rep['runlumi']).iteritems():
@@ -300,7 +302,7 @@ class report(SubCommand):
             # Can happen when the task is very new / old and the files necessary for status2
             # are unavailable.
             return None
-        reportData['jobList'] = statusDict['jobList']
+        reportData['jobList'] = [(s, j) for (s, j) in statusDict['jobList'] if not j.startswith('0-')]
 
         reportData['runsAndLumis'] = {}
 
@@ -317,9 +319,9 @@ class report(SubCommand):
 
         reportData['publication'] = statusDict['publicationEnabled']
         userWebDirURL = statusDict['proxiedWebDir']
-        numJobs = len(statusDict['jobList'])
+        jobs = [j for (s, j) in statusDict['jobList']]
 
-        reportData['lumisToProcess'] = self.getLumisToProcess(userWebDirURL, numJobs, self.cachedinfo['RequestName'])
+        reportData['lumisToProcess'] = self.getLumisToProcess(userWebDirURL, jobs, self.cachedinfo['RequestName'])
         reportData['inputDataset'] = statusDict['inputDataset']
 
         inputDatasetInfo = self.getInputDatasetLumis(reportData['inputDataset'], userWebDirURL)['inputDataset']
@@ -342,7 +344,7 @@ class report(SubCommand):
                 lumilist.setdefault(str(run), []).extend(lumis)
         return lumilist
 
-    def getLumisToProcess(self, userWebDirURL, numJobs, workflow):
+    def getLumisToProcess(self, userWebDirURL, jobs, workflow):
         """
         What each job was requested to process
 
@@ -359,8 +361,8 @@ class report(SubCommand):
                 # the tarfile module only received context manager protocol support
                 # in python 2.7, whereas CMSSW_5_* uses python 2.6 and breaks here.
                 tarball = tarfile.open(tarFilename)
-                for jobid in xrange(1, numJobs+1):
-                    filename = "job_lumis_%d.json" % (jobid)
+                for jobid in jobs:
+                    filename = "job_lumis_%s.json" % (jobid)
                     try:
                         member = tarball.getmember(filename)
                     except KeyError:

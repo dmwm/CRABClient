@@ -314,11 +314,9 @@ class SubCommand(ConfigCommand):
                 msg = "Using %s as specified in the CRAB configuration file." % (" and ".join(msgadd))
                 self.logger.debug(msg)
 
-        ## If an input project directory was given, load the request cache and take the
-        ## server URL from it. If the VO group/role was not given in the command options,
-        ## take it also from the request cache.
+        ## If the VO group/role was not given in the command options, take it from the request cache.
         if self.cmdconf['requiresDirOption']:
-            self.loadLocalCache(proxyOptsSetPlace)
+            self.setCachedProxy(proxyOptsSetPlace)
 
         ## If the server URL isn't already set, we check the args and then the config.
         if not hasattr(self, 'serverurl') and self.cmdconf['requiresREST']:
@@ -423,8 +421,8 @@ class SubCommand(ConfigCommand):
             self.logger.debug('Skipping proxy creation')
 
 
-    def loadLocalCache(self, proxyOptsSetPlace):
-        """ 
+    def loadLocalCache(self):
+        """
         Loads the client cache and set up the server url
         """
         self.requestarea, self.requestname = getWorkArea(self.options.projdir)
@@ -433,21 +431,27 @@ class SubCommand(ConfigCommand):
             port = ':' + self.cachedinfo['Port'] if self.cachedinfo['Port'] else ''
             self.instance = self.cachedinfo['instance']
             self.serverurl = self.cachedinfo['Server'] + port
-            msgadd = []
-            if self.cmdconf['requiresProxyVOOptions'] and self.options.voGroup is None:
-                self.voGroup = self.cachedinfo['voGroup']
-                proxyOptsSetPlace['set_in']['group'] = "cache"
-                msgadd.append("VO group '%s'" % (self.voGroup))
-            if self.cmdconf['requiresProxyVOOptions'] and self.options.voRole is None:
-                self.voRole = self.cachedinfo['voRole']
-                proxyOptsSetPlace['set_in']['role'] = "cache"
-                msgadd.append("VO role '%s'" % (self.voRole))
-            if msgadd:
-                msg = "Using %s as written in the request cache file for this task." % (" and ".join(msgadd))
-                self.logger.debug(msg)
         except CachefileNotFoundException as ex:
             if self.cmdconf['requiresLocalCache']:
                 raise ex
+
+
+    def setCachedProxy(self, proxyOptsSetPlace):
+        """
+        Set the proxy parameters from the cache if not specified otherwise
+        """
+        msgadd = []
+        if self.cmdconf['requiresProxyVOOptions'] and self.options.voGroup is None:
+            self.voGroup = self.cachedinfo['voGroup']
+            proxyOptsSetPlace['set_in']['group'] = "cache"
+            msgadd.append("VO group '%s'" % (self.voGroup))
+        if self.cmdconf['requiresProxyVOOptions'] and self.options.voRole is None:
+            self.voRole = self.cachedinfo['voRole']
+            proxyOptsSetPlace['set_in']['role'] = "cache"
+            msgadd.append("VO role '%s'" % (self.voRole))
+        if msgadd:
+            msg = "Using %s as written in the request cache file for this task." % (" and ".join(msgadd))
+            self.logger.debug(msg)
 
 
     def getConfiDict(self):
@@ -564,6 +568,11 @@ class SubCommand(ConfigCommand):
                 msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
                 msg += " %s is not a valid CRAB project directory." % (self.options.projdir)
                 raise ConfigurationException(msg)
+
+        ## If an input project directory was given, load the request cache and take the
+        ## server URL from it.
+        if self.cmdconf['requiresDirOption']:
+            self.loadLocalCache()
 
         ## If the command does not take any arguments, but some arguments were passed,
         ## clear the arguments list and give a warning message saying that the given

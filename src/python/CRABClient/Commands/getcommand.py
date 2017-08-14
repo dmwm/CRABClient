@@ -275,7 +275,9 @@ class getcommand(SubCommand):
 
         #check the format of jobids
         if getattr(self.options, 'jobids', None):
-            self.options.jobids = validateJobids(self.options.jobids)
+            useLists = self.cachedinfo['OriginalConfig'].Data.splitting != 'Automatic'
+            self.options.jobids = validateJobids(self.options.jobids, useLists)
+
 
         if hasattr(self.options, 'command') and self.options.command != None:
             AvailableCommands = ['LCG', 'GFAL']
