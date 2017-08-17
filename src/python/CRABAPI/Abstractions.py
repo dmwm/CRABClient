@@ -1,4 +1,5 @@
 """ Task - top-level Task class """
+from __future__ import print_function
 import CRABAPI.TopLevel
 import CRABClient.Commands.submit
 from WMCore.Configuration import Configuration
@@ -19,7 +20,7 @@ class Task(object):
         args = ['-c', self.config, '--proxy', '1']
         submitCommand = self.submitClass(self.clientLog, args)
         retval = submitCommand()
-        print "retval was %s" % retval
+        print("retval was %s" % retval)
         return retval['uniquerequestname']
 
     def kill(self):
