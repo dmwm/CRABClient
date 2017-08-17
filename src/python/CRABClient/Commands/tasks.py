@@ -10,6 +10,8 @@ from CRABClient.ClientExceptions import ConfigurationException, RESTCommunicatio
 
 class tasks(SubCommand):
     """Give back all user tasks starting from a specific date. Default is last 30 days.
+Note that STATUS in here is task status from database which does not include grid jobs,
+task status does not progress beyond SUBMITTED unless the task is KILLED
     """
     def __call__(self):
         server = HTTPRequests(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
@@ -40,6 +42,8 @@ class tasks(SubCommand):
         msg = "\nList of tasks from %s until %s" % (self.date, today)
         if self.options.status:
             msg += " with status %s" % (self.options.status)
+        self.logger.info(msg)
+        msg = "Beware that STATUS here does not include information from grid jobs"
         self.logger.info(msg)
         self.logger.info('='*80)
         self.logger.info('NAME\t\t\t\t\t\t\t\tSTATUS')
