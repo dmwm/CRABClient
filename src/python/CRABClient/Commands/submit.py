@@ -297,6 +297,11 @@ class submit(SubCommand):
                 msg = "Invalid CRAB configuration:\n when ignoreLocality is set a valid site white list must be specified using the Site.whitelist parameter"
                 return False, msg
 
+        if hasattr(self.configuration.General, 'failureLimit'):
+            msg = "You have specified deprecated parameter 'failureLimit' which will be removed in the near future."
+            msg += "\nIf you really need it write a mail to hn-cms-computingTools explaining your use case."
+            self.logger.warning("%sWARNING%s: %s" % (colors.RED, colors.NORMAL, msg))
+
         return True, "Valid configuration"
 
 
