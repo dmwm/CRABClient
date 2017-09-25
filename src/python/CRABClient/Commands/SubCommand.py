@@ -1,6 +1,7 @@
 import os
 import re
-import imp 
+import imp
+import time 
 import json
 import types
 from ast import literal_eval
@@ -397,6 +398,12 @@ class SubCommand(ConfigCommand):
         """ 
         Init the user proxy, and delegate it if necessary.
         """
+        crab3fdir = self.crabcachepath()
+        with open(crab3fdir, "r") as crab3f:
+            crab3f = json.load(crab3f)
+        now = int(time.strftime("%Y%m%d%H%M%S"))
+        if "timestamp" in crab3f and "proxy" in crab3f and now - 1000 < int(crab3f["timestamp"]):
+            self.options.proxy = crab3f["proxy"]
         if not self.options.proxy:
             if self.cmdconf['initializeProxy']:
                 self.proxy.setVOGroupVORole(self.voGroup, self.voRole)
@@ -415,6 +422,7 @@ class SubCommand(ConfigCommand):
                         self.proxy.setMyProxyServer('myproxy.cern.ch')
                         self.logger.debug("Registering user credentials for server %s" % serverdn)
                         self.proxy.createNewMyProxy(timeleftthreshold = 60 * 60 * 24 * RENEW_MYPROXY_THRESHOLD, nokey = True)
+                        self.updateCrab3Proxy()
         else:
             self.proxyfilename = self.options.proxy
             os.environ['X509_USER_PROXY'] = self.options.proxy
@@ -510,6 +518,15 @@ class SubCommand(ConfigCommand):
             with open(crabCacheFileName_tmp, 'w') as fd:
                 json.dump(self.crab3dic, fd)
             os.rename(crabCacheFileName_tmp, crabCacheFileName)
+
+    def updateCrab3Proxy(self):
+        crab3fdir = self.crabcachepath()
+        with open(crab3fdir, "r") as crab3f:
+            crab3f = json.load(crab3f)
+        proxytime  = {"timestamp": time.strftime("%Y%m%d%H%M%S"), "proxy" : self.proxyfilename}
+        proxyfile = dict(crab3f.items()+proxytime.items())
+        with open(crab3fdir, 'w') as crab3f:
+            json.dump(proxyfile, crab3f)
 
 
     def __call__(self):
