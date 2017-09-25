@@ -129,7 +129,16 @@ class checkwrite(SubCommand):
         self.logger.info(finalmsg)
         if returndict['status'] == 'FAILED':
             self.logger.info('%sNote%s: You cannot write to a site if you did not ask permission.' % (colors.BOLD, colors.NORMAL))
-
+	    if 'CH_CERN' in self.options.sitename :
+               dbgmsg = '%sAdditional diagnostic info for CERN EOS%s\n' % (colors.RED, colors.NORMAL)
+               dbgcmd = "echo '== id ==>:';id"
+               dbgcmd += ";echo '== voms-proxy-info -all ==>:';voms-proxy-info -all"
+               dbgcmd += ";echo '== uberftp eoscmsftp.cern.ch pwd ==>:';uberftp eoscmsftp.cern.ch pwd"
+               #self.logger.info('Executing command: %s' % cmd)
+               #self.logger.info('Please wait...')
+               output = subprocess.check_output(dbgcmd, shell = True)
+               dbgmsg += output
+               self.logger.info(dbgmsg)
         return returndict
 
 
