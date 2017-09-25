@@ -293,8 +293,8 @@ class submit(SubCommand):
                 return False, msg
         ## If ignoreLocality is set, check that a sitewhilelist is present
         if getattr(self.configuration.Data, 'ignoreLocality', False):
-            if not hasattr(self.configuration.Site,'whitelist'):
-                msg = "Invalid CRAB configuration:\n when ignoreLocality is set a valid site white list must be specified"
+            if not hasattr(self.configuration.Site, 'whitelist'):
+                msg = "Invalid CRAB configuration:\n when ignoreLocality is set a valid site white list must be specified using the Site.whitelist parameter"
                 return False, msg
 
         return True, "Valid configuration"
