@@ -1,8 +1,11 @@
 """
 PrivateMC job type plug-in
 """
+from __future__ import division
+from __future__ import print_function
 
 import os
+import math
 
 from CRABClient.ClientUtilities import colors
 from CRABClient.JobType.Analysis import Analysis
@@ -28,7 +31,7 @@ class PrivateMC(Analysis):
             self.logger.debug("LHESource found in the CMSSW configuration.")
             configArguments['generator'] = getattr(self.config.JobType, 'generator', 'lhe')
 
-            major, minor, fix = os.environ['CMSSW_VERSION'].split('_')[1:4]
+            major, minor, _ = os.environ['CMSSW_VERSION'].split('_')[1:4]
             warn = True
             if int(major) >= 7:
                 if int(minor) >= 5:
@@ -73,24 +76,37 @@ class PrivateMC(Analysis):
         ## If publication is True, check that there is a primary dataset name specified.
         if getattr(config.Data, 'publication', getParamDefaultValue('Data.publication')):
             if not getattr(config.Data, 'outputPrimaryDataset', getParamDefaultValue('Data.outputPrimaryDataset')):
-                msg  = "Invalid CRAB configuration: Parameter Data.outputPrimaryDataset not specified."
+                msg = "Invalid CRAB configuration: Parameter Data.outputPrimaryDataset not specified."
                 msg += "\nMC generation job type requires this parameter for publication."
                 return False, msg
 
         if not hasattr(config.Data, 'totalUnits'):
-            msg  = "Invalid CRAB configuration: Parameter Data.totalUnits not specified."
+            msg = "Invalid CRAB configuration: Parameter Data.totalUnits not specified."
             msg += "\nMC generation job type requires this parameter to know how many events to generate."
             return False, msg
         elif config.Data.totalUnits <= 0:
-            msg  = "Invalid CRAB configuration: Parameter Data.totalUnits has an invalid value (%s)." % (config.Data.totalUnits)
+            msg = "Invalid CRAB configuration: Parameter Data.totalUnits has an invalid value (%s)." % (config.Data.totalUnits)
             msg += " It must be a natural number."
             return False, msg
 
         ## Make sure the splitting algorithm is valid.
         allowedSplitAlgos = ['EventBased']
         if self.splitAlgo not in allowedSplitAlgos:
-            msg  = "Invalid CRAB configuration: Parameter Data.splitting has an invalid value ('%s')." % (self.splitAlgo)
+            msg = "Invalid CRAB configuration: Parameter Data.splitting has an invalid value ('%s')." % (self.splitAlgo)
             msg += "\nMC generation job type only supports the following splitting algorithms: %s." % (allowedSplitAlgos)
             return False, msg
 
+        # Perform a check on the amount of lumis that the output files will have.
+        # First, get the eventsPerLumi param. It will default to 100 if not specified in crabConfig:
+        # https://github.com/dmwm/WMCore/blob/master/src/python/WMCore/JobSplitting/EventBased.py#L31
+        eventsPerLumi = getattr(config.JobType, 'eventsPerLumi', 100)
+        # Knowing eventsPerLumi and how many units the user wants to generate per job, we can tell
+        # how many lumis each output file will have:
+        lumisPerFile = math.ceil(config.Data.unitsPerJob / eventsPerLumi)
+        if lumisPerFile > 1000:
+            msg = "Given your input parameters, each output file will contain around %d lumis." % lumisPerFile
+            msg += "\nPlease modify your configuration so that the output files contain at most 1000 lumis. "
+            msg += "You can do so by increasing the 'config.JobType.eventsPerLumi' parameter "
+            msg += "or by decreasing the 'config.Data.totalUnits', 'config.Data.unitsPerJob' parameters."
+            return False, msg
         return True, "Valid configuration"
