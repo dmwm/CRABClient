@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import os.path
 import shutil
@@ -58,12 +59,12 @@ class DeepTask(unittest.TestCase):
                         return {'result':["unittest"]},200,""
                     if req == {'subresource': 'backendurls'}:
                         return {'result':["unittest.host"]},200,""
-                print "%s -> %s" % (url, req)
+                print("%s -> %s" % (url, req))
             def put(self, url, data):
                 if url == '/crabserver/prod/workflow':
                     res = {'result':[{"RequestName" : "UnittestRequest"}]}
                     return res, 200, ""
-                print "%s -> %s" % (url, data)
+                print("%s -> %s" % (url, data))
             @staticmethod
             def getCACertPath():
                 return "/tmp"
@@ -92,7 +93,7 @@ class DeepTask(unittest.TestCase):
         myTask.config.section_("Site")
         myTask.config.Site.storageSite = 'T2_US_Nowhere'
         val = myTask.submit()
-        print val
+        print(val)
         self.assertEqual(val, 'UnittestRequest')
 
 

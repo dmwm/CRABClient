@@ -1,3 +1,4 @@
+from __future__ import print_function
 import imp
 import optparse
 
@@ -113,7 +114,7 @@ for k, v in client.subCommands.items():
                 cmdflags=' '.join(flags),
                 cmdoptions=' '.join(opts))
 
-print template.format(
+print(template.format(
         topcommands=' '.join(longnames),
         topoptions=' '.join(options),
-        commands=''.join(commands.values()))
+        commands=''.join(commands.values())))
