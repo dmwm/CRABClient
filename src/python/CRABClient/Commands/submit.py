@@ -197,6 +197,9 @@ class submit(SubCommand):
             except ValueError:
                 msg = "Invalid CRAB configuration: Parameter Data.unitsPerJob must be a valid number, not %s." % (self.configuration.Data.unitsPerJob)
                 return False, msg
+            if not int(self.configuration.Data.unitsPerJob) > 0:
+                msg = "Invalid CRAB configuration: Parameter Data.unitsPerJob must be > 0, not %s." % (self.configuration.Data.unitsPerJob)
+                return False, msg
         elif getattr(self.configuration.Data, 'splitting', 'invalid') != 'Automatic':
             # The default value is only valid for automatic splitting!
             msg = "Invalid CRAB configuration: Parameter Data.unitsPerJob is missing."
