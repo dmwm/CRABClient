@@ -230,14 +230,61 @@ class status(SubCommand):
     def printDAGStatus(self, crabDBInfo, statusCacheInfo):
         # Get dag status from the node_state/job_log summary
         dagman_codes = {1:'SUBMITTED', 2:'SUBMITTED', 3:'SUBMITTED', 4:'SUBMITTED', 5:'COMPLETED', 6:'FAILED'}
-        dagStatus = dagman_codes.get(statusCacheInfo['DagStatus']['DagStatus'])
-        #Unfortunately DAG code for killed task is 6, just as like for finished DAGs with failed jobs
-        #Relabeling the status from 'FAILED' to 'FAILED (KILLED)'     if a successful kill command was issued
+        dagman_states = ['UNSUBMITTED', 'SUBMITTED', 'COMPLETED', 'SKIPPED', 'FAILED', 'FAILED (KILLED)']
         dbstatus = getColumn(crabDBInfo, 'tm_task_status')
-        if dagStatus == 'FAILED' and dbstatus == 'KILLED':
-            dagStatus = 'FAILED (KILLED)'
+        def translateStatus(s):
+            s = dagman_codes[s]
+            #Unfortunately DAG code for killed task is 6, just as like for finished DAGs with failed jobs
+            #Relabeling the status from 'FAILED' to 'FAILED (KILLED)'     if a successful kill command was issued
+            if s == 'FAILED' and dbstatus == 'KILLED':
+                s = 'FAILED (KILLED)'
+            return s
 
-        msg = "Status on the scheduler:\t" + dagStatus
+        msg = "Status on the scheduler:\t"
+        dagInfo = statusCacheInfo['DagStatus']
+        subDagStatus = dagInfo.get('SubDagStatus', {})
+        subDagCount = len(subDagStatus)
+        if subDagCount > 0:
+            dagStatus = translateStatus(dagInfo['DagStatus'])
+            msg += "Splitting probes:\t{0}\n\t\t\t\t".format(dagStatus)
+            # If the splitting stage is still ongoing, no dag info for the
+            # processing step will be available, likewise with the tail.
+            if len(dagInfo['SubDags']) > 0:
+                procInfo = dagInfo['SubDags'].pop(0)
+                dagStatus = translateStatus(procInfo['DagStatus'])
+                msg += "Processing jobs:\t{0}\n\t\t\t\t".format(dagStatus)
+            else:
+                msg += "Processing jobs:\tUNSUBMITTED\n\t\t\t\t"
+            msg += "Tail jobs:\t\t"
+            states = []
+            # The dagStatus only refers to the probe. Overwrite it with the
+            # last valid one.
+            for i in range(1, subDagCount):
+                if i not in dagInfo['SubDags']:
+                    # Completed SubDAGs without a status were skipped, as
+                    # no data needed to be processed for them (all jobs
+                    # at this stage completed successfully and within the
+                    # runtime limit).
+                    if subDagStatus.get('Job{0}SubJobs'.format(i), -1) == 5:
+                        states.append('SKIPPED')
+                    else:
+                        states.append('UNSUBMITTED')
+                    continue
+                procInfo = dagInfo['SubDags'].pop(i)
+                dagStatus = translateStatus(procInfo['DagStatus'])
+                states.append(dagStatus)
+            msgs = []
+            if len(states) > 0:
+                for state in dagman_states:
+                    count = states.count(state)
+                    if count > 0:
+                        msgs.append("{0} ({1}/{2})".format(state, count, len(states)))
+                msg += ", ".join(msgs)
+            else:
+                msg += "UNSUBMITTED"
+        else:
+            dagStatus = translateStatus(dagInfo['DagStatus'])
+            msg += dagStatus
         self.logger.info(msg)
         return dagStatus
 
