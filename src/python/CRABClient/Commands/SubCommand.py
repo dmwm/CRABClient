@@ -180,6 +180,8 @@ class ConfigCommand:
                 if not isinstance(obj, requiredType):
                     msg = "Invalid CRAB configuration: Parameter %s requires a value of type %s (while a value of type %s was given)." \
                           % (paramName, str(requiredType), str(type(obj)))
+                    if paramName == "Data.totalUnits" and isinstance(obj, types.FloatType):
+                        continue
                     if paramName == "Data.userInputFiles":
                         msg += "\nIn CRAB v3.3.14 the configuration parameter Data.userInputFiles has been modified to directly take a (python) list of primary input files."
                         msg += " Previously it was taking the name of a local text file where the primary input files were listed."

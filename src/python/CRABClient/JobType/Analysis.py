@@ -313,7 +313,7 @@ class Analysis(BasicJobType):
         required values are there and optional values don't conflict.
         """
 
-        self.splitAlgo = getattr(config.Data, 'splitting', None)
+        self.splitAlgo = getattr(config.Data, 'splitting', 'Automatic')
         if not self.splitAlgo:
             msg = "Invalid CRAB configuration: Parameter Data.splitting not specified."
             return False, msg
