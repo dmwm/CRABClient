@@ -105,7 +105,7 @@ class resubmit(SubCommand):
         If this is a publication resubmission, return None since jobIds are not taken
         into account for publication resubmissions.
 
-        If the user provides a list of jobIds to be resubmitted, validate it and 
+        If the user provides a list of jobIds to be resubmitted, validate it and
         return the same list in case of success.
 
         If no jobIds are provided, create a list of jobs that need resubmitting and
@@ -130,6 +130,11 @@ class resubmit(SubCommand):
 
         allowedJobStates = [failedJobStatus]
         if self.jobids:
+            # Automatic splitting does not work with lists... probe- and
+            # tail-job ids have a '-' in them, so re-split the joblist.
+            if any(('-' in jobId for _, jobId in jobList)):
+                jobidstuple = validateJobids(self.options.jobids, False)
+                self.jobids = [str(jobid) for (_, jobid) in jobidstuple]
             msg = "Requesting resubmission of jobs %s in task %s" % (self.jobids, self.cachedinfo['RequestName'])
             self.logger.debug(msg)
             if self.options.force:

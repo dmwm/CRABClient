@@ -117,7 +117,7 @@ class status(SubCommand):
             combinedStatus = "UNKNOWN"
             return self.makeStatusReturnDict(crabDBInfo, combinedStatus, statusFailureMsg=failureMsg)
         else:
-            # We skip first two lines of the file because they contain the checkpoint locations 
+            # We skip first two lines of the file because they contain the checkpoint locations
             # for the job_log / fjr_parse_results files and are used by the status caching script.
             # Load the job_report summary
             statusCacheInfo = literal_eval(statusCacheData.split('\n')[2])
@@ -147,7 +147,7 @@ class status(SubCommand):
         statusDict = self.makeStatusReturnDict(crabDBInfo, combinedStatus, dagStatus,
                                                '', shortResult, statusCacheInfo,
                                                pubStatus, proxiedWebDir)
-        
+
         return statusDict
 
     def makeStatusReturnDict(self, crabDBInfo, combinedStatus, dagStatus = '',
