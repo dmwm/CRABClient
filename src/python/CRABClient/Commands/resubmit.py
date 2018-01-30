@@ -115,17 +115,25 @@ class resubmit(SubCommand):
         if self.options.publication:
             return None
 
+        automatic = any('-' in n for _, n in jobList)
+
+        def consider(jobId):
+            if automatic and (jobId.startswith('0-') or '-' not in jobId):
+                return False
+            return True
+
         # Build a dictionary from the jobList
         jobStatusDict = {}
         for jobStatus, jobId in jobList:
-            jobStatusDict[jobId] = jobStatus
+            if consider(jobId):
+                jobStatusDict[jobId] = jobStatus
 
         failedJobStatus = 'failed'
         finishedJobStatus = 'finished'
 
         possibleToResubmitJobIds = []
         for jobStatus, jobId in jobList:
-            if (self.options.force and jobStatus == finishedJobStatus) or jobStatus == failedJobStatus:
+            if ((self.options.force and jobStatus == finishedJobStatus) or jobStatus == failedJobStatus) and consider(jobId):
                 possibleToResubmitJobIds.append(jobId)
 
         allowedJobStates = [failedJobStatus]
@@ -291,7 +299,7 @@ class resubmit(SubCommand):
 
         ## Check the format of the jobids option.
         if self.options.jobids:
-            useLists = self.cachedinfo['OriginalConfig'].Data.splitting != 'Automatic'
+            useLists = getattr(self.cachedinfo['OriginalConfig'].Data, 'splitting', 'Automatic') != 'Automatic'
             jobidstuple = validateJobids(self.options.jobids, useLists)
             self.jobids = [str(jobid) for (_, jobid) in jobidstuple]
 
