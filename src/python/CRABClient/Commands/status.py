@@ -274,7 +274,7 @@ class status(SubCommand):
         if len(subDagInfos) > 1:
             states = [cls.translateStatus(subDagInfos[k]['DagStatus'], dbstatus) for k in subDagInfos if k > 0]
             for status in status_order:
-                if states.count(status) > 1:
+                if states.count(status) > 0:
                     return check_queued(status)
         # If no tails are active, return the status of the processing DAG.
         if len(subDagInfos) > 0:
