@@ -336,7 +336,7 @@ class status(SubCommand):
         if warnings:
             for warningMsg in warnings:
                 self.logger.warning("%sWarning%s:\t\t\t%s" % (colors.RED, colors.NORMAL, warningMsg))
-        if failure: #TODO failure should be ignored if the task is not in failure state in the task db
+        if failure and 'FAILED' in status:
             msg  = "%sFailure message from the server%s:" % (colors.RED, colors.NORMAL)
             msg += "\t\t%s" % (failure.replace('\n', '\n\t\t\t\t'))
             self.logger.error(msg)
