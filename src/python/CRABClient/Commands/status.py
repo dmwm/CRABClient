@@ -269,6 +269,12 @@ class status(SubCommand):
                 return 'SUBMITTED'
             return status
 
+        # If the processing DAG is still running, we are 'SUBMITTED',
+        # still.
+        if len(subDagInfos) > 0:
+            state = cls.translateStatus(subDagInfos[0]['DagStatus'], dbstatus)
+            if state == 'SUBMITTED':
+                return state
         # Tails active: return most active tail status according to
         # `status_order`
         if len(subDagInfos) > 1:
