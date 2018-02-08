@@ -275,7 +275,7 @@ class getcommand(SubCommand):
 
         #check the format of jobids
         if getattr(self.options, 'jobids', None):
-            useLists = self.cachedinfo['OriginalConfig'].Data.splitting != 'Automatic'
+            useLists = getattr(self.cachedinfo['OriginalConfig'].Data, 'splitting', 'Automatic') != 'Automatic'
             self.options.jobids = validateJobids(self.options.jobids, useLists)
 
 
