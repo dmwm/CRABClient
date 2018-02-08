@@ -140,7 +140,7 @@ def main():
     package_dir  = \
         {"CRABClient": "src/python/CRABClient", "CRABAPI": "src/python/CRABAPI"}
     packages     = find_packages('src/python')
-    data_files   = [('etc', ['doc/FullConfiguration.py', 'doc/ExampleConfiguration.py', 'etc/crab-bash-completion.sh', 'etc/init-light.sh', 'etc/init-light.csh'])] # list of tuples whose entries are (dir, [data_files])
+    data_files   = [('etc', ['doc/FullConfiguration.py', 'doc/ExampleConfiguration.py', 'etc/crab-bash-completion.sh', 'etc/init-light.sh', 'etc/init-light.csh', 'etc/init-light-pre.sh'])] # list of tuples whose entries are (dir, [data_files])
     cms_license  = "CMS experiment software"
     classifiers  = [
         "Development Status :: 3 - Production/Beta",
