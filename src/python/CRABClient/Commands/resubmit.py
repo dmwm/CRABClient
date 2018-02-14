@@ -35,6 +35,12 @@ class resubmit(SubCommand):
         statusDict = getMutedStatusInfo(self.logger)
         jobList = statusDict['jobList']
 
+        if getattr(self.cachedinfo['OriginalConfig'].Data, 'splitting', 'Automatic') == 'Automatic' and statusDict['dbStatus'] == 'KILLED':
+            msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
+            msg += " Tasks using automatic splitting cannot be resubmitted after a kill."
+            self.logger.info(msg)
+            return None
+
         if not jobList:
             msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
             msg += " Status information is unavailable, will not proceed with the resubmission."
