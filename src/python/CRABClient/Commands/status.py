@@ -55,6 +55,8 @@ class status(SubCommand):
         asourl = getColumn(crabDBInfo, 'tm_asourl')
         asodb = getColumn(crabDBInfo, 'tm_asodb')
         publicationEnabled = True if getColumn(crabDBInfo, 'tm_publication') == 'T' else False
+        maxMemory = int(getColumn(crabDBInfo, 'tm_maxmemory'))
+        maxJobRuntime = int(getColumn(crabDBInfo, 'tm_maxjobruntime'))
 
         #Print information from the database
         self.printTaskInfo(crabDBInfo, user)
@@ -131,6 +133,8 @@ class status(SubCommand):
                                           shortResult['numUnpublishable'], asourl, asodb, taskname, user, crabDBInfo)
         self.printErrors(statusCacheInfo)
 
+        self.printDetails(statusCacheInfo, self.jobids, True, maxMemory, maxJobRuntime)
+
         if self.options.summary:
             self.printSummary(statusCacheInfo)
         if self.options.long or self.options.sort:
@@ -143,7 +147,7 @@ class status(SubCommand):
                     jobidstuple = validateJobids(self.options.jobids, useLists)
                     self.jobids = [str(jobid) for (_, jobid) in jobidstuple]
                 self.checkUserJobids(statusCacheInfo, self.jobids)
-            sortdict = self.printDetails(statusCacheInfo, self.jobids, quiet = (not self.options.long))
+            sortdict = self.printDetails(statusCacheInfo, self.jobids, not self.options.long, maxMemory, maxJobRuntime)
             if self.options.sort:
                 self.printSort(sortdict, self.options.sort)
         if self.options.json:
@@ -355,7 +359,7 @@ class status(SubCommand):
         if wrongJobIds:
             raise ConfigurationException("The following jobids were not found in the task: %s" % wrongJobIds)
 
-    def printDetails(self, dictresult, jobids=None, quiet=False):
+    def printDetails(self, dictresult, jobids=None, quiet=False, maxMemory=2000, maxJobRuntime=1315):
         """ Print detailed information about a task and each job.
         """
         sortdict = {}
@@ -453,6 +457,13 @@ class status(SubCommand):
             self.logger.debug(msg)
 
         # Print a summary with memory/cpu usage.
+        usage = {'memory':[mem_max,maxMemory], 'runtime':[to_hms(run_max),maxJobRuntime]}
+        threshold = 0.7
+        for param, values in usage.items():
+            if values[0] < threshold*values[1]:
+                self.logger.info("\n%sWarning%s: the max jobs %s is less than %d%% of the task requested value (%d), please consider to request a lower value" % (colors.RED, colors.NORMAL, param, threshold*100, values[1]))
+
+
         summaryMsg = "\nSummary:"
         if mem_cnt:
             summaryMsg += "\n * Memory: %dMB min, %dMB max, %.0fMB ave" % (mem_min, mem_max, mem_sum/mem_cnt)
@@ -464,8 +475,7 @@ class status(SubCommand):
             waste = wall_sum - run_sum
             summaryMsg += "\n * Waste: %s (%.0f%% of total)" % (to_hms(waste), (waste / float(wall_sum))*100)
         summaryMsg += "\n"
-        if not quiet:
-            self.logger.info(summaryMsg)
+        self.logger.info(summaryMsg)
 
         return sortdict
 
@@ -734,12 +744,12 @@ class status(SubCommand):
 
         # avoid printing header only
         if not siteHistory_retrieved:
-            self.logger.info("\nNo SiteHistory retrieved for any job")
+            self.logger.info("No SiteHistory retrieved for any job\n")
             return
         if all(site == "Unknown" for site in sites):
-            self.logger.info("\nSite Unknown for any job")
+            self.logger.info("Site Unknown for any job\n")
             return
-        self.logger.info("\nSite Summary Table (including retries):\n")
+        self.logger.info("Site Summary Table (including retries):\n")
         self.logger.info("%-20s %10s %10s %10s %10s %10s %10s" % ("Site", "Runtime", "Waste", "Running", "Successful", "Stageout", "Failed"))
 
         sorted_sites = sorted(sites.keys())
