@@ -704,8 +704,8 @@ class status(SubCommand):
 
         sites = {}
         default_info = {"Runtime": 0, "Waste": 0, "Running": 0, "Success": 0, "Failed": 0, "Stageout": 0}
-        for i in range(1, len(dictresult)+1):
-            info = dictresult[str(i)]
+        for job in dictresult:
+            info = dictresult[job]
             state = info['State']
             site_history = info.get("SiteHistory")
             if not site_history:
