@@ -704,12 +704,14 @@ class status(SubCommand):
 
         sites = {}
         default_info = {"Runtime": 0, "Waste": 0, "Running": 0, "Success": 0, "Failed": 0, "Stageout": 0}
+        siteHistory_retrieved = False
         for job in dictresult:
             info = dictresult[job]
             state = info['State']
             site_history = info.get("SiteHistory")
             if not site_history:
                 continue
+            siteHistory_retrieved = True
             walls = info['WallDurations']
             cur_site = info['SiteHistory'][-1]
             cur_info = sites.setdefault(cur_site, dict(default_info))
@@ -730,6 +732,13 @@ class status(SubCommand):
                 cur_info['Success'] += 1
                 cur_info['Runtime'] += walls[-1]
 
+        # avoid printing header only
+        if not siteHistory_retrieved:
+            self.logger.info("\nNo SiteHistory retrieved for any job")
+            return
+        if all(site == "Unknown" for site in sites):
+            self.logger.info("\nSite Unknown for any job")
+            return
         self.logger.info("\nSite Summary Table (including retries):\n")
         self.logger.info("%-20s %10s %10s %10s %10s %10s %10s" % ("Site", "Runtime", "Waste", "Running", "Successful", "Stageout", "Failed"))
 
