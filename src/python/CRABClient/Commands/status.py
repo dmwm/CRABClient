@@ -15,6 +15,7 @@ from CRABClient.ClientUtilities import colors, validateJobids, compareJobids
 from CRABClient.UserUtilities import getDataFromURL, getColumn
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ConfigurationException
+from CRABClient.ClientMapping import parametersMapping
 
 from ServerUtilities import getEpochFromDBTime, TASKDBSTATUSES_TMP, FEEDBACKMAIL,\
     getProxiedWebDir
@@ -359,7 +360,7 @@ class status(SubCommand):
         if wrongJobIds:
             raise ConfigurationException("The following jobids were not found in the task: %s" % wrongJobIds)
 
-    def printDetails(self, dictresult, jobids=None, quiet=False, maxMemory=2000, maxJobRuntime=1315):
+    def printDetails(self, dictresult, jobids=None, quiet=False, maxMemory=parametersMapping['on-server']['maxmemory']['default'], maxJobRuntime=parametersMapping['on-server']['maxjobruntime']['default']):
         """ Print detailed information about a task and each job.
         """
         sortdict = {}
@@ -457,11 +458,11 @@ class status(SubCommand):
             self.logger.debug(msg)
 
         # Print a summary with memory/cpu usage.
-        usage = {'memory':[mem_max,maxMemory], 'runtime':[to_hms(run_max),maxJobRuntime]}
+        usage = {'memory':[mem_max,maxMemory,'MB'], 'runtime':[to_hms(run_max),maxJobRuntime,'min']}
         threshold = 0.7
         for param, values in usage.items():
             if values[0] < threshold*values[1]:
-                self.logger.info("\n%sWarning%s: the max jobs %s is less than %d%% of the task requested value (%d), please consider to request a lower value" % (colors.RED, colors.NORMAL, param, threshold*100, values[1]))
+                self.logger.info("\n%sWarning%s: the max jobs %s is less than %d%% of the task requested value (%d %s), please consider to request a lower value" % (colors.RED, colors.NORMAL, param, threshold*100, values[1], values[2]))
 
 
         summaryMsg = "\nSummary:"
