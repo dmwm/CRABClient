@@ -55,6 +55,8 @@ class status(SubCommand):
         asourl = getColumn(crabDBInfo, 'tm_asourl')
         asodb = getColumn(crabDBInfo, 'tm_asodb')
         publicationEnabled = True if getColumn(crabDBInfo, 'tm_publication') == 'T' else False
+        maxMemory = int(getColumn(crabDBInfo, 'tm_maxmemory'))
+        maxJobRuntime = int(getColumn(crabDBInfo, 'tm_maxjobruntime'))
 
         #Print information from the database
         self.printTaskInfo(crabDBInfo, user)
@@ -131,6 +133,8 @@ class status(SubCommand):
                                           shortResult['numUnpublishable'], asourl, asodb, taskname, user, crabDBInfo)
         self.printErrors(statusCacheInfo)
 
+        self.printDetails(statusCacheInfo, self.jobids, True, maxMemory, maxJobRuntime)
+
         if self.options.summary:
             self.printSummary(statusCacheInfo)
         if self.options.long or self.options.sort:
@@ -143,7 +147,7 @@ class status(SubCommand):
                     jobidstuple = validateJobids(self.options.jobids, useLists)
                     self.jobids = [str(jobid) for (_, jobid) in jobidstuple]
                 self.checkUserJobids(statusCacheInfo, self.jobids)
-            sortdict = self.printDetails(statusCacheInfo, self.jobids, quiet = (not self.options.long))
+            sortdict = self.printDetails(statusCacheInfo, self.jobids, not self.options.long, maxMemory, maxJobRuntime)
             if self.options.sort:
                 self.printSort(sortdict, self.options.sort)
         if self.options.json:
@@ -342,7 +346,7 @@ class status(SubCommand):
         if warnings:
             for warningMsg in warnings:
                 self.logger.warning("%sWarning%s:\t\t\t%s" % (colors.RED, colors.NORMAL, warningMsg))
-        if failure: #TODO failure should be ignored if the task is not in failure state in the task db
+        if failure and 'FAILED' in status:
             msg  = "%sFailure message from the server%s:" % (colors.RED, colors.NORMAL)
             msg += "\t\t%s" % (failure.replace('\n', '\n\t\t\t\t'))
             self.logger.error(msg)
@@ -355,7 +359,7 @@ class status(SubCommand):
         if wrongJobIds:
             raise ConfigurationException("The following jobids were not found in the task: %s" % wrongJobIds)
 
-    def printDetails(self, dictresult, jobids=None, quiet=False):
+    def printDetails(self, dictresult, jobids=None, quiet=False, maxMemory=2000, maxJobRuntime=1315):
         """ Print detailed information about a task and each job.
         """
         sortdict = {}
@@ -453,6 +457,13 @@ class status(SubCommand):
             self.logger.debug(msg)
 
         # Print a summary with memory/cpu usage.
+        usage = {'memory':[mem_max,maxMemory], 'runtime':[to_hms(run_max),maxJobRuntime]}
+        threshold = 0.7
+        for param, values in usage.items():
+            if values[0] < threshold*values[1]:
+                self.logger.info("\n%sWarning%s: the max jobs %s is less than %d%% of the task requested value (%d), please consider to request a lower value" % (colors.RED, colors.NORMAL, param, threshold*100, values[1]))
+
+
         summaryMsg = "\nSummary:"
         if mem_cnt:
             summaryMsg += "\n * Memory: %dMB min, %dMB max, %.0fMB ave" % (mem_min, mem_max, mem_sum/mem_cnt)
@@ -464,8 +475,7 @@ class status(SubCommand):
             waste = wall_sum - run_sum
             summaryMsg += "\n * Waste: %s (%.0f%% of total)" % (to_hms(waste), (waste / float(wall_sum))*100)
         summaryMsg += "\n"
-        if not quiet:
-            self.logger.info(summaryMsg)
+        self.logger.info(summaryMsg)
 
         return sortdict
 
@@ -704,12 +714,14 @@ class status(SubCommand):
 
         sites = {}
         default_info = {"Runtime": 0, "Waste": 0, "Running": 0, "Success": 0, "Failed": 0, "Stageout": 0}
-        for i in range(1, len(dictresult)+1):
-            info = dictresult[str(i)]
+        siteHistory_retrieved = False
+        for job in dictresult:
+            info = dictresult[job]
             state = info['State']
             site_history = info.get("SiteHistory")
             if not site_history:
                 continue
+            siteHistory_retrieved = True
             walls = info['WallDurations']
             cur_site = info['SiteHistory'][-1]
             cur_info = sites.setdefault(cur_site, dict(default_info))
@@ -730,7 +742,14 @@ class status(SubCommand):
                 cur_info['Success'] += 1
                 cur_info['Runtime'] += walls[-1]
 
-        self.logger.info("\nSite Summary Table (including retries):\n")
+        # avoid printing header only
+        if not siteHistory_retrieved:
+            self.logger.info("No SiteHistory retrieved for any job\n")
+            return
+        if all(site == "Unknown" for site in sites):
+            self.logger.info("Site Unknown for any job\n")
+            return
+        self.logger.info("Site Summary Table (including retries):\n")
         self.logger.info("%-20s %10s %10s %10s %10s %10s %10s" % ("Site", "Runtime", "Waste", "Running", "Successful", "Stageout", "Failed"))
 
         sorted_sites = sorted(sites.keys())
