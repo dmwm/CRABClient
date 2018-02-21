@@ -458,11 +458,10 @@ class status(SubCommand):
             self.logger.debug(msg)
 
         # Print a summary with memory/cpu usage.
-        usage = {'memory':[mem_max,maxMemory,'MB'], 'runtime':[to_hms(run_max),maxJobRuntime,'min']}
-        threshold = 0.7
+        usage = {'memory':[mem_max,maxMemory,0.7,'MB'], 'runtime':[to_hms(run_max),maxJobRuntime,0.3,'min']}
         for param, values in usage.items():
-            if values[0] < threshold*values[1]:
-                self.logger.info("\n%sWarning%s: the max jobs %s is less than %d%% of the task requested value (%d %s), please consider to request a lower value" % (colors.RED, colors.NORMAL, param, threshold*100, values[1], values[2]))
+            if values[0] < values[2]*values[1]:
+                self.logger.info("\n%sWarning%s: the max jobs %s is less than %d%% of the task requested value (%d %s), please consider to request a lower value (allowed through crab resubmit) and/or improve the jobs splitting (e.g. config.Data.splitting = 'Automatic') in a new task." % (colors.RED, colors.NORMAL, param, values[2]*100, values[1], values[3]))
 
 
         summaryMsg = "\nSummary:"
