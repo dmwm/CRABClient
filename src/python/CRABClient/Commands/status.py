@@ -161,8 +161,8 @@ class status(SubCommand):
         return statusDict
 
     def makeStatusReturnDict(self, crabDBInfo, combinedStatus, dagStatus = '',
-                             statusFailureMsg = '', shortResult = {},
-                             statusCacheInfo = {}, pubStatus = {},
+                             statusFailureMsg = '', shortResult = None,
+                             statusCacheInfo = None, pubStatus = None,
                              proxiedWebDir = ''):
         """ Create a dictionary which is mostly identical to the dictionary
             that was being returned by the old status (plus a few other keys
@@ -170,6 +170,10 @@ class status(SubCommand):
             compatibility after the status2 transition for users relying on
             this dictionary in their scripts.
         """
+
+        if shortResult is None: shortResult = {}
+        if statusCacheInfo is None: statusCacheInfo = {}
+        if pubStatus is None: pubStatus = {}
 
         statusDict = {}
         statusDict['status'] = combinedStatus
@@ -238,18 +242,18 @@ class status(SubCommand):
         return pubInfo['result'][0]
 
     @staticmethod
-    def translateStatus(status, dbstatus):
+    def translateStatus(statusToTr, dbstatus):
         """Translate from DAGMan internal integer status to a string.
 
         Uses parameter `dbstatus` to clarify if the state is due to the
         user killing the task.
         """
-        status = {1:'SUBMITTED', 2:'SUBMITTED', 3:'SUBMITTED', 4:'SUBMITTED', 5:'COMPLETED', 6:'FAILED'}[status]
+        statusToTr = {1:'SUBMITTED', 2:'SUBMITTED', 3:'SUBMITTED', 4:'SUBMITTED', 5:'COMPLETED', 6:'FAILED'}[statusToTr]
         # Unfortunately DAG code for killed task is 6, just as like for finished DAGs with failed jobs
         # Relabeling the status from 'FAILED' to 'FAILED (KILLED)' if a successful kill command was issued
-        if status == 'FAILED' and dbstatus == 'KILLED':
-            status = 'FAILED (KILLED)'
-        return status
+        if statusToTr == 'FAILED' and dbstatus == 'KILLED':
+            statusToTr = 'FAILED (KILLED)'
+        return statusToTr
 
     @classmethod
     def collapseDAGStatus(cls, dagInfo, dbstatus):
@@ -266,13 +270,13 @@ class status(SubCommand):
         if len(subDagInfos) == 0 and len(subDagStatus) == 0:
             return cls.translateStatus(dagInfo['DagStatus'], dbstatus)
 
-        def check_queued(status):
+        def check_queued(statusOrSUBMITTED):
             # 99 is the status to expect a submitted DAG. If there are less
             # actual DAG status informations than expected DAGs, at least one
             # DAG has to be queued.
             if dbstatus != 'KILLED' and len(subDagInfos) < len([k for k in subDagStatus if subDagStatus[k] == 99]):
                 return 'SUBMITTED'
-            return status
+            return statusOrSUBMITTED
 
         # If the processing DAG is still running, we are 'SUBMITTED',
         # still.
@@ -284,9 +288,9 @@ class status(SubCommand):
         # `status_order`
         if len(subDagInfos) > 1:
             states = [cls.translateStatus(subDagInfos[k]['DagStatus'], dbstatus) for k in subDagInfos if k > 0]
-            for status in status_order:
-                if states.count(status) > 0:
-                    return check_queued(status)
+            for iStatus in status_order:
+                if states.count(iStatus) > 0:
+                    return check_queued(iStatus)
         # If no tails are active, return the status of the processing DAG.
         if len(subDagInfos) > 0:
             return check_queued(cls.translateStatus(subDagInfos[0]['DagStatus'], dbstatus))
@@ -308,7 +312,7 @@ class status(SubCommand):
             dashboard URL, warnings and failire messages in the database.
         """
         schedd = getColumn(crabDBInfo, 'tm_schedd')
-        status = getColumn(crabDBInfo, 'tm_task_status')
+        statusToPr = getColumn(crabDBInfo, 'tm_task_status')
         command = getColumn(crabDBInfo, 'tm_task_command')
         warnings = literal_eval(getColumn(crabDBInfo, 'tm_task_warnings'))
         failure = getColumn(crabDBInfo, 'tm_task_failure')
@@ -319,13 +323,13 @@ class status(SubCommand):
             msg = "Grid scheduler:\t\t\t%s" % schedd
             self.logger.info(msg)
         msg = "Status on the CRAB server:\t"
-        if 'FAILED' in status:
-            msg += "%s%s%s" % (colors.RED, status, colors.NORMAL)
+        if 'FAILED' in statusToPr:
+            msg += "%s%s%s" % (colors.RED, statusToPr, colors.NORMAL)
         else:
-            if status in TASKDBSTATUSES_TMP:
-                msg += "%s on command %s" % (status, command)
+            if statusToPr in TASKDBSTATUSES_TMP:
+                msg += "%s on command %s" % (statusToPr, command)
             else:
-                msg += "%s" % (status)
+                msg += "%s" % (statusToPr)
         self.logger.info(msg)
 
         # Show server and dashboard URL for the task.
@@ -347,7 +351,7 @@ class status(SubCommand):
         if warnings:
             for warningMsg in warnings:
                 self.logger.warning("%sWarning%s:\t\t\t%s" % (colors.RED, colors.NORMAL, warningMsg))
-        if failure and 'FAILED' in status:
+        if failure and 'FAILED' in statusToPr:
             msg  = "%sFailure message from the server%s:" % (colors.RED, colors.NORMAL)
             msg += "\t\t%s" % (failure.replace('\n', '\n\t\t\t\t'))
             self.logger.error(msg)
@@ -383,14 +387,14 @@ class status(SubCommand):
         automatic = any('-' in k for k in dictresult)
 
         def translateJobStatus(jobid):
-            status = dictresult[jobid]['State']
+            statusToTr = dictresult[jobid]['State']
             if not automatic:
-                return status
-            if jobid.startswith('0-') and status in ('finished', 'failed'):
+                return statusToTr
+            if jobid.startswith('0-') and statusToTr in ('finished', 'failed'):
                 return 'no output'
-            elif automatic and '-' not in jobid and status == 'failed':
+            elif automatic and '-' not in jobid and statusToTr == 'failed':
                 return 'rescheduled'
-            return status
+            return statusToTr
 
         # Chose between the jobids passed by the user or all jobids that are in the task
         jobidsToUse = jobids if jobids else dictresult.keys()
@@ -495,10 +499,10 @@ class status(SubCommand):
         jobList = []
         result = {}
         for job, info in statusCacheInfo.items():
-            status = info['State']
-            jobsPerStatus.setdefault(status, 0)
-            jobsPerStatus[status] += 1
-            jobList.append([status, job])
+            jobStatus = info['State']
+            jobsPerStatus.setdefault(jobStatus, 0)
+            jobsPerStatus[jobStatus] += 1
+            jobList.append([jobStatus, job])
         result['jobsPerStatus'] = jobsPerStatus
         result['jobList'] = jobList
 
@@ -524,8 +528,8 @@ class status(SubCommand):
             result['numUnpublishable'] = failedProcessing
 
         def terminate(states, status, target='no output'):
-            if status in states:
-                states[target] = states.setdefault(target, 0) + states.pop(status)
+            if jobStatus in states:
+                states[target] = states.setdefault(target, 0) + states.pop(jobStatus)
 
         toPrint = [('Jobs', states)]
         if self.options.long:
@@ -606,12 +610,12 @@ class status(SubCommand):
             if automatic and (jobid.startswith('0-') or '-' not in jobid):
                 return False
             return True
-        for jobid, status in dictresult.iteritems():
-            if status['State'] == 'failed' and consider(jobid):
+        for jobid, jobStatus in dictresult.iteritems():
+            if jobStatus['State'] == 'failed' and consider(jobid):
                 are_failed_jobs = True
-                if 'Error' in status:
-                    ec = status['Error'][0] #exit code of this failed job
-                    em = status['Error'][1] #exit message of this failed job
+                if 'Error' in jobStatus:
+                    ec = jobStatus['Error'][0] #exit code of this failed job
+                    em = jobStatus['Error'][1] #exit message of this failed job
                     if ec not in ec_errors:
                         ec_errors[ec] = []
                     if ec not in ec_jobids:
@@ -908,9 +912,9 @@ class status(SubCommand):
             states = pubInfo['publication']
             ## Don't consider publication states for which 0 files are in this state.
             states_tmp = states.copy()
-            for status in states:
-                if states[status] == 0:
-                    del states_tmp[status]
+            for pubStatus in states:
+                if states[pubStatus] == 0:
+                    del states_tmp[pubStatus]
             states = states_tmp.copy()
             ## Count the total number of files to publish. For this we count the number of
             ## jobs and the number of files to publish per job (which is equal to the number
