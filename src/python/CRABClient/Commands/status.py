@@ -134,7 +134,8 @@ class status(SubCommand):
                                           shortResult['numUnpublishable'], asourl, asodb, taskname, user, crabDBInfo)
         self.printErrors(statusCacheInfo)
 
-        self.printDetails(statusCacheInfo, self.jobids, True, maxMemory, maxJobRuntime)
+        if not self.options.long: # already printed for this option 
+            self.printDetails(statusCacheInfo, self.jobids, True, maxMemory, maxJobRuntime)
 
         if self.options.summary:
             self.printSummary(statusCacheInfo)
