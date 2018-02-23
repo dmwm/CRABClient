@@ -407,7 +407,7 @@ class status(SubCommand):
             wall = 0
             if info.get('WallDurations'):
                 wall = info['WallDurations'][-1]
-                run_cnt += 1
+                if not jobid.startswith('0-'): run_cnt += 1 # exclude probe jobs from summary computation
                 if (run_min == -1) or (wall < run_min): run_min = wall
                 if wall > run_max: run_max = wall
             run_sum += wall
@@ -421,7 +421,7 @@ class status(SubCommand):
             mem = 'Unknown'
             if info.get('ResidentSetSize'):
                 mem = info['ResidentSetSize'][-1]/1024
-                mem_cnt += 1
+                if not jobid.startswith('0-'): mem_cnt += 1 # exclude probe jobs from summary computation
                 if (mem_min == -1) or (wall < mem_min): mem_min = mem
                 if mem > mem_max: mem_max = mem
                 mem_sum += mem
@@ -461,25 +461,26 @@ class status(SubCommand):
         if not quiet:
             self.logger.debug(msg)
 
-        # Print a summary with memory/cpu usage.
-        usage = {'memory':[mem_max,maxMemory,0.7,'MB'], 'runtime':[to_hms(run_max),maxJobRuntime,0.3,'min']}
-        for param, values in usage.items():
-            if values[0] < values[2]*values[1]:
-                self.logger.info("\n%sWarning%s: the max jobs %s is less than %d%% of the task requested value (%d %s), please consider to request a lower value (allowed through crab resubmit) and/or improve the jobs splitting (e.g. config.Data.splitting = 'Automatic') in a new task." % (colors.RED, colors.NORMAL, param, values[2]*100, values[1], values[3]))
+        if mem_cnt or run_cnt:
+            # Print a summary with memory/cpu usage.
+            usage = {'memory':[mem_max,maxMemory,0.7,'MB'], 'runtime':[to_hms(run_max),maxJobRuntime,0.3,'min']}
+            for param, values in usage.items():
+                if values[0] < values[2]*values[1]:
+                    self.logger.info("\n%sWarning%s: the max jobs %s is less than %d%% of the task requested value (%d %s), please consider to request a lower value (allowed through crab resubmit) and/or improve the jobs splitting (e.g. config.Data.splitting = 'Automatic') in a new task." % (colors.RED, colors.NORMAL, param, values[2]*100, values[1], values[3]))
 
 
-        summaryMsg = "\nSummary:"
-        if mem_cnt:
-            summaryMsg += "\n * Memory: %dMB min, %dMB max, %.0fMB ave" % (mem_min, mem_max, mem_sum/mem_cnt)
-        if run_cnt:
-            summaryMsg += "\n * Runtime: %s min, %s max, %s ave" % (to_hms(run_min), to_hms(run_max), to_hms(run_sum/run_cnt))
-        if run_sum and cpu_min >= 0:
-            summaryMsg += "\n * CPU eff: %.0f%% min, %.0f%% max, %.0f%% ave" % (cpu_min, cpu_max, (cpu_sum / run_sum)*100)
-        if wall_sum or run_sum:
-            waste = wall_sum - run_sum
-            summaryMsg += "\n * Waste: %s (%.0f%% of total)" % (to_hms(waste), (waste / float(wall_sum))*100)
-        summaryMsg += "\n"
-        self.logger.info(summaryMsg)
+            summaryMsg = "\nSummary:"
+            if mem_cnt:
+                summaryMsg += "\n * Memory: %dMB min, %dMB max, %.0fMB ave" % (mem_min, mem_max, mem_sum/mem_cnt)
+            if run_cnt:
+                summaryMsg += "\n * Runtime: %s min, %s max, %s ave" % (to_hms(run_min), to_hms(run_max), to_hms(run_sum/run_cnt))
+            if run_sum and cpu_min >= 0:
+                summaryMsg += "\n * CPU eff: %.0f%% min, %.0f%% max, %.0f%% ave" % (cpu_min, cpu_max, (cpu_sum / run_sum)*100)
+            if wall_sum or run_sum:
+                waste = wall_sum - run_sum
+                summaryMsg += "\n * Waste: %s (%.0f%% of total)" % (to_hms(waste), (waste / float(wall_sum))*100)
+            summaryMsg += "\n"
+            self.logger.info(summaryMsg)
 
         return sortdict
 
