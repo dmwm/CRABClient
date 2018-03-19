@@ -436,8 +436,7 @@ class status(SubCommand):
             elif wall and ('TotalSysCpuTimeHistory' in info) and ('TotalUserCpuTimeHistory' in info):
                 cpu = info['TotalSysCpuTimeHistory'][-1] + info['TotalUserCpuTimeHistory'][-1]
                 cpu_sum += cpu
-                if not wall: cpu = 0
-                else: cpu = (cpu / float(wall)) * 100
+                cpu = (cpu / float(wall)) * 100
                 if (cpu_min == -1) or cpu < cpu_min: cpu_min = cpu
                 if cpu > cpu_max: cpu_max = cpu
                 cpu = "%.0f" % cpu
@@ -464,11 +463,15 @@ class status(SubCommand):
 
         if mem_cnt or run_cnt:
             # Print a summary with memory/cpu usage.
+            hint = " and/or improve the jobs splitting (e.g. config.Data.splitting = 'Automatic') in a new task"
             usage = {'memory':[mem_max,maxMemory,0.7,'MB'], 'runtime':[to_hms(run_max),maxJobRuntime,0.3,'min']}
             for param, values in usage.items():
                 if values[0] < values[2]*values[1]:
-                    self.logger.info("\n%sWarning%s: the max jobs %s is less than %d%% of the task requested value (%d %s), please consider to request a lower value (allowed through crab resubmit) and/or improve the jobs splitting (e.g. config.Data.splitting = 'Automatic') in a new task." % (colors.RED, colors.NORMAL, param, values[2]*100, values[1], values[3]))
-
+                    self.logger.info("\n%sWarning%s: the max jobs %s is less than %d%% of the task requested value (%d %s), please consider to request a lower value (allowed through crab resubmit)%s." % (colors.RED, colors.NORMAL, param, values[2]*100, values[1], values[3], hint))
+            cpu_ave = (cpu_sum / run_sum)*100
+            cpu_thr = 0.7
+            if cpu_ave < cpu_thr:
+                self.logger.info("\n%sWarning%s: the average jobs CPU efficiency is less than %d%%, please consider to request a lower number of threads%s." % (colors.RED, colors.NORMAL, cpu_thr, hint))
 
             summaryMsg = "\nSummary:"
             if mem_cnt:
@@ -476,7 +479,7 @@ class status(SubCommand):
             if run_cnt:
                 summaryMsg += "\n * Runtime: %s min, %s max, %s ave" % (to_hms(run_min), to_hms(run_max), to_hms(run_sum/run_cnt))
             if run_sum and cpu_min >= 0:
-                summaryMsg += "\n * CPU eff: %.0f%% min, %.0f%% max, %.0f%% ave" % (cpu_min, cpu_max, (cpu_sum / run_sum)*100)
+                summaryMsg += "\n * CPU eff: %.0f%% min, %.0f%% max, %.0f%% ave" % (cpu_min, cpu_max, cpu_ave)
             if wall_sum or run_sum:
                 waste = wall_sum - run_sum
                 summaryMsg += "\n * Waste: %s (%.0f%% of total)" % (to_hms(waste), (waste / float(wall_sum))*100)
