@@ -58,6 +58,7 @@ class status(SubCommand):
         publicationEnabled = True if getColumn(crabDBInfo, 'tm_publication') == 'T' else False
         maxMemory = int(getColumn(crabDBInfo, 'tm_maxmemory'))
         maxJobRuntime = int(getColumn(crabDBInfo, 'tm_maxjobruntime'))
+        numCores = int(getColumn(crabDBInfo, 'tm_numcores'))
 
         #Print information from the database
         self.printTaskInfo(crabDBInfo, user)
@@ -135,7 +136,7 @@ class status(SubCommand):
         self.printErrors(statusCacheInfo)
 
         if not self.options.long: # already printed for this option 
-            self.printDetails(statusCacheInfo, self.jobids, True, maxMemory, maxJobRuntime)
+            self.printDetails(statusCacheInfo, self.jobids, True, maxMemory, maxJobRuntime, numCores)
 
         if self.options.summary:
             self.printSummary(statusCacheInfo)
@@ -149,7 +150,7 @@ class status(SubCommand):
                     jobidstuple = validateJobids(self.options.jobids, useLists)
                     self.jobids = [str(jobid) for (_, jobid) in jobidstuple]
                 self.checkUserJobids(statusCacheInfo, self.jobids)
-            sortdict = self.printDetails(statusCacheInfo, self.jobids, not self.options.long, maxMemory, maxJobRuntime)
+            sortdict = self.printDetails(statusCacheInfo, self.jobids, not self.options.long, maxMemory, maxJobRuntime, numCores)
             if self.options.sort:
                 self.printSort(sortdict, self.options.sort)
         if self.options.json:
@@ -365,7 +366,7 @@ class status(SubCommand):
         if wrongJobIds:
             raise ConfigurationException("The following jobids were not found in the task: %s" % wrongJobIds)
 
-    def printDetails(self, dictresult, jobids=None, quiet=False, maxMemory=parametersMapping['on-server']['maxmemory']['default'], maxJobRuntime=parametersMapping['on-server']['maxjobruntime']['default']):
+    def printDetails(self, dictresult, jobids=None, quiet=False, maxMemory=parametersMapping['on-server']['maxmemory']['default'], maxJobRuntime=parametersMapping['on-server']['maxjobruntime']['default'], numCores=parametersMapping['on-server']['numcores']['default']):
         """ Print detailed information about a task and each job.
         """
         sortdict = {}
@@ -435,8 +436,8 @@ class status(SubCommand):
                 cpu = "%.0f" % cpu
             elif wall and ('TotalSysCpuTimeHistory' in info) and ('TotalUserCpuTimeHistory' in info):
                 cpu = info['TotalSysCpuTimeHistory'][-1] + info['TotalUserCpuTimeHistory'][-1]
-                cpu_sum += cpu
-                cpu = (cpu / float(wall)) * 100
+                cpu_sum += cpu / float(numCores)
+                cpu = (cpu / float(wall*numCores)) * 100
                 if (cpu_min == -1) or cpu < cpu_min: cpu_min = cpu
                 if cpu > cpu_max: cpu_max = cpu
                 cpu = "%.0f" % cpu
@@ -468,10 +469,10 @@ class status(SubCommand):
             for param, values in usage.items():
                 if values[0] < values[2]*values[1]:
                     self.logger.info("\n%sWarning%s: the max jobs %s is less than %d%% of the task requested value (%d %s), please consider to request a lower value (allowed through crab resubmit)%s." % (colors.RED, colors.NORMAL, param, values[2]*100, values[1], values[3], hint))
-            cpu_ave = (cpu_sum / run_sum)*100
+            cpu_ave = (cpu_sum / run_sum)
             cpu_thr = 0.7
             if cpu_ave < cpu_thr:
-                self.logger.info("\n%sWarning%s: the average jobs CPU efficiency is less than %d%%, please consider to request a lower number of threads%s." % (colors.RED, colors.NORMAL, cpu_thr, hint))
+                self.logger.info("\n%sWarning%s: the average jobs CPU efficiency is less than %d%%, please consider to request a lower number of threads%s." % (colors.RED, colors.NORMAL, cpu_thr*100, hint))
 
             summaryMsg = "\nSummary:"
             if mem_cnt:
@@ -479,7 +480,7 @@ class status(SubCommand):
             if run_cnt:
                 summaryMsg += "\n * Runtime: %s min, %s max, %s ave" % (to_hms(run_min), to_hms(run_max), to_hms(run_sum/run_cnt))
             if run_sum and cpu_min >= 0:
-                summaryMsg += "\n * CPU eff: %.0f%% min, %.0f%% max, %.0f%% ave" % (cpu_min, cpu_max, cpu_ave)
+                summaryMsg += "\n * CPU eff: %.0f%% min, %.0f%% max, %.0f%% ave" % (cpu_min, cpu_max, cpu_ave*100)
             if wall_sum or run_sum:
                 waste = wall_sum - run_sum
                 summaryMsg += "\n * Waste: %s (%.0f%% of total)" % (to_hms(waste), (waste / float(wall_sum))*100)
