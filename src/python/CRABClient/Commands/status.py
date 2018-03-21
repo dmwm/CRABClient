@@ -15,6 +15,7 @@ from CRABClient.ClientUtilities import colors, validateJobids, compareJobids
 from CRABClient.UserUtilities import getDataFromURL, getColumn
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ConfigurationException
+from CRABClient.ClientMapping import parametersMapping
 
 from ServerUtilities import getEpochFromDBTime, TASKDBSTATUSES_TMP, FEEDBACKMAIL,\
     getProxiedWebDir
@@ -57,6 +58,7 @@ class status(SubCommand):
         publicationEnabled = True if getColumn(crabDBInfo, 'tm_publication') == 'T' else False
         maxMemory = int(getColumn(crabDBInfo, 'tm_maxmemory'))
         maxJobRuntime = int(getColumn(crabDBInfo, 'tm_maxjobruntime'))
+        numCores = int(getColumn(crabDBInfo, 'tm_numcores'))
 
         #Print information from the database
         self.printTaskInfo(crabDBInfo, user)
@@ -133,7 +135,8 @@ class status(SubCommand):
                                           shortResult['numUnpublishable'], asourl, asodb, taskname, user, crabDBInfo)
         self.printErrors(statusCacheInfo)
 
-        self.printDetails(statusCacheInfo, self.jobids, True, maxMemory, maxJobRuntime)
+        if not self.options.long: # already printed for this option 
+            self.printDetails(statusCacheInfo, self.jobids, True, maxMemory, maxJobRuntime, numCores)
 
         if self.options.summary:
             self.printSummary(statusCacheInfo)
@@ -147,7 +150,7 @@ class status(SubCommand):
                     jobidstuple = validateJobids(self.options.jobids, useLists)
                     self.jobids = [str(jobid) for (_, jobid) in jobidstuple]
                 self.checkUserJobids(statusCacheInfo, self.jobids)
-            sortdict = self.printDetails(statusCacheInfo, self.jobids, not self.options.long, maxMemory, maxJobRuntime)
+            sortdict = self.printDetails(statusCacheInfo, self.jobids, not self.options.long, maxMemory, maxJobRuntime, numCores)
             if self.options.sort:
                 self.printSort(sortdict, self.options.sort)
         if self.options.json:
@@ -160,8 +163,8 @@ class status(SubCommand):
         return statusDict
 
     def makeStatusReturnDict(self, crabDBInfo, combinedStatus, dagStatus = '',
-                             statusFailureMsg = '', shortResult = {},
-                             statusCacheInfo = {}, pubStatus = {},
+                             statusFailureMsg = '', shortResult = None,
+                             statusCacheInfo = None, pubStatus = None,
                              proxiedWebDir = ''):
         """ Create a dictionary which is mostly identical to the dictionary
             that was being returned by the old status (plus a few other keys
@@ -169,6 +172,10 @@ class status(SubCommand):
             compatibility after the status2 transition for users relying on
             this dictionary in their scripts.
         """
+
+        if shortResult is None: shortResult = {}
+        if statusCacheInfo is None: statusCacheInfo = {}
+        if pubStatus is None: pubStatus = {}
 
         statusDict = {}
         statusDict['status'] = combinedStatus
@@ -237,18 +244,18 @@ class status(SubCommand):
         return pubInfo['result'][0]
 
     @staticmethod
-    def translateStatus(status, dbstatus):
+    def translateStatus(statusToTr, dbstatus):
         """Translate from DAGMan internal integer status to a string.
 
         Uses parameter `dbstatus` to clarify if the state is due to the
         user killing the task.
         """
-        status = {1:'SUBMITTED', 2:'SUBMITTED', 3:'SUBMITTED', 4:'SUBMITTED', 5:'COMPLETED', 6:'FAILED'}[status]
+        statusToTr = {1:'SUBMITTED', 2:'SUBMITTED', 3:'SUBMITTED', 4:'SUBMITTED', 5:'COMPLETED', 6:'FAILED'}[statusToTr]
         # Unfortunately DAG code for killed task is 6, just as like for finished DAGs with failed jobs
         # Relabeling the status from 'FAILED' to 'FAILED (KILLED)' if a successful kill command was issued
-        if status == 'FAILED' and dbstatus == 'KILLED':
-            status = 'FAILED (KILLED)'
-        return status
+        if statusToTr == 'FAILED' and dbstatus == 'KILLED':
+            statusToTr = 'FAILED (KILLED)'
+        return statusToTr
 
     @classmethod
     def collapseDAGStatus(cls, dagInfo, dbstatus):
@@ -265,13 +272,13 @@ class status(SubCommand):
         if len(subDagInfos) == 0 and len(subDagStatus) == 0:
             return cls.translateStatus(dagInfo['DagStatus'], dbstatus)
 
-        def check_queued(status):
+        def check_queued(statusOrSUBMITTED):
             # 99 is the status to expect a submitted DAG. If there are less
             # actual DAG status informations than expected DAGs, at least one
             # DAG has to be queued.
             if dbstatus != 'KILLED' and len(subDagInfos) < len([k for k in subDagStatus if subDagStatus[k] == 99]):
                 return 'SUBMITTED'
-            return status
+            return statusOrSUBMITTED
 
         # If the processing DAG is still running, we are 'SUBMITTED',
         # still.
@@ -283,9 +290,9 @@ class status(SubCommand):
         # `status_order`
         if len(subDagInfos) > 1:
             states = [cls.translateStatus(subDagInfos[k]['DagStatus'], dbstatus) for k in subDagInfos if k > 0]
-            for status in status_order:
-                if states.count(status) > 0:
-                    return check_queued(status)
+            for iStatus in status_order:
+                if states.count(iStatus) > 0:
+                    return check_queued(iStatus)
         # If no tails are active, return the status of the processing DAG.
         if len(subDagInfos) > 0:
             return check_queued(cls.translateStatus(subDagInfos[0]['DagStatus'], dbstatus))
@@ -307,7 +314,7 @@ class status(SubCommand):
             dashboard URL, warnings and failire messages in the database.
         """
         schedd = getColumn(crabDBInfo, 'tm_schedd')
-        status = getColumn(crabDBInfo, 'tm_task_status')
+        statusToPr = getColumn(crabDBInfo, 'tm_task_status')
         command = getColumn(crabDBInfo, 'tm_task_command')
         warnings = literal_eval(getColumn(crabDBInfo, 'tm_task_warnings'))
         failure = getColumn(crabDBInfo, 'tm_task_failure')
@@ -318,13 +325,13 @@ class status(SubCommand):
             msg = "Grid scheduler:\t\t\t%s" % schedd
             self.logger.info(msg)
         msg = "Status on the CRAB server:\t"
-        if 'FAILED' in status:
-            msg += "%s%s%s" % (colors.RED, status, colors.NORMAL)
+        if 'FAILED' in statusToPr:
+            msg += "%s%s%s" % (colors.RED, statusToPr, colors.NORMAL)
         else:
-            if status in TASKDBSTATUSES_TMP:
-                msg += "%s on command %s" % (status, command)
+            if statusToPr in TASKDBSTATUSES_TMP:
+                msg += "%s on command %s" % (statusToPr, command)
             else:
-                msg += "%s" % (status)
+                msg += "%s" % (statusToPr)
         self.logger.info(msg)
 
         # Show server and dashboard URL for the task.
@@ -346,7 +353,7 @@ class status(SubCommand):
         if warnings:
             for warningMsg in warnings:
                 self.logger.warning("%sWarning%s:\t\t\t%s" % (colors.RED, colors.NORMAL, warningMsg))
-        if failure and 'FAILED' in status:
+        if failure and 'FAILED' in statusToPr:
             msg  = "%sFailure message from the server%s:" % (colors.RED, colors.NORMAL)
             msg += "\t\t%s" % (failure.replace('\n', '\n\t\t\t\t'))
             self.logger.error(msg)
@@ -359,7 +366,7 @@ class status(SubCommand):
         if wrongJobIds:
             raise ConfigurationException("The following jobids were not found in the task: %s" % wrongJobIds)
 
-    def printDetails(self, dictresult, jobids=None, quiet=False, maxMemory=2000, maxJobRuntime=1315):
+    def printDetails(self, dictresult, jobids=None, quiet=False, maxMemory=parametersMapping['on-server']['maxmemory']['default'], maxJobRuntime=parametersMapping['on-server']['maxjobruntime']['default'], numCores=parametersMapping['on-server']['numcores']['default']):
         """ Print detailed information about a task and each job.
         """
         sortdict = {}
@@ -382,14 +389,14 @@ class status(SubCommand):
         automatic = any('-' in k for k in dictresult)
 
         def translateJobStatus(jobid):
-            status = dictresult[jobid]['State']
+            statusToTr = dictresult[jobid]['State']
             if not automatic:
-                return status
-            if jobid.startswith('0-') and status in ('finished', 'failed'):
+                return statusToTr
+            if jobid.startswith('0-') and statusToTr in ('finished', 'failed'):
                 return 'no output'
-            elif automatic and '-' not in jobid and status == 'failed':
+            elif automatic and '-' not in jobid and statusToTr == 'failed':
                 return 'rescheduled'
-            return status
+            return statusToTr
 
         # Chose between the jobids passed by the user or all jobids that are in the task
         jobidsToUse = jobids if jobids else dictresult.keys()
@@ -402,7 +409,7 @@ class status(SubCommand):
             wall = 0
             if info.get('WallDurations'):
                 wall = info['WallDurations'][-1]
-                run_cnt += 1
+                if not jobid.startswith('0-'): run_cnt += 1 # exclude probe jobs from summary computation
                 if (run_min == -1) or (wall < run_min): run_min = wall
                 if wall > run_max: run_max = wall
             run_sum += wall
@@ -416,7 +423,7 @@ class status(SubCommand):
             mem = 'Unknown'
             if info.get('ResidentSetSize'):
                 mem = info['ResidentSetSize'][-1]/1024
-                mem_cnt += 1
+                if not jobid.startswith('0-'): mem_cnt += 1 # exclude probe jobs from summary computation
                 if (mem_min == -1) or (wall < mem_min): mem_min = mem
                 if mem > mem_max: mem_max = mem
                 mem_sum += mem
@@ -429,9 +436,8 @@ class status(SubCommand):
                 cpu = "%.0f" % cpu
             elif wall and ('TotalSysCpuTimeHistory' in info) and ('TotalUserCpuTimeHistory' in info):
                 cpu = info['TotalSysCpuTimeHistory'][-1] + info['TotalUserCpuTimeHistory'][-1]
-                cpu_sum += cpu
-                if not wall: cpu = 0
-                else: cpu = (cpu / float(wall)) * 100
+                cpu_sum += cpu / float(numCores)
+                cpu = (cpu / float(wall*numCores)) * 100
                 if (cpu_min == -1) or cpu < cpu_min: cpu_min = cpu
                 if cpu > cpu_max: cpu_max = cpu
                 cpu = "%.0f" % cpu
@@ -456,26 +462,30 @@ class status(SubCommand):
         if not quiet:
             self.logger.debug(msg)
 
-        # Print a summary with memory/cpu usage.
-        usage = {'memory':[mem_max,maxMemory], 'runtime':[to_hms(run_max),maxJobRuntime]}
-        threshold = 0.7
-        for param, values in usage.items():
-            if values[0] < threshold*values[1]:
-                self.logger.info("\n%sWarning%s: the max jobs %s is less than %d%% of the task requested value (%d), please consider to request a lower value" % (colors.RED, colors.NORMAL, param, threshold*100, values[1]))
+        if mem_cnt or run_cnt:
+            # Print a summary with memory/cpu usage.
+            hint = " and/or improve the jobs splitting (e.g. config.Data.splitting = 'Automatic') in a new task"
+            usage = {'memory':[mem_max,maxMemory,0.7,'MB'], 'runtime':[to_hms(run_max),maxJobRuntime,0.3,'min']}
+            for param, values in usage.items():
+                if values[0] < values[2]*values[1]:
+                    self.logger.info("\n%sWarning%s: the max jobs %s is less than %d%% of the task requested value (%d %s), please consider to request a lower value (allowed through crab resubmit)%s." % (colors.RED, colors.NORMAL, param, values[2]*100, values[1], values[3], hint))
+            cpu_ave = (cpu_sum / run_sum)
+            cpu_thr = 0.7
+            if cpu_ave < cpu_thr:
+                self.logger.info("\n%sWarning%s: the average jobs CPU efficiency is less than %d%%, please consider to request a lower number of threads%s." % (colors.RED, colors.NORMAL, cpu_thr*100, hint))
 
-
-        summaryMsg = "\nSummary:"
-        if mem_cnt:
-            summaryMsg += "\n * Memory: %dMB min, %dMB max, %.0fMB ave" % (mem_min, mem_max, mem_sum/mem_cnt)
-        if run_cnt:
-            summaryMsg += "\n * Runtime: %s min, %s max, %s ave" % (to_hms(run_min), to_hms(run_max), to_hms(run_sum/run_cnt))
-        if run_sum and cpu_min >= 0:
-            summaryMsg += "\n * CPU eff: %.0f%% min, %.0f%% max, %.0f%% ave" % (cpu_min, cpu_max, (cpu_sum / run_sum)*100)
-        if wall_sum or run_sum:
-            waste = wall_sum - run_sum
-            summaryMsg += "\n * Waste: %s (%.0f%% of total)" % (to_hms(waste), (waste / float(wall_sum))*100)
-        summaryMsg += "\n"
-        self.logger.info(summaryMsg)
+            summaryMsg = "\nSummary:"
+            if mem_cnt:
+                summaryMsg += "\n * Memory: %dMB min, %dMB max, %.0fMB ave" % (mem_min, mem_max, mem_sum/mem_cnt)
+            if run_cnt:
+                summaryMsg += "\n * Runtime: %s min, %s max, %s ave" % (to_hms(run_min), to_hms(run_max), to_hms(run_sum/run_cnt))
+            if run_sum and cpu_min >= 0:
+                summaryMsg += "\n * CPU eff: %.0f%% min, %.0f%% max, %.0f%% ave" % (cpu_min, cpu_max, cpu_ave*100)
+            if wall_sum or run_sum:
+                waste = wall_sum - run_sum
+                summaryMsg += "\n * Waste: %s (%.0f%% of total)" % (to_hms(waste), (waste / float(wall_sum))*100)
+            summaryMsg += "\n"
+            self.logger.info(summaryMsg)
 
         return sortdict
 
@@ -495,10 +505,10 @@ class status(SubCommand):
         jobList = []
         result = {}
         for job, info in statusCacheInfo.items():
-            status = info['State']
-            jobsPerStatus.setdefault(status, 0)
-            jobsPerStatus[status] += 1
-            jobList.append([status, job])
+            jobStatus = info['State']
+            jobsPerStatus.setdefault(jobStatus, 0)
+            jobsPerStatus[jobStatus] += 1
+            jobList.append([jobStatus, job])
         result['jobsPerStatus'] = jobsPerStatus
         result['jobList'] = jobList
 
@@ -524,8 +534,8 @@ class status(SubCommand):
             result['numUnpublishable'] = failedProcessing
 
         def terminate(states, status, target='no output'):
-            if status in states:
-                states[target] = states.setdefault(target, 0) + states.pop(status)
+            if jobStatus in states:
+                states[target] = states.setdefault(target, 0) + states.pop(jobStatus)
 
         toPrint = [('Jobs', states)]
         if self.options.long:
@@ -606,12 +616,12 @@ class status(SubCommand):
             if automatic and (jobid.startswith('0-') or '-' not in jobid):
                 return False
             return True
-        for jobid, status in dictresult.iteritems():
-            if status['State'] == 'failed' and consider(jobid):
+        for jobid, jobStatus in dictresult.iteritems():
+            if jobStatus['State'] == 'failed' and consider(jobid):
                 are_failed_jobs = True
-                if 'Error' in status:
-                    ec = status['Error'][0] #exit code of this failed job
-                    em = status['Error'][1] #exit message of this failed job
+                if 'Error' in jobStatus:
+                    ec = jobStatus['Error'][0] #exit code of this failed job
+                    em = jobStatus['Error'][1] #exit message of this failed job
                     if ec not in ec_errors:
                         ec_errors[ec] = []
                     if ec not in ec_jobids:
@@ -908,9 +918,9 @@ class status(SubCommand):
             states = pubInfo['publication']
             ## Don't consider publication states for which 0 files are in this state.
             states_tmp = states.copy()
-            for status in states:
-                if states[status] == 0:
-                    del states_tmp[status]
+            for pubStatus in states:
+                if states[pubStatus] == 0:
+                    del states_tmp[pubStatus]
             states = states_tmp.copy()
             ## Count the total number of files to publish. For this we count the number of
             ## jobs and the number of files to publish per job (which is equal to the number
