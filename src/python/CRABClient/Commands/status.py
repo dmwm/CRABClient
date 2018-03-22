@@ -908,7 +908,7 @@ class status(SubCommand):
             self.logger.info(msg)
             return pubStatus
         ## Case in which there was an error in retrieving the publication status.
-        pubSource = "\n(from Oracle transfer DB)"
+        pubSource = "\n(from internal CRAB transfersDB)"
         if 'error' in pubInfo['publication']:
             msg = "\nPublication status:\t\t%s" % (pubInfo['publication']['error'])
             msg += pubSource
