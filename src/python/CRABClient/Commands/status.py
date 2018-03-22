@@ -941,10 +941,10 @@ class status(SubCommand):
             msg = "\nPublication status:\t\t{0} {1}".format(self._printState(statesList[0], 13), \
                                                             self._percentageString(statesList[0], states[statesList[0]], numFilesToPublish))
             msg += pubSource
-            for status in statesList[1:]:
-                if states[status]:
-                    msg += "\n\t\t\t\t{0} {1}".format(self._printState(status, 13), \
-                                                      self._percentageString(status, states[status], numFilesToPublish))
+            for jobStatus in statesList[1:]:
+                if states[jobStatus]:
+                    msg += "\n\t\t\t\t{0} {1}".format(self._printState(jobStatus, 13), \
+                                                      self._percentageString(jobStatus, states[jobStatus], numFilesToPublish))
             self.logger.info(msg)
             ## Print the publication errors.
             if pubInfo.get('publicationFailures'):
