@@ -920,9 +920,9 @@ class status(SubCommand):
             states = pubInfo['publication']
             ## Don't consider publication states for which 0 files are in this state.
             states_tmp = states.copy()
-            for pubStatus in states:
-                if states[pubStatus] == 0:
-                    del states_tmp[pubStatus]
+            for s in states:
+                if states[s] == 0:
+                    del states_tmp[s]
             states = states_tmp.copy()
             ## Count the total number of files to publish. For this we count the number of
             ## jobs and the number of files to publish per job (which is equal to the number
