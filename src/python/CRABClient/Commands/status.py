@@ -908,8 +908,10 @@ class status(SubCommand):
             self.logger.info(msg)
             return pubStatus
         ## Case in which there was an error in retrieving the publication status.
+        pubSource = "\n(from CRAB internal bookkeeping)"
         if 'error' in pubInfo['publication']:
             msg = "\nPublication status:\t\t%s" % (pubInfo['publication']['error'])
+            msg += pubSource
             self.logger.info(msg)
             ## Print the output datasets with the corresponding DAS URL.
             self.printOutputDatasets(outputDatasets, includeDASURL = True)
@@ -918,9 +920,9 @@ class status(SubCommand):
             states = pubInfo['publication']
             ## Don't consider publication states for which 0 files are in this state.
             states_tmp = states.copy()
-            for pubStatus in states:
-                if states[pubStatus] == 0:
-                    del states_tmp[pubStatus]
+            for s in states:
+                if states[s] == 0:
+                    del states_tmp[s]
             states = states_tmp.copy()
             ## Count the total number of files to publish. For this we count the number of
             ## jobs and the number of files to publish per job (which is equal to the number
@@ -938,10 +940,11 @@ class status(SubCommand):
             statesList = sorted(states)
             msg = "\nPublication status:\t\t{0} {1}".format(self._printState(statesList[0], 13), \
                                                             self._percentageString(statesList[0], states[statesList[0]], numFilesToPublish))
-            for status in statesList[1:]:
-                if states[status]:
-                    msg += "\n\t\t\t\t{0} {1}".format(self._printState(status, 13), \
-                                                      self._percentageString(status, states[status], numFilesToPublish))
+            msg += pubSource
+            for jobStatus in statesList[1:]:
+                if states[jobStatus]:
+                    msg += "\n\t\t\t\t{0} {1}".format(self._printState(jobStatus, 13), \
+                                                      self._percentageString(jobStatus, states[jobStatus], numFilesToPublish))
             self.logger.info(msg)
             ## Print the publication errors.
             if pubInfo.get('publicationFailures'):
