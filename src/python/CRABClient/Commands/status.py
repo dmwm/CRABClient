@@ -465,10 +465,11 @@ class status(SubCommand):
         if mem_cnt or run_cnt:
             # Print a summary with memory/cpu usage.
             hint = " and/or improve the jobs splitting (e.g. config.Data.splitting = 'Automatic') in a new task"
-            usage = {'memory':[mem_max,maxMemory,0.7,'MB'], 'runtime':[to_hms(run_max),maxJobRuntime,0.3,'min']}
+            usage = {'memory':[mem_max,maxMemory,0.7,parametersMapping['on-server']['maxmemory']['default'],'MB'], 'runtime':[to_hms(run_max),maxJobRuntime,0.3,maxJobRuntime=parametersMapping['on-server']['maxjobruntime']['default'],'min']}
             for param, values in usage.items():
-                if values[0] < values[2]*values[1]:
-                    self.logger.info("\n%sWarning%s: the max jobs %s is less than %d%% of the task requested value (%d %s), please consider to request a lower value (allowed through crab resubmit)%s." % (colors.RED, colors.NORMAL, param, values[2]*100, values[1], values[3], hint))
+                if values[1] > values[3]:
+                    if values[0] < values[2]*values[1]:
+                        self.logger.info("\n%sWarning%s: the max jobs %s is less than %d%% of the task requested value (%d %s), please consider to request a lower value (allowed through crab resubmit)%s." % (colors.RED, colors.NORMAL, param, values[2]*100, values[1], values[4], hint))
             if run_sum:
                 cpu_ave = (cpu_sum / run_sum)
                 cpu_thr = 0.7
