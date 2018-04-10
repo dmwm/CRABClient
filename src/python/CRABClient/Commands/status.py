@@ -465,7 +465,7 @@ class status(SubCommand):
         if mem_cnt or run_cnt:
             # Print a summary with memory/cpu usage.
             hint = " and/or improve the jobs splitting (e.g. config.Data.splitting = 'Automatic') in a new task"
-            usage = {'memory':[mem_max,maxMemory,0.7,parametersMapping['on-server']['maxmemory']['default'],'MB'], 'runtime':[to_hms(run_max),maxJobRuntime,0.3,maxJobRuntime=parametersMapping['on-server']['maxjobruntime']['default'],'min']}
+            usage = {'memory':[mem_max,maxMemory,0.7,parametersMapping['on-server']['maxmemory']['default'],'MB'], 'runtime':[to_hms(run_max),maxJobRuntime,0.3,parametersMapping['on-server']['maxjobruntime']['default'],'min']}
             for param, values in usage.items():
                 if values[1] > values[3]:
                     if values[0] < values[2]*values[1]:
