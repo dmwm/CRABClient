@@ -473,12 +473,12 @@ class status(SubCommand):
             if run_sum:
                 cpu_ave = (cpu_sum / run_sum)
                 cpu_thr = 0.5
-		cpu_thr_multiThread = 0.3
+                cpu_thr_multiThread = 0.3
                 if cpu_ave < cpu_thr:
                     cpuMsg = "\n%sWarning%s: the average jobs CPU efficiency is less than %d%%, please consider to " % (colors.RED, colors.NORMAL, cpu_thr*100)
-		    if numCores > 1 and cpu_ave < cpu_thr_multiThread:
-                    	cpuMsg += "request a lower number of threads (allowed through crab resubmit) and/or "
-            	    self.logger.info(cpuMsg+hint)
+                    if numCores > 1 and cpu_ave < cpu_thr_multiThread:
+                        cpuMsg += "request a lower number of threads (allowed through crab resubmit) and/or "
+                    self.logger.info(cpuMsg+hint)
 
             summaryMsg = "\nSummary:"
             if mem_cnt:
