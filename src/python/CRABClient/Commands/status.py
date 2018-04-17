@@ -398,11 +398,13 @@ class status(SubCommand):
                 return 'rescheduled'
             return statusToTr
 
+        oneJobFinished = False
         # Chose between the jobids passed by the user or all jobids that are in the task
         jobidsToUse = jobids if jobids else dictresult.keys()
         for jobid in sorted(jobidsToUse, cmp=compareJobids):
             info = dictresult[str(jobid)]
             state = translateJobStatus(jobid)
+            if state == 'finished': oneJobFinished = True
             site = ''
             if info.get('SiteHistory'):
                 site = info['SiteHistory'][-1]
@@ -465,11 +467,12 @@ class status(SubCommand):
         if mem_cnt or run_cnt:
             # Print a summary with memory/cpu usage.
             hint = "improve the jobs splitting (e.g. config.Data.splitting = 'Automatic') in a new task"
-            usage = {'memory':[mem_max,maxMemory,0.7,parametersMapping['on-server']['maxmemory']['default'],'MB'], 'runtime':[to_hms(run_max),maxJobRuntime,0.3,0,'min']}
-            for param, values in usage.items():
-                if values[1] > values[3]:
-                    if values[0] < values[2]*values[1]:
-                        self.logger.info("\n%sWarning%s: the max jobs %s is less than %d%% of the task requested value (%d %s), please consider to request a lower value (allowed through crab resubmit) and/or %s." % (colors.RED, colors.NORMAL, param, values[2]*100, values[1], values[4], hint))
+            if oneJobFinished:
+                usage = {'memory':[mem_max,maxMemory,0.7,parametersMapping['on-server']['maxmemory']['default'],'MB'], 'runtime':[run_max,maxJobRuntime,0.3,0,'min']}
+                for param, values in usage.items():
+                    if values[1] > values[3]:
+                        if values[0] < values[2]*values[1]:
+                            self.logger.info("\n%sWarning%s: the max jobs %s is less than %d%% of the task requested value (%d %s), please consider to request a lower value (allowed through crab resubmit) and/or %s." % (colors.RED, colors.NORMAL, param, values[2]*100, values[1], values[4], hint))
             if run_sum:
                 cpu_ave = (cpu_sum / run_sum)
                 cpu_thr = 0.5
