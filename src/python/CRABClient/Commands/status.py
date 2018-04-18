@@ -398,12 +398,12 @@ class status(SubCommand):
                 return 'rescheduled'
             return statusToTr
 
-        jobForMetrics = False
         # Chose between the jobids passed by the user or all jobids that are in the task
         jobidsToUse = jobids if jobids else dictresult.keys()
         for jobid in sorted(jobidsToUse, cmp=compareJobids):
             info = dictresult[str(jobid)]
             state = translateJobStatus(jobid)
+            jobForMetrics = False
             if state not in ['idle', 'running', 'unsubmitted']: jobForMetrics = True
             site = ''
             if info.get('SiteHistory'):
@@ -411,11 +411,12 @@ class status(SubCommand):
             wall = 0
             if info.get('WallDurations'):
                 wall = info['WallDurations'][-1]
-                if not jobid.startswith('0-'): run_cnt += 1 # exclude probe jobs from summary computation
                 if (run_min == -1) or (wall < run_min): run_min = wall
                 if jobForMetrics:
                     if wall > run_max: run_max = wall
-            if jobForMetrics: run_sum += wall
+            if jobForMetrics:
+                run_sum += wall
+                if not jobid.startswith('0-'): run_cnt += 1 # exclude probe jobs from metrics
             wall_str = to_hms(wall)
             waste = 0
             if info.get('WallDurations'):
@@ -426,11 +427,11 @@ class status(SubCommand):
             mem = 'Unknown'
             if info.get('ResidentSetSize'):
                 mem = info['ResidentSetSize'][-1]/1024
-                if not jobid.startswith('0-'): mem_cnt += 1 # exclude probe jobs from summary computation
                 if (mem_min == -1) or (wall < mem_min): mem_min = mem
                 if jobForMetrics:
                     if mem > mem_max: mem_max = mem
-                mem_sum += mem
+                    mem_sum += mem
+                    if not jobid.startswith('0-'): mem_cnt += 1 # exclude probe jobs from metrics
                 mem = '%d' % mem
             cpu = 'Unknown'
             if (state in ['cooloff', 'failed', 'finished']) and not wall:
@@ -530,21 +531,21 @@ class status(SubCommand):
         statesSJ = {}
         failedProcessing = 0
         for jobid, statusDict in statusCacheInfo.iteritems():
-            status = statusDict['State']
+            jobStatus = statusDict['State']
             if jobid.startswith('0-'):
-                statesPJ[status] = statesPJ.setdefault(status, 0) + 1
+                statesPJ[jobStatus] = statesPJ.setdefault(jobStatus, 0) + 1
             elif '-' in jobid:
-                statesSJ[status] = statesSJ.setdefault(status, 0) + 1
+                statesSJ[jobStatus] = statesSJ.setdefault(jobStatus, 0) + 1
             else:
-                states[status] = states.setdefault(status, 0) + 1
-                if status == 'failed':
+                states[jobStatus] = states.setdefault(jobStatus, 0) + 1
+                if jobStatus == 'failed':
                     failedProcessing += 1
         result['numProbes'] = sum(statesPJ.values())
         result['numUnpublishable'] = 0
         if result['numProbes'] > 0:
             result['numUnpublishable'] = failedProcessing
 
-        def terminate(states, status, target='no output'):
+        def terminate(states, jobStatus, target='no output'):
             if jobStatus in states:
                 states[target] = states.setdefault(target, 0) + states.pop(jobStatus)
 
