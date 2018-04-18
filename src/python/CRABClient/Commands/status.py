@@ -559,8 +559,8 @@ class status(SubCommand):
         elif sum(statesPJ.values()) > 0 and not self.options.long:
             if 'failed' in states:
                 states.pop('failed')
-            for status in statesSJ:
-                states[status] = states.setdefault(status, 0) + statesSJ[status]
+            for jobStatus in statesSJ:
+                states[jobStatus] = states.setdefault(jobStatus, 0) + statesSJ[jobStatus]
 
         # And if the dictionary is not empty, print it
         for jobtype, currStates in toPrint:
