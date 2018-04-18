@@ -398,13 +398,13 @@ class status(SubCommand):
                 return 'rescheduled'
             return statusToTr
 
-        oneJobFinished = False
+        jobForMetrics = False
         # Chose between the jobids passed by the user or all jobids that are in the task
         jobidsToUse = jobids if jobids else dictresult.keys()
         for jobid in sorted(jobidsToUse, cmp=compareJobids):
             info = dictresult[str(jobid)]
             state = translateJobStatus(jobid)
-            if state == 'finished': oneJobFinished = True
+            if state not in ['idle', 'running', 'unsubmitted']: jobForMetrics = True
             site = ''
             if info.get('SiteHistory'):
                 site = info['SiteHistory'][-1]
@@ -413,21 +413,23 @@ class status(SubCommand):
                 wall = info['WallDurations'][-1]
                 if not jobid.startswith('0-'): run_cnt += 1 # exclude probe jobs from summary computation
                 if (run_min == -1) or (wall < run_min): run_min = wall
-                if wall > run_max: run_max = wall
-            run_sum += wall
+                if jobForMetrics:
+                    if wall > run_max: run_max = wall
+            if jobForMetrics: run_sum += wall
             wall_str = to_hms(wall)
             waste = 0
             if info.get('WallDurations'):
                 for run in info['WallDurations'][:-1]:
                     waste += run
-            wall_sum += waste + wall
+            if jobForMetrics: wall_sum += waste + wall
             waste = to_hms(waste)
             mem = 'Unknown'
             if info.get('ResidentSetSize'):
                 mem = info['ResidentSetSize'][-1]/1024
                 if not jobid.startswith('0-'): mem_cnt += 1 # exclude probe jobs from summary computation
                 if (mem_min == -1) or (wall < mem_min): mem_min = mem
-                if mem > mem_max: mem_max = mem
+                if jobForMetrics:
+                    if mem > mem_max: mem_max = mem
                 mem_sum += mem
                 mem = '%d' % mem
             cpu = 'Unknown'
@@ -438,10 +440,11 @@ class status(SubCommand):
                 cpu = "%.0f" % cpu
             elif wall and ('TotalSysCpuTimeHistory' in info) and ('TotalUserCpuTimeHistory' in info):
                 cpu = info['TotalSysCpuTimeHistory'][-1] + info['TotalUserCpuTimeHistory'][-1]
-                cpu_sum += cpu / float(numCores)
+                if jobForMetrics: cpu_sum += cpu / float(numCores)
                 cpu = (cpu / float(wall*numCores)) * 100
-                if (cpu_min == -1) or cpu < cpu_min: cpu_min = cpu
-                if cpu > cpu_max: cpu_max = cpu
+                if jobForMetrics:
+                    if (cpu_min == -1) or cpu < cpu_min: cpu_min = cpu
+                    if cpu > cpu_max: cpu_max = cpu
                 cpu = "%.0f" % cpu
             ec = 'Unknown'
             if 'Error' in info:
@@ -467,12 +470,11 @@ class status(SubCommand):
         if mem_cnt or run_cnt:
             # Print a summary with memory/cpu usage.
             hint = "improve the jobs splitting (e.g. config.Data.splitting = 'Automatic') in a new task"
-            if oneJobFinished:
-                usage = {'memory':[mem_max,maxMemory,0.7,parametersMapping['on-server']['maxmemory']['default'],'MB'], 'runtime':[run_max,maxJobRuntime,0.3,0,'min']}
-                for param, values in usage.items():
-                    if values[1] > values[3]:
-                        if values[0] < values[2]*values[1]:
-                            self.logger.info("\n%sWarning%s: the max jobs %s is less than %d%% of the task requested value (%d %s), please consider to request a lower value (allowed through crab resubmit) and/or %s." % (colors.RED, colors.NORMAL, param, values[2]*100, values[1], values[4], hint))
+            usage = {'memory':[mem_max,maxMemory,0.7,parametersMapping['on-server']['maxmemory']['default'],'MB'], 'runtime':[run_max/60,maxJobRuntime,0.3,0,'min']}
+            for param, values in usage.items():
+                if values[0] and values[1] > values[3]:
+                    if values[0] < values[2]*values[1]:
+                        self.logger.info("\n%sWarning%s: the max jobs %s is less than %d%% of the task requested value (%d %s), please consider to request a lower value (allowed through crab resubmit) and/or %s." % (colors.RED, colors.NORMAL, param, values[2]*100, values[1], values[4], hint))
             if run_sum:
                 cpu_ave = (cpu_sum / run_sum)
                 cpu_thr = 0.5
