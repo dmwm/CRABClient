@@ -486,7 +486,7 @@ class status(SubCommand):
                         cpuMsg += "request a lower number of threads (allowed through crab resubmit) and/or "
                     self.logger.info(cpuMsg+hint)
 
-            summaryMsg = "\nSummary:"
+            summaryMsg = "\nSummary of run jobs:"
             if mem_cnt:
                 summaryMsg += "\n * Memory: %dMB min, %dMB max, %.0fMB ave" % (mem_min, mem_max, mem_sum/mem_cnt)
             if run_cnt:
