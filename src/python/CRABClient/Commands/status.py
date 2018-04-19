@@ -135,7 +135,7 @@ class status(SubCommand):
                                           shortResult['numUnpublishable'], asourl, asodb, taskname, user, crabDBInfo)
         self.printErrors(statusCacheInfo)
 
-        if not self.options.long: # already printed for this option 
+        if not self.options.long and not self.options.sort: # already printed for these options 
             self.printDetails(statusCacheInfo, self.jobids, True, maxMemory, maxJobRuntime, numCores)
 
         if self.options.summary:
@@ -404,7 +404,8 @@ class status(SubCommand):
             info = dictresult[str(jobid)]
             state = translateJobStatus(jobid)
             jobForMetrics = False
-            if state not in ['idle', 'running', 'unsubmitted']: jobForMetrics = True
+            if (state not in ['idle', 'running', 'unsubmitted']) and (not jobid.startswith('0-')): # exclude not-run and probe jobs from metric
+                jobForMetrics = True
             site = ''
             if info.get('SiteHistory'):
                 site = info['SiteHistory'][-1]
@@ -416,7 +417,7 @@ class status(SubCommand):
                     if wall > run_max: run_max = wall
             if jobForMetrics:
                 run_sum += wall
-                if not jobid.startswith('0-'): run_cnt += 1 # exclude probe jobs from metrics
+                run_cnt += 1
             wall_str = to_hms(wall)
             waste = 0
             if info.get('WallDurations'):
@@ -431,7 +432,7 @@ class status(SubCommand):
                 if jobForMetrics:
                     if mem > mem_max: mem_max = mem
                     mem_sum += mem
-                    if not jobid.startswith('0-'): mem_cnt += 1 # exclude probe jobs from metrics
+                    mem_cnt += 1
                 mem = '%d' % mem
             cpu = 'Unknown'
             if (state in ['cooloff', 'failed', 'finished']) and not wall:
