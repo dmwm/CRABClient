@@ -135,7 +135,7 @@ class status(SubCommand):
                                           shortResult['numUnpublishable'], asourl, asodb, taskname, user, crabDBInfo)
         self.printErrors(statusCacheInfo)
 
-        if not self.options.long: # already printed for this option 
+        if not self.options.long and not self.options.sort: # already printed for these options 
             self.printDetails(statusCacheInfo, self.jobids, True, maxMemory, maxJobRuntime, numCores)
 
         if self.options.summary:
@@ -403,30 +403,36 @@ class status(SubCommand):
         for jobid in sorted(jobidsToUse, cmp=compareJobids):
             info = dictresult[str(jobid)]
             state = translateJobStatus(jobid)
+            jobForMetrics = False
+            if (state not in ['idle', 'running', 'unsubmitted']) and (not jobid.startswith('0-')): # exclude not-run and probe jobs from metric
+                jobForMetrics = True
             site = ''
             if info.get('SiteHistory'):
                 site = info['SiteHistory'][-1]
             wall = 0
             if info.get('WallDurations'):
                 wall = info['WallDurations'][-1]
-                if not jobid.startswith('0-'): run_cnt += 1 # exclude probe jobs from summary computation
                 if (run_min == -1) or (wall < run_min): run_min = wall
-                if wall > run_max: run_max = wall
-            run_sum += wall
+                if jobForMetrics:
+                    if wall > run_max: run_max = wall
+            if jobForMetrics:
+                run_sum += wall
+                run_cnt += 1
             wall_str = to_hms(wall)
             waste = 0
             if info.get('WallDurations'):
                 for run in info['WallDurations'][:-1]:
                     waste += run
-            wall_sum += waste + wall
+            if jobForMetrics: wall_sum += waste + wall
             waste = to_hms(waste)
             mem = 'Unknown'
             if info.get('ResidentSetSize'):
                 mem = info['ResidentSetSize'][-1]/1024
-                if not jobid.startswith('0-'): mem_cnt += 1 # exclude probe jobs from summary computation
                 if (mem_min == -1) or (wall < mem_min): mem_min = mem
-                if mem > mem_max: mem_max = mem
-                mem_sum += mem
+                if jobForMetrics:
+                    if mem > mem_max: mem_max = mem
+                    mem_sum += mem
+                    mem_cnt += 1
                 mem = '%d' % mem
             cpu = 'Unknown'
             if (state in ['cooloff', 'failed', 'finished']) and not wall:
@@ -436,10 +442,11 @@ class status(SubCommand):
                 cpu = "%.0f" % cpu
             elif wall and ('TotalSysCpuTimeHistory' in info) and ('TotalUserCpuTimeHistory' in info):
                 cpu = info['TotalSysCpuTimeHistory'][-1] + info['TotalUserCpuTimeHistory'][-1]
-                cpu_sum += cpu / float(numCores)
+                if jobForMetrics: cpu_sum += cpu / float(numCores)
                 cpu = (cpu / float(wall*numCores)) * 100
-                if (cpu_min == -1) or cpu < cpu_min: cpu_min = cpu
-                if cpu > cpu_max: cpu_max = cpu
+                if jobForMetrics:
+                    if (cpu_min == -1) or cpu < cpu_min: cpu_min = cpu
+                    if cpu > cpu_max: cpu_max = cpu
                 cpu = "%.0f" % cpu
             ec = 'Unknown'
             if 'Error' in info:
@@ -465,9 +472,9 @@ class status(SubCommand):
         if mem_cnt or run_cnt:
             # Print a summary with memory/cpu usage.
             hint = "improve the jobs splitting (e.g. config.Data.splitting = 'Automatic') in a new task"
-            usage = {'memory':[mem_max,maxMemory,0.7,parametersMapping['on-server']['maxmemory']['default'],'MB'], 'runtime':[to_hms(run_max),maxJobRuntime,0.3,0,'min']}
+            usage = {'memory':[mem_max,maxMemory,0.7,parametersMapping['on-server']['maxmemory']['default'],'MB'], 'runtime':[run_max/60,maxJobRuntime,0.3,0,'min']}
             for param, values in usage.items():
-                if values[1] > values[3]:
+                if values[0] and values[1] > values[3]:
                     if values[0] < values[2]*values[1]:
                         self.logger.info("\n%sWarning%s: the max jobs %s is less than %d%% of the task requested value (%d %s), please consider to request a lower value (allowed through crab resubmit) and/or %s." % (colors.RED, colors.NORMAL, param, values[2]*100, values[1], values[4], hint))
             if run_sum:
@@ -480,7 +487,7 @@ class status(SubCommand):
                         cpuMsg += "request a lower number of threads (allowed through crab resubmit) and/or "
                     self.logger.info(cpuMsg+hint)
 
-            summaryMsg = "\nSummary:"
+            summaryMsg = "\nSummary of run jobs:"
             if mem_cnt:
                 summaryMsg += "\n * Memory: %dMB min, %dMB max, %.0fMB ave" % (mem_min, mem_max, mem_sum/mem_cnt)
             if run_cnt:
@@ -525,21 +532,21 @@ class status(SubCommand):
         statesSJ = {}
         failedProcessing = 0
         for jobid, statusDict in statusCacheInfo.iteritems():
-            status = statusDict['State']
+            jobStatus = statusDict['State']
             if jobid.startswith('0-'):
-                statesPJ[status] = statesPJ.setdefault(status, 0) + 1
+                statesPJ[jobStatus] = statesPJ.setdefault(jobStatus, 0) + 1
             elif '-' in jobid:
-                statesSJ[status] = statesSJ.setdefault(status, 0) + 1
+                statesSJ[jobStatus] = statesSJ.setdefault(jobStatus, 0) + 1
             else:
-                states[status] = states.setdefault(status, 0) + 1
-                if status == 'failed':
+                states[jobStatus] = states.setdefault(jobStatus, 0) + 1
+                if jobStatus == 'failed':
                     failedProcessing += 1
         result['numProbes'] = sum(statesPJ.values())
         result['numUnpublishable'] = 0
         if result['numProbes'] > 0:
             result['numUnpublishable'] = failedProcessing
 
-        def terminate(states, status, target='no output'):
+        def terminate(states, jobStatus, target='no output'):
             if jobStatus in states:
                 states[target] = states.setdefault(target, 0) + states.pop(jobStatus)
 
@@ -553,8 +560,8 @@ class status(SubCommand):
         elif sum(statesPJ.values()) > 0 and not self.options.long:
             if 'failed' in states:
                 states.pop('failed')
-            for status in statesSJ:
-                states[status] = states.setdefault(status, 0) + statesSJ[status]
+            for jobStatus in statesSJ:
+                states[jobStatus] = states.setdefault(jobStatus, 0) + statesSJ[jobStatus]
 
         # And if the dictionary is not empty, print it
         for jobtype, currStates in toPrint:
@@ -562,8 +569,8 @@ class status(SubCommand):
                 total = sum(currStates[st] for st in currStates)
                 state_list = sorted(currStates)
                 self.logger.info("\n{0:32}{1} {2}".format(jobtype + ' status:', self._printState(state_list[0], 13), self._percentageString(state_list[0], currStates[state_list[0]], total)))
-                for status in state_list[1:]:
-                    self.logger.info("\t\t\t\t{0} {1}".format(self._printState(status, 13), self._percentageString(status, currStates[status], total)))
+                for jobStatus in state_list[1:]:
+                    self.logger.info("\t\t\t\t{0} {1}".format(self._printState(jobStatus, 13), self._percentageString(jobStatus, currStates[jobStatus], total)))
         return result
 
     def printErrors(self, dictresult):
