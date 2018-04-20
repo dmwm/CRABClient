@@ -142,7 +142,6 @@ class remote_copy(SubCommand):
             ##### Creating the command
             # better to execut grid commands in the pre-CMS environment
             undoScram = "which scram >/dev/null 2>&1 && eval `scram unsetenv -sh`"
-            cmd = undoScram + cmd
 
             # timeout based on file size and download speed * 2
             maxtime = srmtimeout if not 'size' in myfile or myfile['size'] == 0 else int(ceil(2*myfile['size']/downspeed))
@@ -150,7 +149,7 @@ class remote_copy(SubCommand):
             timeout = " --srm-timeout "
             if cmd_exist("gfal-copy") and self.options.command not in ["LCG"]:
                 timeout = " -t "
-            cmd = '%s %s %s %%s' % (command, timeout + str(localsrmtimeout) + ' ', myfile['pfn'])
+            cmd = undoScram + '; %s %s %s %%s' % (command, timeout + str(localsrmtimeout) + ' ', myfile['pfn'])
             if url_input:
                 cmd = cmd % localFilename
             else:
