@@ -43,17 +43,19 @@ class checkwrite(SubCommand):
         ## Check that the location where we want to check write permission
         ## is one where the user will be allowed to stageout.
         self.logger.info("Validating LFN %s..." % (self.lfnsaddprefix))
-        msg  = "Refusing to check write permission in %s, because this is not an allowed LFN for stageout." % (self.lfnsaddprefix)
-        msg += "\nThe LFN must start with either"
-        msg += " '/store/user/<username>/' or '/store/group/<groupname>/'"
-        msg += " (or '/store/local/<something>/' if publication is off),"
-        msg += " where username is your username as registered in SiteDB"
-        msg += " (i.e. the username of your CERN primary account)."
-        msg += "\nLFN %s is not valid." % (self.lfnsaddprefix)
+        # if an error message is needed later, prepare it now to keep code below tidy
+        errMsg  = "Refusing to check write permission in %s, because this is not an allowed LFN for stageout." % (self.lfnsaddprefix)
+        errMsg += "\nThe LFN must start with either"
+        errMsg += " '/store/user/<username>/' or '/store/group/<groupname>/'"
+        errMsg += " (or '/store/local/<something>/' if publication is off),"
+        errMsg += " where username is your username as registered in SiteDB"
+        errMsg += " (i.e. the username of your CERN primary account)."
+        errMsg += "\nLFN %s is not valid." % (self.lfnsaddprefix)
+
         if not username and self.lfnsaddprefix.startswith('/store/user/'):
             username = getUserDNandUsernameFromSiteDB(self.logger).get('username')
         if not checkOutLFN(self.lfnsaddprefix, username):
-            self.logger.info(msg)
+            self.logger.info(errMsg)
             return {'status': 'FAILED'}
         else:
             self.logger.info("LFN %s is valid." % (self.lfnsaddprefix))
@@ -61,9 +63,9 @@ class checkwrite(SubCommand):
         cp_cmd = ""
         if cmd_exist("gfal-copy") and cmd_exist("gfal-rm") and self.command in [None, "GFAL"]:
             self.logger.info("Will use `gfal-copy`, `gfal-rm` commands for checking write permissions")
-            cp_cmd = "env -i X509_USER_PROXY=%s gfal-copy -p -v -t 180 " % os.path.abspath(self.proxyfilename)
-            delfile_cmd = "env -i X509_USER_PROXY=%s gfal-rm -v -t 180 " % os.path.abspath(self.proxyfilename)
-            deldir_cmd = "env -i X509_USER_PROXY=%s gfal-rm -r -v -t 180 " % os.path.abspath(self.proxyfilename)
+            cp_cmd = "gfal-copy -p -v -t 180 "
+            delfile_cmd = "gfal-rm -v -t 180 "
+            deldir_cmd = "gfal-rm -r -v -t 180 "
             if self.checksum:
                 cp_cmd += "-K %s " % self.checksum
         elif cmd_exist("lcg-cp") and cmd_exist("lcg-del"):
@@ -184,7 +186,8 @@ class checkwrite(SubCommand):
         abspath = os.path.abspath(self.filename)
         if cmd_exist("gfal-copy")  and self.command in [None, "GFAL"]:
             abspath = "file://" + abspath
-        cpcmd = command + abspath + " '" + pfn + "'"
+        undoScram = "which scram >/dev/null 2>&1 && eval `scram unsetenv -sh`"
+        cpcmd = undoScram + "; " + command + abspath + " '" + pfn + "'"
         self.logger.info('Executing command: %s' % cpcmd)
         self.logger.info('Please wait...')
         cpprocess = subprocess.Popen(cpcmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
@@ -202,7 +205,8 @@ class checkwrite(SubCommand):
 
     def delete(self, pfn, command):
 
-        rmcmd = command + "'" + pfn + "'"
+        undoScram = "which scram >/dev/null 2>&1 && eval `scram unsetenv -sh`"
+        rmcmd = undoScram + "; " + command + "'" + pfn + "'"
         self.logger.info('Executing command: %s' % rmcmd)
         self.logger.info('Please wait...')
         delprocess = subprocess.Popen(rmcmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
