@@ -78,7 +78,7 @@ class remote_copy(SubCommand):
         command = ""
         if cmd_exist("gfal-copy") and self.options.command not in ["LCG"]:
             self.logger.info("Will use `gfal-copy` command for file transfers")
-            command = "env -i X509_USER_PROXY=%s gfal-copy -v " % os.path.abspath(self.proxyfilename)
+            command = "gfal-copy -v "
             if self.options.checksum:
                 command += "-K %s " % self.options.checksum
             command += " -T "
@@ -140,14 +140,16 @@ class remote_copy(SubCommand):
                 continue
 
             ##### Creating the command
+            # better to execut grid commands in the pre-CMS environment
+            undoScram = "which scram >/dev/null 2>&1 && eval `scram unsetenv -sh`"
+
             # timeout based on file size and download speed * 2
             maxtime = srmtimeout if not 'size' in myfile or myfile['size'] == 0 else int(ceil(2*myfile['size']/downspeed))
             localsrmtimeout = minsrmtimeout if maxtime < minsrmtimeout else maxtime # do not want a too short timeout
-
             timeout = " --srm-timeout "
             if cmd_exist("gfal-copy") and self.options.command not in ["LCG"]:
                 timeout = " -t "
-            cmd = '%s %s %s %%s' % (command, timeout + str(localsrmtimeout) + ' ', myfile['pfn'])
+            cmd = undoScram + '; %s %s %s %%s' % (command, timeout + str(localsrmtimeout) + ' ', myfile['pfn'])
             if url_input:
                 cmd = cmd % localFilename
             else:

@@ -462,9 +462,9 @@ def getUserDN():
     """
     Retrieve the user DN from the proxy.
     """
-    scram_cmd = 'which scram >/dev/null 2>&1 && eval `scram unsetenv -sh`'
+    undoScram = 'which scram >/dev/null 2>&1 && eval `scram unsetenv -sh`'
     ## Check if there is a proxy.
-    cmd = scram_cmd + "; voms-proxy-info"
+    cmd = undoScram + "; voms-proxy-info"
     process = subprocess.Popen(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
     stdout, stderr = process.communicate()
     if process.returncode or not stdout:
@@ -474,7 +474,7 @@ def getUserDN():
         msg += "\n  Stderr:\n    %s" % (str(stderr).replace('\n', '\n    '))
         raise ProxyException(msg)
     ## Retrieve DN from proxy.
-    cmd = scram_cmd + "; voms-proxy-info -identity"
+    cmd = undoScram + "; voms-proxy-info -identity"
     process = subprocess.Popen(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
     stdout, stderr = process.communicate()
     if process.returncode or not stdout:

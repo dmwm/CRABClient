@@ -42,9 +42,9 @@ def getUsernameFromSiteDB():
     https://cmsweb.cern.ch/sitedb/data/prod/whoami
     using the users proxy.
     """
-    scram_cmd = "which scram >/dev/null 2>&1 && eval `scram unsetenv -sh`"
+    undoScram = "which scram >/dev/null 2>&1 && eval `scram unsetenv -sh`"
     ## Check if there is a proxy.
-    cmd = scram_cmd + "; voms-proxy-info"
+    cmd = undoScram + "; voms-proxy-info"
     process = subprocess.Popen(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
     stdout, stderr = process.communicate()
     if process.returncode or not stdout:
@@ -56,7 +56,7 @@ def getUsernameFromSiteDB():
         raise ProxyException(msg)
     ## Check if proxy is valid.
     #proxyTimeLeft = [x[x.find(':')+2:] for x in stdout.split('\n') if 'timeleft' in x][0]
-    cmd = scram_cmd + "; voms-proxy-info -timeleft"
+    cmd = undoScram + "; voms-proxy-info -timeleft"
     process = subprocess.Popen(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
     stdout, stderr = process.communicate()
     if process.returncode or not stdout:
@@ -72,7 +72,7 @@ def getUsernameFromSiteDB():
         msg += "\nProxy time left = %s seconds. Please renew your proxy." % (proxyTimeLeft)
         raise ProxyException(msg)
     ## Retrieve proxy file location.
-    cmd = scram_cmd + "; voms-proxy-info -path"
+    cmd = undoScram + "; voms-proxy-info -path"
     process = subprocess.Popen(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
     stdout, stderr = process.communicate()
     if process.returncode or not stdout:
