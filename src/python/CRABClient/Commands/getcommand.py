@@ -25,10 +25,6 @@ class getcommand(SubCommand):
 
 
     def __call__(self, **argv):
-        # TODO: remove this 'if' once transition to status2 is complete
-        if argv.get('subresource') in ['data2', 'logs2']:
-            self.processAndStoreJobIds()
-
         ## Retrieve the transferLogs parameter from the task database.
         taskdbparam, configparam = '', ''
         if argv.get('subresource') in ['logs', 'logs2']:
@@ -45,10 +41,13 @@ class getcommand(SubCommand):
         uri = self.getUrl(self.instance, resource = 'task')
         dictresult, status, _ =  server.get(uri, data = inputlist)
         self.logger.debug('Server result: %s' % dictresult)
+        splitting = None
         if status == 200:
             if 'desc' in dictresult and 'columns' in dictresult['desc']:
                 position = dictresult['desc']['columns'].index(taskdbparam)
                 transferFlag = dictresult['result'][position] #= 'T' or 'F'
+                position = dictresult['desc']['columns'].index('tm_split_algo')
+                splitting = dictresult['result'][position]
             else:
                 self.logger.debug("Unable to locate %s in server result." % (taskdbparam))
         ## If transferFlag = False, there is nothing to retrieve.
@@ -71,6 +70,14 @@ class getcommand(SubCommand):
                 msg += " There are no output files to retrieve, because CRAB could not detect any in the CMSSW configuration"
                 msg += " nor was any explicitly specified in the CRAB configuration."
                 self.logger.warning(msg)
+
+        #check the format of jobids
+        if getattr(self.options, 'jobids', None):
+            self.options.jobids = validateJobids(self.options.jobids, splitting != 'Automatic')
+
+        # TODO: remove this 'if' once transition to status2 is complete
+        if argv.get('subresource') in ['data2', 'logs2']:
+            self.processAndStoreJobIds()
 
         #Retrieving output files location from the server
         self.logger.debug('Retrieving locations for task %s' % self.cachedinfo['RequestName'])
@@ -272,11 +279,6 @@ class getcommand(SubCommand):
         #convert all to -1
         if getattr(self.options, 'quantity', None) == 'all':
             self.options.quantity = -1
-
-        #check the format of jobids
-        if getattr(self.options, 'jobids', None):
-            useLists = getattr(self.cachedinfo['OriginalConfig'].Data, 'splitting', 'Automatic') != 'Automatic'
-            self.options.jobids = validateJobids(self.options.jobids, useLists)
 
 
         if hasattr(self.options, 'command') and self.options.command != None:
