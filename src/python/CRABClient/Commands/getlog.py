@@ -14,13 +14,6 @@ from httplib import HTTPException
 
 class getlog(getcommand):
     """
-    Important: code here is identical to the old getlog implementation (aside from setting the subresource to
-    'logs2' when calling getcommand and the names of the command/class themselves). This was done because trying to
-    avoid copy-paste code isn't worth the effort in this case. When the status2 is working correctly, old code will
-    be easily removed and replaced with the 'getlog2' version. Also, the command 'getlog' itself is deprecated and
-    we don't expect to make any changes to it until it's removed.
-
-    Class description:
     Retrieve the log files of a number of jobs specified by the -q/--quantity option.
     -q logfiles per exit code are returned if transferLogs = False; otherwise all the log files
     collected by the LogCollect job are returned. The task is identified by the -d/--dir option.

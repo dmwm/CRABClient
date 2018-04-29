@@ -75,9 +75,7 @@ class getcommand(SubCommand):
         if getattr(self.options, 'jobids', None):
             self.options.jobids = validateJobids(self.options.jobids, splitting != 'Automatic')
 
-        # TODO: remove this 'if' once transition to status2 is complete
-        if argv.get('subresource') in ['data2', 'logs2']:
-            self.processAndStoreJobIds()
+        self.processAndStoreJobIds()
 
         #Retrieving output files location from the server
         self.logger.debug('Retrieving locations for task %s' % self.cachedinfo['RequestName'])
@@ -104,9 +102,7 @@ class getcommand(SubCommand):
         totalfiles = len(dictresult['result'])
         fileInfoList = dictresult['result']
 
-        # TODO: remove this 'if' once transition to status2 is complete
-        if argv.get('subresource') in ['data2', 'logs2']:
-            self.insertPfns(fileInfoList)
+        self.insertPfns(fileInfoList)
 
         if len(fileInfoList) > 0:
             if self.options.dump or self.options.xroot:
