@@ -255,6 +255,9 @@ class SubCommand(ConfigCommand):
         cmdargs = cmdargs or []
         (self.options, self.args) = self.parser.parse_args(cmdargs)
 
+        self.transferringIds = None
+        self.dest = None
+
         ## Validate the command options.
         self.validateOptions()
 

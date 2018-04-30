@@ -6,7 +6,7 @@ from CRABClient import __version__
 from CRABClient.ClientUtilities import colors
 from CRABClient.UserUtilities import getFileFromURL
 from CRABClient.Commands.getcommand import getcommand
-from CRABClient.ClientExceptions import RESTCommunicationException, ClientException, MissingOptionException
+from CRABClient.ClientExceptions import RESTCommunicationException, MissingOptionException
 
 from ServerUtilities import getProxiedWebDir
 from httplib import HTTPException

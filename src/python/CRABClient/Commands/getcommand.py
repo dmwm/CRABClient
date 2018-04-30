@@ -263,7 +263,6 @@ class getcommand(SubCommand):
     def validateOptions(self):
         #Figuring out the destination directory
         SubCommand.validateOptions(self)
-        self.dest = None
         if self.options.outputpath is not None:
             if re.match("^[a-z]+://", self.options.outputpath):
                 self.dest = self.options.outputpath
