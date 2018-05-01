@@ -59,6 +59,7 @@ class status(SubCommand):
         maxMemory = int(getColumn(crabDBInfo, 'tm_maxmemory'))
         maxJobRuntime = int(getColumn(crabDBInfo, 'tm_maxjobruntime'))
         numCores = int(getColumn(crabDBInfo, 'tm_numcores'))
+        splitting = getColumn(crabDBInfo, 'tm_split_algo')
 
         #Print information from the database
         self.printTaskInfo(crabDBInfo, user)
@@ -146,8 +147,7 @@ class status(SubCommand):
             if self.jobids:
                 ## Check the format of the jobids option.
                 if self.options.jobids:
-                    useLists = getattr(self.cachedinfo['OriginalConfig'].Data, 'splitting', 'Automatic') != 'Automatic'
-                    jobidstuple = validateJobids(self.options.jobids, useLists)
+                    jobidstuple = validateJobids(self.options.jobids, splitting != 'Automatic')
                     self.jobids = [str(jobid) for (_, jobid) in jobidstuple]
                 self.checkUserJobids(statusCacheInfo, self.jobids)
             sortdict = self.printDetails(statusCacheInfo, self.jobids, not self.options.long, maxMemory, maxJobRuntime, numCores)
