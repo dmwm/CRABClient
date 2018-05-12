@@ -505,7 +505,7 @@ class status(SubCommand):
     def printOverview(self, statusCacheInfo):
         """ Give a summary of the job statuses, keeping in mind that:
                 - If there is a job with id 0 then this is the probe job for the estimation
-                  This is the so called automatic splitting
+                  This is the so called 'Automatic' splitting
                 - Then you have normal jobs
                 - Jobs that are line 1-1, 1-2 and so on are completing
         """
@@ -566,6 +566,9 @@ class status(SubCommand):
         # And if the dictionary is not empty, print it
         for jobtype, currStates in toPrint:
             if currStates:
+                automaticSplittFAQ = 'https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3FAQ#What_is_the_Automatic_splitting'
+                if any('-' in k for k in statusCacheInfo):
+                    self.logger.info("\nThe jobs splitting of this task is 'Automatic', please refer to this FAQ for a description of the jobs status summary:\n%s", automaticSplittFAQ)
                 total = sum(currStates[st] for st in currStates)
                 state_list = sorted(currStates)
                 self.logger.info("\n{0:32}{1} {2}".format(jobtype + ' status:', self._printState(state_list[0], 13), self._percentageString(state_list[0], currStates[state_list[0]], total)))
