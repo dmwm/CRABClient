@@ -128,16 +128,18 @@ class status(SubCommand):
             statusCacheInfo = literal_eval(statusCacheData.split('\n')[2])
             self.logger.debug("Got information from status cache file: %s", statusCacheInfo)
 
+        automaticSplitt = splitting == 'Automatic'
+
         # If the task is already on the grid, show the dagman status
         combinedStatus = dagStatus = self.printDAGStatus(crabDBInfo, statusCacheInfo)
 
-        shortResult = self.printOverview(statusCacheInfo)
+        shortResult = self.printOverview(statusCacheInfo, automaticSplitt)
         pubStatus = self.printPublication(publicationEnabled, shortResult['jobsPerStatus'], shortResult['numProbes'],
                                           shortResult['numUnpublishable'], asourl, asodb, taskname, user, crabDBInfo)
-        self.printErrors(statusCacheInfo)
+        self.printErrors(statusCacheInfo, automaticSplitt)
 
         if not self.options.long and not self.options.sort: # already printed for these options 
-            self.printDetails(statusCacheInfo, self.jobids, True, maxMemory, maxJobRuntime, numCores)
+            self.printDetails(statusCacheInfo, automaticSplitt, self.jobids, True, maxMemory, maxJobRuntime, numCores)
 
         if self.options.summary:
             self.printSummary(statusCacheInfo)
@@ -147,10 +149,10 @@ class status(SubCommand):
             if self.jobids:
                 ## Check the format of the jobids option.
                 if self.options.jobids:
-                    jobidstuple = validateJobids(self.options.jobids, splitting != 'Automatic')
+                    jobidstuple = validateJobids(self.options.jobids, not automaticSplitt)
                     self.jobids = [str(jobid) for (_, jobid) in jobidstuple]
                 self.checkUserJobids(statusCacheInfo, self.jobids)
-            sortdict = self.printDetails(statusCacheInfo, self.jobids, not self.options.long, maxMemory, maxJobRuntime, numCores)
+            sortdict = self.printDetails(statusCacheInfo, automaticSplitt, self.jobids, not self.options.long, maxMemory, maxJobRuntime, numCores)
             if self.options.sort:
                 self.printSort(sortdict, self.options.sort)
         if self.options.json:
@@ -366,7 +368,7 @@ class status(SubCommand):
         if wrongJobIds:
             raise ConfigurationException("The following jobids were not found in the task: %s" % wrongJobIds)
 
-    def printDetails(self, dictresult, jobids=None, quiet=False, maxMemory=parametersMapping['on-server']['maxmemory']['default'], maxJobRuntime=parametersMapping['on-server']['maxjobruntime']['default'], numCores=parametersMapping['on-server']['numcores']['default']):
+    def printDetails(self, dictresult, automaticSplitt, jobids=None, quiet=False, maxMemory=parametersMapping['on-server']['maxmemory']['default'], maxJobRuntime=parametersMapping['on-server']['maxjobruntime']['default'], numCores=parametersMapping['on-server']['numcores']['default']):
         """ Print detailed information about a task and each job.
         """
         sortdict = {}
@@ -386,15 +388,13 @@ class status(SubCommand):
         cpu_sum = 0
         wall_sum = 0
 
-        automatic = any('-' in k for k in dictresult)
-
         def translateJobStatus(jobid):
             statusToTr = dictresult[jobid]['State']
-            if not automatic:
+            if not automaticSplitt:
                 return statusToTr
             if jobid.startswith('0-') and statusToTr in ('finished', 'failed'):
                 return 'no output'
-            elif automatic and '-' not in jobid and statusToTr == 'failed':
+            elif automaticSplitt and '-' not in jobid and statusToTr == 'failed':
                 return 'rescheduled'
             return statusToTr
 
@@ -502,7 +502,7 @@ class status(SubCommand):
 
         return sortdict
 
-    def printOverview(self, statusCacheInfo):
+    def printOverview(self, statusCacheInfo, automaticSplitt):
         """ Give a summary of the job statuses, keeping in mind that:
                 - If there is a job with id 0 then this is the probe job for the estimation
                   This is the so called 'Automatic' splitting
@@ -567,7 +567,7 @@ class status(SubCommand):
         for jobtype, currStates in toPrint:
             if currStates:
                 automaticSplittFAQ = 'https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3FAQ#What_is_the_Automatic_splitting'
-                if any('-' in k for k in statusCacheInfo):
+                if automaticSplitt and (not self.options.long  or  jobtype == 'Probe jobs'):
                     self.logger.info("\nThe jobs splitting of this task is 'Automatic', please refer to this FAQ for a description of the jobs status summary:\n%s", automaticSplittFAQ)
                 total = sum(currStates[st] for st in currStates)
                 state_list = sorted(currStates)
@@ -576,7 +576,7 @@ class status(SubCommand):
                     self.logger.info("\t\t\t\t{0} {1}".format(self._printState(jobStatus, 13), self._percentageString(jobStatus, currStates[jobStatus], total)))
         return result
 
-    def printErrors(self, dictresult):
+    def printErrors(self, dictresult, automaticSplitt):
         """ Iterate over dictresult['jobs'] if present, which is a dictionary like:
                 {'10': {'State': 'running'}, '1': {'State': 'failed', 'Error' : [10,'error message']}, '3': {'State': 'failed', 'Error' : [10,'error message']} ...
             and group the errors per exit code counting how many jobs exited with a certain exit code, and print the summary
@@ -624,12 +624,11 @@ class status(SubCommand):
         ec_numjobs = {}
         unknown = 0
         are_failed_jobs = False
-        automatic = any('-' in k for k in dictresult)
 
         def consider(jobid):
             if self.options.long:
                 return True
-            if automatic and (jobid.startswith('0-') or '-' not in jobid):
+            if automaticSplitt and (jobid.startswith('0-') or '-' not in jobid):
                 return False
             return True
         for jobid, jobStatus in dictresult.iteritems():
