@@ -47,21 +47,21 @@ class CMSSWConfig(object):
                 sys.argv.extend(pyCfgParams)
                 msg = "Additional parameters for the CMSSW configuration are: %s" % (pyCfgParams)
                 self.logger.debug(msg)
-            file, pathname, description = imp.find_module(cfgBaseName, [cfgDirName])
+            configFile, pathname, description = imp.find_module(cfgBaseName, [cfgDirName])
             cacheLine = (tuple(sys.path), tuple(pathname), tuple(sys.argv))
             if cacheLine in configurationCache:
                 self.fullConfig = configurationCache[cacheLine]
-                file.close()
+                configFile.close()
             elif not bootstrapDone():
                 sys.path.append(os.getcwd())
                 try:
                     oldstdout = sys.stdout
                     sys.stdout = open(logger.logfile, 'a')
-                    self.fullConfig = imp.load_module(cfgBaseName, file, pathname, description)
+                    self.fullConfig = imp.load_module(cfgBaseName, configFile, pathname, description)
                 finally:
                     sys.stdout.close()
                     sys.stdout = oldstdout
-                    file.close()
+                    configFile.close()
                 configurationCache[cacheLine] = self.fullConfig
             self.logger.info("Finished importing CMSSW configuration %s" % (userConfig))
             sys.argv = originalArgv
@@ -251,11 +251,12 @@ class CMSSWConfig(object):
             ##of the case of the CRAB library where the cfg is an object. I think it is good as it is now
             msg += "in the crab configuration file and in the CMSSW PSet (%s)" % self.config.JobType.psetName
             return False, msg
-        #At this point cfgNumCores and numPSetCores are the same
-        if numPSetCores not in [None, 1, 4, 8]:
-            msg = "The only values allowed for config.JobType.numCores are 1, 4, 8"
+        # At this point cfgNumCores and numPSetCores are the same
+        if numPSetCores not in [None, 1, 2, 4, 8]:
+            msg = "The only values allowed for config.JobType.numCores are 1, 2, 4, 8"
             return False, msg
-
+        elif numPSetCores > 1:
+            self.logger.info("You are requesting more than 1 core per job. Please make sure that your multi-threaded code is thread-safe and CPU-efficient.")
 
         return True, "Valid configuration"
 
