@@ -255,7 +255,8 @@ class CMSSWConfig(object):
         if numPSetCores not in [None, 1, 2, 4, 8]:
             msg = "The only values allowed for config.JobType.numCores are 1, 2, 4, 8"
             return False, msg
-
+        elif numPSetCores > 1:
+            self.logger.info("You are requesting more than 1 core per job. Please make sure that your multi-threaded code is thread-safe and CPU-efficient.")
 
         return True, "Valid configuration"
 
