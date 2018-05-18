@@ -47,21 +47,21 @@ class CMSSWConfig(object):
                 sys.argv.extend(pyCfgParams)
                 msg = "Additional parameters for the CMSSW configuration are: %s" % (pyCfgParams)
                 self.logger.debug(msg)
-            file, pathname, description = imp.find_module(cfgBaseName, [cfgDirName])
+            configFile, pathname, description = imp.find_module(cfgBaseName, [cfgDirName])
             cacheLine = (tuple(sys.path), tuple(pathname), tuple(sys.argv))
             if cacheLine in configurationCache:
                 self.fullConfig = configurationCache[cacheLine]
-                file.close()
+                configFile.close()
             elif not bootstrapDone():
                 sys.path.append(os.getcwd())
                 try:
                     oldstdout = sys.stdout
                     sys.stdout = open(logger.logfile, 'a')
-                    self.fullConfig = imp.load_module(cfgBaseName, file, pathname, description)
+                    self.fullConfig = imp.load_module(cfgBaseName, configFile, pathname, description)
                 finally:
                     sys.stdout.close()
                     sys.stdout = oldstdout
-                    file.close()
+                    configFile.close()
                 configurationCache[cacheLine] = self.fullConfig
             self.logger.info("Finished importing CMSSW configuration %s" % (userConfig))
             sys.argv = originalArgv
