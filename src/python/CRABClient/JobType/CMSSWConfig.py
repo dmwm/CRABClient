@@ -251,9 +251,9 @@ class CMSSWConfig(object):
             ##of the case of the CRAB library where the cfg is an object. I think it is good as it is now
             msg += "in the crab configuration file and in the CMSSW PSet (%s)" % self.config.JobType.psetName
             return False, msg
-        #At this point cfgNumCores and numPSetCores are the same
-        if numPSetCores not in [None, 1, 4, 8]:
-            msg = "The only values allowed for config.JobType.numCores are 1, 4, 8"
+        # At this point cfgNumCores and numPSetCores are the same
+        if numPSetCores not in [None, 1, 2, 4, 8]:
+            msg = "The only values allowed for config.JobType.numCores are 1, 2, 4, 8"
             return False, msg
 
 
