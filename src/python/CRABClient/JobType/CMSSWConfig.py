@@ -13,7 +13,7 @@ import logging
 from ServerUtilities import BOOTSTRAP_CFGFILE_DUMP
 
 from CRABClient.ClientExceptions import ConfigurationException, EnvironmentException
-from CRABClient.ClientUtilities import bootstrapDone, BOOTSTRAP_CFGFILE_PKL, BOOTSTRAP_INFOFILE, LOGGERS
+from CRABClient.ClientUtilities import bootstrapDone, colors, BOOTSTRAP_CFGFILE_PKL, BOOTSTRAP_INFOFILE, LOGGERS
 
 
 configurationCache = {}
@@ -256,7 +256,7 @@ class CMSSWConfig(object):
             msg = "The only values allowed for config.JobType.numCores are 1, 2, 4, 8"
             return False, msg
         elif numPSetCores > 1:
-            self.logger.info("You are requesting more than 1 core per job. Please make sure that your multi-threaded code is thread-safe and CPU-efficient.")
+            self.logger.info("%sYou are requesting more than 1 core per job. Please make sure that your multi-threaded code is thread-safe and CPU-efficient.%s" % (colors.RED, colors.NORMAL))
 
         return True, "Valid configuration"
 
