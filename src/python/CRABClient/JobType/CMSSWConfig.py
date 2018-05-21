@@ -256,7 +256,7 @@ class CMSSWConfig(object):
             msg = "The only values allowed for config.JobType.numCores are 1, 2, 4, 8"
             return False, msg
         elif numPSetCores > 1:
-            self.logger.info("%sYou are requesting more than 1 core per job. Please make sure that your multi-threaded code is thread-safe and CPU-efficient.%s" % (colors.RED, colors.NORMAL))
+            self.logger.info("%sYou are requesting more than 1 core per job. Please make sure that your multi-threaded code is thread-safe and CPU-efficient. The default maximum job memory may be not enough, you can request an higher value through the 'maxMemoryMB' parameter.%s" % (colors.RED, colors.NORMAL))
 
         return True, "Valid configuration"
 
