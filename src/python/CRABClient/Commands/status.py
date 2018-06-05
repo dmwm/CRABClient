@@ -353,8 +353,9 @@ class status(SubCommand):
         # Print the warning messages (these are the warnings in the Tasks DB,
         # and/or maybe some warning added by the REST Interface to the status result).
         if warnings:
+            warningIndent = '\t\t\t'
             for warningMsg in warnings:
-                self.logger.warning("%sWarning%s:\t\t\t%s" % (colors.RED, colors.NORMAL, warningMsg))
+                self.logger.warning("%sWarning%s:%s%s" % (colors.RED, colors.NORMAL, warningIndent, warningMsg.replace('\n', '\n\t'+warningIndent)))
         if failure and 'FAILED' in statusToPr:
             msg  = "%sFailure message from the server%s:" % (colors.RED, colors.NORMAL)
             msg += "\t\t%s" % (failure.replace('\n', '\n\t\t\t\t'))
