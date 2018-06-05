@@ -449,10 +449,10 @@ class status(SubCommand):
                     if cpu > cpu_max: cpu_max = cpu
                 cpu = "%.0f" % cpu
             ec = 'Unknown'
-            if 'Error' in info:
-                ec = str(info['Error'][0]) #exit code of this failed job
-            elif info['State'] in ['finished']:
+            if info['State'] in ['finished']:
                 ec = '0'
+            elif 'Error' in info:
+                ec = str(info['Error'][0]) # exit code of this failed job
             sortdict[str(jobid)] = {'state': state, 'site': site, 'runtime': wall_str, 'memory': mem, 'cpu': cpu, \
                                     'retries': info.get('Retries', 0), 'restarts': info.get('Restarts', 0), 'waste': waste, 'exitcode': ec}
             outputMsg += "\n%4s %-12s %-20s %10s %10s %10s %10s %10s %10s %15s" \
