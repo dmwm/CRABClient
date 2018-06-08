@@ -190,6 +190,11 @@ class submit(SubCommand):
                 msg = "Invalid CRAB configuration: Parameter General.requestName should not be longer than %d characters." % (requestNameLenLimit)
                 return False, msg
 
+        ## Check that --dryrun is not used with Automatic splitting
+        if getattr(self.configuration.Data, 'splitting', 'Automatic') == 'Automatic' and self.options.dryrun: 
+            msg = "The 'dryrun' option is not needed with the 'Automatic' splitting mode (default)."
+            return False, msg
+
         ## Check that Data.unitsPerjob is specified.
         if hasattr(self.configuration.Data, 'unitsPerJob'):
             try:
