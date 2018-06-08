@@ -33,6 +33,9 @@ class submit(SubCommand):
     def __init__(self, logger, cmdargs=None):
         SubCommand.__init__(self, logger, cmdargs, disable_interspersed_args=True)
 
+        self.configreq = None
+        self.configreq_encoded = None
+
 
     def __call__(self):
         self.logger.debug("Started submission")
