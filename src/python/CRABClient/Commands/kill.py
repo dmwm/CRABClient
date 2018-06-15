@@ -1,7 +1,5 @@
-from CRABClient.ClientUtilities import colors
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ClientExceptions import RESTCommunicationException,\
-    ConfigurationException
+from CRABClient.ClientExceptions import RESTCommunicationException
 from CRABClient import __version__
 import CRABClient.Emulator
 
