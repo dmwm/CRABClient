@@ -48,20 +48,10 @@ class kill(SubCommand):
 
         This allows to set specific command options
         """
-        self.parser.add_option( '--jobids',
-                                dest = 'jobids',
-                                default = None,
-                                help = 'No longer supported, please use "crab kill".',
-                                metavar = 'JOBIDS' )
-
         self.parser.add_option( '--killwarning',
                                 dest = 'killwarning',
                                 default = None,
-                                help = 'A warning message to be appended to the list of warnings shown by the "crab status"')
+                                help = 'A warning message to be appended to the warnings list shown by "crab status"')
 
     def validateOptions(self):
         SubCommand.validateOptions(self)
-        if self.options.jobids is not None:
-            msg = "%sError%s: " % (colors.RED, colors.NORMAL)
-            msg += "'crab kill --jobids' is no longer supported, please use 'crab kill' instead."
-            raise ConfigurationException(msg)
