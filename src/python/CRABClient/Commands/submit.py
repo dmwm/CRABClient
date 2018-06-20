@@ -193,6 +193,11 @@ class submit(SubCommand):
                 msg = "Invalid CRAB configuration: Parameter General.requestName should not be longer than %d characters." % (requestNameLenLimit)
                 return False, msg
 
+        ## Check that maxJobRuntimeMin is not used with Automatic splitting
+        if getattr(self.configuration.Data, 'splitting', 'Automatic') == 'Automatic' and hasattr(self.configuration.JobType, 'maxJobRuntimeMin'): 
+            msg = "The 'maxJobRuntimeMin' parameter is not compatible with the 'Automatic' splitting mode (default)."
+            return False, msg
+
         ## Check that --dryrun is not used with Automatic splitting
         if getattr(self.configuration.Data, 'splitting', 'Automatic') == 'Automatic' and self.options.dryrun: 
             msg = "The 'dryrun' option is not compatible with the 'Automatic' splitting mode (default)."
