@@ -557,7 +557,7 @@ class status(SubCommand):
             if sum(statesPJ.values()) > 0:
                 terminate(statesPJ, 'failed')
                 terminate(statesPJ, 'finished')
-                terminate(states, 'failed', target='rescheduled')
+                terminate(states, 'failed', target='rescheduled as tail jobs')
         elif sum(statesPJ.values()) > 0 and not self.options.long:
             if 'failed' in states:
                 states.pop('failed')
@@ -572,7 +572,7 @@ class status(SubCommand):
                     self.logger.info("\nThe jobs splitting of this task is 'Automatic', please refer to this FAQ for a description of the jobs status summary:\n%s", automaticSplittFAQ)
                 total = sum(currStates[st] for st in currStates)
                 state_list = sorted(currStates)
-                self.logger.info("\n{0:32}{1} {2}".format(jobtype + ' status:', self._printState(state_list[0], 13), self._percentageString(state_list[0], currStates[state_list[0]], total)))
+                self.logger.info("\n{0:32}{1} \t\t {2}".format(jobtype + ' status:', self._printState(state_list[0], 13), self._percentageString(state_list[0], currStates[state_list[0]], total)))
                 for jobStatus in state_list[1:]:
                     self.logger.info("\t\t\t\t{0} {1}".format(self._printState(jobStatus, 13), self._percentageString(jobStatus, currStates[jobStatus], total)))
         return result
