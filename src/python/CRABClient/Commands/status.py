@@ -316,7 +316,9 @@ class status(SubCommand):
             dashboard URL, warnings and failire messages in the database.
         """
         schedd = getColumn(crabDBInfo, 'tm_schedd')
+	if not schedd: schedd = 'N/A yet'
         twname = getColumn(crabDBInfo, 'tw_name')
+	if not twname: twname = 'N/A yet'
         statusToPr = getColumn(crabDBInfo, 'tm_task_status')
         command = getColumn(crabDBInfo, 'tm_task_command')
         warnings = literal_eval(getColumn(crabDBInfo, 'tm_task_warnings'))
@@ -324,12 +326,7 @@ class status(SubCommand):
 
         self.logger.info("CRAB project directory:\t\t%s" % (self.requestarea))
         self.logger.info("Task name:\t\t\t%s" % self.cachedinfo['RequestName'])
-        if schedd:
-            msg = "Grid scheduler:\t\t\t%s" % schedd
-            self.logger.info(msg)
-        if twname:
-            msg = "Task Worker:\t\t\t%s" % twname
-            self.logger.info(msg)
+        self.logger.info("Grid scheduler - Task Worker:\t%s - %s" % (schedd,twname))
         msg = "Status on the CRAB server:\t"
         if 'FAILED' in statusToPr:
             msg += "%s%s%s" % (colors.RED, statusToPr, colors.NORMAL)
