@@ -316,9 +316,9 @@ class status(SubCommand):
             dashboard URL, warnings and failire messages in the database.
         """
         schedd = getColumn(crabDBInfo, 'tm_schedd')
-	if not schedd: schedd = 'N/A yet'
+        if not schedd: schedd = 'N/A yet'
         twname = getColumn(crabDBInfo, 'tw_name')
-	if not twname: twname = 'N/A yet'
+        if not twname: twname = 'N/A yet'
         statusToPr = getColumn(crabDBInfo, 'tm_task_status')
         command = getColumn(crabDBInfo, 'tm_task_command')
         warnings = literal_eval(getColumn(crabDBInfo, 'tm_task_warnings'))
