@@ -598,9 +598,9 @@ def getUserDNandUsernameFromSiteDB(logger):
     except:
         usernameSiteDB = None
     try:
-        usernameCric = getUsernameFromCric_wrapped(logger) if userdn else None
+        usernameCric = getUsernameFromCRIC_wrapped(logger) if userdn else None
     except:
-        usernameCrid = None
+        usernameCric = None
 
     if usernameCric and usernameSiteDB:
         if not usernameCric == usernameSiteDB:
