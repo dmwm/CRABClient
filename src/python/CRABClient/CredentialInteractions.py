@@ -80,31 +80,6 @@ class CredentialInteractions(object):
         return userdn
 
 
-    def getUsername(self):
-        proxy = self.proxy()
-        username = proxy.getUsername()
-        return username
-
-
-    def getUsernameFromSiteDB(self):
-        """
-        Retrieve the user's username as it appears in SiteDB.
-        """
-        proxy = self.proxy()
-        userdn = proxy.getSubjectFromCert(self.certLocation)
-        sitedb = SiteDBJSON({"key": proxy.getProxyFilename(), "cert": proxy.getProxyFilename()})
-        username = sitedb.dnUserName(userdn)
-        return username
-
-
-    def getUserName(self):
-        """
-        Return user name from DN
-        """
-        proxy = self.proxy()
-        return proxy.getUserName()
-
-
     def getFilename(self):
         proxy = self.proxy()
         proxyFileName = proxy.getProxyFilename()
