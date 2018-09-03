@@ -610,6 +610,8 @@ def getUserDNandUsernameFromSiteDB(logger):
 
     if not usernameSiteDB:
         username = usernameCric
+    else:
+        username = usernameSiteDB
     return {'DN': userdn, 'username': username}
 
 
