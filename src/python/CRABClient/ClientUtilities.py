@@ -593,25 +593,33 @@ def getUsernameFromCRIC_wrapped(logger, quiet = False):
 
 def getUserDNandUsernameFromSiteDB(logger):
     userdn = getUserDN_wrapped(logger)
+    if not userdn:
+        return {'DN': None, 'username': None}
+    quietSiteDB = False
+    quietCric = True
     try:
-        usernameSiteDB = getUsernameFromSiteDB_wrapped(logger) if userdn else None
+        usernameSiteDB = getUsernameFromSiteDB_wrapped(logger, quiet=quietSiteDB)
     except:
         usernameSiteDB = None
+    if not usernameSiteDB:
+        logger.info("SiteBD failed to resolve username. Will try new Information Catalog CRIC")
+        quietCric = False
     try:
-        usernameCric = getUsernameFromCRIC_wrapped(logger, quiet=True) if userdn else None
+        usernameCric = getUsernameFromCRIC_wrapped(logger, quiet=quietCric)
     except:
         usernameCric = None
 
-    if usernameCric and usernameSiteDB:
-        if not usernameCric == usernameSiteDB:
-            msg = "username from SiteDB (%s) does not match username from CRIC (%)" % (usernameSiteDB, usernameCric)
-            msg += "\n Please report this to support"
-            logger.info(msg)
+    if not usernameCric == usernameSiteDB:
+        msg = "username from SiteDB (%s) does not match username from CRIC (%)" % (usernameSiteDB, usernameCric)
+        msg += "\n Please report this to support"
+        logger.info(msg)
 
-    if not usernameSiteDB:
-        username = usernameCric
-    else:
+    # as long as SiteDB exists, it wins. But be ready for it to fail
+    if usernameSiteDB:
         username = usernameSiteDB
+    else:
+        username = usernameCric
+
     return {'DN': userdn, 'username': username}
 
 
