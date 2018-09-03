@@ -126,7 +126,7 @@ def getUsernameFromCRIC():
     stdout, stderr = process.communicate()
     if process.returncode or not stdout:
         msg  = "Aborting the attempt to retrieve username from CRIC."
-        msg += "\nDetails follow:"
+        msg += "\nGrid proxy not found. Details follow:"
         msg += "\n  Error executing command: %s" % (cmd)
         msg += "\n    Stdout:\n      %s" % (str(stdout).replace('\n', '\n      '))
         msg += "\n    Stderr:\n      %s" % (str(stderr).replace('\n', '\n      '))
