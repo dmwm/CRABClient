@@ -523,19 +523,19 @@ def getUsernameFromSiteDB_wrapped(logger, quiet = False):
     try:
         username = getUsernameFromSiteDB()
     except ProxyException as ex:
-        msg = "%sError%s: %s" % (colors.RED, colors.NORMAL, ex)
+        msg = "%sError ProxyException%s: %s" % (colors.RED, colors.NORMAL, ex)
         if quiet:
             logger.debug(msg)
         else:
             logger.error(msg)
     except UsernameException as ex:
-        msg = "%sError%s: %s" % (colors.RED, colors.NORMAL, ex)
+        msg = "%sError UsernameException%s: %s" % (colors.RED, colors.NORMAL, ex)
         if quiet:
             logger.debug(msg)
         else:
             logger.error(msg)
     except Exception:
-        msg  = "%sError%s: Failed to retrieve username from SiteDB." % (colors.RED, colors.NORMAL)
+        msg  = "%sError GenericException%s: Failed to retrieve username from SiteDB." % (colors.RED, colors.NORMAL)
         msg += "\n%s" % (traceback.format_exc()) 
         if quiet:
             logger.debug(msg)
@@ -552,7 +552,23 @@ def getUsernameFromSiteDB_wrapped(logger, quiet = False):
 
 def getUserDNandUsernameFromSiteDB(logger):
     userdn = getUserDN_wrapped(logger)
-    username = getUsernameFromSiteDB_wrapped(logger) if userdn else None
+    try:
+        usernameSiteDB = getUsernameFromSiteDB_wrapped(logger) if userdn else None
+    except:
+        usernameSiteDB = None
+    try:
+        usernameCric = getUsernameFromCric_wrapped(logger) if userdn else None
+    except:
+        usernameCrid = None
+
+    if usernameCric and usernameSiteDB:
+        if not usernameCric == usernameSiteDB:
+            msg = "username from SiteDB (%s) does not match username from CRIC (%)" % (usernameSiteDB, usernameCric)
+            msg += "\n Please report this to support"
+            logger.info(msg)
+
+    if not usernameSiteDB:
+        username = usernameCric
     return {'DN': userdn, 'username': username}
 
 
