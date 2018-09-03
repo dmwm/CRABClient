@@ -125,7 +125,7 @@ def getUsernameFromCRIC():
     process = subprocess.Popen(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
     stdout, stderr = process.communicate()
     if process.returncode or not stdout:
-        msg  = "Aborting the attempt to retrieve username from SiteDB."
+        msg  = "Aborting the attempt to retrieve username from CRIC."
         msg += "\nDetails follow:"
         msg += "\n  Error executing command: %s" % (cmd)
         msg += "\n    Stdout:\n      %s" % (str(stdout).replace('\n', '\n      '))
