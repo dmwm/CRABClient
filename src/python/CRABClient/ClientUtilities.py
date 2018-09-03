@@ -610,7 +610,8 @@ def getUserDNandUsernameFromSiteDB(logger):
         usernameCric = None
 
     if not usernameCric == usernameSiteDB:
-        msg = "username from SiteDB (%s) does not match username from CRIC (%s)" % (usernameSiteDB, usernameCric)
+        msg = "%sWarning:%s username from SiteDB (%s) does not match username from CRIC (%s)" \
+              % (colors.RED, colors.NORMAL, usernameSiteDB, usernameCric)
         msg += "\n Please report this to support"
         logger.info(msg)
 
