@@ -5,7 +5,6 @@ import logging
 import os
 
 from WMCore.Credential.Proxy import Proxy, CredentialException
-from WMCore.Services.SiteDB.SiteDB import SiteDBJSON
 from CRABClient.ClientExceptions import ProxyCreationException, EnvironmentException
 from CRABClient.ClientUtilities import colors, StopExecution
 
