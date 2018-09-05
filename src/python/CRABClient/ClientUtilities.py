@@ -602,7 +602,7 @@ def getUserDNandUsername(logger):
     # they may disagree etc.
 
     usernameSiteDB = getUsernameFromSiteDB_wrapped(logger, quiet=True)
-        usernameCric = getUsernameFromCRIC_wrapped(logger, quiet=True)
+    usernameCric = getUsernameFromCRIC_wrapped(logger, quiet=True)
 
     if usernameCric == usernameSiteDB:   # great in good or bad, they agree
         username = usernameCric          # will deal later with the possibility that neither worked
