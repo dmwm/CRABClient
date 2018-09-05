@@ -611,13 +611,13 @@ def getUserDNandUsername(logger):
             #something went wrong with SiteDB, ignore the details and use CRIC
             logger("Failed to get username from SiteDB.\n Will try new Coputing Resource Information Catalog CRIC")
             username = usernameCric
-        elif: not usernameCric:
+        elif not usernameCric:
             #something went wrong with CRIC, limp along with SiteDB, but scream
-            msg = "Failed to get username from CRIC. Will use result from SiteDB")
-            msg += "\nPlease report this to support toghether with following details")
-            logger.warning(msg)
             username = usernameSiteDB
-                usernameCric = getUsernameFromCRIC_wrapped(logger, quiet=False)
+            msg = "Failed to get username from CRIC. Will use result from SiteDB"
+            msg += "\nPlease report this to support toghether with following details"
+            logger.warning(msg)
+            usernameCric = getUsernameFromCRIC_wrapped(logger, quiet=False)
         else:
             #name mismatch between CRIC and SiteDB
             msg = "%sWarning:%s username from SiteDB (%s) does not match username from CRIC (%s)" \
