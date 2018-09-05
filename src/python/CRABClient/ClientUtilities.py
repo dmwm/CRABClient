@@ -592,10 +592,11 @@ def getUsernameFromCRIC_wrapped(logger, quiet = False):
     return username
 
 def getUserDNandUsername(logger):
-    logger.info("Retrieving username for this DN...")
     userdn = getUserDN_wrapped(logger)
     if not userdn:
         return {'DN': None, 'username': None}
+    
+    logger.info("Retrieving username for this DN...")
     username = None
 
     # have do deal with SiteDB -> CRIC transition, only only may be there,
