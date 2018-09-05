@@ -610,7 +610,10 @@ def getUserDNandUsername(logger):
     else:
         if not usernameSiteDB:
             #something went wrong with SiteDB, ignore the details and use CRIC
-            logger.info("Failed to get username from SiteDB.\n Will try new Coputing Resource Information Catalog CRIC")
+            msg = "Failed to get username from SiteDB."
+            msg += "\n Details are in crab.log file"
+            msg += "\nWill try new Coputing Resource Information Catalog CRIC"
+            logger.info(msg)
             username = usernameCric
         elif not usernameCric:
             #something went wrong with CRIC, limp along with SiteDB, but scream
