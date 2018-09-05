@@ -595,7 +595,7 @@ def getUserDNandUsername(logger):
     userdn = getUserDN_wrapped(logger)
     if not userdn:
         return {'DN': None, 'username': None}
-    
+
     logger.info("Retrieving username for this DN...")
     username = None
 
@@ -610,7 +610,7 @@ def getUserDNandUsername(logger):
     else:
         if not usernameSiteDB:
             #something went wrong with SiteDB, ignore the details and use CRIC
-            logger("Failed to get username from SiteDB.\n Will try new Coputing Resource Information Catalog CRIC")
+            logger.info("Failed to get username from SiteDB.\n Will try new Coputing Resource Information Catalog CRIC")
             username = usernameCric
         elif not usernameCric:
             #something went wrong with CRIC, limp along with SiteDB, but scream
