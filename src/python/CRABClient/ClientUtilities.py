@@ -634,7 +634,7 @@ def getUserDNandUsername(logger):
         msg = "%sERROR:%s Nor SiteDB nor CRIC could resolve the DN into a user name" \
               % (colors.RED, colors.NORMAL)
         msg += "\n Please find below details of both failures for investigation:"
-        logger.error("msg")
+        logger.error(msg)
         usernameSiteDB = getUsernameFromSiteDB_wrapped(logger, quiet=False)
         usernameCric = getUsernameFromCRIC_wrapped(logger, quiet=False)
 
