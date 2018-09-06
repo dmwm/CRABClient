@@ -1,5 +1,5 @@
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ClientUtilities import colors, getUserDNandUsernameFromSiteDB
+from CRABClient.ClientUtilities import colors, getUserDNandUsername
 
 
 class checkusername(SubCommand):
@@ -19,7 +19,7 @@ class checkusername(SubCommand):
 
 
     def standaloneCheck(self):
-        return getUserDNandUsernameFromSiteDB(self.logger)
+        return getUserDNandUsername(self.logger)
 
 
     def crabCheck(self):

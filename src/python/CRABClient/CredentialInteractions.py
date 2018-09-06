@@ -5,7 +5,6 @@ import logging
 import os
 
 from WMCore.Credential.Proxy import Proxy, CredentialException
-from WMCore.Services.SiteDB.SiteDB import SiteDBJSON
 from CRABClient.ClientExceptions import ProxyCreationException, EnvironmentException
 from CRABClient.ClientUtilities import colors, StopExecution
 
@@ -78,31 +77,6 @@ class CredentialInteractions(object):
         proxy = self.proxy()
         userdn = proxy.getSubjectFromCert(self.certLocation)
         return userdn
-
-
-    def getUsername(self):
-        proxy = self.proxy()
-        username = proxy.getUsername()
-        return username
-
-
-    def getUsernameFromSiteDB(self):
-        """
-        Retrieve the user's username as it appears in SiteDB.
-        """
-        proxy = self.proxy()
-        userdn = proxy.getSubjectFromCert(self.certLocation)
-        sitedb = SiteDBJSON({"key": proxy.getProxyFilename(), "cert": proxy.getProxyFilename()})
-        username = sitedb.dnUserName(userdn)
-        return username
-
-
-    def getUserName(self):
-        """
-        Return user name from DN
-        """
-        proxy = self.proxy()
-        return proxy.getUserName()
 
 
     def getFilename(self):
