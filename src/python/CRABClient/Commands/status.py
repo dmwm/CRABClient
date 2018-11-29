@@ -341,7 +341,8 @@ class status(SubCommand):
         taskname = urllib.quote(self.cachedinfo['RequestName'])
 
         ## CRAB Server UI URL for this task is always useful
-        crabServerUIURL = "https://cmsweb.cern.ch/crabserver/ui/task/" + taskname
+        #crabServerUIURL has a format like "https://cmsweb.cern.ch/crabserver/ui/task/" + taskname
+        crabServerUIURL = "https://" + self.serverurl + "/crabserver/ui/task/" + taskname
         msg = "%sTask URL to use for HELP:\t%s%s" % (colors.GREEN, crabServerUIURL, colors.NORMAL)
         self.logger.info(msg)
 
