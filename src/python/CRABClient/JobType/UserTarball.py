@@ -34,7 +34,7 @@ class UserTarball(object):
             Also adds user specified files in the right place.
     """
 
-    def __init__(self, name=None, mode='w:gz', config=None, logger=None):
+    def __init__(self, name=None, mode='w:bz2', config=None, logger=None):
         self.config = config
         self.logger = logger
         self.scram = ScramEnvironment(logger=self.logger)
