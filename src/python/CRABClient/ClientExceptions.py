@@ -66,7 +66,7 @@ class EnvironmentException(ClientException):
 
 class UsernameException(ClientException):
     """
-    Raised when there is a problem with the username (e.g. when retrieving it from SiteDB).
+    Raised when there is a problem with the username (e.g. when retrieving it from SiteDB or CRIC).
     """
     exitcode = 3012
 

@@ -251,7 +251,7 @@ def uploadlogfile(logger, proxyfilename, logfilename = None, logpath = None, ins
         logger.info("%sSuccess%s: Log file uploaded successfully." % (colors.GREEN, colors.NORMAL))
         logfileurl = cacheurl + '/logfile?name='+str(logfilename)
         if not username:
-            username = getUsernameFromSiteDB_wrapped(logger, quiet = True)
+            username = getUserDNandUsername(logger).get('username')
         if username:
             logfileurl += '&username='+str(username)
         logger.info("Log file URL: %s" % (logfileurl))
@@ -464,15 +464,15 @@ def getUserDN():
     """
     undoScram = 'which scram >/dev/null 2>&1 && eval `scram unsetenv -sh`'
     ## Check if there is a proxy.
-    cmd = undoScram + "; voms-proxy-info"
-    process = subprocess.Popen(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
-    stdout, stderr = process.communicate()
-    if process.returncode or not stdout:
-        msg  = "Unable to retrieve DN from proxy:"
-        msg += "\nError executing command: %s" % (cmd)
-        msg += "\n  Stdout:\n    %s" % (str(stdout).replace('\n', '\n    '))
-        msg += "\n  Stderr:\n    %s" % (str(stderr).replace('\n', '\n    '))
-        raise ProxyException(msg)
+    #cmd = undoScram + "; voms-proxy-info"
+    #process = subprocess.Popen(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
+    #stdout, stderr = process.communicate()
+    #if process.returncode or not stdout:
+    #    msg  = "Unable to retrieve DN from proxy:"
+    #    msg += "\nError executing command: %s" % (cmd)
+    #    msg += "\n  Stdout:\n    %s" % (str(stdout).replace('\n', '\n    '))
+    #    msg += "\n  Stderr:\n    %s" % (str(stderr).replace('\n', '\n    '))
+    #    raise ProxyException(msg)
     ## Retrieve DN from proxy.
     cmd = undoScram + "; voms-proxy-info -identity"
     process = subprocess.Popen(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
@@ -523,19 +523,19 @@ def getUsernameFromSiteDB_wrapped(logger, quiet = False):
     try:
         username = getUsernameFromSiteDB()
     except ProxyException as ex:
-        msg = "%sError%s: %s" % (colors.RED, colors.NORMAL, ex)
+        msg = "%sError ProxyException%s: %s" % (colors.RED, colors.NORMAL, ex)
         if quiet:
             logger.debug(msg)
         else:
             logger.error(msg)
     except UsernameException as ex:
-        msg = "%sError%s: %s" % (colors.RED, colors.NORMAL, ex)
+        msg = "%sError UsernameException%s: %s" % (colors.RED, colors.NORMAL, ex)
         if quiet:
             logger.debug(msg)
         else:
             logger.error(msg)
     except Exception:
-        msg  = "%sError%s: Failed to retrieve username from SiteDB." % (colors.RED, colors.NORMAL)
+        msg  = "%sError GenericException%s: Failed to retrieve username from SiteDB." % (colors.RED, colors.NORMAL)
         msg += "\n%s" % (traceback.format_exc()) 
         if quiet:
             logger.debug(msg)
@@ -550,9 +550,98 @@ def getUsernameFromSiteDB_wrapped(logger, quiet = False):
     return username
 
 
-def getUserDNandUsernameFromSiteDB(logger):
+def getUsernameFromCRIC_wrapped(logger, quiet = False):
+    """
+    Wrapper function for getUsernameFromCRIC,
+    catching exceptions and printing messages.
+    """
+    from CRABClient.UserUtilities import getUsernameFromCRIC
+    username = None
+    msg = "Retrieving username from CRIC..."
+    if quiet:
+        logger.debug(msg)
+    else:
+        logger.info(msg)
+    try:
+        username = getUsernameFromCRIC()
+    except ProxyException as ex:
+        msg = "%sError ProxyException%s: %s" % (colors.RED, colors.NORMAL, ex)
+        if quiet:
+            logger.debug(msg)
+        else:
+            logger.error(msg)
+    except UsernameException as ex:
+        msg = "%sError UsernameException%s: %s" % (colors.RED, colors.NORMAL, ex)
+        if quiet:
+            logger.debug(msg)
+        else:
+            logger.error(msg)
+    except Exception:
+        msg  = "%sError GenericException%s: Failed to retrieve username from CRIC." % (colors.RED, colors.NORMAL)
+        msg += "\n%s" % (traceback.format_exc())
+        if quiet:
+            logger.debug(msg)
+        else:
+            logger.error(msg)
+    else:
+        msg = "Username is: %s" % (username)
+        if quiet:
+            logger.debug(msg)
+        else:
+            logger.info(msg)
+    return username
+
+def getUserDNandUsername(logger):
     userdn = getUserDN_wrapped(logger)
-    username = getUsernameFromSiteDB_wrapped(logger) if userdn else None
+    if not userdn:
+        return {'DN': None, 'username': None}
+
+    logger.info("Retrieving username for this DN...")
+    username = None
+
+    # have do deal with SiteDB -> CRIC transition, only only may be there,
+    # they may disagree etc.
+
+    usernameSiteDB = getUsernameFromSiteDB_wrapped(logger, quiet=True)
+    usernameCric = getUsernameFromCRIC_wrapped(logger, quiet=True)
+
+    if usernameCric == usernameSiteDB:   # great in good or bad, they agree
+        username = usernameCric          # will deal later with the possibility that neither worked
+    else:
+        if not usernameSiteDB:
+            #something went wrong with SiteDB, ignore the details and use CRIC
+            msg = "Failed to get username from SiteDB."
+            msg += "\n Details are in crab.log file"
+            msg += "\nWill try new Coputing Resource Information Catalog CRIC"
+            logger.info(msg)
+            username = usernameCric
+        elif not usernameCric:
+            #something went wrong with CRIC, limp along with SiteDB, but scream
+            username = usernameSiteDB
+            msg = "Failed to get username from CRIC. Will use result from SiteDB"
+            msg += "\nPlease report this to support toghether with following details"
+            logger.warning(msg)
+            usernameCric = getUsernameFromCRIC_wrapped(logger, quiet=False)
+        else:
+            #name mismatch between CRIC and SiteDB
+            msg = "%sWarning:%s username from SiteDB (%s) does not match username from CRIC (%s)" \
+                  % (colors.RED, colors.NORMAL, usernameSiteDB, usernameCric)
+            msg += "\n Please report this to support"
+            logger.info(msg)
+
+    # from now one there is a single username and code is not depending on having
+    # two possible services to query
+    if username:
+        logger.info("username is %s" % username)
+    else:
+        # ouch
+        msg = "%sERROR:%s Nor SiteDB nor CRIC could resolve the DN into a user name" \
+              % (colors.RED, colors.NORMAL)
+        msg += "\n Please find below details of both failures for investigation:"
+        logger.error(msg)
+        usernameSiteDB = getUsernameFromSiteDB_wrapped(logger, quiet=False)
+        usernameCric = getUsernameFromCRIC_wrapped(logger, quiet=False)
+
     return {'DN': userdn, 'username': username}
 
 
