@@ -258,8 +258,8 @@ class SubCommand(ConfigCommand):
         self.transferringIds = None
         self.dest = None
 
-        ## Validate the command options.
-        self.validateOptions()
+        ## Validate first the SubCommand options
+        SubCommand.validateOptions(self)
 
         ## Get the VO group/role from the command options (if the command requires these
         ## options).
@@ -340,6 +340,9 @@ class SubCommand(ConfigCommand):
         ## and ask him to provide the VO role/group as in the existing proxy. 
         ## Finally, delegate the proxy to myproxy server.
         self.handleProxy(proxyOptsSetPlace)
+
+        ## Validate the command options
+        self.validateOptions()
 
         ## Logging user command and options used for debuging purpose.
         self.logger.debug('Command use: %s' % self.name)
