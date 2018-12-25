@@ -27,9 +27,9 @@ class ConfigCommand:
     Commands which needs to load the configuration file (e.g.: submit, publish) must subclass ConfigCommand
     Provides methods for loading the configuration file handling the errors
     """
-    def __init__():
+    def __init__(self):
         self.configuration = None
-        selg.logger = None
+        self.logger = None
 
     def loadConfig(self, configname, overrideargs = None):
         """
