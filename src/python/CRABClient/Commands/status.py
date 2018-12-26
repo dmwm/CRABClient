@@ -35,6 +35,9 @@ class status(SubCommand):
     shortnames = ['st']
 
     def __init__(self, logger, cmdargs = None):
+        self.taskname = None
+        self.webdir = None
+        self.schedd = None
         self.jobids = None
         SubCommand.__init__(self, logger, cmdargs)
 
