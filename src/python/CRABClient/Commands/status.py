@@ -40,18 +40,18 @@ class status(SubCommand):
 
     def __call__(self):
         # Get all of the columns from the database for a certain task
-        taskname = self.cachedinfo['RequestName']
+        self.taskname = self.cachedinfo['RequestName']
         uri = self.getUrl(self.instance, resource = 'task')
         serverFactory = CRABClient.Emulator.getEmulator('rest')
         server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
-        crabDBInfo, _, _ =  server.get(uri, data = {'subresource': 'search', 'workflow': taskname})
+        crabDBInfo, _, _ =  server.get(uri, data = {'subresource': 'search', 'workflow': self.taskname})
         self.logger.debug("Got information from server oracle database: %s", crabDBInfo)
 
         # Until the task lands on a schedd we'll show the status from the DB
         combinedStatus = getColumn(crabDBInfo, 'tm_task_status')
 
         user = getColumn(crabDBInfo, 'tm_username')
-        webdir = getColumn(crabDBInfo, 'tm_user_webdir')
+        self.webdir = getColumn(crabDBInfo, 'tm_user_webdir')
         rootDagId = getColumn(crabDBInfo, 'clusterid') #that's the condor id from the TW
         asourl = getColumn(crabDBInfo, 'tm_asourl')
         asodb = getColumn(crabDBInfo, 'tm_asodb')
@@ -70,10 +70,10 @@ class status(SubCommand):
 
         self.logger.debug("The CRAB server submitted your task to the Grid scheduler (cluster ID: %s)" % rootDagId)
 
-        if not webdir:
+        if not self.webdir:
             # Query condor through the server for information about this task
             uri = self.getUrl(self.instance, resource = 'workflow')
-            params = {'subresource': 'taskads', 'workflow': taskname}
+            params = {'subresource': 'taskads', 'workflow': self.taskname}
 
             res = server.get(uri, data = params)[0]['result'][0]
             # JobStatus 5 = Held
@@ -95,15 +95,15 @@ class status(SubCommand):
                 combinedStatus = "UNKNOWN"
             return self.makeStatusReturnDict(crabDBInfo, combinedStatus, statusFailureMsg=failureMsg)
 
-        self.logger.debug("Webdir is located at %s", webdir)
+        self.logger.debug("Webdir is located at %s", self.webdir)
 
-        proxiedWebDir = getProxiedWebDir(taskname, self.serverurl, uri, self.proxyfilename, self.logger.debug)
+        proxiedWebDir = getProxiedWebDir(self.taskname, self.serverurl, uri, self.proxyfilename, self.logger.debug)
         if not proxiedWebDir:
             msg = "Failed to get the proxied webdir from CRABServer. "
             msg += "\nWill fall back to the regular webdir url for file downloads "
             msg += "but will likely fail if the client is located outside CERN."
             self.logger.debug(msg)
-            proxiedWebDir = webdir
+            proxiedWebDir = self.webdir
         self.logger.debug("Proxied webdir is located at %s", proxiedWebDir)
 
         # Download status_cache file
@@ -135,7 +135,7 @@ class status(SubCommand):
 
         shortResult = self.printOverview(statusCacheInfo, automaticSplitt)
         pubStatus = self.printPublication(publicationEnabled, shortResult['jobsPerStatus'], shortResult['numProbes'],
-                                          shortResult['numUnpublishable'], asourl, asodb, taskname, user, crabDBInfo)
+                                          shortResult['numUnpublishable'], asourl, asodb, self.taskname, user, crabDBInfo)
         self.printErrors(statusCacheInfo, automaticSplitt)
 
         if not self.options.long and not self.options.sort: # already printed for these options 
@@ -315,8 +315,8 @@ class status(SubCommand):
         """ Print general information like project directory, task name, scheduler, task status (in the database),
             dashboard URL, warnings and failire messages in the database.
         """
-        schedd = getColumn(crabDBInfo, 'tm_schedd')
-        if not schedd: schedd = 'N/A yet'
+        self.schedd = getColumn(crabDBInfo, 'tm_schedd')
+        if not self.schedd: self.schedd = 'N/A yet'
         twname = getColumn(crabDBInfo, 'tw_name')
         if not twname: twname = 'N/A yet'
         statusToPr = getColumn(crabDBInfo, 'tm_task_status')
@@ -326,7 +326,7 @@ class status(SubCommand):
 
         self.logger.info("CRAB project directory:\t\t%s" % (self.requestarea))
         self.logger.info("Task name:\t\t\t%s" % self.cachedinfo['RequestName'])
-        self.logger.info("Grid scheduler - Task Worker:\t%s - %s" % (schedd,twname))
+        self.logger.info("Grid scheduler - Task Worker:\t%s - %s" % (self.schedd,twname))
         msg = "Status on the CRAB server:\t"
         if 'FAILED' in statusToPr:
             msg += "%s%s%s" % (colors.RED, statusToPr, colors.NORMAL)
@@ -347,7 +347,7 @@ class status(SubCommand):
         self.logger.info(msg)
 
         ## Dashboard monitoring URL only makes sense if submitted to schedd
-        if schedd:
+        if self.schedd:
             dashboardURL = "http://dashb-cms-job.cern.ch/dashboard/templates/task-analysis/#user=" + username \
                          + "&refresh=0&table=Jobs&p=1&records=25&activemenu=2&status=&site=&tid=" + taskname
             self.logger.info("Dashboard monitoring URL:\t%s" % (dashboardURL))
@@ -569,14 +569,18 @@ class status(SubCommand):
         # And if the dictionary is not empty, print it
         for jobtype, currStates in toPrint:
             if currStates:
-                automaticSplittFAQ = 'https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3FAQ#What_is_the_Automatic_splitting'
-                if automaticSplitt and (not self.options.long  or  jobtype == 'Probe jobs'):
+                if automaticSplitt and jobtype == 'Probe jobs':
+                    automaticSplittFAQ = 'https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3FAQ#What_is_the_Automatic_splitting'
                     self.logger.info("\nThe jobs splitting of this task is 'Automatic', please refer to this FAQ for a description of the jobs status summary:\n%s", automaticSplittFAQ)
                 total = sum(currStates[st] for st in currStates)
                 state_list = sorted(currStates)
                 self.logger.info("\n{0:32}{1} \t\t {2}".format(jobtype + ' status:', self._printState(state_list[0], 13), self._percentageString(state_list[0], currStates[state_list[0]], total)))
                 for jobStatus in state_list[1:]:
                     self.logger.info("\t\t\t\t{0} {1}".format(self._printState(jobStatus, 13), self._percentageString(jobStatus, currStates[jobStatus], total)))
+                if jobtype == 'Probe jobs':
+                    scheddName = self.schedd.replace("crab3@","")
+                    scheddNum = self.schedd.replace("crab3@vocms","").replace(".cern.ch","")
+                    self.logger.info("Probe stage log:\t\t%s", self.webdir.replace("http://","https://"+self.serverurl).replace(scheddName+"/mon","/scheddmon/"+scheddNum)+"/AutomaticSplitting_Log0.txt")
         return result
 
     def printErrors(self, dictresult, automaticSplitt):
