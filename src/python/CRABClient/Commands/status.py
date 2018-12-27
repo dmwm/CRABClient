@@ -51,7 +51,7 @@ class status(SubCommand):
         combinedStatus = getColumn(crabDBInfo, 'tm_task_status')
 
         user = getColumn(crabDBInfo, 'tm_username')
-        self.webdir = getColumn(crabDBInfo, 'tm_user_webdir')
+        webdir = getColumn(crabDBInfo, 'tm_user_webdir')
         rootDagId = getColumn(crabDBInfo, 'clusterid') #that's the condor id from the TW
         asourl = getColumn(crabDBInfo, 'tm_asourl')
         asodb = getColumn(crabDBInfo, 'tm_asodb')
@@ -70,7 +70,7 @@ class status(SubCommand):
 
         self.logger.debug("The CRAB server submitted your task to the Grid scheduler (cluster ID: %s)" % rootDagId)
 
-        if not self.webdir:
+        if not webdir:
             # Query condor through the server for information about this task
             uri = self.getUrl(self.instance, resource = 'workflow')
             params = {'subresource': 'taskads', 'workflow': taskname}
@@ -95,7 +95,7 @@ class status(SubCommand):
                 combinedStatus = "UNKNOWN"
             return self.makeStatusReturnDict(crabDBInfo, combinedStatus, statusFailureMsg=failureMsg)
 
-        self.logger.debug("Webdir is located at %s", self.webdir)
+        self.logger.debug("Webdir is located at %s", webdir)
 
         proxiedWebDir = getProxiedWebDir(taskname, self.serverurl, uri, self.proxyfilename, self.logger.debug)
         if not proxiedWebDir:
@@ -103,7 +103,7 @@ class status(SubCommand):
             msg += "\nWill fall back to the regular webdir url for file downloads "
             msg += "but will likely fail if the client is located outside CERN."
             self.logger.debug(msg)
-            proxiedWebDir = self.webdir
+            proxiedWebDir = webdir
         self.logger.debug("Proxied webdir is located at %s", proxiedWebDir)
 
         # Download status_cache file
