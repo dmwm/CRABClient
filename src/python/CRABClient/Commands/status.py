@@ -35,19 +35,16 @@ class status(SubCommand):
     shortnames = ['st']
 
     def __init__(self, logger, cmdargs = None):
-        self.taskname = None
-        self.webdir = None
-        self.schedd = None
         self.jobids = None
         SubCommand.__init__(self, logger, cmdargs)
 
     def __call__(self):
         # Get all of the columns from the database for a certain task
-        self.taskname = self.cachedinfo['RequestName']
+        taskname = self.cachedinfo['RequestName']
         uri = self.getUrl(self.instance, resource = 'task')
         serverFactory = CRABClient.Emulator.getEmulator('rest')
         server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
-        crabDBInfo, _, _ =  server.get(uri, data = {'subresource': 'search', 'workflow': self.taskname})
+        crabDBInfo, _, _ =  server.get(uri, data = {'subresource': 'search', 'workflow': taskname})
         self.logger.debug("Got information from server oracle database: %s", crabDBInfo)
 
         # Until the task lands on a schedd we'll show the status from the DB
@@ -76,7 +73,7 @@ class status(SubCommand):
         if not self.webdir:
             # Query condor through the server for information about this task
             uri = self.getUrl(self.instance, resource = 'workflow')
-            params = {'subresource': 'taskads', 'workflow': self.taskname}
+            params = {'subresource': 'taskads', 'workflow': taskname}
 
             res = server.get(uri, data = params)[0]['result'][0]
             # JobStatus 5 = Held
@@ -100,7 +97,7 @@ class status(SubCommand):
 
         self.logger.debug("Webdir is located at %s", self.webdir)
 
-        proxiedWebDir = getProxiedWebDir(self.taskname, self.serverurl, uri, self.proxyfilename, self.logger.debug)
+        proxiedWebDir = getProxiedWebDir(taskname, self.serverurl, uri, self.proxyfilename, self.logger.debug)
         if not proxiedWebDir:
             msg = "Failed to get the proxied webdir from CRABServer. "
             msg += "\nWill fall back to the regular webdir url for file downloads "
@@ -136,9 +133,9 @@ class status(SubCommand):
         # If the task is already on the grid, show the dagman status
         combinedStatus = dagStatus = self.printDAGStatus(crabDBInfo, statusCacheInfo)
 
-        shortResult = self.printOverview(statusCacheInfo, automaticSplitt)
+        shortResult = self.printOverview(statusCacheInfo, automaticSplitt, proxiedWebDir)
         pubStatus = self.printPublication(publicationEnabled, shortResult['jobsPerStatus'], shortResult['numProbes'],
-                                          shortResult['numUnpublishable'], asourl, asodb, self.taskname, user, crabDBInfo)
+                                          shortResult['numUnpublishable'], asourl, asodb, taskname, user, crabDBInfo)
         self.printErrors(statusCacheInfo, automaticSplitt)
 
         if not self.options.long and not self.options.sort: # already printed for these options 
@@ -318,8 +315,8 @@ class status(SubCommand):
         """ Print general information like project directory, task name, scheduler, task status (in the database),
             dashboard URL, warnings and failire messages in the database.
         """
-        self.schedd = getColumn(crabDBInfo, 'tm_schedd')
-        if not self.schedd: self.schedd = 'N/A yet'
+        schedd = getColumn(crabDBInfo, 'tm_schedd')
+        if not schedd: schedd = 'N/A yet'
         twname = getColumn(crabDBInfo, 'tw_name')
         if not twname: twname = 'N/A yet'
         statusToPr = getColumn(crabDBInfo, 'tm_task_status')
@@ -329,7 +326,7 @@ class status(SubCommand):
 
         self.logger.info("CRAB project directory:\t\t%s" % (self.requestarea))
         self.logger.info("Task name:\t\t\t%s" % self.cachedinfo['RequestName'])
-        self.logger.info("Grid scheduler - Task Worker:\t%s - %s" % (self.schedd,twname))
+        self.logger.info("Grid scheduler - Task Worker:\t%s - %s" % (schedd,twname))
         msg = "Status on the CRAB server:\t"
         if 'FAILED' in statusToPr:
             msg += "%s%s%s" % (colors.RED, statusToPr, colors.NORMAL)
@@ -350,7 +347,7 @@ class status(SubCommand):
         self.logger.info(msg)
 
         ## Dashboard monitoring URL only makes sense if submitted to schedd
-        if self.schedd:
+        if schedd:
             dashboardURL = "http://dashb-cms-job.cern.ch/dashboard/templates/task-analysis/#user=" + username \
                          + "&refresh=0&table=Jobs&p=1&records=25&activemenu=2&status=&site=&tid=" + taskname
             self.logger.info("Dashboard monitoring URL:\t%s" % (dashboardURL))
@@ -508,7 +505,7 @@ class status(SubCommand):
 
         return sortdict
 
-    def printOverview(self, statusCacheInfo, automaticSplitt):
+    def printOverview(self, statusCacheInfo, automaticSplitt, proxiedWebDir):
         """ Give a summary of the job statuses, keeping in mind that:
                 - If there is a job with id 0 then this is the probe job for the estimation
                   This is the so called 'Automatic' splitting
@@ -581,9 +578,7 @@ class status(SubCommand):
                 for jobStatus in state_list[1:]:
                     self.logger.info("\t\t\t\t{0} {1}".format(self._printState(jobStatus, 13), self._percentageString(jobStatus, currStates[jobStatus], total)))
                 if jobtype == 'Probe jobs':
-                    scheddName = self.schedd.replace("crab3@","")
-                    scheddNum = self.schedd.replace("crab3@vocms","").replace(".cern.ch","")
-                    self.logger.info("Probe stage log:\t\t%s", self.webdir.replace("http://","https://"+self.serverurl).replace(scheddName+"/mon","/scheddmon/"+scheddNum)+"/AutomaticSplitting_Log0.txt")
+                    self.logger.info("Probe stage log:\t\t%s", proxiedWebDir+"/AutomaticSplitting_Log0.txt")
         return result
 
     def printErrors(self, dictresult, automaticSplitt):
