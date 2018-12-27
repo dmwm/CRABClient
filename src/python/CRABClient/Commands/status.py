@@ -556,11 +556,13 @@ class status(SubCommand):
         toPrint = [('Jobs', states)]
         if self.options.long:
             toPrint = [('Probe jobs', statesPJ), ('Jobs', states), ('Tail jobs', statesSJ)]
+            if automaticSplitt:
+                toPrint[1] = ('Main jobs', states)
             if sum(statesPJ.values()) > 0:
                 terminate(statesPJ, 'failed')
                 terminate(statesPJ, 'finished')
                 terminate(states, 'failed', target='rescheduled as tail jobs')
-        elif sum(statesPJ.values()) > 0 and not self.options.long:
+        elif sum(statesPJ.values()) > 0:
             if 'failed' in states:
                 states.pop('failed')
             for jobStatus in statesSJ:
