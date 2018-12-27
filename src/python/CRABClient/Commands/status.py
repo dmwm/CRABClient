@@ -36,6 +36,7 @@ class status(SubCommand):
 
     def __init__(self, logger, cmdargs = None):
         self.jobids = None
+        self.indentation = '\t\t'
         SubCommand.__init__(self, logger, cmdargs)
 
     def __call__(self):
@@ -576,9 +577,9 @@ class status(SubCommand):
                     self.logger.info("\nThe jobs splitting of this task is 'Automatic', please refer to this FAQ for a description of the jobs status summary:\n%s", automaticSplittFAQ)
                 total = sum(currStates[st] for st in currStates)
                 state_list = sorted(currStates)
-                self.logger.info("\n{0:32}{1} \t\t {2}".format(jobtype + ' status:', self._printState(state_list[0], 13), self._percentageString(state_list[0], currStates[state_list[0]], total)))
+                self.logger.info("\n{0:32}{1}{2}{3}".format(jobtype + ' status:', self._printState(state_list[0], 13), self.indentation, self._percentageString(state_list[0], currStates[state_list[0]], total)))
                 for jobStatus in state_list[1:]:
-                    self.logger.info("\t\t\t\t{0} {1}".format(self._printState(jobStatus, 13), self._percentageString(jobStatus, currStates[jobStatus], total)))
+                    self.logger.info("\t\t\t\t{0}{1}{2}".format(self._printState(jobStatus, 13), self.indentation, self._percentageString(jobStatus, currStates[jobStatus], total)))
                 if jobtype == 'Probe jobs':
                     self.logger.info("Probe stage log:\t\t%s", proxiedWebDir+"/AutomaticSplitting_Log0.txt")
         return result
@@ -960,13 +961,13 @@ class status(SubCommand):
             states['unsubmitted'] = numFilesToPublish - numSubmittedFiles
             ## Print the publication status.
             statesList = sorted(states)
-            msg = "\nPublication status:\t\t{0} {1}".format(self._printState(statesList[0], 13), \
-                                                            self._percentageString(statesList[0], states[statesList[0]], numFilesToPublish))
+            msg = "\nPublication status:\t\t{0}{1}{2}".format(self._printState(statesList[0], 13), self.indentation, \
+                                                              self._percentageString(statesList[0], states[statesList[0]], numFilesToPublish))
             msg += pubSource
             for jobStatus in statesList[1:]:
                 if states[jobStatus]:
-                    msg += "\n\t\t\t\t{0} {1}".format(self._printState(jobStatus, 13), \
-                                                      self._percentageString(jobStatus, states[jobStatus], numFilesToPublish))
+                    msg += "\n\t\t\t\t{0}{1}{2}".format(self._printState(jobStatus, 13), self.indentation, \
+                                                        self._percentageString(jobStatus, states[jobStatus], numFilesToPublish))
             self.logger.info(msg)
             ## Print the publication errors.
             if pubInfo.get('publicationFailures'):
