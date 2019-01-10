@@ -9,7 +9,7 @@ from WMCore.Configuration import loadConfigurationFile, Configuration
 
 import CRABClient.Emulator
 from CRABClient import SpellChecker
-from CRABClient.__init__ import __version__
+from CRABClient import __version__
 from CRABClient.ClientUtilities import colors
 from CRABClient.CRABOptParser import CRABCmdOptParser
 from CRABClient.ClientUtilities import BASEURL, SERVICE_INSTANCES
@@ -27,6 +27,9 @@ class ConfigCommand:
     Commands which needs to load the configuration file (e.g.: submit, publish) must subclass ConfigCommand
     Provides methods for loading the configuration file handling the errors
     """
+    def __init__(self):
+        self.configuration = None
+        self.logger = None
 
     def loadConfig(self, configname, overrideargs = None):
         """
@@ -67,16 +70,16 @@ class ConfigCommand:
                         self.logger.info("Wrong format in command-line argument '%s'. Expected format is <section-name>.<parameter-name>=<parameter-value>." % (singlearg))
                         raise ConfigurationException("ERROR: Wrong command-line format.")
                     self.configuration.section_(parnames[0])
-                    type = configParametersInfo.get(fullparname, {}).get('type', 'undefined')
-                    if type in ['undefined', 'StringType']:
+                    parType = configParametersInfo.get(fullparname, {}).get('type', 'undefined')
+                    if parType in ['undefined', 'StringType']:
                         setattr(getattr(self.configuration, parnames[0]), parnames[1], literal_eval("\'%s\'" % parval))
                         self.logger.debug("Overriden parameter %s with '%s'" % (fullparname, parval))
                     else:
                         setattr(getattr(self.configuration, parnames[0]), parnames[1], literal_eval("%s" % parval))
                         self.logger.debug("Overriden parameter %s with %s" % (fullparname, parval))
             valid, configmsg = self.validateConfig() ## Subclasses of SubCommand overwrite this method if needed.
-        except RuntimeError as re:
-            configmsg  = "Error while loading CRAB configuration:\n%s" % (self._extractReason(configname, re))
+        except RuntimeError as runErr:
+            configmsg  = "Error while loading CRAB configuration:\n%s" % (self._extractReason(configname, runErr))
             configmsg += "\nPlease refer to https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3CommonErrors#Syntax_error_in_CRAB_configurati"
             configmsg += "\nSee the ./crab.log file for more details."
             configmsg += "\nThe documentation about the CRAB configuration file can be found in"
@@ -89,13 +92,13 @@ class ConfigCommand:
                 raise ConfigurationException(configmsg)
 
 
-    def _extractReason(self, configname, re):
+    def _extractReason(self, configname, runErr):
         """
         To call in case of error loading the configuration file
         Get the reason of the failure without the stacktrace. Put the stacktrace in the crab.log file
         """
         #get only the error wihtout the stacktrace
-        msg = str(re)
+        msg = str(runErr)
         filename = os.path.abspath( configname )
         cfgBaseName = os.path.basename( filename ).replace(".py", "")
         cfgDirName = os.path.dirname( filename )
@@ -243,6 +246,7 @@ class SubCommand(ConfigCommand):
                                "trying to add a command without it's correspondant configuration?" % self.name)
 
         ## Get the CRAB cache file.
+        self.cachedinfo = None
         self.crab3dic = self.getConfiDict()
 
         ## The options parser.
@@ -258,8 +262,8 @@ class SubCommand(ConfigCommand):
         self.transferringIds = None
         self.dest = None
 
-        ## Validate the command options.
-        self.validateOptions()
+        ## Validate first the SubCommand options
+        SubCommand.validateOptions(self)
 
         ## Get the VO group/role from the command options (if the command requires these
         ## options).
@@ -340,6 +344,9 @@ class SubCommand(ConfigCommand):
         ## and ask him to provide the VO role/group as in the existing proxy. 
         ## Finally, delegate the proxy to myproxy server.
         self.handleProxy(proxyOptsSetPlace)
+
+        ## Validate the command options
+        self.validateOptions()
 
         ## Logging user command and options used for debuging purpose.
         self.logger.debug('Command use: %s' % self.name)
