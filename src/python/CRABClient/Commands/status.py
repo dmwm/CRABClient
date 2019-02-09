@@ -480,7 +480,7 @@ class status(SubCommand):
             for param, values in usage.items():
                 if values[0] and values[1] > values[3]:
                     if values[0] < values[2]*values[1]:
-                        self.logger.info("\n%sWarning%s: the max jobs %s is less than %d%% of the task requested value (%d %s), please consider to request a lower value (allowed through crab resubmit) and/or %s." % (colors.RED, colors.NORMAL, param, values[2]*100, values[1], values[4], hint))
+                        self.logger.info("\n%sWarning%s: the max jobs %s is less than %d%% of the task requested value (%d %s), please consider to request a lower value for failed jobs (allowed through crab resubmit) and/or %s." % (colors.RED, colors.NORMAL, param, values[2]*100, values[1], values[4], hint))
             if run_sum:
                 cpu_ave = (cpu_sum / run_sum)
                 cpu_thr = 0.5
@@ -488,7 +488,7 @@ class status(SubCommand):
                 if cpu_ave < cpu_thr:
                     cpuMsg = "\n%sWarning%s: the average jobs CPU efficiency is less than %d%%, please consider to " % (colors.RED, colors.NORMAL, cpu_thr*100)
                     if numCores > 1 and cpu_ave < cpu_thr_multiThread:
-                        cpuMsg += "request a lower number of threads (allowed through crab resubmit) and/or "
+                        cpuMsg += "request a lower number of threads for failed jobs (allowed through crab resubmit) and/or "
                     self.logger.info(cpuMsg+hint)
 
             summaryMsg = "\nSummary of run jobs:"
