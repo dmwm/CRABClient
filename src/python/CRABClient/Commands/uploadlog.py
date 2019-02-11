@@ -61,8 +61,7 @@ class uploadlog(SubCommand):
                                help = "Path to the log file to be uploaded.")
 
 
-    def validateOptions(self):
-
+    def validateLogpathOption(self):
         ## Check if the --logpath option was used. If it was, don't require the task
         ## option.
         if self.options.logpath is not None:
@@ -72,6 +71,8 @@ class uploadlog(SubCommand):
                 raise ConfigurationException(msg)
             self.cmdconf['requiresDirOption'] = False
 
+
+    def validateOptions(self):
         ## Do the options validation from SubCommand.
         try:
             SubCommand.validateOptions(self)
