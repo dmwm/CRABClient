@@ -264,6 +264,7 @@ class SubCommand(ConfigCommand):
 
         ## Validate first the SubCommand options
         SubCommand.validateOptions(self)
+        self.validateConfigOption()
 
         ## Get the VO group/role from the command options (if the command requires these
         ## options).
@@ -581,9 +582,8 @@ class SubCommand(ConfigCommand):
                 msg += " %s is not a valid CRAB project directory." % (self.options.projdir)
                 raise ConfigurationException(msg)
 
-        ## If an input project directory was given, load the request cache and take the
-        ## server URL from it.
-        if self.cmdconf['requiresDirOption']:
+            ## If an input project directory was given, load the request cache and take the
+            ## server URL from it.
             self.loadLocalCache()
 
         ## If the command does not take any arguments, but some arguments were passed,
@@ -595,3 +595,7 @@ class SubCommand(ConfigCommand):
             msg += " Ignoring arguments %s." % (self.args)
             self.logger.warning(msg)
             self.args = []
+
+
+    def validateConfigOption(self):
+        pass
