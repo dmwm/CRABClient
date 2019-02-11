@@ -166,16 +166,11 @@ class submit(SubCommand):
         setSubmitParserOptions(self.parser)
 
 
-    def validateOptions(self):
+    def validateConfigOption(self):
         """
         After doing the general options validation from the parent SubCommand class,
         do the validation of options that are specific to the submit command.
         """
-        ## First do the basic validation in the SubCommand.
-        SubCommand.validateOptions(self)
-
-
-    def validateConfigOption(self):
         validateSubmitOptions(self.options, self.args)
 
 

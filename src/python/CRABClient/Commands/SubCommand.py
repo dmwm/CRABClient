@@ -264,6 +264,7 @@ class SubCommand(ConfigCommand):
 
         ## Validate first the SubCommand options
         SubCommand.validateOptions(self)
+        ## then the config option for the submit command
         self.validateConfigOption()
 
         ## Get the VO group/role from the command options (if the command requires these
