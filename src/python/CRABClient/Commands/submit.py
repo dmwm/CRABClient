@@ -174,6 +174,8 @@ class submit(SubCommand):
         ## First do the basic validation in the SubCommand.
         SubCommand.validateOptions(self)
 
+
+    def validateConfigOption(self):
         validateSubmitOptions(self.options, self.args)
 
 
