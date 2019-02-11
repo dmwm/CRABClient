@@ -231,6 +231,7 @@ class SubCommand(ConfigCommand):
         if not hasattr(self, 'name'):
             self.name = self.__class__.__name__
 
+        ConfigCommand.__init__(self)
         ## The command logger.
         self.logger = logger
         self.logfile = self.logger.logfile
