@@ -360,8 +360,8 @@ class status(SubCommand):
             for warningMsg in warnings:
                 self.logger.warning("%sWarning%s:%s%s" % (colors.RED, colors.NORMAL, warningIndent, warningMsg.replace('\n', '\n\t'+warningIndent)))
         if failure and 'FAILED' in statusToPr:
-            msg  = "%sFailure message from the server%s:" % (colors.RED, colors.NORMAL)
-            msg += "\t\t%s" % (failure.replace('\n', '\n\t\t\t\t'))
+            msg  = "%sFailure message from server%s:" % (colors.RED, colors.NORMAL)
+            msg += "\t%s" % (failure.replace('\n', '\n\t\t\t\t'))
             self.logger.error(msg)
 
     def checkUserJobids(self, statusCacheInfo, userJobids):
