@@ -231,6 +231,7 @@ class SubCommand(ConfigCommand):
         if not hasattr(self, 'name'):
             self.name = self.__class__.__name__
 
+        ConfigCommand.__init__(self)
         ## The command logger.
         self.logger = logger
         self.logfile = self.logger.logfile
@@ -262,6 +263,7 @@ class SubCommand(ConfigCommand):
         self.transferringIds = None
         self.dest = None
 
+        self.validateLogpathOption()
         ## Validate first the SubCommand options
         SubCommand.validateOptions(self)
         ## then the config option for the submit command
@@ -597,6 +599,9 @@ class SubCommand(ConfigCommand):
             self.logger.warning(msg)
             self.args = []
 
+
+    def validateLogpathOption(self):
+        pass
 
     def validateConfigOption(self):
         pass
