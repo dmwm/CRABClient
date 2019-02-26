@@ -84,7 +84,7 @@ class preparelocal(SubCommand):
             self.logger.debug("Downloading 'InputFiles.tar.gz' from %s" % webdir)
             getFileFromURL(webdir + '/InputFiles.tar.gz', inputsFilename, self.proxyfilename)
         else:
-            raise ClientException('Can only execute jobs from tasks in status SUBMITTED and UPLOADED. Current status is %s' % status)
+            raise ClientException('Can only execute jobs from tasks in status SUBMITTED or UPLOADED. Current status is %s' % status)
 
         for name in [inputsFilename, 'CMSRunAnalysis.tar.gz', 'sandbox.tar.gz']:
             with tarfile.open(name) as tf:
