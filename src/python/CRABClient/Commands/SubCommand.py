@@ -382,7 +382,7 @@ class SubCommand(ConfigCommand):
             else:
                 instance = 'private'
                 serverurl = self.options.instance
-        elif hasattr(self, 'configuration') and hasattr(self.configuration.General, 'instance') and self.configuration.General.instance is not None:
+        elif hasattr(self, 'configuration') and hasattr(self.configuration, 'General') and hasattr(self.configuration.General, 'instance') and self.configuration.General.instance is not None:
             if self.configuration.General.instance in SERVICE_INSTANCES.keys():
                 instance = self.configuration.General.instance
                 serverurl = SERVICE_INSTANCES[instance]
