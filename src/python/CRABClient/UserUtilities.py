@@ -86,7 +86,7 @@ def getUsernameFromSiteDB():
     ## Path to certificates.
     capath = os.environ['X509_CERT_DIR'] if 'X509_CERT_DIR' in os.environ else "/etc/grid-security/certificates"
     ## Retrieve user info from SiteDB.
-    queryCmd = "curl -s --capath %s --cert %s --key %s 'https://cmsweb.cern.ch/sitedb/data/prod/whoami'" % (capath, proxyFileName, proxyFileName)
+    queryCmd = "curl -sS --capath %s --cert %s --key %s 'https://cmsweb.cern.ch/sitedb/data/prod/whoami'" % (capath, proxyFileName, proxyFileName)
     process = subprocess.Popen(queryCmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
     stdout, stderr = process.communicate()
     if process.returncode or not stdout:
@@ -110,6 +110,84 @@ def getUsernameFromSiteDB():
         msg += " (you can check what is the certificate you currently have mapped in SiteDB"
         msg += " by searching for your name in https://cmsweb.cern.ch/sitedb/prod/people)."
         msg += " For instructions on how to map a certificate in SiteDB, see https://twiki.cern.ch/twiki/bin/viewauth/CMS/SiteDBForCRAB."
+        raise UsernameException(msg)
+    return username
+
+def getUsernameFromCRIC():
+    """
+    Retrieve username from CRIC by doing a query to
+    https://cms-cric.cern.ch/api/accounts/user/query/?json&preset=whoami
+    using the users proxy.
+    """
+    undoScram = "which scram >/dev/null 2>&1 && eval `scram unsetenv -sh`"
+    ## Check if there is a proxy.
+    cmd = undoScram + "; voms-proxy-info"
+    process = subprocess.Popen(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
+    stdout, stderr = process.communicate()
+    if process.returncode or not stdout:
+        msg  = "Aborting the attempt to retrieve username from CRIC."
+        msg += "\nGrid proxy not found. Details follow:"
+        msg += "\n  Error executing command: %s" % (cmd)
+        msg += "\n    Stdout:\n      %s" % (str(stdout).replace('\n', '\n      '))
+        msg += "\n    Stderr:\n      %s" % (str(stderr).replace('\n', '\n      '))
+        raise ProxyException(msg)
+    ## Check if proxy is valid.
+    #proxyTimeLeft = [x[x.find(':')+2:] for x in stdout.split('\n') if 'timeleft' in x][0]
+    cmd = undoScram + "; voms-proxy-info -timeleft"
+    process = subprocess.Popen(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
+    stdout, stderr = process.communicate()
+    if process.returncode or not stdout:
+        msg  = "Aborting the attempt to retrieve username from CRIC."
+        msg += "\nDetails follow:"
+        msg += "\n  Error executing command: %s" % (cmd)
+        msg += "\n    Stdout:\n      %s" % (str(stdout).replace('\n', '\n      '))
+        msg += "\n    Stderr:\n      %s" % (str(stderr).replace('\n', '\n      '))
+        raise ProxyException(msg)
+    proxyTimeLeft = str(stdout).replace('\n','')
+    if int(proxyTimeLeft) < 60:
+        msg  = "Aborting the attempt to retrieve username from CRIC."
+        msg += "\nProxy time left = %s seconds. Please renew your proxy." % (proxyTimeLeft)
+        raise ProxyException(msg)
+    ## Retrieve proxy file location.
+    cmd = undoScram + "; voms-proxy-info -path"
+    process = subprocess.Popen(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
+    stdout, stderr = process.communicate()
+    if process.returncode or not stdout:
+        msg  = "Aborting the attempt to retrieve username from CRIC."
+        msg += "\nDetails follow:"
+        msg += "\n  Error executing command: %s" % (cmd)
+        msg += "\n    Stdout:\n      %s" % (str(stdout).replace('\n', '\n      '))
+        msg += "\n    Stderr:\n      %s" % (str(stderr).replace('\n', '\n      '))
+        raise ProxyException(msg)
+    proxyFileName = str(stdout).replace('\n','')
+    ## Path to certificates.
+    capath = os.environ['X509_CERT_DIR'] if 'X509_CERT_DIR' in os.environ else "/etc/grid-security/certificates"
+    ## Retrieve user info from CRIC.
+    queryCmd = "curl -sS --capath %s --cert %s --key %s 'https://cms-cric.cern.ch/api/accounts/user/query/?json&preset=whoami'" % (capath, proxyFileName, proxyFileName)
+    process = subprocess.Popen(queryCmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
+    stdout, stderr = process.communicate()
+    if process.returncode or not stdout:
+        msg  = "Error contacting CRIC."
+        msg += "\nDetails follow:"
+        msg += "\n  Executed command: %s" % (queryCmd)
+        msg += "\n    Stdout:\n      %s" % (str(stdout).replace('\n', '\n      '))
+        msg += "\n    Stderr:\n      %s" % (str(stderr).replace('\n', '\n      '))
+        raise UsernameException(msg)
+    ## Extract the username from the above command output.
+    parseCmd = "echo '%s' | tr ':,' '\n' | grep -A1 login | tail -1 | tr -d ' \n\"'" % (str(stdout))
+    process = subprocess.Popen(parseCmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
+    username, stderr = process.communicate()
+    if username == 'null' or not username:
+        msg  = "Failed to retrieve username from CRIC."
+        msg += "\nDetails follow:"
+        msg += "\n  Executed command: %s" % (queryCmd)
+        msg += "\n    Stdout:\n      %s" % (str(stdout).replace('\n', '\n      '))
+        msg += "\n    Parsed username: %s" % (username)
+        msg += "\n%sNote%s: Make sure you have the correct certificate mapped in your CERN account page" % (colors.BOLD, colors.NORMAL)
+        msg += " (you can check what is the certificate you currently have mapped"
+        msg += " by looking at CERN Certificatiom Authority page."
+        msg += "\nFor instructions on how to map a certificate, see "
+        msg += "\n  https://twiki.cern.ch/twiki/bin/viewauth/CMS/SiteDBForCRAB#Adding_your_DN_to_your_profile"
         raise UsernameException(msg)
     return username
 

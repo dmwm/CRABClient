@@ -8,7 +8,7 @@ import CRABClient.Emulator
 from CRABClient import __version__
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ConfigurationException
-from CRABClient.UserUtilities import getMutedStatusInfo
+from CRABClient.UserUtilities import getMutedStatusInfo, getColumn
 from CRABClient.ClientUtilities import validateJobids, checkStatusLoop, colors
 
 class resubmit(SubCommand):
@@ -29,13 +29,10 @@ class resubmit(SubCommand):
 
     def __call__(self):
 
-        serverFactory = CRABClient.Emulator.getEmulator('rest')
-        server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version = __version__)
-
         statusDict = getMutedStatusInfo(self.logger)
         jobList = statusDict['jobList']
 
-        if getattr(self.cachedinfo['OriginalConfig'].Data, 'splitting', 'Automatic') == 'Automatic' and statusDict['dbStatus'] == 'KILLED':
+        if self.splitting == 'Automatic' and statusDict['dbStatus'] == 'KILLED':
             msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
             msg += " Tasks using automatic splitting cannot be resubmitted after a kill."
             self.logger.info(msg)
@@ -71,7 +68,7 @@ class resubmit(SubCommand):
         configreq_encoded = self._encodeRequest(configreq)
         self.logger.debug("Encoded resubmit request: %s" % (configreq_encoded))
 
-        dictresult, _, _ = server.post(self.uri, data = configreq_encoded)
+        dictresult, _, _ = self.server.post(self.uri, data = configreq_encoded)
         self.logger.debug("Result: %s" % (dictresult))
         self.logger.info("Resubmit request sent to the server.")
         if dictresult['result'][0]['result'] != 'ok':
@@ -85,7 +82,7 @@ class resubmit(SubCommand):
                 self.logger.info(msg)
             else:
                 targetTaskStatus = 'SUBMITTED'
-                checkStatusLoop(self.logger, server, self.uri, self.cachedinfo['RequestName'], targetTaskStatus, self.name)
+                checkStatusLoop(self.logger, self.server, self.uri, self.cachedinfo['RequestName'], targetTaskStatus, self.name)
             returndict = {'status': 'SUCCESS'}
 
         return returndict
@@ -275,6 +272,12 @@ class resubmit(SubCommand):
         """
         SubCommand.validateOptions(self)
 
+        serverFactory = CRABClient.Emulator.getEmulator('rest')
+        self.server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version = __version__)
+        uri = self.getUrl(self.instance, resource = 'task')
+        crabDBInfo, _, _ = self.server.get(uri, data = {'subresource': 'search', 'workflow': self.cachedinfo['RequestName']})
+        self.splitting = getColumn(crabDBInfo, 'tm_split_algo')
+
         if self.options.publication:
             if self.options.sitewhitelist is not None or self.options.siteblacklist is not None or \
                self.options.maxjobruntime is not None or self.options.maxmemory is not None or \
@@ -305,8 +308,7 @@ class resubmit(SubCommand):
 
         ## Check the format of the jobids option.
         if self.options.jobids:
-            useLists = getattr(self.cachedinfo['OriginalConfig'].Data, 'splitting', 'Automatic') != 'Automatic'
-            jobidstuple = validateJobids(self.options.jobids, useLists)
+            jobidstuple = validateJobids(self.options.jobids, self.splitting != 'Automatic')
             self.jobids = [str(jobid) for (_, jobid) in jobidstuple]
 
         ## The --force option should not be accepted unless combined with a user-given

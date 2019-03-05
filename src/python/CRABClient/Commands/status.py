@@ -36,6 +36,7 @@ class status(SubCommand):
 
     def __init__(self, logger, cmdargs = None):
         self.jobids = None
+        self.indentation = '\t\t'
         SubCommand.__init__(self, logger, cmdargs)
 
     def __call__(self):
@@ -133,7 +134,7 @@ class status(SubCommand):
         # If the task is already on the grid, show the dagman status
         combinedStatus = dagStatus = self.printDAGStatus(crabDBInfo, statusCacheInfo)
 
-        shortResult = self.printOverview(statusCacheInfo, automaticSplitt)
+        shortResult = self.printOverview(statusCacheInfo, automaticSplitt, proxiedWebDir)
         pubStatus = self.printPublication(publicationEnabled, shortResult['jobsPerStatus'], shortResult['numProbes'],
                                           shortResult['numUnpublishable'], asourl, asodb, taskname, user, crabDBInfo)
         self.printErrors(statusCacheInfo, automaticSplitt)
@@ -316,6 +317,9 @@ class status(SubCommand):
             dashboard URL, warnings and failire messages in the database.
         """
         schedd = getColumn(crabDBInfo, 'tm_schedd')
+        if not schedd: schedd = 'N/A yet'
+        twname = getColumn(crabDBInfo, 'tw_name')
+        if not twname: twname = 'N/A yet'
         statusToPr = getColumn(crabDBInfo, 'tm_task_status')
         command = getColumn(crabDBInfo, 'tm_task_command')
         warnings = literal_eval(getColumn(crabDBInfo, 'tm_task_warnings'))
@@ -323,9 +327,7 @@ class status(SubCommand):
 
         self.logger.info("CRAB project directory:\t\t%s" % (self.requestarea))
         self.logger.info("Task name:\t\t\t%s" % self.cachedinfo['RequestName'])
-        if schedd:
-            msg = "Grid scheduler:\t\t\t%s" % schedd
-            self.logger.info(msg)
+        self.logger.info("Grid scheduler - Task Worker:\t%s - %s" % (schedd,twname))
         msg = "Status on the CRAB server:\t"
         if 'FAILED' in statusToPr:
             msg += "%s%s%s" % (colors.RED, statusToPr, colors.NORMAL)
@@ -340,7 +342,8 @@ class status(SubCommand):
         taskname = urllib.quote(self.cachedinfo['RequestName'])
 
         ## CRAB Server UI URL for this task is always useful
-        crabServerUIURL = "https://cmsweb.cern.ch/crabserver/ui/task/" + taskname
+        #crabServerUIURL has a format like "https://cmsweb.cern.ch/crabserver/ui/task/" + taskname
+        crabServerUIURL = "https://" + self.serverurl + "/crabserver/ui/task/" + taskname
         msg = "%sTask URL to use for HELP:\t%s%s" % (colors.GREEN, crabServerUIURL, colors.NORMAL)
         self.logger.info(msg)
 
@@ -357,8 +360,8 @@ class status(SubCommand):
             for warningMsg in warnings:
                 self.logger.warning("%sWarning%s:%s%s" % (colors.RED, colors.NORMAL, warningIndent, warningMsg.replace('\n', '\n\t'+warningIndent)))
         if failure and 'FAILED' in statusToPr:
-            msg  = "%sFailure message from the server%s:" % (colors.RED, colors.NORMAL)
-            msg += "\t\t%s" % (failure.replace('\n', '\n\t\t\t\t'))
+            msg  = "%sFailure message from server%s:" % (colors.RED, colors.NORMAL)
+            msg += "\t%s" % (failure.replace('\n', '\n\t\t\t\t'))
             self.logger.error(msg)
 
     def checkUserJobids(self, statusCacheInfo, userJobids):
@@ -477,7 +480,7 @@ class status(SubCommand):
             for param, values in usage.items():
                 if values[0] and values[1] > values[3]:
                     if values[0] < values[2]*values[1]:
-                        self.logger.info("\n%sWarning%s: the max jobs %s is less than %d%% of the task requested value (%d %s), please consider to request a lower value (allowed through crab resubmit) and/or %s." % (colors.RED, colors.NORMAL, param, values[2]*100, values[1], values[4], hint))
+                        self.logger.info("\n%sWarning%s: the max jobs %s is less than %d%% of the task requested value (%d %s), please consider to request a lower value for failed jobs (allowed through crab resubmit) and/or %s." % (colors.RED, colors.NORMAL, param, values[2]*100, values[1], values[4], hint))
             if run_sum:
                 cpu_ave = (cpu_sum / run_sum)
                 cpu_thr = 0.5
@@ -485,7 +488,7 @@ class status(SubCommand):
                 if cpu_ave < cpu_thr:
                     cpuMsg = "\n%sWarning%s: the average jobs CPU efficiency is less than %d%%, please consider to " % (colors.RED, colors.NORMAL, cpu_thr*100)
                     if numCores > 1 and cpu_ave < cpu_thr_multiThread:
-                        cpuMsg += "request a lower number of threads (allowed through crab resubmit) and/or "
+                        cpuMsg += "request a lower number of threads for failed jobs (allowed through crab resubmit) and/or "
                     self.logger.info(cpuMsg+hint)
 
             summaryMsg = "\nSummary of run jobs:"
@@ -503,7 +506,7 @@ class status(SubCommand):
 
         return sortdict
 
-    def printOverview(self, statusCacheInfo, automaticSplitt):
+    def printOverview(self, statusCacheInfo, automaticSplitt, proxiedWebDir):
         """ Give a summary of the job statuses, keeping in mind that:
                 - If there is a job with id 0 then this is the probe job for the estimation
                   This is the so called 'Automatic' splitting
@@ -554,11 +557,13 @@ class status(SubCommand):
         toPrint = [('Jobs', states)]
         if self.options.long:
             toPrint = [('Probe jobs', statesPJ), ('Jobs', states), ('Tail jobs', statesSJ)]
+            if automaticSplitt:
+                toPrint[1] = ('Main jobs', states)
             if sum(statesPJ.values()) > 0:
                 terminate(statesPJ, 'failed')
                 terminate(statesPJ, 'finished')
-                terminate(states, 'failed', target='rescheduled')
-        elif sum(statesPJ.values()) > 0 and not self.options.long:
+                terminate(states, 'failed', target='rescheduled as tail jobs')
+        elif sum(statesPJ.values()) > 0:
             if 'failed' in states:
                 states.pop('failed')
             for jobStatus in statesSJ:
@@ -567,14 +572,16 @@ class status(SubCommand):
         # And if the dictionary is not empty, print it
         for jobtype, currStates in toPrint:
             if currStates:
-                automaticSplittFAQ = 'https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3FAQ#What_is_the_Automatic_splitting'
-                if automaticSplitt and (not self.options.long  or  jobtype == 'Probe jobs'):
+                if automaticSplitt and jobtype == 'Probe jobs':
+                    automaticSplittFAQ = 'https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3FAQ#What_is_the_Automatic_splitting'
                     self.logger.info("\nThe jobs splitting of this task is 'Automatic', please refer to this FAQ for a description of the jobs status summary:\n%s", automaticSplittFAQ)
                 total = sum(currStates[st] for st in currStates)
                 state_list = sorted(currStates)
-                self.logger.info("\n{0:32}{1} {2}".format(jobtype + ' status:', self._printState(state_list[0], 13), self._percentageString(state_list[0], currStates[state_list[0]], total)))
+                self.logger.info("\n{0:32}{1}{2}{3}".format(jobtype + ' status:', self._printState(state_list[0], 13), self.indentation, self._percentageString(state_list[0], currStates[state_list[0]], total)))
                 for jobStatus in state_list[1:]:
-                    self.logger.info("\t\t\t\t{0} {1}".format(self._printState(jobStatus, 13), self._percentageString(jobStatus, currStates[jobStatus], total)))
+                    self.logger.info("\t\t\t\t{0}{1}{2}".format(self._printState(jobStatus, 13), self.indentation, self._percentageString(jobStatus, currStates[jobStatus], total)))
+                if jobtype == 'Probe jobs':
+                    self.logger.info("Probe stage log:\t\t%s", proxiedWebDir+"/AutomaticSplitting_Log0.txt")
         return result
 
     def printErrors(self, dictresult, automaticSplitt):
@@ -954,13 +961,13 @@ class status(SubCommand):
             states['unsubmitted'] = numFilesToPublish - numSubmittedFiles
             ## Print the publication status.
             statesList = sorted(states)
-            msg = "\nPublication status:\t\t{0} {1}".format(self._printState(statesList[0], 13), \
-                                                            self._percentageString(statesList[0], states[statesList[0]], numFilesToPublish))
+            msg = "\nPublication status:\t\t{0}{1}{2}".format(self._printState(statesList[0], 13), self.indentation, \
+                                                              self._percentageString(statesList[0], states[statesList[0]], numFilesToPublish))
             msg += pubSource
             for jobStatus in statesList[1:]:
                 if states[jobStatus]:
-                    msg += "\n\t\t\t\t{0} {1}".format(self._printState(jobStatus, 13), \
-                                                      self._percentageString(jobStatus, states[jobStatus], numFilesToPublish))
+                    msg += "\n\t\t\t\t{0}{1}{2}".format(self._printState(jobStatus, 13), self.indentation, \
+                                                        self._percentageString(jobStatus, states[jobStatus], numFilesToPublish))
             self.logger.info(msg)
             ## Print the publication errors.
             if pubInfo.get('publicationFailures'):

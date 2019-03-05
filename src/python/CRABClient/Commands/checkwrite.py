@@ -5,7 +5,7 @@ import datetime
 import subprocess
 
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ClientUtilities import colors, getUserDNandUsernameFromSiteDB, cmd_exist
+from CRABClient.ClientUtilities import colors, getUserDNandUsername, cmd_exist
 from WMCore.Services.PhEDEx.PhEDEx import PhEDEx
 from CRABClient.ClientExceptions import MissingOptionException, ConfigurationException
 from httplib import HTTPException
@@ -32,9 +32,9 @@ class checkwrite(SubCommand):
         else:
             ## If the user didn't provide an LFN path where to check the write permission,
             ## assume he/she wants to check in /store/user/<username>. Retrieve his/her
-            ## username from SiteDB.
+            ## username from the DN
             self.logger.info('Will check write permission in the default location /store/user/<username>')
-            username = getUserDNandUsernameFromSiteDB(self.logger).get('username')
+            username = getUserDNandUsername(self.logger).get('username')
             if username:
                 self.lfnsaddprefix = '/store/user/' + username
             else:
@@ -48,12 +48,12 @@ class checkwrite(SubCommand):
         errMsg += "\nThe LFN must start with either"
         errMsg += " '/store/user/<username>/' or '/store/group/<groupname>/'"
         errMsg += " (or '/store/local/<something>/' if publication is off),"
-        errMsg += " where username is your username as registered in SiteDB"
+        errMsg += " where username is your username as registered in CMS"
         errMsg += " (i.e. the username of your CERN primary account)."
         errMsg += "\nLFN %s is not valid." % (self.lfnsaddprefix)
 
         if not username and self.lfnsaddprefix.startswith('/store/user/'):
-            username = getUserDNandUsernameFromSiteDB(self.logger).get('username')
+            username = getUserDNandUsername(self.logger).get('username')
         if not checkOutLFN(self.lfnsaddprefix, username):
             self.logger.info(errMsg)
             return {'status': 'FAILED'}
