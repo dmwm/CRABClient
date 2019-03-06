@@ -194,7 +194,7 @@ class submit(SubCommand):
 
         splitting = getattr(self.configuration.Data, 'splitting', 'Automatic')
         autoSplitt = True if splitting == 'Automatic' else False
-        autoSplittUnitsMin = 180 # 3 hours
+        autoSplittUnitsMin = parametersMapping['on-server']['minAutomaticRuntimeMins']['default']
         autoSplittUnitsMax = 2700 # 45 hours
         ## Check that maxJobRuntimeMin is not used with Automatic splitting
         if autoSplitt and hasattr(self.configuration.JobType, 'maxJobRuntimeMin'):
