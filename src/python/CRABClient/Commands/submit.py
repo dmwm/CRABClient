@@ -192,17 +192,13 @@ class submit(SubCommand):
                 msg = "Invalid CRAB configuration: Parameter General.requestName should not be longer than %d characters." % (requestNameLenLimit)
                 return False, msg
 
-        splitting = getattr(self.configuration.Data, 'splitting', 'Automatic')
-        autoSplitt = True if splitting == 'Automatic' else False
-        autoSplittUnitsMin = parametersMapping['on-server']['minAutomaticRuntimeMins']['default']
-        autoSplittUnitsMax = 2700 # 45 hours
         ## Check that maxJobRuntimeMin is not used with Automatic splitting
-        if autoSplitt and hasattr(self.configuration.JobType, 'maxJobRuntimeMin'):
+        if getattr(self.configuration.Data, 'splitting', 'Automatic') == 'Automatic' and hasattr(self.configuration.JobType, 'maxJobRuntimeMin'): 
             msg = "The 'maxJobRuntimeMin' parameter is not compatible with the 'Automatic' splitting mode (default)."
             return False, msg
 
         ## Check that --dryrun is not used with Automatic splitting
-        if autoSplitt and self.options.dryrun:
+        if getattr(self.configuration.Data, 'splitting', 'Automatic') == 'Automatic' and self.options.dryrun: 
             msg = "The 'dryrun' option is not compatible with the 'Automatic' splitting mode (default)."
             return False, msg
 
@@ -216,12 +212,9 @@ class submit(SubCommand):
             if not int(self.configuration.Data.unitsPerJob) > 0:
                 msg = "Invalid CRAB configuration: Parameter Data.unitsPerJob must be > 0, not %s." % (self.configuration.Data.unitsPerJob)
                 return False, msg
-            if autoSplitt and (self.configuration.Data.unitsPerJob > autoSplittUnitsMax  or  self.configuration.Data.unitsPerJob < autoSplittUnitsMin):
-                msg = "Invalid CRAB configuration: In case of Automatic splitting, the Data.unitsPerJob parameter must be in the [%d, %d] minutes range. You asked for %d minutes." % (autoSplittUnitsMin, autoSplittUnitsMax, self.configuration.Data.unitsPerJob)
-                return False, msg
-        elif not autoSplitt:
+        elif getattr(self.configuration.Data, 'splitting', 'Automatic') != 'Automatic':
             # The default value is only valid for automatic splitting!
-            msg = "Invalid CRAB configuration: Parameter Data.unitsPerJob is mandatory for '%s' splitting mode." % splitting
+            msg = "Invalid CRAB configuration: Parameter Data.unitsPerJob is missing."
             return False, msg
 
         ## Check that JobType.pluginName and JobType.externalPluginFile are not both specified.
