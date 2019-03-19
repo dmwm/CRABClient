@@ -95,7 +95,7 @@ class getlog(getcommand):
         self.logger.info("Retrieving...")
         success = []
         failed = []
-        for _, jobid in self.options.jobids:
+        for  jobid in self.options.jobids:
             # We don't know a priori how many retries the job had. So we start with retry 0
             # and increase it by 1 until we are unable to retrieve a log file (interpreting
             # this as the fact that we reached the highest retry already).
