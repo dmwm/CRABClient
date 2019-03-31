@@ -372,7 +372,7 @@ class SubCommand(ConfigCommand):
         """
 
         if hasattr(self.options, 'instance') and self.options.instance is not None:
-            if hasattr(self, 'configuration') and hasattr(self.configuration.General, 'instance') and self.configuration.General.instance is not None:
+            if hasattr(self, 'configuration') and hasattr(self.configuration, 'General') and hasattr(self.configuration.General, 'instance') and self.configuration.General.instance is not None:
                 msg  = "%sWarning%s: CRAB configuration parameter General.instance is overwritten by the command option --instance;" % (colors.RED, colors.NORMAL)
                 msg += " %s intance will be used." % (self.options.instance)
                 self.logger.info(msg)
