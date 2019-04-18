@@ -231,6 +231,7 @@ class SubCommand(ConfigCommand):
         if not hasattr(self, 'name'):
             self.name = self.__class__.__name__
 
+        ConfigCommand.__init__(self)
         ## The command logger.
         self.logger = logger
         self.logfile = self.logger.logfile
@@ -262,8 +263,11 @@ class SubCommand(ConfigCommand):
         self.transferringIds = None
         self.dest = None
 
+        self.validateLogpathOption()
         ## Validate first the SubCommand options
         SubCommand.validateOptions(self)
+        ## then the config option for the submit command
+        self.validateConfigOption()
 
         ## Get the VO group/role from the command options (if the command requires these
         ## options).
@@ -368,7 +372,7 @@ class SubCommand(ConfigCommand):
         """
 
         if hasattr(self.options, 'instance') and self.options.instance is not None:
-            if hasattr(self, 'configuration') and hasattr(self.configuration.General, 'instance') and self.configuration.General.instance is not None:
+            if hasattr(self, 'configuration') and hasattr(self.configuration, 'General') and hasattr(self.configuration.General, 'instance') and self.configuration.General.instance is not None:
                 msg  = "%sWarning%s: CRAB configuration parameter General.instance is overwritten by the command option --instance;" % (colors.RED, colors.NORMAL)
                 msg += " %s intance will be used." % (self.options.instance)
                 self.logger.info(msg)
@@ -378,7 +382,7 @@ class SubCommand(ConfigCommand):
             else:
                 instance = 'private'
                 serverurl = self.options.instance
-        elif hasattr(self, 'configuration') and hasattr(self.configuration.General, 'instance') and self.configuration.General.instance is not None:
+        elif hasattr(self, 'configuration') and hasattr(self.configuration, 'General') and hasattr(self.configuration.General, 'instance') and self.configuration.General.instance is not None:
             if self.configuration.General.instance in SERVICE_INSTANCES.keys():
                 instance = self.configuration.General.instance
                 serverurl = SERVICE_INSTANCES[instance]
@@ -581,9 +585,8 @@ class SubCommand(ConfigCommand):
                 msg += " %s is not a valid CRAB project directory." % (self.options.projdir)
                 raise ConfigurationException(msg)
 
-        ## If an input project directory was given, load the request cache and take the
-        ## server URL from it.
-        if self.cmdconf['requiresDirOption']:
+            ## If an input project directory was given, load the request cache and take the
+            ## server URL from it.
             self.loadLocalCache()
 
         ## If the command does not take any arguments, but some arguments were passed,
@@ -595,3 +598,10 @@ class SubCommand(ConfigCommand):
             msg += " Ignoring arguments %s." % (self.args)
             self.logger.warning(msg)
             self.args = []
+
+
+    def validateLogpathOption(self):
+        pass
+
+    def validateConfigOption(self):
+        pass

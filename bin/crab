@@ -156,13 +156,14 @@ if __name__ == "__main__":
     #    exit code, this is a safety net
     exitcode = 1
     client = CRABClient()
+    schedInterv = "It seems the CMSWEB frontend is not responding. Please check: https://twiki.cern.ch/twiki/bin/viewauth/CMS/ScheduledInterventions?sortcol=3;table=1;up=2#sorted_table"
     try:
         client()
         exitcode = 0 #no exceptions no errors
     except HTTPException as he:
         client.logger.info("The server answered with an error.")
         if he.status==503 and he.result.find("CMSWEB Error: Service unavailable")!=-1:
-            client.logger.info("It seems the CMSWEB frontend is not responding. Please check: https://twiki.cern.ch/twiki/bin/viewauth/CMS/ScheduledInterventions")
+            client.logger.info(schedInterv)
         if 'X-Error-Detail' in he.headers:
             client.logger.info('Server answered with: %s' % he.headers['X-Error-Detail'])
         if 'X-Error-Info' in he.headers:
@@ -192,7 +193,7 @@ if __name__ == "__main__":
         logging.getLogger('CRAB3').exception('Caught exception')
         exitcode = pe.args[0]
         if pe[1].find('(DNS server returned answer with no data)'):
-            client.logger.info("It seems the CMSWEB frontend is not responding. Please check: https://twiki.cern.ch/twiki/bin/viewauth/CMS/ScheduledInterventions")
+            client.logger.info(schedInterv)
     except ClientException as ce:
         client.logger.error(ce)
         logging.getLogger('CRAB3').exception('Caught exception')

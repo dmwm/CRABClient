@@ -144,7 +144,9 @@ class submit(SubCommand):
         self.logger.info("%sSuccess%s: Your task has been delivered to the CRAB3 server." %(colors.GREEN, colors.NORMAL))
         if not (self.options.wait or self.options.dryrun):
             self.logger.info("Task name: %s" % uniquerequestname)
-            self.logger.info("Please use 'crab status' to check how the submission process proceeds.")
+            projDir = os.path.join(getattr(self.configuration.General, 'workArea', '.'), self.requestname)
+            self.logger.info("Project dir: %s" % projDir)
+            self.logger.info("Please use 'crab status -d %s' to check how the submission process proceeds.", projDir)
         else:
             targetTaskStatus = 'UPLOADED' if self.options.dryrun else 'SUBMITTED'
             checkStatusLoop(self.logger, server, self.uri, uniquerequestname, targetTaskStatus, self.name)
@@ -166,14 +168,11 @@ class submit(SubCommand):
         setSubmitParserOptions(self.parser)
 
 
-    def validateOptions(self):
+    def validateConfigOption(self):
         """
         After doing the general options validation from the parent SubCommand class,
         do the validation of options that are specific to the submit command.
         """
-        ## First do the basic validation in the SubCommand.
-        SubCommand.validateOptions(self)
-
         validateSubmitOptions(self.options, self.args)
 
 
@@ -193,13 +192,17 @@ class submit(SubCommand):
                 msg = "Invalid CRAB configuration: Parameter General.requestName should not be longer than %d characters." % (requestNameLenLimit)
                 return False, msg
 
+        splitting = getattr(self.configuration.Data, 'splitting', 'Automatic')
+        autoSplitt = True if splitting == 'Automatic' else False
+        autoSplittUnitsMin = 180 # 3 hours (defined also in TW config as 'minAutomaticRuntimeMins')
+        autoSplittUnitsMax = 2700 # 45 hours
         ## Check that maxJobRuntimeMin is not used with Automatic splitting
-        if getattr(self.configuration.Data, 'splitting', 'Automatic') == 'Automatic' and hasattr(self.configuration.JobType, 'maxJobRuntimeMin'): 
+        if autoSplitt and hasattr(self.configuration.JobType, 'maxJobRuntimeMin'):
             msg = "The 'maxJobRuntimeMin' parameter is not compatible with the 'Automatic' splitting mode (default)."
             return False, msg
 
         ## Check that --dryrun is not used with Automatic splitting
-        if getattr(self.configuration.Data, 'splitting', 'Automatic') == 'Automatic' and self.options.dryrun: 
+        if autoSplitt and self.options.dryrun:
             msg = "The 'dryrun' option is not compatible with the 'Automatic' splitting mode (default)."
             return False, msg
 
@@ -213,9 +216,12 @@ class submit(SubCommand):
             if not int(self.configuration.Data.unitsPerJob) > 0:
                 msg = "Invalid CRAB configuration: Parameter Data.unitsPerJob must be > 0, not %s." % (self.configuration.Data.unitsPerJob)
                 return False, msg
-        elif getattr(self.configuration.Data, 'splitting', 'Automatic') != 'Automatic':
+            if autoSplitt and (self.configuration.Data.unitsPerJob > autoSplittUnitsMax  or  self.configuration.Data.unitsPerJob < autoSplittUnitsMin):
+                msg = "Invalid CRAB configuration: In case of Automatic splitting, the Data.unitsPerJob parameter must be in the [%d, %d] minutes range. You asked for %d minutes." % (autoSplittUnitsMin, autoSplittUnitsMax, self.configuration.Data.unitsPerJob)
+                return False, msg
+        elif not autoSplitt:
             # The default value is only valid for automatic splitting!
-            msg = "Invalid CRAB configuration: Parameter Data.unitsPerJob is missing."
+            msg = "Invalid CRAB configuration: Parameter Data.unitsPerJob is mandatory for '%s' splitting mode." % splitting
             return False, msg
 
         ## Check that JobType.pluginName and JobType.externalPluginFile are not both specified.
