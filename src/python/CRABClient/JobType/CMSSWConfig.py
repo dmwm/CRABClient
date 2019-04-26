@@ -96,8 +96,8 @@ class CMSSWConfig(object):
             with open(dumpFileName, 'w') as fd:
                 fd.write(dumpedStr)
         except Exception as e:
-            self.logger.debug('Cannot dump CMSSW configuration file. This prevents sandbox recycling but it is not a fatal error.')
             LOGGERS['CRAB3'].error(str(e))
+            raise ConfigurationException('Fatal error, cannot dump CMSSW configuration file. This prevents sandbox recycling.')
 
         return
 
