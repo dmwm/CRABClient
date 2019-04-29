@@ -187,6 +187,16 @@ class CMSSWConfig(object):
                 edmfiles.append(edmfile)
                 outputModules.add(o)
 
+        ## If there are multiple output modules, make sure they have dataset.filterName set.
+        if len(outputModules) > 1:
+            for outputModule in outputModules:
+                try:
+                    dataset = getattr(outputModule, 'dataset')
+                    filterName = getattr(dataset, 'filterName')
+                except AttributeError:
+                    raise RuntimeError('Your output module %s does not have a "dataset" PSet ' % outputModule.label() +
+                                       'or the PSet does not have a "filterName" member.')
+
         ## Find files written by TFileService.
         tfiles = []
         if 'TFileService' in process.services:
