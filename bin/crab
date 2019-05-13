@@ -25,7 +25,7 @@ from CRABClient.CRABOptParser import CRABOptParser
 from CRABClient import __version__ as client_version
 from CRABClient.ClientMapping import parametersMapping
 from CRABClient.ClientExceptions import ClientException
-from CRABClient.ClientUtilities import getAvailCommands, uploadlogfile, initLoggers, setConsoleLogLevelVar, StopExecution, flushMemoryLogger, LOGFORMAT
+from CRABClient.ClientUtilities import getAvailCommands, uploadlogfile, initLoggers, setConsoleLogLevelVar, StopExecution, flushMemoryLogger, LOGFORMATTER
 
 
 class MyNullHandler(logging.Handler):
@@ -99,8 +99,7 @@ class CRABClient(object):
                     hasFileHandler = True
             if not hasFileHandler:
                 filehandler = logging.FileHandler(client.logger.logfile)
-                ff = logging.Formatter(LOGFORMAT)
-                filehandler.setFormatter(ff)
+                filehandler.setFormatter(LOGFORMATTER)
                 tbLogger.addHandler(filehandler)
             ## This goes to the log file.
             tbLogger.error("Unhandled Exception!")

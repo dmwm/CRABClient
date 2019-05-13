@@ -75,8 +75,11 @@ CONSOLE_LOGLEVEL = logging.INFO
 ## Log level to mute a logger/handler.
 LOGLEVEL_MUTE = logging.CRITICAL + 10
 
-## Log format.
-LOGFORMAT = "%(levelname)s %(asctime)s CEST: \t %(message)s"
+## Log format
+LOGFORMAT = {'logfmt': "%(levelname)s %(asctime)s.%(msecs)03d UTC: \t %(message)s", 'datefmt': "%Y-%m-%d %H:%M:%S"}
+LOGFORMATTER = logging.Formatter(LOGFORMAT['logfmt'],LOGFORMAT['datefmt'])
+from time import gmtime
+LOGFORMATTER.converter = gmtime
 
 class logfilter(logging.Filter):
     def filter(self, record):
@@ -115,7 +118,7 @@ def initLoggers():
     tblogger = logging.getLogger('CRAB3')
     tblogger.setLevel(logging.DEBUG)
     memhandler = logging.handlers.MemoryHandler(capacity = 1024*10, flushLevel = LOGLEVEL_MUTE)
-    memhandler.setFormatter(logging.Formatter(LOGFORMAT))
+    memhandler.setFormatter(LOGFORMATTER)
     memhandler.setLevel(logging.DEBUG)
     memhandler.addFilter(logfilter())
     tblogger.addHandler(memhandler)
@@ -162,8 +165,7 @@ def changeFileLogger(logger, workingpath = os.getcwd(), logname = 'crab.log'):
 
 def flushMemoryLogger(logger, memhandler, logfilename):
     filehandler = logging.FileHandler(logfilename)
-    ff = logging.Formatter(LOGFORMAT)
-    filehandler.setFormatter(ff)
+    filehandler.setFormatter(LOGFORMATTER)
     filehandler.setLevel(logging.DEBUG)
     filehandler.addFilter(logfilter())
     logger.addHandler(filehandler)

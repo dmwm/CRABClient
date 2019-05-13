@@ -25,7 +25,7 @@ from CRABClient.CRABOptParser import CRABCmdOptParser
 from CRABClient.JobType.CMSSWConfig import CMSSWConfig
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
 from CRABClient.ClientExceptions import ClientException, ConfigurationException
-from CRABClient.ClientUtilities import BOOTSTRAP_ENVFILE, BOOTSTRAP_INFOFILE, BOOTSTRAP_CFGFILE, LOGLEVEL_MUTE
+from CRABClient.ClientUtilities import BOOTSTRAP_ENVFILE, BOOTSTRAP_INFOFILE, BOOTSTRAP_CFGFILE, LOGLEVEL_MUTE, LOGFORMATTER
 from CRABClient.ClientUtilities import setSubmitParserOptions, validateSubmitOptions, initLoggers, setConsoleLogLevelVar, flushMemoryLogger
 
 from WMCore.Configuration import loadConfigurationFile
