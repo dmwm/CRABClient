@@ -416,7 +416,8 @@ def createWorkArea(logger, workingArea = '.', requestName = ''):
     return fullpath, requestName, logfile
 
 
-def createCache(requestarea, host, port, uniquerequestname, voRole, voGroup, instance, originalConfig={}):
+def createCache(requestarea, host, port, uniquerequestname, voRole, voGroup, instance, originalConfig=None):
+    originalConfig = originalConfig or {}
     touchfile = open(os.path.join(requestarea, '.requestcache'), 'w')
     neededhandlers = {
                       "Server" : host,
@@ -659,10 +660,12 @@ def validServerURL(option, opt_str, value, parser):
         setattr(parser.values, option.dest, option.default)
 
 
-def validURL(serverurl, attrtohave = ['scheme', 'netloc', 'hostname'], attrtonothave = ['path', 'params', 'query', 'fragment', 'username', 'password']):
+def validURL(serverurl, attrtohave = None, attrtonothave = None):
     """
     returning false if the format is different from https://host:port
     """
+    attrtohave = attrtohave or ['scheme', 'netloc', 'hostname']
+    attrtonothave = attrtonothave or ['path', 'params', 'query', 'fragment', 'username', 'password']
     tempurl = serverurl
     if not serverurl.startswith('https://'):
         tempurl = 'https://' + serverurl
