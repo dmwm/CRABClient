@@ -25,7 +25,7 @@ from CRABClient.CRABOptParser import CRABOptParser
 from CRABClient import __version__ as client_version
 from CRABClient.ClientMapping import parametersMapping
 from CRABClient.ClientExceptions import ClientException
-from CRABClient.ClientUtilities import getAvailCommands, uploadlogfile, initLoggers, setConsoleLogLevelVar, StopExecution, flushMemoryLogger
+from CRABClient.ClientUtilities import getAvailCommands, uploadlogfile, initLoggers, setConsoleLogLevelVar, StopExecution, flushMemoryLogger, LOGFORMAT
 
 
 class MyNullHandler(logging.Handler):
@@ -99,7 +99,7 @@ class CRABClient(object):
                     hasFileHandler = True
             if not hasFileHandler:
                 filehandler = logging.FileHandler(client.logger.logfile)
-                ff = logging.Formatter("%(levelname)s %(asctime)s: \t %(message)s")
+                ff = logging.Formatter(LOGFORMAT)
                 filehandler.setFormatter(ff)
                 tbLogger.addHandler(filehandler)
             ## This goes to the log file.
