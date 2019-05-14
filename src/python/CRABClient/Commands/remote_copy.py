@@ -10,7 +10,7 @@ import logging
 from multiprocessing import Manager
 
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ClientUtilities import colors, cmd_exist, logfilter, LOGFORMATTER
+from CRABClient.ClientUtilities import colors, cmd_exist, logfilter
 
 
 class remote_copy(SubCommand):

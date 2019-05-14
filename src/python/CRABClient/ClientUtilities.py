@@ -143,7 +143,7 @@ def initLoggers():
     return tblogger, logger, memhandler
 
 
-def getLoggers(lvl):
+def getLoggers():
     msg  = "%sError%s: The function getLoggers(loglevel) from CRABClient.ClientUtilities has been deprecated." % (colors.RED, colors.NORMAL)
     msg += " Please use the new function setConsoleLogLevel(loglevel) from CRABClient.UserUtilities instead."
     raise ClientException(msg)

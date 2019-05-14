@@ -25,7 +25,7 @@ from CRABClient.CRABOptParser import CRABCmdOptParser
 from CRABClient.JobType.CMSSWConfig import CMSSWConfig
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
 from CRABClient.ClientExceptions import ClientException, ConfigurationException
-from CRABClient.ClientUtilities import BOOTSTRAP_ENVFILE, BOOTSTRAP_INFOFILE, BOOTSTRAP_CFGFILE, LOGLEVEL_MUTE, LOGFORMATTER
+from CRABClient.ClientUtilities import BOOTSTRAP_ENVFILE, BOOTSTRAP_INFOFILE, BOOTSTRAP_CFGFILE, LOGLEVEL_MUTE
 from CRABClient.ClientUtilities import setSubmitParserOptions, validateSubmitOptions, initLoggers, setConsoleLogLevelVar, flushMemoryLogger
 
 from WMCore.Configuration import loadConfigurationFile
@@ -117,18 +117,18 @@ def getConfig(cfgName):
 if __name__ == '__main__':
     try:
         setConsoleLogLevelVar(LOGLEVEL_MUTE)
-        tblogger, logger, memhandler = None, None, None
-        tblogger, logger, memhandler = initLoggers()
-        cfgName = getConfigName()
-        config = getConfig(cfgName)
-        cmsswCfg = CMSSWConfig(config=config, userConfig=config.JobType.psetName, logger=logger)
-        valid, msg = cmsswCfg.validateConfig()
+        tblogger, myLogger, memhandler = None, None, None
+        tblogger, myLogger, memhandler = initLoggers()
+        myCfgName = getConfigName()
+        myConfig = getConfig(myCfgName)
+        myCmsswCfg = CMSSWConfig(config=myConfig, userConfig=myConfig.JobType.psetName, logger=myLogger)
+        valid, msg = myCmsswCfg.validateConfig()
         if not valid:
             raise ConfigurationException(msg) #That's a ClientException as well
         tmpdir = getTmpDir()
-        saveScramEnv( os.path.join(tmpdir, BOOTSTRAP_ENVFILE), logger)
-        saveCfgFile( os.path.join(tmpdir, BOOTSTRAP_CFGFILE), cmsswCfg)
-        saveCfgInfo( os.path.join(tmpdir, BOOTSTRAP_INFOFILE), cmsswCfg)
+        saveScramEnv( os.path.join(tmpdir, BOOTSTRAP_ENVFILE), myLogger)
+        saveCfgFile( os.path.join(tmpdir, BOOTSTRAP_CFGFILE), myCmsswCfg)
+        saveCfgInfo( os.path.join(tmpdir, BOOTSTRAP_INFOFILE), myCmsswCfg)
     except ClientException as ce:
         print("Error during CRAB3 bootstrap:\n%s" % str(ce))
         sys.exit(1)
@@ -140,7 +140,7 @@ if __name__ == '__main__':
         traceback.print_exc()
         sys.exit(2)
     finally:
-        if tblogger and memhandler and logger:
+        if tblogger and memhandler and myLogger:
             flushMemoryLogger(tblogger, memhandler, "crab3bootstrap.log")
 
     print(tmpdir)

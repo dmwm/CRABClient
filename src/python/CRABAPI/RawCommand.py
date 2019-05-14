@@ -4,7 +4,7 @@
 """
 import CRABAPI
 
-from CRABClient.ClientUtilities import initLoggers, flushMemoryLogger, removeLoggerHandlers, LOGFORMATTER
+from CRABClient.ClientUtilities import initLoggers, flushMemoryLogger, removeLoggerHandlers
 
 
 # NOTE: Not included in unittests
