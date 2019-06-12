@@ -24,6 +24,13 @@ class getlog(getcommand):
 
     def __call__(self):
         if self.options.short:
+            #Check if splitting is automatic
+            try:
+                splitting=self.cachedinfo['OriginalConfig'].Data.splitting
+            except AttributeError: #Default setting is 'Automatic'
+                splitting='Automatic'
+            #check the format of jobids
+            self.options.jobids = validateJobids(self.options.jobids,splitting!='Automatic')
             taskname = self.cachedinfo['RequestName']
             inputlist = {'subresource': 'webdir', 'workflow': taskname}
             serverFactory = CRABClient.Emulator.getEmulator('rest')
