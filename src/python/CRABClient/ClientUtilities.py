@@ -75,6 +75,11 @@ CONSOLE_LOGLEVEL = logging.INFO
 ## Log level to mute a logger/handler.
 LOGLEVEL_MUTE = logging.CRITICAL + 10
 
+## Log format
+LOGFORMAT = {'logfmt': "%(levelname)s %(asctime)s.%(msecs)03d UTC: \t %(message)s", 'datefmt': "%Y-%m-%d %H:%M:%S"}
+LOGFORMATTER = logging.Formatter(LOGFORMAT['logfmt'],LOGFORMAT['datefmt'])
+from time import gmtime
+LOGFORMATTER.converter = gmtime
 
 class logfilter(logging.Filter):
     def filter(self, record):
@@ -113,7 +118,7 @@ def initLoggers():
     tblogger = logging.getLogger('CRAB3')
     tblogger.setLevel(logging.DEBUG)
     memhandler = logging.handlers.MemoryHandler(capacity = 1024*10, flushLevel = LOGLEVEL_MUTE)
-    memhandler.setFormatter(logging.Formatter("%(levelname)s %(asctime)s: \t %(message)s"))
+    memhandler.setFormatter(LOGFORMATTER)
     memhandler.setLevel(logging.DEBUG)
     memhandler.addFilter(logfilter())
     tblogger.addHandler(memhandler)
@@ -138,7 +143,7 @@ def initLoggers():
     return tblogger, logger, memhandler
 
 
-def getLoggers(lvl):
+def getLoggers():
     msg  = "%sError%s: The function getLoggers(loglevel) from CRABClient.ClientUtilities has been deprecated." % (colors.RED, colors.NORMAL)
     msg += " Please use the new function setConsoleLogLevel(loglevel) from CRABClient.UserUtilities instead."
     raise ClientException(msg)
@@ -160,8 +165,7 @@ def changeFileLogger(logger, workingpath = os.getcwd(), logname = 'crab.log'):
 
 def flushMemoryLogger(logger, memhandler, logfilename):
     filehandler = logging.FileHandler(logfilename)
-    ff = logging.Formatter("%(levelname)s %(asctime)s: \t %(message)s")
-    filehandler.setFormatter(ff)
+    filehandler.setFormatter(LOGFORMATTER)
     filehandler.setLevel(logging.DEBUG)
     filehandler.addFilter(logfilter())
     logger.addHandler(filehandler)
@@ -414,7 +418,8 @@ def createWorkArea(logger, workingArea = '.', requestName = ''):
     return fullpath, requestName, logfile
 
 
-def createCache(requestarea, host, port, uniquerequestname, voRole, voGroup, instance, originalConfig={}):
+def createCache(requestarea, host, port, uniquerequestname, voRole, voGroup, instance, originalConfig=None):
+    originalConfig = originalConfig or {}
     touchfile = open(os.path.join(requestarea, '.requestcache'), 'w')
     neededhandlers = {
                       "Server" : host,
@@ -657,10 +662,12 @@ def validServerURL(option, opt_str, value, parser):
         setattr(parser.values, option.dest, option.default)
 
 
-def validURL(serverurl, attrtohave = ['scheme', 'netloc', 'hostname'], attrtonothave = ['path', 'params', 'query', 'fragment', 'username', 'password']):
+def validURL(serverurl, attrtohave = None, attrtonothave = None):
     """
     returning false if the format is different from https://host:port
     """
+    attrtohave = attrtohave or ['scheme', 'netloc', 'hostname']
+    attrtonothave = attrtonothave or ['path', 'params', 'query', 'fragment', 'username', 'password']
     tempurl = serverurl
     if not serverurl.startswith('https://'):
         tempurl = 'https://' + serverurl
