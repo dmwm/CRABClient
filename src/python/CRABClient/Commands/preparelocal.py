@@ -2,6 +2,7 @@ from ServerUtilities import getProxiedWebDir, getColumn
 
 import CRABClient.Emulator
 from CRABClient import __version__
+from CRABClient.ClientUtilities import getUrl
 from CRABClient.UserUtilities import getFileFromURL
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ClientException
@@ -62,7 +63,7 @@ class preparelocal(SubCommand):
 
         #Get task status from the task DB
         self.logger.debug("Getting status from he DB")
-        uri = self.getUrl(self.instance, resource = 'task')
+        uri = getUrl(self.instance, resource = 'task')
         serverFactory = CRABClient.Emulator.getEmulator('rest')
         server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version = __version__)
         crabDBInfo, _, _ =  server.get(uri, data = {'subresource': 'search', 'workflow': taskname})

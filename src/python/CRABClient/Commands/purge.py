@@ -25,7 +25,7 @@ class purge(SubCommand):
         inputlist = {'subresource': 'search', 'workflow': self.cachedinfo['RequestName']}
         serverFactory = CRABClient.Emulator.getEmulator('rest')
         server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
-        uri = self.getUrl(self.instance, resource = 'task')
+        uri = getUrl(self.instance, resource = 'task')
         dictresult, _, _ =  server.get(uri, data = inputlist)
 
         tm_user_sandbox = getColumn(dictresult, 'tm_user_sandbox')
