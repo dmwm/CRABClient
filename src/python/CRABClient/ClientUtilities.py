@@ -195,9 +195,9 @@ def getUrl(instance='prod', resource='workflow'):
     """
     if instance in SERVICE_INSTANCES.keys():
         if instance == 'k8s':
-          return BASEURL + 'preprod' + '/' + resource
+            return BASEURL + 'preprod' + '/' + resource
         else:
-          return BASEURL + instance + '/' + resource
+            return BASEURL + instance + '/' + resource
     elif instance == 'private':
         return BASEURL + 'dev' + '/' + resource
     raise ConfigurationException('Error: only the following instances can be used: %s' %str(SERVICE_INSTANCES.keys()))
