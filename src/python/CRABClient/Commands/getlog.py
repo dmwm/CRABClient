@@ -3,7 +3,7 @@ from __future__ import division
 
 import CRABClient.Emulator
 from CRABClient import __version__
-from CRABClient.ClientUtilities import colors
+from CRABClient.ClientUtilities import colors, validateJobids, getColumn
 from CRABClient.UserUtilities import getFileFromURL
 from CRABClient.Commands.getcommand import getcommand
 from CRABClient.ClientExceptions import RESTCommunicationException, MissingOptionException
@@ -29,23 +29,29 @@ class getlog(getcommand):
                 splitting=self.cachedinfo['OriginalConfig'].Data.splitting
             except AttributeError: #Default setting is 'Automatic'
                 splitting='Automatic'
-            #check the format of jobids
-            self.options.jobids = validateJobids(self.options.jobids,splitting!='Automatic')
+            except KeyError: #crab remade task does not have 'OriginalConfig' key, need to fetch from DB
+                splitting='Unknown'
             taskname = self.cachedinfo['RequestName']
             inputlist = {'subresource': 'webdir', 'workflow': taskname}
             serverFactory = CRABClient.Emulator.getEmulator('rest')
             server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
             uri = self.getUrl(self.instance, resource = 'task')
-            webdir = getProxiedWebDir(taskname, self.serverurl, uri, self.proxyfilename, self.logger.debug)
+            webdir=None
+            if splitting!='Unknown':
+                webdir = getProxiedWebDir(taskname, self.serverurl, uri, self.proxyfilename, self.logger.debug)
             if not webdir:
                 dictresult, status, reason =  server.get(uri, data = inputlist)
-                webdir = dictresult['result'][0]
-                self.logger.info('Server result: %s' % webdir)
                 if status != 200:
                     msg = "Problem retrieving information from the server:\ninput:%s\noutput:%s\nreason:%s" % (str(inputlist), str(dictresult), str(reason))
                     raise RESTCommunicationException(msg)
+                if splitting=='Unknown':
+                    splitting=getColumn(dictresult,'tm_split_algo')
+                webdir = dictresult['result'][0]
+                self.logger.info('Server result: %s' % webdir)
             self.setDestination()
             self.logger.info("Setting the destination to %s " % self.dest)
+            #check the format of jobids
+            self.options.jobids = validateJobids(self.options.jobids,splitting!='Automatic')
             failed, success = self.retrieveShortLogs(webdir, self.proxyfilename)
             if failed:
                 msg = "%sError%s: Failed to retrieve the following files: %s" % (colors.RED,colors.NORMAL,failed)
