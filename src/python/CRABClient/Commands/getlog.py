@@ -3,7 +3,7 @@ from __future__ import division
 
 import CRABClient.Emulator
 from CRABClient import __version__
-from CRABClient.ClientUtilities import colors
+from CRABClient.ClientUtilities import colors, validateJobids
 from CRABClient.UserUtilities import getFileFromURL
 from CRABClient.Commands.getcommand import getcommand
 from CRABClient.ClientExceptions import RESTCommunicationException, MissingOptionException
@@ -30,13 +30,16 @@ class getlog(getcommand):
             server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
             uri = self.getUrl(self.instance, resource = 'task')
             webdir = getProxiedWebDir(taskname, self.serverurl, uri, self.proxyfilename, self.logger.debug)
-            if not webdir:
-                dictresult, status, reason =  server.get(uri, data = inputlist)
+            dictresult, status, reason =  server.get(uri, data = inputlist)
+            if not webdir:    
                 webdir = dictresult['result'][0]
                 self.logger.info('Server result: %s' % webdir)
                 if status != 200:
                     msg = "Problem retrieving information from the server:\ninput:%s\noutput:%s\nreason:%s" % (str(inputlist), str(dictresult), str(reason))
                     raise RESTCommunicationException(msg)
+            splitting = getColumn(dictresult,'tm_split_algo')
+            if getattr(self.options, 'jobids', None):
+                self.options.jobids = validateJobids(self.options.jobids, splitting != 'Automatic')
             self.setDestination()
             self.logger.info("Setting the destination to %s " % self.dest)
             failed, success = self.retrieveShortLogs(webdir, self.proxyfilename)
