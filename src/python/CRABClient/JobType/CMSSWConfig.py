@@ -48,7 +48,7 @@ class CMSSWConfig(object):
                 msg = "Additional parameters for the CMSSW configuration are: %s" % (pyCfgParams)
                 self.logger.debug(msg)
             configFile, pathname, description = imp.find_module(cfgBaseName, [cfgDirName])
-            cacheLine = (tuple(sys.path), tuple(pathname), tuple(sys.argv))
+            cacheLine = (pathname, tuple(sys.argv))
             if cacheLine in configurationCache:
                 self.fullConfig = configurationCache[cacheLine]
                 configFile.close()
