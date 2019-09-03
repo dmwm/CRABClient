@@ -3,7 +3,7 @@ from __future__ import division
 
 import CRABClient.Emulator
 from CRABClient import __version__
-from CRABClient.ClientUtilities import colors, validateJobids
+from CRABClient.ClientUtilities import colors, validateJobids, getColumn
 from CRABClient.UserUtilities import getFileFromURL
 from CRABClient.Commands.getcommand import getcommand
 from CRABClient.ClientExceptions import RESTCommunicationException, MissingOptionException
@@ -25,13 +25,13 @@ class getlog(getcommand):
     def __call__(self):
         if self.options.short:
             taskname = self.cachedinfo['RequestName']
-            inputlist = {'subresource': 'webdir', 'workflow': taskname}
+            inputlist = {'subresource': 'search', 'workflow': taskname}
             serverFactory = CRABClient.Emulator.getEmulator('rest')
             server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
             uri = self.getUrl(self.instance, resource = 'task')
             webdir = getProxiedWebDir(taskname, self.serverurl, uri, self.proxyfilename, self.logger.debug)
-            dictresult, status, reason =  server.get(uri, data = inputlist)
-            if not webdir:    
+            dictresult, status, reason = server.get(uri, data = inputlist)
+            if not webdir:
                 webdir = dictresult['result'][0]
                 self.logger.info('Server result: %s' % webdir)
                 if status != 200:
