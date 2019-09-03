@@ -34,13 +34,14 @@ class UserTarball(object):
             Also adds user specified files in the right place.
     """
 
-    def __init__(self, name=None, mode='w:gz', config=None, logger=None):
+    def __init__(self, name=None, mode='w:bz2', config=None, logger=None):
         self.config = config
         self.logger = logger
         self.scram = ScramEnvironment(logger=self.logger)
         self.logger.debug("Making tarball in %s" % name)
         self.tarfile = tarfile.open(name=name , mode=mode, dereference=True)
         self.checksum = None
+        self.content = None
 
     def addFiles(self, userFiles=None, cfgOutputName=None):
         """
@@ -148,7 +149,7 @@ class UserTarball(object):
         ndigits = int(math.ceil(math.log(biggestFileSize+1, 10)))
         contentList  = "\nsandbox content sorted by size[Bytes]:"
         for (size, name) in sortedContent:
-           contentList += ("\n%" + str(ndigits) + "s\t%s") % (size, name)
+            contentList += ("\n%" + str(ndigits) + "s\t%s") % (size, name)
         return contentList
 
 
@@ -164,16 +165,16 @@ class UserTarball(object):
 	# in python3 and python2 with __future__ division, double / means integer division
         archiveSizeKB = archiveSizeBytes//1024
         if archiveSizeKB <= 512 :
-          archiveSize = "%d KB" % archiveSizeKB
+            archiveSize = "%d KB" % archiveSizeKB
         elif archiveSizeKB < 1024*10 :
-          # in python3 and python2 with __future__ division, single / means floating point division
-          archiveSize = "%3f.1 MB" % (archiveSizeKB/1024)
+            # in python3 and python2 with __future__ division, single / means floating point division
+            archiveSize = "%3f.1 MB" % (archiveSizeKB/1024)
         else:
-          archiveSize = "%d MB" % (archiveSizeKB//1024)
+            archiveSize = "%d MB" % (archiveSizeKB//1024)
         if archiveSizeBytes > FILE_SIZE_LIMIT :
-          msg=("%sError%s: input tarball size %s exceeds maximum allowed limit of %d MB" % (colors.RED, colors.NORMAL, archiveSize, FILE_SIZE_LIMIT//1024//1024))
-          msg += self.printSortedContent()
-          raise SandboxTooBigException(msg)
+            msg=("%sError%s: input tarball size %s exceeds maximum allowed limit of %d MB" % (colors.RED, colors.NORMAL, archiveSize, FILE_SIZE_LIMIT//1024//1024))
+            msg += self.printSortedContent()
+            raise SandboxTooBigException(msg)
 
         msg=("Uploading archive %s (%s) to the CRAB cache. Using URI %s" % (archiveName, archiveSize, filecacheurl))
         self.logger.debug(msg)

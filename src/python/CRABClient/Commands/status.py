@@ -352,6 +352,10 @@ class status(SubCommand):
             dashboardURL = "http://dashb-cms-job.cern.ch/dashboard/templates/task-analysis/#user=" + username \
                          + "&refresh=0&table=Jobs&p=1&records=25&activemenu=2&status=&site=&tid=" + taskname
             self.logger.info("Dashboard monitoring URL:\t%s" % (dashboardURL))
+            dashboardURL = "https://monit-grafana.cern.ch/d/cmsTMDetail/cms-task-monitoring-task-view?orgId=11&var-user=" + username \
+                         + "&var-task=" + taskname
+            self.logger.info("New dashboard monitoring URL:\t%s" % (dashboardURL))
+            self.logger.info("In case of issues with the new dashboard, please provide feedback to %s" % (FEEDBACKMAIL))
 
         # Print the warning messages (these are the warnings in the Tasks DB,
         # and/or maybe some warning added by the REST Interface to the status result).
@@ -360,8 +364,8 @@ class status(SubCommand):
             for warningMsg in warnings:
                 self.logger.warning("%sWarning%s:%s%s" % (colors.RED, colors.NORMAL, warningIndent, warningMsg.replace('\n', '\n\t'+warningIndent)))
         if failure and 'FAILED' in statusToPr:
-            msg  = "%sFailure message from the server%s:" % (colors.RED, colors.NORMAL)
-            msg += "\t\t%s" % (failure.replace('\n', '\n\t\t\t\t'))
+            msg  = "%sFailure message from server%s:" % (colors.RED, colors.NORMAL)
+            msg += "\t%s" % (failure.replace('\n', '\n\t\t\t\t'))
             self.logger.error(msg)
 
     def checkUserJobids(self, statusCacheInfo, userJobids):
