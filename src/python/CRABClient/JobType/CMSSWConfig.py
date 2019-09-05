@@ -50,10 +50,14 @@ class CMSSWConfig(object):
             configFile, pathname, description = imp.find_module(cfgBaseName, [cfgDirName])
             cacheLine = (pathname, tuple(sys.argv))
             if cacheLine in configurationCache:
-                self.fullConfig = configurationCache[cacheLine]
+                if sys.path != configurationCache[cacheLine]['path']:
+                    self.logger.warning('Warning: sys.path has changed since CMSSW configuration file was loaded.')
+                self.fullConfig = configurationCache[cacheLine]['config']
                 configFile.close()
             elif not bootstrapDone():
-                sys.path.append(os.getcwd())
+                cwd=os.getcwd()
+                if cwd not in sys.path:
+                    sys.path.append(cwd)
                 try:
                     oldstdout = sys.stdout
                     sys.stdout = open(logger.logfile, 'a')
@@ -62,7 +66,7 @@ class CMSSWConfig(object):
                     sys.stdout.close()
                     sys.stdout = oldstdout
                     configFile.close()
-                configurationCache[cacheLine] = self.fullConfig
+                configurationCache[cacheLine] = { 'config' : self.fullConfig , 'path' : sys.path }
             self.logger.info("Finished importing CMSSW configuration %s" % (userConfig))
             sys.argv = originalArgv
 
