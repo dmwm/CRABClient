@@ -574,18 +574,19 @@ class status(SubCommand):
                 states[jobStatus] = states.setdefault(jobStatus, 0) + statesSJ[jobStatus]
 
         # And if the dictionary is not empty, print it
+        if automaticSplitt:
+            automaticSplittFAQ = 'https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3FAQ#What_is_the_Automatic_splitting'
+            self.logger.info("\nThe job splitting of this task is 'Automatic', please refer to this FAQ for a description of the jobs status summary:\n%s", automaticSplittFAQ)
+            if statesPJ and not states:
+                self.logger.info("Probe stage log:\t\t%s", proxiedWebDir+"/AutomaticSplitting_Log0.txt")
+
         for jobtype, currStates in toPrint:
             if currStates:
-                if automaticSplitt and jobtype == 'Probe jobs':
-                    automaticSplittFAQ = 'https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3FAQ#What_is_the_Automatic_splitting'
-                    self.logger.info("\nThe jobs splitting of this task is 'Automatic', please refer to this FAQ for a description of the jobs status summary:\n%s", automaticSplittFAQ)
                 total = sum(currStates[st] for st in currStates)
                 state_list = sorted(currStates)
                 self.logger.info("\n{0:32}{1}{2}{3}".format(jobtype + ' status:', self._printState(state_list[0], 13), self.indentation, self._percentageString(state_list[0], currStates[state_list[0]], total)))
                 for jobStatus in state_list[1:]:
                     self.logger.info("\t\t\t\t{0}{1}{2}".format(self._printState(jobStatus, 13), self.indentation, self._percentageString(jobStatus, currStates[jobStatus], total)))
-                if jobtype == 'Probe jobs':
-                    self.logger.info("Probe stage log:\t\t%s", proxiedWebDir+"/AutomaticSplitting_Log0.txt")
         return result
 
     def printErrors(self, dictresult, automaticSplitt):
