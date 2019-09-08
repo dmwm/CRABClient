@@ -209,11 +209,12 @@ class status(SubCommand):
         statusDict['jobs'] = statusCacheInfo
         return statusDict
 
-    def _percentageString(self, state, value, total):
+    def _percentageString(self, state, value, total, numOutputDatasets=1):
+        fileValue = numOutputDatasets * value
         state = PUBLICATION_STATES.get(state, state)
-        digit_count = int(math.ceil(math.log(max(value, total)+1, 10)))
+        digit_count = int(math.ceil(math.log(max(fileValue, total)+1, 10)))
         format_str = "%5.1f%% (%s%" + str(digit_count) + "d%s/%" + str(digit_count) + "d)"
-        return format_str % ((value*100/total), self._stateColor(state), value, colors.NORMAL, total)
+        return format_str % ((fileValue*100/total), self._stateColor(state), fileValue, colors.NORMAL, total)
 
 
     def _printState(self, state, ljust):
@@ -958,21 +959,20 @@ class status(SubCommand):
             ## produced, each EDM file goes into a different output dataset).
             numJobs = sum(pubInfo['jobsPerStatus'].values()) - numProbes - numUnpublishable
             numOutputDatasets = len(outputDatasets)
-            numFilesToPublish = numJobs * numOutputDatasets
+            numFilesToPublish = numOutputDatasets * numJobs
             ## Count how many of these files have already started the publication process.
-            numSubmittedFiles = sum(states.values())
-            ## Substract the above two numbers to obtain how many files have not yet been
-            ## considered for publication.
-            states['unsubmitted'] = numFilesToPublish - numSubmittedFiles
+            numSubmittedFiles = numOutputDatasets * sum(states.values())
+            ## Jobs not yet considered for publication.
+            states['unsubmitted'] = numJobs - sum(states.values())
             ## Print the publication status.
             statesList = sorted(states)
             msg = "\nPublication status:\t\t{0}{1}{2}".format(self._printState(statesList[0], 13), self.indentation, \
-                                                              self._percentageString(statesList[0], states[statesList[0]], numFilesToPublish))
+                                                              self._percentageString(statesList[0], states[statesList[0]], numFilesToPublish, numOutputDatasets))
             msg += pubSource
             for jobStatus in statesList[1:]:
                 if states[jobStatus]:
                     msg += "\n\t\t\t\t{0}{1}{2}".format(self._printState(jobStatus, 13), self.indentation, \
-                                                        self._percentageString(jobStatus, states[jobStatus], numFilesToPublish))
+                                                        self._percentageString(jobStatus, states[jobStatus], numFilesToPublish, numOutputDatasets))
             self.logger.info(msg)
             ## Print the publication errors.
             if pubInfo.get('publicationFailures'):
