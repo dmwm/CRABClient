@@ -3,6 +3,7 @@ import re
 import imp 
 import json
 import types
+import subprocess
 from ast import literal_eval
 
 from WMCore.Configuration import loadConfigurationFile, Configuration
@@ -223,6 +224,11 @@ class SubCommand(ConfigCommand):
         ## The command logger.
         self.logger = logger
         self.logfile = self.logger.logfile
+
+
+        localSystem = subprocess.check_output(['uname','-a'])
+        localOS = subprocess.check_output(['lsb_release','-d'])
+        self.logger.debug("Running on: " + localSystem + localOS)
         self.logger.debug("Executing command: '%s'" % str(self.name))
 
         self.proxy = None

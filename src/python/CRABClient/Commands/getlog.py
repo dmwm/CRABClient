@@ -3,7 +3,7 @@ from __future__ import division
 
 import CRABClient.Emulator
 from CRABClient import __version__
-from CRABClient.ClientUtilities import colors, getUrl
+from CRABClient.ClientUtilities import colors, getUrl, validateJobids, getColumn
 from CRABClient.UserUtilities import getFileFromURL
 from CRABClient.Commands.getcommand import getcommand
 from CRABClient.ClientExceptions import RESTCommunicationException, MissingOptionException
@@ -25,18 +25,21 @@ class getlog(getcommand):
     def __call__(self):
         if self.options.short:
             taskname = self.cachedinfo['RequestName']
-            inputlist = {'subresource': 'webdir', 'workflow': taskname}
+            inputlist = {'subresource': 'search', 'workflow': taskname}
             serverFactory = CRABClient.Emulator.getEmulator('rest')
             server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
             uri = getUrl(self.instance, resource = 'task')
             webdir = getProxiedWebDir(taskname, self.serverurl, uri, self.proxyfilename, self.logger.debug)
+            dictresult, status, reason = server.get(uri, data = inputlist)
             if not webdir:
-                dictresult, status, reason =  server.get(uri, data = inputlist)
                 webdir = dictresult['result'][0]
                 self.logger.info('Server result: %s' % webdir)
                 if status != 200:
                     msg = "Problem retrieving information from the server:\ninput:%s\noutput:%s\nreason:%s" % (str(inputlist), str(dictresult), str(reason))
                     raise RESTCommunicationException(msg)
+            splitting = getColumn(dictresult,'tm_split_algo')
+            if getattr(self.options, 'jobids', None):
+                self.options.jobids = validateJobids(self.options.jobids, splitting != 'Automatic')
             self.setDestination()
             self.logger.info("Setting the destination to %s " % self.dest)
             failed, success = self.retrieveShortLogs(webdir, self.proxyfilename)
