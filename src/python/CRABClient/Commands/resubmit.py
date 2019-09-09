@@ -9,7 +9,7 @@ from CRABClient import __version__
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ConfigurationException
 from CRABClient.UserUtilities import getMutedStatusInfo, getColumn
-from CRABClient.ClientUtilities import validateJobids, checkStatusLoop, colors
+from CRABClient.ClientUtilities import validateJobids, checkStatusLoop, colors, getUrl
 
 class resubmit(SubCommand):
     """
@@ -274,7 +274,7 @@ class resubmit(SubCommand):
 
         serverFactory = CRABClient.Emulator.getEmulator('rest')
         self.server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version = __version__)
-        uri = self.getUrl(self.instance, resource = 'task')
+        uri = getUrl(self.instance, resource = 'task')
         crabDBInfo, _, _ = self.server.get(uri, data = {'subresource': 'search', 'workflow': self.cachedinfo['RequestName']})
         self.splitting = getColumn(crabDBInfo, 'tm_split_algo')
 

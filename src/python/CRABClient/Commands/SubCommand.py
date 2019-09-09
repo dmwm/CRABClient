@@ -13,9 +13,9 @@ from CRABClient import SpellChecker
 from CRABClient import __version__
 from CRABClient.ClientUtilities import colors
 from CRABClient.CRABOptParser import CRABCmdOptParser
-from CRABClient.ClientUtilities import BASEURL, SERVICE_INSTANCES
+from CRABClient.ClientUtilities import SERVICE_INSTANCES
 from CRABClient.CredentialInteractions import CredentialInteractions
-from CRABClient.ClientUtilities import loadCache, getWorkArea, server_info, createWorkArea
+from CRABClient.ClientUtilities import loadCache, getWorkArea, server_info, createWorkArea, getUrl
 from CRABClient.ClientExceptions import ConfigurationException, MissingOptionException, EnvironmentException, CachefileNotFoundException
 from CRABClient.ClientMapping import renamedParams, commandsConfiguration, configParametersInfo, getParamDefaultValue
 
@@ -213,18 +213,6 @@ class SubCommand(ConfigCommand):
     #Default command name is the name of the command class, but it is also possible to set the name attribute in the subclass
     #if the command name does not correspond to the class name (getlog => get-log)
 
-
-    def getUrl(self, instance='prod', resource='workflow'):
-        """
-        Retrieve the url depending on the resource we are accessing and the instance.
-        """
-        if instance in SERVICE_INSTANCES.keys():
-            return BASEURL + instance + '/' + resource
-        elif instance == 'private':
-            return BASEURL + 'dev' + '/' + resource
-        raise ConfigurationException('Error: only %s instances can be used.' % str(SERVICE_INSTANCES.keys()))
-
-
     def __init__(self, logger, cmdargs = None, disable_interspersed_args = False):
         """
         Initialize common client parameters
@@ -362,8 +350,8 @@ class SubCommand(ConfigCommand):
         self.logger.debug('Command use: %s' % self.name)
         self.logger.debug('Options use: %s' % cmdargs)
         if self.cmdconf['requiresREST']:
-            self.checkversion(self.getUrl(self.instance, resource='info'))
-            self.uri = self.getUrl(self.instance)
+            self.checkversion(getUrl(self.instance, resource='info'))
+            self.uri = getUrl(self.instance)
         self.logger.debug("Instance is %s" %(self.instance))
         self.logger.debug("Server base url is %s" %(self.serverurl))
         if self.cmdconf['requiresREST']:
@@ -429,7 +417,7 @@ class SubCommand(ConfigCommand):
                                                                    proxyOptsSetPlace = proxyOptsSetPlace)
                 if self.cmdconf['requiresREST']: ## If the command doesn't contact the REST, we can't delegate the proxy.
                     self.proxy.myproxyAccount = self.serverurl
-                    baseurl = self.getUrl(self.instance, resource = 'info')
+                    baseurl = getUrl(self.instance, resource = 'info')
                     ## Get the DN of the task workers from the server.
                     all_task_workers_dns = server_info('delegatedn', self.serverurl, self.proxyfilename, baseurl)
                     for serverdn in all_task_workers_dns['services']:
