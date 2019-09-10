@@ -59,7 +59,7 @@ class CMSSWConfig(object):
                 # check that nothing has changed, and use it
                 if not cacheLine in configurationCache:
                     msg = "A different CMSSSW configuration was already cached."
-                    msg += "\n Either file name or configuration parameters have been changed."
+                    msg += "\n Either configuration file name or configuration parameters have been changed."
                     msg += "\n But CMSSW configuration files can't be loaded more than once in memory."
                     raise ConfigurationException(msg)
                 if sys.path != configurationCache[cacheLine]['path']:
