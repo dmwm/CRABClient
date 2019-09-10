@@ -15,7 +15,8 @@ from ServerUtilities import BOOTSTRAP_CFGFILE_DUMP
 from CRABClient.ClientExceptions import ConfigurationException, EnvironmentException
 from CRABClient.ClientUtilities import bootstrapDone, colors, BOOTSTRAP_CFGFILE_PKL, BOOTSTRAP_INFOFILE, LOGGERS
 
-
+# cache user configuration to speed up things in case this is called multiple times in same process
+# via CRAB command API. Note that CMSSW configuration can only be loaded once in memory !
 configurationCache = {}
 
 
@@ -47,15 +48,27 @@ class CMSSWConfig(object):
                 sys.argv.extend(pyCfgParams)
                 msg = "Additional parameters for the CMSSW configuration are: %s" % (pyCfgParams)
                 self.logger.debug(msg)
+            # details of user configuration file:
             configFile, pathname, description = imp.find_module(cfgBaseName, [cfgDirName])
             cacheLine = (pathname, tuple(sys.argv))
-            if cacheLine in configurationCache:
+            cwd=os.getcwd()
+            if cwd not in sys.path:   # cwd must be part of $PYTHONPATH for CMSSW config to work
+                sys.path.append(cwd)
+
+            if configurationCache:
+                # check that nothing has changed, and use it
+                if not cacheLine in configurationCache:
+                    msg = "A different CMSSSW configuration was already cached."
+                    msg += "\n Either file name or configuration parameters have been changed."
+                    msg += "\n But CMSSW configuration files can't be loaded more than once in memory."
+                    raise ConfigurationException(msg)
                 if sys.path != configurationCache[cacheLine]['path']:
-                    self.logger.warning('Warning: sys.path has changed since CMSSW configuration file was loaded.')
+                    msg = 'sys.path (FATAL ERROR: $PYTHONPATH) has changed since CMSSW configuration file was loaded.'
+                    raise ConfigurationException(msg)
+
                 self.fullConfig = configurationCache[cacheLine]['config']
-                configFile.close()
-            elif not bootstrapDone():
-                cwd=os.getcwd()
+            else:
+                # cache this configuration
                 if cwd not in sys.path:
                     sys.path.append(cwd)
                 try:
