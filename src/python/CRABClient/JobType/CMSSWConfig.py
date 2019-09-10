@@ -37,7 +37,7 @@ class CMSSWConfig(object):
             cfgDirName = os.path.dirname(os.path.abspath(userConfig))
 
             if not os.path.isfile(userConfig):
-                msg = "Cannot find CMSSW configuration file %s in %s" % (userConfig, os.getcwd())
+                msg = "\nCannot find CMSSW configuration file %s in %s" % (userConfig, os.getcwd())
                 raise ConfigurationException(msg)
 
             self.logger.info("Importing CMSSW configuration %s" % (userConfig))
@@ -58,12 +58,12 @@ class CMSSWConfig(object):
             if configurationCache:
                 # check that nothing has changed, and use it
                 if not cacheLine in configurationCache:
-                    msg = "A different CMSSSW configuration was already cached."
+                    msg = "\nFATAL ERROR: A different CMSSSW configuration was already cached."
                     msg += "\n Either configuration file name or configuration parameters have been changed."
                     msg += "\n But CMSSW configuration files can't be loaded more than once in memory."
                     raise ConfigurationException(msg)
-                if sys.path != configurationCache[cacheLine]['path']:
-                    msg = 'sys.path (FATAL ERROR: $PYTHONPATH) has changed since CMSSW configuration file was loaded.'
+                if tuple(sys.path) != configurationCache[cacheLine]['path']:
+                    msg = '\nFATAL ERROR: sys.path ($PYTHONPATH) has changed since CMSSW configuration file was loaded.'
                     raise ConfigurationException(msg)
 
                 self.fullConfig = configurationCache[cacheLine]['config']
@@ -79,7 +79,9 @@ class CMSSWConfig(object):
                     sys.stdout.close()
                     sys.stdout = oldstdout
                     configFile.close()
-                configurationCache[cacheLine] = { 'config' : self.fullConfig , 'path' : sys.path }
+                # need to turn sys.path into a static set of strings for using it as a cache key
+                # otherwise is a pointer to a function and we can't use it to check for stability
+                configurationCache[cacheLine] = { 'config' : self.fullConfig , 'path' : tuple(sys.path) }
             self.logger.info("Finished importing CMSSW configuration %s" % (userConfig))
             sys.argv = originalArgv
 
@@ -114,7 +116,7 @@ class CMSSWConfig(object):
                 fd.write(dumpedStr)
         except Exception as e:
             LOGGERS['CRAB3'].error(str(e))
-            raise ConfigurationException('Fatal error, cannot dump CMSSW configuration file. This prevents sandbox recycling.')
+            raise ConfigurationException('\nFATAL ERROR, cannot dump CMSSW configuration file. This prevents sandbox recycling.')
 
         return
 
@@ -135,7 +137,7 @@ class CMSSWConfig(object):
             try:
                 isPool = str(source.type_()) == 'PoolSource'
             except AttributeError as ex:
-                msg = "Invalid CMSSW configuration: Failed to check if 'process.source' is of type 'PoolSource': %s" % (ex)
+                msg = "\nFATAL ERROR: Invalid CMSSW configuration: Failed to check if 'process.source' is of type 'PoolSource': %s" % (ex)
                 raise ConfigurationException(msg)
 
         return isPool
@@ -158,13 +160,13 @@ class CMSSWConfig(object):
             try:
                 isLHE = str(source.type_()) == 'LHESource'
             except AttributeError as ex:
-                msg = "Invalid CMSSW configuration: Failed to check if 'process.source' is of type 'LHESource': %s" % (ex)
+                msg = "\nInvalid CMSSW configuration: Failed to check if 'process.source' is of type 'LHESource': %s" % (ex)
                 raise ConfigurationException(msg)
             if isLHE:
                 if hasattr(source, 'fileNames'):
                     numFiles = len(source.fileNames)
                 else:
-                    msg = "Invalid CMSSW configuration: Object 'process.source', of type 'LHESource', is missing attribute 'fileNames'."
+                    msg = "\nInvalid CMSSW configuration: Object 'process.source', of type 'LHESource', is missing attribute 'fileNames'."
                     raise ConfigurationException(msg)
 
         return isLHE, numFiles
@@ -211,7 +213,7 @@ class CMSSWConfig(object):
                     dataset = getattr(outputModule, 'dataset')
                     filterName = getattr(dataset, 'filterName')
                 except AttributeError:
-                    raise RuntimeError('Your output module %s does not have a "dataset" PSet ' % outputModule.label() +
+                    raise RuntimeError('\nYour output module %s does not have a "dataset" PSet ' % outputModule.label() +
                                        'or the PSet does not have a "filterName" member.')
 
         ## Find files written by TFileService.
@@ -229,7 +231,7 @@ class CMSSWConfig(object):
     def getCfgInfo(self):
         bootFilename = os.path.join(os.environ['CRAB3_BOOTSTRAP_DIR'], BOOTSTRAP_INFOFILE)
         if not os.path.isfile(bootFilename):
-            msg = "The CRAB3_BOOTSTRAP_DIR environment variable is set, but I could not find %s" % bootFilename
+            msg = "\nThe CRAB3_BOOTSTRAP_DIR environment variable is set, but I could not find %s" % bootFilename
             raise EnvironmentException(msg)
         else:
             with open(bootFilename) as fd:
