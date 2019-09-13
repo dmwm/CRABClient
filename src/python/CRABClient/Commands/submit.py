@@ -116,7 +116,7 @@ class submit(SubCommand):
         self.configreq.update(jobconfig)
         server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
 
-        self.logger.info("Sending the request to the server")
+        self.logger.info("Sending the request to the server at %s" % self.serverurl)
         self.logger.debug("Submitting %s " % str(self.configreq))
         ## TODO: this shouldn't be hard-coded.
         listParams = ['addoutputfiles', 'sitewhitelist', 'siteblacklist', 'blockwhitelist', 'blockblacklist', \
@@ -141,7 +141,7 @@ class submit(SubCommand):
                     voRole=self.voRole, voGroup=self.voGroup, instance=self.instance,
                     originalConfig=self.configuration)
 
-        self.logger.info("%sSuccess%s: Your task has been delivered to the CRAB3 server." %(colors.GREEN, colors.NORMAL))
+        self.logger.info("%sSuccess%s: Your task has been delivered to the %s CRAB3 server." % (colors.GREEN, colors.NORMAL, self.configuration.General.instance))
         if not (self.options.wait or self.options.dryrun):
             self.logger.info("Task name: %s" % uniquerequestname)
             projDir = os.path.join(getattr(self.configuration.General, 'workArea', '.'), self.requestname)
