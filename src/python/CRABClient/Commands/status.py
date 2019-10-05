@@ -962,7 +962,7 @@ class status(SubCommand):
             ## Print the publication status.
             statesList = sorted(states)
             msg = "\nPublication status of {0} dataset(s):\t{1}{2}{3}".format(numOutputDatasets, self._printState(statesList[0], 13), self.indentation, \
-                                                              self._percentageString(statesList[0], states[statesList[0]], numFilesToPublish))
+                                                                              self._percentageString(statesList[0], states[statesList[0]], numFilesToPublish))
             msg += pubSource
             for jobStatus in statesList[1:]:
                 if states[jobStatus]:
