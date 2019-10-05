@@ -49,7 +49,7 @@ class status(SubCommand):
         self.logger.debug("Got information from server oracle database: %s", crabDBInfo)
 
         # Until the task lands on a schedd we'll show the status from the DB
-        combinedStatus = getColumn(crabDBInfo, 'tm_task_status')
+        dbStatus = getColumn(crabDBInfo, 'tm_task_status')
 
         user = getColumn(crabDBInfo, 'tm_username')
         webdir = getColumn(crabDBInfo, 'tm_user_webdir')
@@ -67,7 +67,7 @@ class status(SubCommand):
         if not rootDagId:
             failureMsg = "The task has not been submitted to the Grid scheduler yet. Not printing job information."
             self.logger.debug(failureMsg)
-            return self.makeStatusReturnDict(crabDBInfo, combinedStatus, statusFailureMsg=failureMsg)
+            return self.makeStatusReturnDict(crabDBInfo, dbStatus, statusFailureMsg=failureMsg)
 
         self.logger.debug("The CRAB server submitted your task to the Grid scheduler (cluster ID: %s)" % rootDagId)
 
@@ -132,7 +132,7 @@ class status(SubCommand):
         automaticSplitt = splitting == 'Automatic'
 
         # If the task is already on the grid, show the dagman status
-        combinedStatus = dagStatus = self.printDAGStatus(crabDBInfo, statusCacheInfo)
+        combinedStatus = dagStatus = self.printDAGStatus(dbStatus, statusCacheInfo)
 
         shortResult = self.printOverview(statusCacheInfo, automaticSplitt, proxiedWebDir)
         pubStatus = self.printPublication(publicationEnabled, shortResult['jobsPerStatus'], shortResult['numProbes'],
@@ -209,12 +209,11 @@ class status(SubCommand):
         statusDict['jobs'] = statusCacheInfo
         return statusDict
 
-    def _percentageString(self, state, value, total, numOutputDatasets=1):
-        fileValue = numOutputDatasets * value
+    def _percentageString(self, state, value, total):
         state = PUBLICATION_STATES.get(state, state)
-        digit_count = int(math.ceil(math.log(max(fileValue, total)+1, 10)))
+        digit_count = int(math.ceil(math.log(max(value, total)+1, 10)))
         format_str = "%5.1f%% (%s%" + str(digit_count) + "d%s/%" + str(digit_count) + "d)"
-        return format_str % ((fileValue*100/total), self._stateColor(state), fileValue, colors.NORMAL, total)
+        return format_str % ((value*100/total), self._stateColor(state), value, colors.NORMAL, total)
 
 
     def _printState(self, state, ljust):
@@ -302,12 +301,10 @@ class status(SubCommand):
             return check_queued(cls.translateStatus(subDagInfos[0]['DagStatus'], dbstatus))
         return check_queued(cls.translateStatus(dagInfo['DagStatus'], dbstatus))
 
-    def printDAGStatus(self, crabDBInfo, statusCacheInfo):
+    def printDAGStatus(self, dbStatus, statusCacheInfo):
         # Get dag status from the node_state/job_log summary
-        dbstatus = getColumn(crabDBInfo, 'tm_task_status')
-
         dagInfo = statusCacheInfo['DagStatus']
-        dagStatus = self.collapseDAGStatus(dagInfo, dbstatus)
+        dagStatus = self.collapseDAGStatus(dagInfo, dbStatus)
 
         msg = "Status on the scheduler:\t" + dagStatus
         self.logger.info(msg)
@@ -959,20 +956,18 @@ class status(SubCommand):
             ## produced, each EDM file goes into a different output dataset).
             numJobs = sum(pubInfo['jobsPerStatus'].values()) - numProbes - numUnpublishable
             numOutputDatasets = len(outputDatasets)
-            numFilesToPublish = numOutputDatasets * numJobs
-            ## Count how many of these files have already started the publication process.
-            numSubmittedFiles = numOutputDatasets * sum(states.values())
-            ## Jobs not yet considered for publication.
-            states['unsubmitted'] = numJobs - sum(states.values())
+            numFilesToPublish = numJobs * numOutputDatasets
+            ## Count how many of these files have not yet been considered for publication.
+            states['unsubmitted'] = numFilesToPublish - sum(states.values())
             ## Print the publication status.
             statesList = sorted(states)
-            msg = "\nPublication status:\t\t{0}{1}{2}".format(self._printState(statesList[0], 13), self.indentation, \
-                                                              self._percentageString(statesList[0], states[statesList[0]], numFilesToPublish, numOutputDatasets))
+            msg = "\nPublication status of {0} dataset(s):\t{1}{2}{3}".format(numOutputDatasets, self._printState(statesList[0], 13), self.indentation, \
+                                                              self._percentageString(statesList[0], states[statesList[0]], numFilesToPublish))
             msg += pubSource
             for jobStatus in statesList[1:]:
                 if states[jobStatus]:
-                    msg += "\n\t\t\t\t{0}{1}{2}".format(self._printState(jobStatus, 13), self.indentation, \
-                                                        self._percentageString(jobStatus, states[jobStatus], numFilesToPublish, numOutputDatasets))
+                    msg += "\n\t\t\t\t\t{0}{1}{2}".format(self._printState(jobStatus, 13), self.indentation, \
+                                                        self._percentageString(jobStatus, states[jobStatus], numFilesToPublish))
             self.logger.info(msg)
             ## Print the publication errors.
             if pubInfo.get('publicationFailures'):
