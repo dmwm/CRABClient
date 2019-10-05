@@ -49,7 +49,7 @@ class status(SubCommand):
         self.logger.debug("Got information from server oracle database: %s", crabDBInfo)
 
         # Until the task lands on a schedd we'll show the status from the DB
-        combinedStatus = getColumn(crabDBInfo, 'tm_task_status')
+        dbStatus = getColumn(crabDBInfo, 'tm_task_status')
 
         user = getColumn(crabDBInfo, 'tm_username')
         webdir = getColumn(crabDBInfo, 'tm_user_webdir')
@@ -67,7 +67,7 @@ class status(SubCommand):
         if not rootDagId:
             failureMsg = "The task has not been submitted to the Grid scheduler yet. Not printing job information."
             self.logger.debug(failureMsg)
-            return self.makeStatusReturnDict(crabDBInfo, combinedStatus, statusFailureMsg=failureMsg)
+            return self.makeStatusReturnDict(crabDBInfo, dbStatus, statusFailureMsg=failureMsg)
 
         self.logger.debug("The CRAB server submitted your task to the Grid scheduler (cluster ID: %s)" % rootDagId)
 
@@ -132,7 +132,7 @@ class status(SubCommand):
         automaticSplitt = splitting == 'Automatic'
 
         # If the task is already on the grid, show the dagman status
-        combinedStatus = dagStatus = self.printDAGStatus(crabDBInfo, statusCacheInfo)
+        combinedStatus = dagStatus = self.printDAGStatus(dbStatus, statusCacheInfo)
 
         shortResult = self.printOverview(statusCacheInfo, automaticSplitt, proxiedWebDir)
         pubStatus = self.printPublication(publicationEnabled, shortResult['jobsPerStatus'], shortResult['numProbes'],
@@ -301,12 +301,10 @@ class status(SubCommand):
             return check_queued(cls.translateStatus(subDagInfos[0]['DagStatus'], dbstatus))
         return check_queued(cls.translateStatus(dagInfo['DagStatus'], dbstatus))
 
-    def printDAGStatus(self, crabDBInfo, statusCacheInfo):
+    def printDAGStatus(self, dbStatus, statusCacheInfo):
         # Get dag status from the node_state/job_log summary
-        dbstatus = getColumn(crabDBInfo, 'tm_task_status')
-
         dagInfo = statusCacheInfo['DagStatus']
-        dagStatus = self.collapseDAGStatus(dagInfo, dbstatus)
+        dagStatus = self.collapseDAGStatus(dagInfo, dbStatus)
 
         msg = "Status on the scheduler:\t" + dagStatus
         self.logger.info(msg)
@@ -574,18 +572,19 @@ class status(SubCommand):
                 states[jobStatus] = states.setdefault(jobStatus, 0) + statesSJ[jobStatus]
 
         # And if the dictionary is not empty, print it
+        if automaticSplitt:
+            automaticSplittFAQ = 'https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3FAQ#What_is_the_Automatic_splitting'
+            self.logger.info("\nThe job splitting of this task is 'Automatic', please refer to this FAQ for a description of the jobs status summary:\n%s", automaticSplittFAQ)
+            if statesPJ and not states:
+                self.logger.info("Probe stage log:\t\t%s", proxiedWebDir+"/AutomaticSplitting_Log0.txt")
+
         for jobtype, currStates in toPrint:
             if currStates:
-                if automaticSplitt and jobtype == 'Probe jobs':
-                    automaticSplittFAQ = 'https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3FAQ#What_is_the_Automatic_splitting'
-                    self.logger.info("\nThe jobs splitting of this task is 'Automatic', please refer to this FAQ for a description of the jobs status summary:\n%s", automaticSplittFAQ)
                 total = sum(currStates[st] for st in currStates)
                 state_list = sorted(currStates)
                 self.logger.info("\n{0:32}{1}{2}{3}".format(jobtype + ' status:', self._printState(state_list[0], 13), self.indentation, self._percentageString(state_list[0], currStates[state_list[0]], total)))
                 for jobStatus in state_list[1:]:
                     self.logger.info("\t\t\t\t{0}{1}{2}".format(self._printState(jobStatus, 13), self.indentation, self._percentageString(jobStatus, currStates[jobStatus], total)))
-                if jobtype == 'Probe jobs':
-                    self.logger.info("Probe stage log:\t\t%s", proxiedWebDir+"/AutomaticSplitting_Log0.txt")
         return result
 
     def printErrors(self, dictresult, automaticSplitt):
@@ -958,19 +957,16 @@ class status(SubCommand):
             numJobs = sum(pubInfo['jobsPerStatus'].values()) - numProbes - numUnpublishable
             numOutputDatasets = len(outputDatasets)
             numFilesToPublish = numJobs * numOutputDatasets
-            ## Count how many of these files have already started the publication process.
-            numSubmittedFiles = sum(states.values())
-            ## Substract the above two numbers to obtain how many files have not yet been
-            ## considered for publication.
-            states['unsubmitted'] = numFilesToPublish - numSubmittedFiles
+            ## Count how many of these files have not yet been considered for publication.
+            states['unsubmitted'] = numFilesToPublish - sum(states.values())
             ## Print the publication status.
             statesList = sorted(states)
-            msg = "\nPublication status:\t\t{0}{1}{2}".format(self._printState(statesList[0], 13), self.indentation, \
-                                                              self._percentageString(statesList[0], states[statesList[0]], numFilesToPublish))
+            msg = "\nPublication status of {0} dataset(s):\t{1}{2}{3}".format(numOutputDatasets, self._printState(statesList[0], 13), self.indentation, \
+                                                                              self._percentageString(statesList[0], states[statesList[0]], numFilesToPublish))
             msg += pubSource
             for jobStatus in statesList[1:]:
                 if states[jobStatus]:
-                    msg += "\n\t\t\t\t{0}{1}{2}".format(self._printState(jobStatus, 13), self.indentation, \
+                    msg += "\n\t\t\t\t\t{0}{1}{2}".format(self._printState(jobStatus, 13), self.indentation, \
                                                         self._percentageString(jobStatus, states[jobStatus], numFilesToPublish))
             self.logger.info(msg)
             ## Print the publication errors.
