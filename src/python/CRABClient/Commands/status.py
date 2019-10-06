@@ -11,7 +11,7 @@ from httplib import HTTPException
 
 import CRABClient.Emulator
 from CRABClient import __version__
-from CRABClient.ClientUtilities import colors, validateJobids, compareJobids
+from CRABClient.ClientUtilities import colors, validateJobids, compareJobids, getUrl
 from CRABClient.UserUtilities import getDataFromURL, getColumn
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ConfigurationException
@@ -42,7 +42,7 @@ class status(SubCommand):
     def __call__(self):
         # Get all of the columns from the database for a certain task
         taskname = self.cachedinfo['RequestName']
-        uri = self.getUrl(self.instance, resource = 'task')
+        uri = getUrl(self.instance, resource = 'task')
         serverFactory = CRABClient.Emulator.getEmulator('rest')
         server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
         crabDBInfo, _, _ =  server.get(uri, data = {'subresource': 'search', 'workflow': taskname})
@@ -73,7 +73,7 @@ class status(SubCommand):
 
         if not webdir:
             # Query condor through the server for information about this task
-            uri = self.getUrl(self.instance, resource = 'workflow')
+            uri = getUrl(self.instance, resource = 'workflow')
             params = {'subresource': 'taskads', 'workflow': taskname}
 
             res = server.get(uri, data = params)[0]['result'][0]
@@ -233,7 +233,7 @@ class status(SubCommand):
     def publicationStatus(self, workflow, asourl, asodb, user):
         """Gets some information about the state of publication of jobs from the server.
         """
-        uri = self.getUrl(self.instance, resource = 'workflow')
+        uri = getUrl(self.instance, resource = 'workflow')
         serverFactory = CRABClient.Emulator.getEmulator('rest')
         server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
 

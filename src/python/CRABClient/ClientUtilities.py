@@ -34,7 +34,8 @@ DBSURLS = {'reader': {'global': 'https://cmsweb.cern.ch/dbs/prod/global/DBSReade
 BASEURL = '/crabserver/'
 SERVICE_INSTANCES = {'prod': 'cmsweb.cern.ch',
                      'preprod': 'cmsweb-testbed.cern.ch',
-                     'dev': 'cmsweb-dev.cern.ch'}
+                     'dev': 'cmsweb-dev.cern.ch',
+                     'k8s': 'cmsweb-test.cern.ch' }
 BOOTSTRAP_ENVFILE = 'crab3env.json'
 BOOTSTRAP_INFOFILE = 'crab3info.json'
 BOOTSTRAP_CFGFILE = 'PSet.py'
@@ -190,9 +191,13 @@ def getColumn(dictresult, columnName):
 def getUrl(instance='prod', resource='workflow'):
     """
     Retrieve the url depending on the resource we are accessing and the instance.
+    As of August 2019 the Kubernetes server instance (k8s) points to preprod database instance
     """
     if instance in SERVICE_INSTANCES.keys():
-        return BASEURL + instance + '/' + resource
+        if instance == 'k8s':
+            return BASEURL + 'preprod' + '/' + resource
+        else:
+            return BASEURL + instance + '/' + resource
     elif instance == 'private':
         return BASEURL + 'dev' + '/' + resource
     raise ConfigurationException('Error: only the following instances can be used: %s' %str(SERVICE_INSTANCES.keys()))
