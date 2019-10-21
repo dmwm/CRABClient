@@ -334,6 +334,9 @@ class status(SubCommand):
                 msg += "%s on command %s" % (statusToPr, command)
             else:
                 msg += "%s" % (statusToPr)
+                if statusToPr == 'TAPERECALL':
+                    phedexRequest = "https://cmsweb.cern.ch/phedex/prod/Data::Subscriptions#state=%s" % urllib.quote("filter="+getColumn(crabDBInfo, 'tm_input_dataset'), safe='')
+                    msg += "\nPhEDEx request:\t\t\t%s" % phedexRequest
         self.logger.info(msg)
 
         # Show server and dashboard URL for the task.
@@ -347,13 +350,10 @@ class status(SubCommand):
 
         ## Dashboard monitoring URL only makes sense if submitted to schedd
         if schedd:
-            dashboardURL = "http://dashb-cms-job.cern.ch/dashboard/templates/task-analysis/#user=" + username \
-                         + "&refresh=0&table=Jobs&p=1&records=25&activemenu=2&status=&site=&tid=" + taskname
-            self.logger.info("Dashboard monitoring URL:\t%s" % (dashboardURL))
             dashboardURL = "https://monit-grafana.cern.ch/d/cmsTMDetail/cms-task-monitoring-task-view?orgId=11&var-user=" + username \
                          + "&var-task=" + taskname
-            self.logger.info("New dashboard monitoring URL:\t%s" % (dashboardURL))
-            self.logger.info("In case of issues with the new dashboard, please provide feedback to %s" % (FEEDBACKMAIL))
+            self.logger.info("Dashboard monitoring URL:\t%s" % (dashboardURL))
+            self.logger.info("In case of issues with the dashboard, please provide feedback to %s" % (FEEDBACKMAIL))
 
         # Print the warning messages (these are the warnings in the Tasks DB,
         # and/or maybe some warning added by the REST Interface to the status result).
@@ -396,6 +396,8 @@ class status(SubCommand):
 
         def translateJobStatus(jobid):
             statusToTr = dictresult[jobid]['State']
+            if statusToTr == 'cooloff':
+                statusToTr = 'toRetry'
             if not automaticSplitt:
                 return statusToTr
             if jobid.startswith('0-') and statusToTr in ('finished', 'failed'):
@@ -441,7 +443,7 @@ class status(SubCommand):
                     mem_cnt += 1
                 mem = '%d' % mem
             cpu = 'Unknown'
-            if (state in ['cooloff', 'failed', 'finished']) and not wall:
+            if (state in ['toRetry', 'failed', 'finished']) and not wall:
                 cpu = 0
                 if (cpu_min == -1) or cpu < cpu_min: cpu_min = cpu
                 if cpu > cpu_max: cpu_max = cpu
