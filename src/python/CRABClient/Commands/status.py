@@ -396,6 +396,8 @@ class status(SubCommand):
 
         def translateJobStatus(jobid):
             statusToTr = dictresult[jobid]['State']
+            if statusToTr == 'cooloff':
+                statusToTr = 'toRetry'
             if not automaticSplitt:
                 return statusToTr
             if jobid.startswith('0-') and statusToTr in ('finished', 'failed'):
@@ -441,7 +443,7 @@ class status(SubCommand):
                     mem_cnt += 1
                 mem = '%d' % mem
             cpu = 'Unknown'
-            if (state in ['cooloff', 'failed', 'finished']) and not wall:
+            if (state in ['toRetry', 'failed', 'finished']) and not wall:
                 cpu = 0
                 if (cpu_min == -1) or cpu < cpu_min: cpu_min = cpu
                 if cpu > cpu_max: cpu_max = cpu
