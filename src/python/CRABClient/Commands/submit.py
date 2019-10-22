@@ -141,7 +141,7 @@ class submit(SubCommand):
                     voRole=self.voRole, voGroup=self.voGroup, instance=self.instance,
                     originalConfig=self.configuration)
 
-        self.logger.info("%sSuccess%s: Your task has been delivered to the %s CRAB3 server." % (colors.GREEN, colors.NORMAL, self.configuration.General.instance))
+        self.logger.info("%sSuccess%s: Your task has been delivered to the %s CRAB3 server." % (colors.GREEN, colors.NORMAL, self.instance))
         if not (self.options.wait or self.options.dryrun):
             self.logger.info("Task name: %s" % uniquerequestname)
             projDir = os.path.join(getattr(self.configuration.General, 'workArea', '.'), self.requestname)
