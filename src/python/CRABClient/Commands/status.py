@@ -589,8 +589,6 @@ class status(SubCommand):
                 self.logger.info("\n{0:32}{1}{2}{3}".format(jobtype + ' status:', self._printState(state_list[0], 13), self.indentation, self._percentageString(state_list[0], currStates[state_list[0]], total)))
                 for jobStatus in state_list[1:]:
                     self.logger.info("\t\t\t\t{0}{1}{2}".format(self._printState(jobStatus, 13), self.indentation, self._percentageString(jobStatus, currStates[jobStatus], total)))
-                if jobtype == 'Probe jobs':
-                    self.logger.info("Probe stage log:\t\t%s", proxiedWebDir+"/AutomaticSplitting_Log0.txt")
         return result
 
     def printErrors(self, dictresult, automaticSplitt):
