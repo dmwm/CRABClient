@@ -15,7 +15,8 @@ from ServerUtilities import BOOTSTRAP_CFGFILE_DUMP
 from CRABClient.ClientExceptions import ConfigurationException, EnvironmentException
 from CRABClient.ClientUtilities import bootstrapDone, colors, BOOTSTRAP_CFGFILE_PKL, BOOTSTRAP_INFOFILE, LOGGERS
 
-
+# cache user configuration to speed up things in case this is called multiple times in same process
+# via CRAB command API. Note that CMSSW configuration can only be loaded once in memory !
 configurationCache = {}
 
 
@@ -36,7 +37,7 @@ class CMSSWConfig(object):
             cfgDirName = os.path.dirname(os.path.abspath(userConfig))
 
             if not os.path.isfile(userConfig):
-                msg = "Cannot find CMSSW configuration file %s in %s" % (userConfig, os.getcwd())
+                msg = "\nCannot find CMSSW configuration file %s in %s" % (userConfig, os.getcwd())
                 raise ConfigurationException(msg)
 
             self.logger.info("Importing CMSSW configuration %s" % (userConfig))
@@ -47,13 +48,29 @@ class CMSSWConfig(object):
                 sys.argv.extend(pyCfgParams)
                 msg = "Additional parameters for the CMSSW configuration are: %s" % (pyCfgParams)
                 self.logger.debug(msg)
+            # details of user configuration file:
             configFile, pathname, description = imp.find_module(cfgBaseName, [cfgDirName])
-            cacheLine = (tuple(sys.path), tuple(pathname), tuple(sys.argv))
-            if cacheLine in configurationCache:
-                self.fullConfig = configurationCache[cacheLine]
-                configFile.close()
-            elif not bootstrapDone():
-                sys.path.append(os.getcwd())
+            cacheLine = (pathname, tuple(sys.argv))
+            cwd=os.getcwd()
+            if cwd not in sys.path:   # cwd must be part of $PYTHONPATH for CMSSW config to work
+                sys.path.append(cwd)
+
+            if configurationCache:
+                # check that nothing has changed, and use it
+                if not cacheLine in configurationCache:
+                    msg = "\nFATAL ERROR: A different CMSSSW configuration was already cached."
+                    msg += "\n Either configuration file name or configuration parameters have been changed."
+                    msg += "\n But CMSSW configuration files can't be loaded more than once in memory."
+                    raise ConfigurationException(msg)
+                if tuple(sys.path) != configurationCache[cacheLine]['path']:
+                    msg = '\nFATAL ERROR: sys.path ($PYTHONPATH) has changed since CMSSW configuration file was loaded.'
+                    raise ConfigurationException(msg)
+
+                self.fullConfig = configurationCache[cacheLine]['config']
+            else:
+                # cache this configuration
+                if cwd not in sys.path:
+                    sys.path.append(cwd)
                 try:
                     oldstdout = sys.stdout
                     sys.stdout = open(logger.logfile, 'a')
@@ -62,7 +79,9 @@ class CMSSWConfig(object):
                     sys.stdout.close()
                     sys.stdout = oldstdout
                     configFile.close()
-                configurationCache[cacheLine] = self.fullConfig
+                # need to turn sys.path into a static set of strings for using it as a cache key
+                # otherwise is a pointer to a function and we can't use it to check for stability
+                configurationCache[cacheLine] = { 'config' : self.fullConfig , 'path' : tuple(sys.path) }
             self.logger.info("Finished importing CMSSW configuration %s" % (userConfig))
             sys.argv = originalArgv
 
@@ -96,8 +115,8 @@ class CMSSWConfig(object):
             with open(dumpFileName, 'w') as fd:
                 fd.write(dumpedStr)
         except Exception as e:
-            self.logger.debug('Cannot dump CMSSW configuration file. This prevents sandbox recycling but it is not a fatal error.')
             LOGGERS['CRAB3'].error(str(e))
+            raise ConfigurationException('\nFATAL ERROR, cannot dump CMSSW configuration file. This prevents sandbox recycling.')
 
         return
 
@@ -118,7 +137,7 @@ class CMSSWConfig(object):
             try:
                 isPool = str(source.type_()) == 'PoolSource'
             except AttributeError as ex:
-                msg = "Invalid CMSSW configuration: Failed to check if 'process.source' is of type 'PoolSource': %s" % (ex)
+                msg = "\nFATAL ERROR: Invalid CMSSW configuration: Failed to check if 'process.source' is of type 'PoolSource': %s" % (ex)
                 raise ConfigurationException(msg)
 
         return isPool
@@ -141,13 +160,13 @@ class CMSSWConfig(object):
             try:
                 isLHE = str(source.type_()) == 'LHESource'
             except AttributeError as ex:
-                msg = "Invalid CMSSW configuration: Failed to check if 'process.source' is of type 'LHESource': %s" % (ex)
+                msg = "\nInvalid CMSSW configuration: Failed to check if 'process.source' is of type 'LHESource': %s" % (ex)
                 raise ConfigurationException(msg)
             if isLHE:
                 if hasattr(source, 'fileNames'):
                     numFiles = len(source.fileNames)
                 else:
-                    msg = "Invalid CMSSW configuration: Object 'process.source', of type 'LHESource', is missing attribute 'fileNames'."
+                    msg = "\nInvalid CMSSW configuration: Object 'process.source', of type 'LHESource', is missing attribute 'fileNames'."
                     raise ConfigurationException(msg)
 
         return isLHE, numFiles
@@ -194,7 +213,7 @@ class CMSSWConfig(object):
                     dataset = getattr(outputModule, 'dataset')
                     filterName = getattr(dataset, 'filterName')
                 except AttributeError:
-                    raise RuntimeError('Your output module %s does not have a "dataset" PSet ' % outputModule.label() +
+                    raise RuntimeError('\nYour output module %s does not have a "dataset" PSet ' % outputModule.label() +
                                        'or the PSet does not have a "filterName" member.')
 
         ## Find files written by TFileService.
@@ -212,7 +231,7 @@ class CMSSWConfig(object):
     def getCfgInfo(self):
         bootFilename = os.path.join(os.environ['CRAB3_BOOTSTRAP_DIR'], BOOTSTRAP_INFOFILE)
         if not os.path.isfile(bootFilename):
-            msg = "The CRAB3_BOOTSTRAP_DIR environment variable is set, but I could not find %s" % bootFilename
+            msg = "\nThe CRAB3_BOOTSTRAP_DIR environment variable is set, but I could not find %s" % bootFilename
             raise EnvironmentException(msg)
         else:
             with open(bootFilename) as fd:

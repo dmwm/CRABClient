@@ -2,7 +2,7 @@ from CRABClient.Commands.remote_copy import remote_copy
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ConfigurationException , RESTCommunicationException,\
     ClientException
-from CRABClient.ClientUtilities import validateJobids, colors
+from CRABClient.ClientUtilities import validateJobids, colors, getUrl
 from CRABClient.UserUtilities import getMutedStatusInfo
 from CRABClient import __version__
 
@@ -38,7 +38,7 @@ class getcommand(SubCommand):
         inputlist = {'subresource': 'search', 'workflow': self.cachedinfo['RequestName']}
         serverFactory = CRABClient.Emulator.getEmulator('rest')
         server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
-        uri = self.getUrl(self.instance, resource = 'task')
+        uri = getUrl(self.instance, resource = 'task')
         dictresult, status, _ =  server.get(uri, data = inputlist)
         self.logger.debug('Server result: %s' % dictresult)
         splitting = None

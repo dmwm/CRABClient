@@ -11,7 +11,7 @@ from httplib import HTTPException
 
 import CRABClient.Emulator
 from CRABClient import __version__
-from CRABClient.ClientUtilities import colors, validateJobids, compareJobids
+from CRABClient.ClientUtilities import colors, validateJobids, compareJobids, getUrl
 from CRABClient.UserUtilities import getDataFromURL, getColumn
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ConfigurationException
@@ -42,14 +42,14 @@ class status(SubCommand):
     def __call__(self):
         # Get all of the columns from the database for a certain task
         taskname = self.cachedinfo['RequestName']
-        uri = self.getUrl(self.instance, resource = 'task')
+        uri = getUrl(self.instance, resource = 'task')
         serverFactory = CRABClient.Emulator.getEmulator('rest')
         server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
         crabDBInfo, _, _ =  server.get(uri, data = {'subresource': 'search', 'workflow': taskname})
         self.logger.debug("Got information from server oracle database: %s", crabDBInfo)
 
         # Until the task lands on a schedd we'll show the status from the DB
-        combinedStatus = getColumn(crabDBInfo, 'tm_task_status')
+        dbStatus = getColumn(crabDBInfo, 'tm_task_status')
 
         user = getColumn(crabDBInfo, 'tm_username')
         webdir = getColumn(crabDBInfo, 'tm_user_webdir')
@@ -67,13 +67,13 @@ class status(SubCommand):
         if not rootDagId:
             failureMsg = "The task has not been submitted to the Grid scheduler yet. Not printing job information."
             self.logger.debug(failureMsg)
-            return self.makeStatusReturnDict(crabDBInfo, combinedStatus, statusFailureMsg=failureMsg)
+            return self.makeStatusReturnDict(crabDBInfo, dbStatus, statusFailureMsg=failureMsg)
 
         self.logger.debug("The CRAB server submitted your task to the Grid scheduler (cluster ID: %s)" % rootDagId)
 
         if not webdir:
             # Query condor through the server for information about this task
-            uri = self.getUrl(self.instance, resource = 'workflow')
+            uri = getUrl(self.instance, resource = 'workflow')
             params = {'subresource': 'taskads', 'workflow': taskname}
 
             res = server.get(uri, data = params)[0]['result'][0]
@@ -132,7 +132,7 @@ class status(SubCommand):
         automaticSplitt = splitting == 'Automatic'
 
         # If the task is already on the grid, show the dagman status
-        combinedStatus = dagStatus = self.printDAGStatus(crabDBInfo, statusCacheInfo)
+        combinedStatus = dagStatus = self.printDAGStatus(dbStatus, statusCacheInfo)
 
         shortResult = self.printOverview(statusCacheInfo, automaticSplitt, proxiedWebDir)
         pubStatus = self.printPublication(publicationEnabled, shortResult['jobsPerStatus'], shortResult['numProbes'],
@@ -233,7 +233,7 @@ class status(SubCommand):
     def publicationStatus(self, workflow, asourl, asodb, user):
         """Gets some information about the state of publication of jobs from the server.
         """
-        uri = self.getUrl(self.instance, resource = 'workflow')
+        uri = getUrl(self.instance, resource = 'workflow')
         serverFactory = CRABClient.Emulator.getEmulator('rest')
         server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
 
@@ -301,12 +301,10 @@ class status(SubCommand):
             return check_queued(cls.translateStatus(subDagInfos[0]['DagStatus'], dbstatus))
         return check_queued(cls.translateStatus(dagInfo['DagStatus'], dbstatus))
 
-    def printDAGStatus(self, crabDBInfo, statusCacheInfo):
+    def printDAGStatus(self, dbStatus, statusCacheInfo):
         # Get dag status from the node_state/job_log summary
-        dbstatus = getColumn(crabDBInfo, 'tm_task_status')
-
         dagInfo = statusCacheInfo['DagStatus']
-        dagStatus = self.collapseDAGStatus(dagInfo, dbstatus)
+        dagStatus = self.collapseDAGStatus(dagInfo, dbStatus)
 
         msg = "Status on the scheduler:\t" + dagStatus
         self.logger.info(msg)
@@ -336,6 +334,9 @@ class status(SubCommand):
                 msg += "%s on command %s" % (statusToPr, command)
             else:
                 msg += "%s" % (statusToPr)
+                if statusToPr == 'TAPERECALL':
+                    phedexRequest = "https://cmsweb.cern.ch/phedex/prod/Data::Subscriptions#state=%s" % urllib.quote("filter="+getColumn(crabDBInfo, 'tm_input_dataset'), safe='')
+                    msg += "\nPhEDEx request:\t\t\t%s" % phedexRequest
         self.logger.info(msg)
 
         # Show server and dashboard URL for the task.
@@ -349,9 +350,10 @@ class status(SubCommand):
 
         ## Dashboard monitoring URL only makes sense if submitted to schedd
         if schedd:
-            dashboardURL = "http://dashb-cms-job.cern.ch/dashboard/templates/task-analysis/#user=" + username \
-                         + "&refresh=0&table=Jobs&p=1&records=25&activemenu=2&status=&site=&tid=" + taskname
+            dashboardURL = "https://monit-grafana.cern.ch/d/cmsTMDetail/cms-task-monitoring-task-view?orgId=11&var-user=" + username \
+                         + "&var-task=" + taskname
             self.logger.info("Dashboard monitoring URL:\t%s" % (dashboardURL))
+            self.logger.info("In case of issues with the dashboard, please provide feedback to %s" % (FEEDBACKMAIL))
 
         # Print the warning messages (these are the warnings in the Tasks DB,
         # and/or maybe some warning added by the REST Interface to the status result).
@@ -360,8 +362,8 @@ class status(SubCommand):
             for warningMsg in warnings:
                 self.logger.warning("%sWarning%s:%s%s" % (colors.RED, colors.NORMAL, warningIndent, warningMsg.replace('\n', '\n\t'+warningIndent)))
         if failure and 'FAILED' in statusToPr:
-            msg  = "%sFailure message from the server%s:" % (colors.RED, colors.NORMAL)
-            msg += "\t\t%s" % (failure.replace('\n', '\n\t\t\t\t'))
+            msg  = "%sFailure message from server%s:" % (colors.RED, colors.NORMAL)
+            msg += "\t%s" % (failure.replace('\n', '\n\t\t\t\t'))
             self.logger.error(msg)
 
     def checkUserJobids(self, statusCacheInfo, userJobids):
@@ -394,6 +396,8 @@ class status(SubCommand):
 
         def translateJobStatus(jobid):
             statusToTr = dictresult[jobid]['State']
+            if statusToTr == 'cooloff':
+                statusToTr = 'toRetry'
             if not automaticSplitt:
                 return statusToTr
             if jobid.startswith('0-') and statusToTr in ('finished', 'failed'):
@@ -439,7 +443,7 @@ class status(SubCommand):
                     mem_cnt += 1
                 mem = '%d' % mem
             cpu = 'Unknown'
-            if (state in ['cooloff', 'failed', 'finished']) and not wall:
+            if (state in ['toRetry', 'failed', 'finished']) and not wall:
                 cpu = 0
                 if (cpu_min == -1) or cpu < cpu_min: cpu_min = cpu
                 if cpu > cpu_max: cpu_max = cpu
@@ -480,7 +484,7 @@ class status(SubCommand):
             for param, values in usage.items():
                 if values[0] and values[1] > values[3]:
                     if values[0] < values[2]*values[1]:
-                        self.logger.info("\n%sWarning%s: the max jobs %s is less than %d%% of the task requested value (%d %s), please consider to request a lower value (allowed through crab resubmit) and/or %s." % (colors.RED, colors.NORMAL, param, values[2]*100, values[1], values[4], hint))
+                        self.logger.info("\n%sWarning%s: the max jobs %s is less than %d%% of the task requested value (%d %s), please consider to request a lower value for failed jobs (allowed through crab resubmit) and/or %s." % (colors.RED, colors.NORMAL, param, values[2]*100, values[1], values[4], hint))
             if run_sum:
                 cpu_ave = (cpu_sum / run_sum)
                 cpu_thr = 0.5
@@ -488,7 +492,7 @@ class status(SubCommand):
                 if cpu_ave < cpu_thr:
                     cpuMsg = "\n%sWarning%s: the average jobs CPU efficiency is less than %d%%, please consider to " % (colors.RED, colors.NORMAL, cpu_thr*100)
                     if numCores > 1 and cpu_ave < cpu_thr_multiThread:
-                        cpuMsg += "request a lower number of threads (allowed through crab resubmit) and/or "
+                        cpuMsg += "request a lower number of threads for failed jobs (allowed through crab resubmit) and/or "
                     self.logger.info(cpuMsg+hint)
 
             summaryMsg = "\nSummary of run jobs:"
@@ -570,11 +574,14 @@ class status(SubCommand):
                 states[jobStatus] = states.setdefault(jobStatus, 0) + statesSJ[jobStatus]
 
         # And if the dictionary is not empty, print it
+        if automaticSplitt:
+            automaticSplittFAQ = 'https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3FAQ#What_is_the_Automatic_splitting'
+            self.logger.info("\nThe job splitting of this task is 'Automatic', please refer to this FAQ for a description of the jobs status summary:\n%s", automaticSplittFAQ)
+            if statesPJ and not states:
+                self.logger.info("Probe stage log:\t\t%s", proxiedWebDir+"/AutomaticSplitting_Log0.txt")
+
         for jobtype, currStates in toPrint:
             if currStates:
-                if automaticSplitt and jobtype == 'Probe jobs':
-                    automaticSplittFAQ = 'https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3FAQ#What_is_the_Automatic_splitting'
-                    self.logger.info("\nThe jobs splitting of this task is 'Automatic', please refer to this FAQ for a description of the jobs status summary:\n%s", automaticSplittFAQ)
                 total = sum(currStates[st] for st in currStates)
                 state_list = sorted(currStates)
                 self.logger.info("\n{0:32}{1}{2}{3}".format(jobtype + ' status:', self._printState(state_list[0], 13), self.indentation, self._percentageString(state_list[0], currStates[state_list[0]], total)))
@@ -582,6 +589,8 @@ class status(SubCommand):
                     self.logger.info("\t\t\t\t{0}{1}{2}".format(self._printState(jobStatus, 13), self.indentation, self._percentageString(jobStatus, currStates[jobStatus], total)))
                 if jobtype == 'Probe jobs':
                     self.logger.info("Probe stage log:\t\t%s", proxiedWebDir+"/AutomaticSplitting_Log0.txt")
+=======
+>>>>>>> central/master
         return result
 
     def printErrors(self, dictresult, automaticSplitt):
@@ -954,20 +963,17 @@ class status(SubCommand):
             numJobs = sum(pubInfo['jobsPerStatus'].values()) - numProbes - numUnpublishable
             numOutputDatasets = len(outputDatasets)
             numFilesToPublish = numJobs * numOutputDatasets
-            ## Count how many of these files have already started the publication process.
-            numSubmittedFiles = sum(states.values())
-            ## Substract the above two numbers to obtain how many files have not yet been
-            ## considered for publication.
-            states['unsubmitted'] = numFilesToPublish - numSubmittedFiles
+            ## Count how many of these files have not yet been considered for publication.
+            states['unsubmitted'] = numFilesToPublish - sum(states.values())
             ## Print the publication status.
             statesList = sorted(states)
-            msg = "\nPublication status:\t\t{0}{1}{2}".format(self._printState(statesList[0], 13), self.indentation, \
-                                                              self._percentageString(statesList[0], states[statesList[0]], numFilesToPublish))
+            msg = "\nPublication status of {0} dataset(s):\t{1}{2}{3}".format(numOutputDatasets, self._printState(statesList[0], 13), self.indentation, \
+                                                                              self._percentageString(statesList[0], states[statesList[0]], numFilesToPublish))
             msg += pubSource
             for jobStatus in statesList[1:]:
                 if states[jobStatus]:
-                    msg += "\n\t\t\t\t{0}{1}{2}".format(self._printState(jobStatus, 13), self.indentation, \
-                                                        self._percentageString(jobStatus, states[jobStatus], numFilesToPublish))
+                    msg += "\n\t\t\t\t\t{0}{1}{2}".format(self._printState(jobStatus, 13), self.indentation, \
+                                                          self._percentageString(jobStatus, states[jobStatus], numFilesToPublish))
             self.logger.info(msg)
             ## Print the publication errors.
             if pubInfo.get('publicationFailures'):

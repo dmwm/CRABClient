@@ -3,18 +3,19 @@ import re
 import imp 
 import json
 import types
+import subprocess
 from ast import literal_eval
 
 from WMCore.Configuration import loadConfigurationFile, Configuration
 
 import CRABClient.Emulator
 from CRABClient import SpellChecker
-from CRABClient.__init__ import __version__
+from CRABClient import __version__
 from CRABClient.ClientUtilities import colors
 from CRABClient.CRABOptParser import CRABCmdOptParser
-from CRABClient.ClientUtilities import BASEURL, SERVICE_INSTANCES
+from CRABClient.ClientUtilities import SERVICE_INSTANCES
 from CRABClient.CredentialInteractions import CredentialInteractions
-from CRABClient.ClientUtilities import loadCache, getWorkArea, server_info, createWorkArea
+from CRABClient.ClientUtilities import loadCache, getWorkArea, server_info, createWorkArea, getUrl
 from CRABClient.ClientExceptions import ConfigurationException, MissingOptionException, EnvironmentException, CachefileNotFoundException
 from CRABClient.ClientMapping import renamedParams, commandsConfiguration, configParametersInfo, getParamDefaultValue
 
@@ -27,6 +28,9 @@ class ConfigCommand:
     Commands which needs to load the configuration file (e.g.: submit, publish) must subclass ConfigCommand
     Provides methods for loading the configuration file handling the errors
     """
+    def __init__(self):
+        self.configuration = None
+        self.logger = None
 
     def loadConfig(self, configname, overrideargs = None):
         """
@@ -67,16 +71,16 @@ class ConfigCommand:
                         self.logger.info("Wrong format in command-line argument '%s'. Expected format is <section-name>.<parameter-name>=<parameter-value>." % (singlearg))
                         raise ConfigurationException("ERROR: Wrong command-line format.")
                     self.configuration.section_(parnames[0])
-                    type = configParametersInfo.get(fullparname, {}).get('type', 'undefined')
-                    if type in ['undefined', 'StringType']:
+                    parType = configParametersInfo.get(fullparname, {}).get('type', 'undefined')
+                    if parType in ['undefined', 'StringType']:
                         setattr(getattr(self.configuration, parnames[0]), parnames[1], literal_eval("\'%s\'" % parval))
                         self.logger.debug("Overriden parameter %s with '%s'" % (fullparname, parval))
                     else:
                         setattr(getattr(self.configuration, parnames[0]), parnames[1], literal_eval("%s" % parval))
                         self.logger.debug("Overriden parameter %s with %s" % (fullparname, parval))
             valid, configmsg = self.validateConfig() ## Subclasses of SubCommand overwrite this method if needed.
-        except RuntimeError as re:
-            configmsg  = "Error while loading CRAB configuration:\n%s" % (self._extractReason(configname, re))
+        except RuntimeError as runErr:
+            configmsg  = "Error while loading CRAB configuration:\n%s" % (self._extractReason(configname, runErr))
             configmsg += "\nPlease refer to https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3CommonErrors#Syntax_error_in_CRAB_configurati"
             configmsg += "\nSee the ./crab.log file for more details."
             configmsg += "\nThe documentation about the CRAB configuration file can be found in"
@@ -89,13 +93,13 @@ class ConfigCommand:
                 raise ConfigurationException(configmsg)
 
 
-    def _extractReason(self, configname, re):
+    def _extractReason(self, configname, runErr):
         """
         To call in case of error loading the configuration file
         Get the reason of the failure without the stacktrace. Put the stacktrace in the crab.log file
         """
         #get only the error wihtout the stacktrace
-        msg = str(re)
+        msg = str(runErr)
         filename = os.path.abspath( configname )
         cfgBaseName = os.path.basename( filename ).replace(".py", "")
         cfgDirName = os.path.dirname( filename )
@@ -209,18 +213,6 @@ class SubCommand(ConfigCommand):
     #Default command name is the name of the command class, but it is also possible to set the name attribute in the subclass
     #if the command name does not correspond to the class name (getlog => get-log)
 
-
-    def getUrl(self, instance='prod', resource='workflow'):
-        """
-        Retrieve the url depending on the resource we are accessing and the instance.
-        """
-        if instance in SERVICE_INSTANCES.keys():
-            return BASEURL + instance + '/' + resource
-        elif instance == 'private':
-            return BASEURL + 'dev' + '/' + resource
-        raise ConfigurationException('Error: only %s instances can be used.' % str(SERVICE_INSTANCES.keys()))
-
-
     def __init__(self, logger, cmdargs = None, disable_interspersed_args = False):
         """
         Initialize common client parameters
@@ -228,9 +220,15 @@ class SubCommand(ConfigCommand):
         if not hasattr(self, 'name'):
             self.name = self.__class__.__name__
 
+        ConfigCommand.__init__(self)
         ## The command logger.
         self.logger = logger
         self.logfile = self.logger.logfile
+
+
+        localSystem = subprocess.check_output(['uname','-a'])
+        localOS = subprocess.check_output(['lsb_release','-d'])
+        self.logger.debug("Running on: " + localSystem + localOS)
         self.logger.debug("Executing command: '%s'" % str(self.name))
 
         self.proxy = None
@@ -243,6 +241,7 @@ class SubCommand(ConfigCommand):
                                "trying to add a command without it's correspondant configuration?" % self.name)
 
         ## Get the CRAB cache file.
+        self.cachedinfo = None
         self.crab3dic = self.getConfiDict()
 
         ## The options parser.
@@ -258,8 +257,11 @@ class SubCommand(ConfigCommand):
         self.transferringIds = None
         self.dest = None
 
-        ## Validate the command options.
-        self.validateOptions()
+        self.validateLogpathOption()
+        ## Validate first the SubCommand options
+        SubCommand.validateOptions(self)
+        ## then the config option for the submit command
+        self.validateConfigOption()
 
         ## Get the VO group/role from the command options (if the command requires these
         ## options).
@@ -341,12 +343,15 @@ class SubCommand(ConfigCommand):
         ## Finally, delegate the proxy to myproxy server.
         self.handleProxy(proxyOptsSetPlace)
 
+        ## Validate the command options
+        self.validateOptions()
+
         ## Logging user command and options used for debuging purpose.
         self.logger.debug('Command use: %s' % self.name)
         self.logger.debug('Options use: %s' % cmdargs)
         if self.cmdconf['requiresREST']:
-            self.checkversion(self.getUrl(self.instance, resource='info'))
-            self.uri = self.getUrl(self.instance)
+            self.checkversion(getUrl(self.instance, resource='info'))
+            self.uri = getUrl(self.instance)
         self.logger.debug("Instance is %s" %(self.instance))
         self.logger.debug("Server base url is %s" %(self.serverurl))
         if self.cmdconf['requiresREST']:
@@ -361,7 +366,7 @@ class SubCommand(ConfigCommand):
         """
 
         if hasattr(self.options, 'instance') and self.options.instance is not None:
-            if hasattr(self, 'configuration') and hasattr(self.configuration.General, 'instance') and self.configuration.General.instance is not None:
+            if hasattr(self, 'configuration') and hasattr(self.configuration, 'General') and hasattr(self.configuration.General, 'instance') and self.configuration.General.instance is not None:
                 msg  = "%sWarning%s: CRAB configuration parameter General.instance is overwritten by the command option --instance;" % (colors.RED, colors.NORMAL)
                 msg += " %s intance will be used." % (self.options.instance)
                 self.logger.info(msg)
@@ -371,7 +376,7 @@ class SubCommand(ConfigCommand):
             else:
                 instance = 'private'
                 serverurl = self.options.instance
-        elif hasattr(self, 'configuration') and hasattr(self.configuration.General, 'instance') and self.configuration.General.instance is not None:
+        elif hasattr(self, 'configuration') and hasattr(self.configuration, 'General') and hasattr(self.configuration.General, 'instance') and self.configuration.General.instance is not None:
             if self.configuration.General.instance in SERVICE_INSTANCES.keys():
                 instance = self.configuration.General.instance
                 serverurl = SERVICE_INSTANCES[instance]
@@ -412,7 +417,7 @@ class SubCommand(ConfigCommand):
                                                                    proxyOptsSetPlace = proxyOptsSetPlace)
                 if self.cmdconf['requiresREST']: ## If the command doesn't contact the REST, we can't delegate the proxy.
                     self.proxy.myproxyAccount = self.serverurl
-                    baseurl = self.getUrl(self.instance, resource = 'info')
+                    baseurl = getUrl(self.instance, resource = 'info')
                     ## Get the DN of the task workers from the server.
                     all_task_workers_dns = server_info('delegatedn', self.serverurl, self.proxyfilename, baseurl)
                     for serverdn in all_task_workers_dns['services']:
@@ -574,9 +579,8 @@ class SubCommand(ConfigCommand):
                 msg += " %s is not a valid CRAB project directory." % (self.options.projdir)
                 raise ConfigurationException(msg)
 
-        ## If an input project directory was given, load the request cache and take the
-        ## server URL from it.
-        if self.cmdconf['requiresDirOption']:
+            ## If an input project directory was given, load the request cache and take the
+            ## server URL from it.
             self.loadLocalCache()
 
         ## If the command does not take any arguments, but some arguments were passed,
@@ -588,3 +592,10 @@ class SubCommand(ConfigCommand):
             msg += " Ignoring arguments %s." % (self.args)
             self.logger.warning(msg)
             self.args = []
+
+
+    def validateLogpathOption(self):
+        pass
+
+    def validateConfigOption(self):
+        pass
