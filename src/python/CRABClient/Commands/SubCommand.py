@@ -227,12 +227,12 @@ class SubCommand(ConfigCommand):
 
         localSystem = subprocess.check_output(['uname', '-a']).strip('\n')
         try:
-            localOS = subprocess.check_output(['lsb_release', '-d']).strip('\n')
-            localOS = localOS.split(':')[1].strip()
+            localOS = subprocess.check_output(['grep', 'PRETTY_NAME', '/etc/os-release']).strip('\n')
+            localOS = localOS.split('=')[1].strip('"')
         except:
             try:
-                localOS = subprocess.check_output(['grep', 'PRETTY_NAME', '/etc/os-release']).strip('\n')
-                localOS = localOS.split('=')[1].strip('"')
+                localOS = subprocess.check_output(['lsb_release', '-d']).strip('\n')
+                localOS = localOS.split(':')[1].strip()
             except:
                 localOS = "Unknown Operating System"
         self.logger.debug("Running on: " + localSystem + " - " + localOS)
