@@ -225,10 +225,17 @@ class SubCommand(ConfigCommand):
         self.logger = logger
         self.logfile = self.logger.logfile
 
-
-        localSystem = subprocess.check_output(['uname','-a'])
-        localOS = subprocess.check_output(['lsb_release','-d'])
-        self.logger.debug("Running on: " + localSystem + localOS)
+        localSystem = subprocess.check_output(['uname', '-a']).strip('\n')
+        try:
+            localOS = subprocess.check_output(['grep', 'PRETTY_NAME', '/etc/os-release']).strip('\n')
+            localOS = localOS.split('=')[1].strip('"')
+        except:
+            try:
+                localOS = subprocess.check_output(['lsb_release', '-d']).strip('\n')
+                localOS = localOS.split(':')[1].strip()
+            except:
+                localOS = "Unknown Operating System"
+        self.logger.debug("Running on: " + localSystem + " - " + localOS)
         self.logger.debug("Executing command: '%s'" % str(self.name))
 
         self.proxy = None
