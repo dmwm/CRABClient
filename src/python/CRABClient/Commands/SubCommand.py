@@ -236,6 +236,13 @@ class SubCommand(ConfigCommand):
             except:
                 localOS = "Unknown Operating System"
         self.logger.debug("Running on: " + localSystem + " - " + localOS)
+
+        opensslInfo = subprocess.check_output(["openssl", "version"]).strip('\n')
+        self.logger.debug("OpenSSl version: %s", opensslInfo)
+        opensslVersion = opensslInfo.split()[1]
+        if int(opensslVersion[0]) > 1 or (int(opensslVersion[0]) == 1 and int(opensslVersion[2]) > 0):
+            raise EnvironmentException("OpenSSl version > 1.0 are not supported: %s" % opensslVersion)
+
         self.logger.debug("Executing command: '%s'" % str(self.name))
 
         self.proxy = None
@@ -244,7 +251,7 @@ class SubCommand(ConfigCommand):
         ## Get the command configuration.
         self.cmdconf = commandsConfiguration.get(self.name)
         if not self.cmdconf:
-            raise RuntimeError("Canot find command %s in commandsConfiguration inside ClientMapping. Are you developer"
+            raise RuntimeError("Canot find command %s in commandsConfiguration inside ClientMapping. Are you a developer"
                                "trying to add a command without it's correspondant configuration?" % self.name)
 
         ## Get the CRAB cache file.
