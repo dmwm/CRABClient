@@ -227,7 +227,7 @@ class SubCommand(ConfigCommand):
 
         localSystem = subprocess.check_output(['uname', '-a']).strip('\n')
         try:
-            localOS = subprocess.check_output(['grep', 'PRETTY_NAME', '/etc/os-release']).strip('\n')
+            localOS = subprocess.check_output(['grep', 'PRETTY_NAME', '/etc/os-release'], stderr=subprocess.STDOUT).strip('\n')
             localOS = localOS.split('=')[1].strip('"')
         except:
             try:
