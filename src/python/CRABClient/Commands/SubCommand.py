@@ -227,7 +227,7 @@ class SubCommand(ConfigCommand):
 
         localSystem = subprocess.check_output(['uname', '-a']).strip('\n')
         try:
-            localOS = subprocess.check_output(['grep', 'PRETTY_NAME', '/etc/os-release']).strip('\n')
+            localOS = subprocess.check_output(['grep', 'PRETTY_NAME', '/etc/os-release'], stderr=subprocess.STDOUT).strip('\n')
             localOS = localOS.split('=')[1].strip('"')
         except:
             try:
@@ -240,8 +240,9 @@ class SubCommand(ConfigCommand):
         opensslInfo = subprocess.check_output(["openssl", "version"]).strip('\n')
         self.logger.debug("OpenSSl version: %s", opensslInfo)
         opensslVersion = opensslInfo.split()[1]
-        if int(opensslVersion[0]) > 1 or (int(opensslVersion[0]) == 1 and int(opensslVersion[2]) > 0):
-            raise EnvironmentException("OpenSSl version > 1.0 are not supported: %s" % opensslVersion)
+        nDots = opensslVersion.count(".")
+        if float(opensslVersion.rsplit(".", nDots-1)[0]) > 1:
+            raise EnvironmentException("Your OpenSSl version (%s) is not supported. Supported versions are < 1.1" % opensslVersion)
 
         self.logger.debug("Executing command: '%s'" % str(self.name))
 
