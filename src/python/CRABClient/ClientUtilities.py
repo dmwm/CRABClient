@@ -34,8 +34,12 @@ DBSURLS = {'reader': {'global': 'https://cmsweb.cern.ch/dbs/prod/global/DBSReade
 BASEURL = '/crabserver/'
 SERVICE_INSTANCES = {'prod': 'cmsweb.cern.ch',
                      'preprod': 'cmsweb-testbed.cern.ch',
-                     'dev': 'cmsweb-dev.cern.ch',
-                     'k8s': 'cmsweb-test.cern.ch' }
+                     'k8s': 'cmsweb-k8s-testbed.cern.ch',
+                     'test': 'cmsweb-test.cern.ch',
+                     'test1': 'cmsweb-test1.cern.ch',
+                     'test2': 'cmsweb-test2.cern.ch',
+                     'test3': 'cmsweb-test3.cern.ch',
+                     }
 BOOTSTRAP_ENVFILE = 'crab3env.json'
 BOOTSTRAP_INFOFILE = 'crab3info.json'
 BOOTSTRAP_CFGFILE = 'PSet.py'
@@ -192,9 +196,10 @@ def getUrl(instance='prod', resource='workflow'):
     """
     Retrieve the url depending on the resource we are accessing and the instance.
     As of August 2019 the Kubernetes server instance (k8s) points to preprod database instance
+    Same for the cmsweb-test* development k8s clusters
     """
     if instance in SERVICE_INSTANCES.keys():
-        if instance == 'k8s':
+        if instance == 'k8s' or 'test' in instance :
             return BASEURL + 'preprod' + '/' + resource
         else:
             return BASEURL + instance + '/' + resource
