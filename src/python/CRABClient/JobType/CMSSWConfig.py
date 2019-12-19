@@ -47,6 +47,15 @@ class CMSSWConfig(object):
                 sys.argv.extend(pyCfgParams)
                 msg = "Additional parameters for the CMSSW configuration are: %s" % (pyCfgParams)
                 self.logger.debug(msg)
+
+            #Add cmssw python paths
+            if 'CRAB_CMSSW_SITE_PACKAGES' in os.environ:
+                import site
+                for p in os.environ['CRAB_CMSSW_SITE_PACKAGES'].split(os.pathsep):
+                    site.addsitedir(p)
+
+            # details of user configuration file:
+
             configFile, pathname, description = imp.find_module(cfgBaseName, [cfgDirName])
             cacheLine = (tuple(sys.path), tuple(pathname), tuple(sys.argv))
             if cacheLine in configurationCache:
