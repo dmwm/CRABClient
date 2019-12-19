@@ -34,8 +34,7 @@ DBSURLS = {'reader': {'global': 'https://cmsweb.cern.ch/dbs/prod/global/DBSReade
 BASEURL = '/crabserver/'
 SERVICE_INSTANCES = {'prod': 'cmsweb.cern.ch',
                      'preprod': 'cmsweb-testbed.cern.ch',
-                     'dev': 'cmsweb-dev.cern.ch',
-                     'k8s': 'cmsweb-test.cern.ch',
+                     'k8s': 'cmsweb-k8s-testbed.cern.ch',
                      'test': 'cmsweb-test.cern.ch',
                      'test1': 'cmsweb-test1.cern.ch',
                      'test2': 'cmsweb-test2.cern.ch',
