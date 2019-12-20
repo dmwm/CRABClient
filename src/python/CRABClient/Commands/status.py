@@ -540,7 +540,7 @@ class status(SubCommand):
         statesTJ = {}
         failedProcessing = 0
         for jobid, statusDict in statusCacheInfo.iteritems():
-            jobStatus = statusDict['State']
+            jobStatus = statusDict['State'] if statusDict['State'] != 'cooloff' else 'toRetry'
             if jobid.startswith('0-'):
                 statesPJ[jobStatus] = statesPJ.setdefault(jobStatus, 0) + 1
             elif '-' in jobid:
