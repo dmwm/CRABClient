@@ -21,6 +21,7 @@ from CRABClient.ClientMapping import parametersMapping, getParamDefaultValue
 from CRABClient.ClientExceptions import ClientException, RESTCommunicationException
 from CRABClient.ClientUtilities import getJobTypes, createCache, addPlugin, server_info, colors, getUrl, setSubmitParserOptions, validateSubmitOptions, checkStatusLoop
 
+from ServerUtilities import MAX_MEMORY_PER_CORE, MAX_MEMORY_SINGLE_CORE
 
 class submit(SubCommand):
     """
@@ -141,7 +142,7 @@ class submit(SubCommand):
                     voRole=self.voRole, voGroup=self.voGroup, instance=self.instance,
                     originalConfig=self.configuration)
 
-        self.logger.info("%sSuccess%s: Your task has been delivered to the %s CRAB3 server." % (colors.GREEN, colors.NORMAL, self.configuration.General.instance))
+        self.logger.info("%sSuccess%s: Your task has been delivered to the %s CRAB3 server." % (colors.GREEN, colors.NORMAL, self.instance))
         if not (self.options.wait or self.options.dryrun):
             self.logger.info("Task name: %s" % uniquerequestname)
             projDir = os.path.join(getattr(self.configuration.General, 'workArea', '.'), self.requestname)
@@ -246,6 +247,16 @@ class submit(SubCommand):
             msg  = "Will use CRAB %s plugin" % ("Analysis" if upper(crab_plugin_name) == 'ANALYSIS' else "PrivateMC")
             msg += " (i.e. will run %s job type)." % ("an analysis" if upper(crab_plugin_name) == 'ANALYSIS' else "a MC generation")
             self.logger.debug(msg)
+
+        ## Check that the requested memory does not exceed the allowed maximum.
+        nCores = getattr(self.configuration.JobType, 'numCores', 1)
+        absMaxMemory = max(MAX_MEMORY_SINGLE_CORE, nCores*MAX_MEMORY_PER_CORE)
+        self.defaultMaxMemory = parametersMapping['on-server']['maxmemory']['default']
+        self.maxMemory = getattr(self.configuration.JobType, 'maxMemoryMB', self.defaultMaxMemory)
+        if self.maxMemory > absMaxMemory:
+            msg = "Task requests %s MB of memory, above the allowed maximum of %s" % (self.maxMemory, absMaxMemory)
+            msg += " for a %d core(s) job.\n" % nCores
+            return False, msg
 
         ## Check that the particular combination (Data.publication = True, General.transferOutputs = False) is not specified.
         if getattr(self.configuration.Data, 'publication', getParamDefaultValue('Data.publication')) and \
@@ -438,15 +449,13 @@ class submit(SubCommand):
 
         if not self.options.skipEstimates:
             self.logger.info("The estimated memory requirement is %.0f MB" % float(report['memory']['PeakValueRss']))
-            defaultMaxMemory = parametersMapping['on-server']['maxmemory']['default']
-            maxMemory = getattr(self.configuration.JobType, 'maxmemory', defaultMaxMemory)
-            if float(report['memory']['PeakValueRss']) > maxMemory:
+            if float(report['memory']['PeakValueRss']) > self.maxMemory:
                 msg = "\nWarning: memory estimate of %.0f MB exceeds what has been requested (JobType.maxMemoryMB = %i).\n"\
                     "Jobs which exceed JobType.maxMemoryMB will fail. Increasing JobType.maxMemoryMB more than 500 MB beyond \n"\
                     "the default of %i MB is not recommended, as fewer sites will be able to run your jobs. Please see\n"\
                     "https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideEDMTimingAndMemory for information\n"\
                     "about EDM Timing and Memory tools for checking the memory footprint of your CMSSW configuration."
-                self.logger.warning(msg % (float(report['memory']['PeakValueRss']), maxMemory, defaultMaxMemory))
+                self.logger.warning(msg % (float(report['memory']['PeakValueRss']), self.maxMemory, self.defaultMaxMemory))
 
             self.logger.info("\nTiming quantities given below are ESTIMATES. Keep in mind that external factors\n"\
                              "such as transient file-access delays can reduce estimate reliability.")

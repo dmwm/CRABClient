@@ -225,10 +225,25 @@ class SubCommand(ConfigCommand):
         self.logger = logger
         self.logfile = self.logger.logfile
 
+        localSystem = subprocess.check_output(['uname', '-a']).strip('\n')
+        try:
+            localOS = subprocess.check_output(['grep', 'PRETTY_NAME', '/etc/os-release'], stderr=subprocess.STDOUT).strip('\n')
+            localOS = localOS.split('=')[1].strip('"')
+        except:
+            try:
+                localOS = subprocess.check_output(['lsb_release', '-d']).strip('\n')
+                localOS = localOS.split(':')[1].strip()
+            except:
+                localOS = "Unknown Operating System"
+        self.logger.debug("Running on: " + localSystem + " - " + localOS)
 
-        localSystem = subprocess.check_output(['uname','-a'])
-        localOS = subprocess.check_output(['lsb_release','-d'])
-        self.logger.debug("Running on: " + localSystem + localOS)
+        opensslInfo = subprocess.check_output(["openssl", "version"]).strip('\n')
+        self.logger.debug("OpenSSl version: %s", opensslInfo)
+        opensslVersion = opensslInfo.split()[1]
+        nDots = opensslVersion.count(".")
+        if float(opensslVersion.rsplit(".", nDots-1)[0]) > 1:
+            raise EnvironmentException("Your OpenSSl version (%s) is not supported. Supported versions are < 1.1" % opensslVersion)
+
         self.logger.debug("Executing command: '%s'" % str(self.name))
 
         self.proxy = None
@@ -237,7 +252,7 @@ class SubCommand(ConfigCommand):
         ## Get the command configuration.
         self.cmdconf = commandsConfiguration.get(self.name)
         if not self.cmdconf:
-            raise RuntimeError("Canot find command %s in commandsConfiguration inside ClientMapping. Are you developer"
+            raise RuntimeError("Canot find command %s in commandsConfiguration inside ClientMapping. Are you a developer"
                                "trying to add a command without it's correspondant configuration?" % self.name)
 
         ## Get the CRAB cache file.

@@ -533,18 +533,18 @@ class status(SubCommand):
         result['jobsPerStatus'] = jobsPerStatus
         result['jobList'] = jobList
 
-        # Collect information about probejobs and subjobs
-        # Create a dictionary like { 'finished' : 1, 'running' : 3}
+        # Collect information about probe and tail jobs
+        # Create dictionaries like {'finished' : 1, 'running' : 3}
         states = {}
         statesPJ = {}
-        statesSJ = {}
+        statesTJ = {}
         failedProcessing = 0
         for jobid, statusDict in statusCacheInfo.iteritems():
-            jobStatus = statusDict['State']
+            jobStatus = statusDict['State'] if statusDict['State'] != 'cooloff' else 'toRetry'
             if jobid.startswith('0-'):
                 statesPJ[jobStatus] = statesPJ.setdefault(jobStatus, 0) + 1
             elif '-' in jobid:
-                statesSJ[jobStatus] = statesSJ.setdefault(jobStatus, 0) + 1
+                statesTJ[jobStatus] = statesTJ.setdefault(jobStatus, 0) + 1
             else:
                 states[jobStatus] = states.setdefault(jobStatus, 0) + 1
                 if jobStatus == 'failed':
@@ -560,7 +560,7 @@ class status(SubCommand):
 
         toPrint = [('Jobs', states)]
         if self.options.long:
-            toPrint = [('Probe jobs', statesPJ), ('Jobs', states), ('Tail jobs', statesSJ)]
+            toPrint = [('Probe jobs', statesPJ), ('Jobs', states), ('Tail jobs', statesTJ)]
             if automaticSplitt:
                 toPrint[1] = ('Main jobs', states)
             if sum(statesPJ.values()) > 0:
@@ -568,10 +568,12 @@ class status(SubCommand):
                 terminate(statesPJ, 'finished')
                 terminate(states, 'failed', target='rescheduled as tail jobs')
         elif sum(statesPJ.values()) > 0:
-            if 'failed' in states:
-                states.pop('failed')
-            for jobStatus in statesSJ:
-                states[jobStatus] = states.setdefault(jobStatus, 0) + statesSJ[jobStatus]
+            if statesTJ:
+                states.pop('failed', None) # remove failed from main jobs as they have been rescheduled as tail jobs
+                for jobStatus in statesTJ:
+                    states[jobStatus] = states.setdefault(jobStatus, 0) + statesTJ[jobStatus]
+            else:
+                terminate(states, 'failed', target='rescheduled as tail jobs')
 
         # And if the dictionary is not empty, print it
         if automaticSplitt:
@@ -969,7 +971,7 @@ class status(SubCommand):
             for jobStatus in statesList[1:]:
                 if states[jobStatus]:
                     msg += "\n\t\t\t\t\t{0}{1}{2}".format(self._printState(jobStatus, 13), self.indentation, \
-                                                        self._percentageString(jobStatus, states[jobStatus], numFilesToPublish))
+                                                          self._percentageString(jobStatus, states[jobStatus], numFilesToPublish))
             self.logger.info(msg)
             ## Print the publication errors.
             if pubInfo.get('publicationFailures'):
