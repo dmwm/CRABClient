@@ -2,6 +2,7 @@ from ServerUtilities import getProxiedWebDir, getColumn
 
 import CRABClient.Emulator
 from CRABClient import __version__
+from CRABClient.ClientUtilities import getUrl
 from CRABClient.UserUtilities import getFileFromURL
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ClientException
@@ -62,7 +63,7 @@ class preparelocal(SubCommand):
 
         #Get task status from the task DB
         self.logger.debug("Getting status from he DB")
-        uri = self.getUrl(self.instance, resource = 'task')
+        uri = getUrl(self.instance, resource = 'task')
         serverFactory = CRABClient.Emulator.getEmulator('rest')
         server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version = __version__)
         crabDBInfo, _, _ =  server.get(uri, data = {'subresource': 'search', 'workflow': taskname})
@@ -84,7 +85,7 @@ class preparelocal(SubCommand):
             self.logger.debug("Downloading 'InputFiles.tar.gz' from %s" % webdir)
             getFileFromURL(webdir + '/InputFiles.tar.gz', inputsFilename, self.proxyfilename)
         else:
-            raise ClientException('Can only execute jobs from tasks in status SUBMITTED and UPLOADED. Current status is %s' % status)
+            raise ClientException('Can only execute jobs from tasks in status SUBMITTED or UPLOADED. Current status is %s' % status)
 
         for name in [inputsFilename, 'CMSRunAnalysis.tar.gz', 'sandbox.tar.gz']:
             with tarfile.open(name) as tf:

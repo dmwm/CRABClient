@@ -34,7 +34,12 @@ DBSURLS = {'reader': {'global': 'https://cmsweb.cern.ch/dbs/prod/global/DBSReade
 BASEURL = '/crabserver/'
 SERVICE_INSTANCES = {'prod': 'cmsweb.cern.ch',
                      'preprod': 'cmsweb-testbed.cern.ch',
-                     'dev': 'cmsweb-dev.cern.ch'}
+                     'k8s': 'cmsweb-k8s-testbed.cern.ch',
+                     'test': 'cmsweb-test.cern.ch',
+                     'test1': 'cmsweb-test1.cern.ch',
+                     'test2': 'cmsweb-test2.cern.ch',
+                     'test3': 'cmsweb-test3.cern.ch',
+                     }
 BOOTSTRAP_ENVFILE = 'crab3env.json'
 BOOTSTRAP_INFOFILE = 'crab3info.json'
 BOOTSTRAP_CFGFILE = 'PSet.py'
@@ -75,6 +80,11 @@ CONSOLE_LOGLEVEL = logging.INFO
 ## Log level to mute a logger/handler.
 LOGLEVEL_MUTE = logging.CRITICAL + 10
 
+## Log format
+LOGFORMAT = {'logfmt': "%(levelname)s %(asctime)s.%(msecs)03d UTC: \t %(message)s", 'datefmt': "%Y-%m-%d %H:%M:%S"}
+LOGFORMATTER = logging.Formatter(LOGFORMAT['logfmt'],LOGFORMAT['datefmt'])
+from time import gmtime
+LOGFORMATTER.converter = gmtime
 
 class logfilter(logging.Filter):
     def filter(self, record):
@@ -113,7 +123,7 @@ def initLoggers():
     tblogger = logging.getLogger('CRAB3')
     tblogger.setLevel(logging.DEBUG)
     memhandler = logging.handlers.MemoryHandler(capacity = 1024*10, flushLevel = LOGLEVEL_MUTE)
-    memhandler.setFormatter(logging.Formatter("%(levelname)s %(asctime)s: \t %(message)s"))
+    memhandler.setFormatter(LOGFORMATTER)
     memhandler.setLevel(logging.DEBUG)
     memhandler.addFilter(logfilter())
     tblogger.addHandler(memhandler)
@@ -138,7 +148,7 @@ def initLoggers():
     return tblogger, logger, memhandler
 
 
-def getLoggers(lvl):
+def getLoggers():
     msg  = "%sError%s: The function getLoggers(loglevel) from CRABClient.ClientUtilities has been deprecated." % (colors.RED, colors.NORMAL)
     msg += " Please use the new function setConsoleLogLevel(loglevel) from CRABClient.UserUtilities instead."
     raise ClientException(msg)
@@ -160,8 +170,7 @@ def changeFileLogger(logger, workingpath = os.getcwd(), logname = 'crab.log'):
 
 def flushMemoryLogger(logger, memhandler, logfilename):
     filehandler = logging.FileHandler(logfilename)
-    ff = logging.Formatter("%(levelname)s %(asctime)s: \t %(message)s")
-    filehandler.setFormatter(ff)
+    filehandler.setFormatter(LOGFORMATTER)
     filehandler.setLevel(logging.DEBUG)
     filehandler.addFilter(logfilter())
     logger.addHandler(filehandler)
@@ -186,9 +195,14 @@ def getColumn(dictresult, columnName):
 def getUrl(instance='prod', resource='workflow'):
     """
     Retrieve the url depending on the resource we are accessing and the instance.
+    As of August 2019 the Kubernetes server instance (k8s) points to preprod database instance
+    Same for the cmsweb-test* development k8s clusters
     """
     if instance in SERVICE_INSTANCES.keys():
-        return BASEURL + instance + '/' + resource
+        if instance == 'k8s' or 'test' in instance :
+            return BASEURL + 'preprod' + '/' + resource
+        else:
+            return BASEURL + instance + '/' + resource
     elif instance == 'private':
         return BASEURL + 'dev' + '/' + resource
     raise ConfigurationException('Error: only the following instances can be used: %s' %str(SERVICE_INSTANCES.keys()))
@@ -251,7 +265,7 @@ def uploadlogfile(logger, proxyfilename, logfilename = None, logpath = None, ins
         logger.info("%sSuccess%s: Log file uploaded successfully." % (colors.GREEN, colors.NORMAL))
         logfileurl = cacheurl + '/logfile?name='+str(logfilename)
         if not username:
-            username = getUsernameFromSiteDB_wrapped(logger, quiet = True)
+            username = getUserDNandUsername(logger).get('username')
         if username:
             logfileurl += '&username='+str(username)
         logger.info("Log file URL: %s" % (logfileurl))
@@ -414,7 +428,8 @@ def createWorkArea(logger, workingArea = '.', requestName = ''):
     return fullpath, requestName, logfile
 
 
-def createCache(requestarea, host, port, uniquerequestname, voRole, voGroup, instance, originalConfig={}):
+def createCache(requestarea, host, port, uniquerequestname, voRole, voGroup, instance, originalConfig=None):
+    originalConfig = originalConfig or {}
     touchfile = open(os.path.join(requestarea, '.requestcache'), 'w')
     neededhandlers = {
                       "Server" : host,
@@ -464,15 +479,15 @@ def getUserDN():
     """
     undoScram = 'which scram >/dev/null 2>&1 && eval `scram unsetenv -sh`'
     ## Check if there is a proxy.
-    cmd = undoScram + "; voms-proxy-info"
-    process = subprocess.Popen(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
-    stdout, stderr = process.communicate()
-    if process.returncode or not stdout:
-        msg  = "Unable to retrieve DN from proxy:"
-        msg += "\nError executing command: %s" % (cmd)
-        msg += "\n  Stdout:\n    %s" % (str(stdout).replace('\n', '\n    '))
-        msg += "\n  Stderr:\n    %s" % (str(stderr).replace('\n', '\n    '))
-        raise ProxyException(msg)
+    #cmd = undoScram + "; voms-proxy-info"
+    #process = subprocess.Popen(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
+    #stdout, stderr = process.communicate()
+    #if process.returncode or not stdout:
+    #    msg  = "Unable to retrieve DN from proxy:"
+    #    msg += "\nError executing command: %s" % (cmd)
+    #    msg += "\n  Stdout:\n    %s" % (str(stdout).replace('\n', '\n    '))
+    #    msg += "\n  Stderr:\n    %s" % (str(stderr).replace('\n', '\n    '))
+    #    raise ProxyException(msg)
     ## Retrieve DN from proxy.
     cmd = undoScram + "; voms-proxy-info -identity"
     process = subprocess.Popen(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
@@ -523,19 +538,19 @@ def getUsernameFromSiteDB_wrapped(logger, quiet = False):
     try:
         username = getUsernameFromSiteDB()
     except ProxyException as ex:
-        msg = "%sError%s: %s" % (colors.RED, colors.NORMAL, ex)
+        msg = "%sError ProxyException%s: %s" % (colors.RED, colors.NORMAL, ex)
         if quiet:
             logger.debug(msg)
         else:
             logger.error(msg)
     except UsernameException as ex:
-        msg = "%sError%s: %s" % (colors.RED, colors.NORMAL, ex)
+        msg = "%sError UsernameException%s: %s" % (colors.RED, colors.NORMAL, ex)
         if quiet:
             logger.debug(msg)
         else:
             logger.error(msg)
     except Exception:
-        msg  = "%sError%s: Failed to retrieve username from SiteDB." % (colors.RED, colors.NORMAL)
+        msg  = "%sError GenericException%s: Failed to retrieve username from SiteDB." % (colors.RED, colors.NORMAL)
         msg += "\n%s" % (traceback.format_exc()) 
         if quiet:
             logger.debug(msg)
@@ -550,9 +565,98 @@ def getUsernameFromSiteDB_wrapped(logger, quiet = False):
     return username
 
 
-def getUserDNandUsernameFromSiteDB(logger):
+def getUsernameFromCRIC_wrapped(logger, quiet = False):
+    """
+    Wrapper function for getUsernameFromCRIC,
+    catching exceptions and printing messages.
+    """
+    from CRABClient.UserUtilities import getUsernameFromCRIC
+    username = None
+    msg = "Retrieving username from CRIC..."
+    if quiet:
+        logger.debug(msg)
+    else:
+        logger.info(msg)
+    try:
+        username = getUsernameFromCRIC()
+    except ProxyException as ex:
+        msg = "%sError ProxyException%s: %s" % (colors.RED, colors.NORMAL, ex)
+        if quiet:
+            logger.debug(msg)
+        else:
+            logger.error(msg)
+    except UsernameException as ex:
+        msg = "%sError UsernameException%s: %s" % (colors.RED, colors.NORMAL, ex)
+        if quiet:
+            logger.debug(msg)
+        else:
+            logger.error(msg)
+    except Exception:
+        msg  = "%sError GenericException%s: Failed to retrieve username from CRIC." % (colors.RED, colors.NORMAL)
+        msg += "\n%s" % (traceback.format_exc())
+        if quiet:
+            logger.debug(msg)
+        else:
+            logger.error(msg)
+    else:
+        msg = "Username is: %s" % (username)
+        if quiet:
+            logger.debug(msg)
+        else:
+            logger.info(msg)
+    return username
+
+def getUserDNandUsername(logger):
     userdn = getUserDN_wrapped(logger)
-    username = getUsernameFromSiteDB_wrapped(logger) if userdn else None
+    if not userdn:
+        return {'DN': None, 'username': None}
+
+    logger.info("Retrieving username for this DN...")
+    username = None
+
+    # have do deal with SiteDB -> CRIC transition, only only may be there,
+    # they may disagree etc.
+
+    usernameSiteDB = getUsernameFromSiteDB_wrapped(logger, quiet=True)
+    usernameCric = getUsernameFromCRIC_wrapped(logger, quiet=True)
+
+    if usernameCric == usernameSiteDB:   # great in good or bad, they agree
+        username = usernameCric          # will deal later with the possibility that neither worked
+    else:
+        if not usernameSiteDB:
+            #something went wrong with SiteDB, ignore the details and use CRIC
+            msg = "Failed to get username from SiteDB."
+            msg += "\n Details are in crab.log file"
+            msg += "\nWill try new Coputing Resource Information Catalog CRIC"
+            logger.info(msg)
+            username = usernameCric
+        elif not usernameCric:
+            #something went wrong with CRIC, limp along with SiteDB, but scream
+            username = usernameSiteDB
+            msg = "Failed to get username from CRIC. Will use result from SiteDB"
+            msg += "\nPlease report this to support toghether with following details"
+            logger.warning(msg)
+            usernameCric = getUsernameFromCRIC_wrapped(logger, quiet=False)
+        else:
+            #name mismatch between CRIC and SiteDB
+            msg = "%sWarning:%s username from SiteDB (%s) does not match username from CRIC (%s)" \
+                  % (colors.RED, colors.NORMAL, usernameSiteDB, usernameCric)
+            msg += "\n Please report this to support"
+            logger.info(msg)
+
+    # from now one there is a single username and code is not depending on having
+    # two possible services to query
+    if username:
+        logger.info("username is %s" % username)
+    else:
+        # ouch
+        msg = "%sERROR:%s Nor SiteDB nor CRIC could resolve the DN into a user name" \
+              % (colors.RED, colors.NORMAL)
+        msg += "\n Please find below details of both failures for investigation:"
+        logger.error(msg)
+        usernameSiteDB = getUsernameFromSiteDB_wrapped(logger, quiet=False)
+        usernameCric = getUsernameFromCRIC_wrapped(logger, quiet=False)
+
     return {'DN': userdn, 'username': username}
 
 
@@ -568,10 +672,12 @@ def validServerURL(option, opt_str, value, parser):
         setattr(parser.values, option.dest, option.default)
 
 
-def validURL(serverurl, attrtohave = ['scheme', 'netloc', 'hostname'], attrtonothave = ['path', 'params', 'query', 'fragment', 'username', 'password']):
+def validURL(serverurl, attrtohave = None, attrtonothave = None):
     """
     returning false if the format is different from https://host:port
     """
+    attrtohave = attrtohave or ['scheme', 'netloc', 'hostname']
+    attrtonothave = attrtonothave or ['path', 'params', 'query', 'fragment', 'username', 'password']
     tempurl = serverurl
     if not serverurl.startswith('https://'):
         tempurl = 'https://' + serverurl

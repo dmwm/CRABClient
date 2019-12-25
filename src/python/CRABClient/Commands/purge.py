@@ -25,7 +25,7 @@ class purge(SubCommand):
         inputlist = {'subresource': 'search', 'workflow': self.cachedinfo['RequestName']}
         serverFactory = CRABClient.Emulator.getEmulator('rest')
         server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
-        uri = self.getUrl(self.instance, resource = 'task')
+        uri = getUrl(self.instance, resource = 'task')
         dictresult, _, _ =  server.get(uri, data = inputlist)
 
         tm_user_sandbox = getColumn(dictresult, 'tm_user_sandbox')
@@ -33,7 +33,7 @@ class purge(SubCommand):
 
         # Get the schedd address from the DB info and strip off the 'crab3@' prefix if it exists
         scheddaddress = getColumn(dictresult, 'tm_schedd')
-        scheddaddress = scheddaddress.split('@')[1] if '@' in scheddaddress else scheddaddress
+        scheddaddress = scheddaddress.split('@')[1] if (scheddaddress and '@' in scheddaddress) else scheddaddress
 
         self.logger.info('Checking task status')
         serverFactory = CRABClient.Emulator.getEmulator('rest')
@@ -77,6 +77,8 @@ class purge(SubCommand):
                 cacheresult = 'FAILED'
 
         if not self.options.cacheonly:
+            if not scheddaddress:
+                raise ConfigurationException('%sError%s: no schedd assigned to this task.' % (colors.RED, colors.NORMAL))
             self.logger.debug('%sSuccess%s: Successfully got schedd address' % (colors.GREEN, colors.NORMAL))
             self.logger.debug('Schedd address: %s' % scheddaddress)
             self.logger.info('Attempting to remove task from schedd')

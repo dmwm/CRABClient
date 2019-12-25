@@ -21,6 +21,7 @@ from CRABClient.ClientMapping import parametersMapping, getParamDefaultValue
 from CRABClient.ClientExceptions import ClientException, RESTCommunicationException
 from CRABClient.ClientUtilities import getJobTypes, createCache, addPlugin, server_info, colors, getUrl, setSubmitParserOptions, validateSubmitOptions, checkStatusLoop
 
+from ServerUtilities import MAX_MEMORY_PER_CORE, MAX_MEMORY_SINGLE_CORE
 
 class submit(SubCommand):
     """
@@ -116,7 +117,7 @@ class submit(SubCommand):
         self.configreq.update(jobconfig)
         server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
 
-        self.logger.info("Sending the request to the server")
+        self.logger.info("Sending the request to the server at %s" % self.serverurl)
         self.logger.debug("Submitting %s " % str(self.configreq))
         ## TODO: this shouldn't be hard-coded.
         listParams = ['addoutputfiles', 'sitewhitelist', 'siteblacklist', 'blockwhitelist', 'blockblacklist', \
@@ -141,10 +142,12 @@ class submit(SubCommand):
                     voRole=self.voRole, voGroup=self.voGroup, instance=self.instance,
                     originalConfig=self.configuration)
 
-        self.logger.info("%sSuccess%s: Your task has been delivered to the CRAB3 server." %(colors.GREEN, colors.NORMAL))
+        self.logger.info("%sSuccess%s: Your task has been delivered to the %s CRAB3 server." % (colors.GREEN, colors.NORMAL, self.instance))
         if not (self.options.wait or self.options.dryrun):
             self.logger.info("Task name: %s" % uniquerequestname)
-            self.logger.info("Please use 'crab status' to check how the submission process proceeds.")
+            projDir = os.path.join(getattr(self.configuration.General, 'workArea', '.'), self.requestname)
+            self.logger.info("Project dir: %s" % projDir)
+            self.logger.info("Please use 'crab status -d %s' to check how the submission process proceeds.", projDir)
         else:
             targetTaskStatus = 'UPLOADED' if self.options.dryrun else 'SUBMITTED'
             checkStatusLoop(self.logger, server, self.uri, uniquerequestname, targetTaskStatus, self.name)
@@ -166,14 +169,11 @@ class submit(SubCommand):
         setSubmitParserOptions(self.parser)
 
 
-    def validateOptions(self):
+    def validateConfigOption(self):
         """
         After doing the general options validation from the parent SubCommand class,
         do the validation of options that are specific to the submit command.
         """
-        ## First do the basic validation in the SubCommand.
-        SubCommand.validateOptions(self)
-
         validateSubmitOptions(self.options, self.args)
 
 
@@ -193,8 +193,17 @@ class submit(SubCommand):
                 msg = "Invalid CRAB configuration: Parameter General.requestName should not be longer than %d characters." % (requestNameLenLimit)
                 return False, msg
 
+        splitting = getattr(self.configuration.Data, 'splitting', 'Automatic')
+        autoSplitt = True if splitting == 'Automatic' else False
+        autoSplittUnitsMin = 180 # 3 hours (defined also in TW config as 'minAutomaticRuntimeMins')
+        autoSplittUnitsMax = 2700 # 45 hours
+        ## Check that maxJobRuntimeMin is not used with Automatic splitting
+        if autoSplitt and hasattr(self.configuration.JobType, 'maxJobRuntimeMin'):
+            msg = "The 'maxJobRuntimeMin' parameter is not compatible with the 'Automatic' splitting mode (default)."
+            return False, msg
+
         ## Check that --dryrun is not used with Automatic splitting
-        if getattr(self.configuration.Data, 'splitting', 'Automatic') == 'Automatic' and self.options.dryrun: 
+        if autoSplitt and self.options.dryrun:
             msg = "The 'dryrun' option is not compatible with the 'Automatic' splitting mode (default)."
             return False, msg
 
@@ -208,9 +217,12 @@ class submit(SubCommand):
             if not int(self.configuration.Data.unitsPerJob) > 0:
                 msg = "Invalid CRAB configuration: Parameter Data.unitsPerJob must be > 0, not %s." % (self.configuration.Data.unitsPerJob)
                 return False, msg
-        elif getattr(self.configuration.Data, 'splitting', 'Automatic') != 'Automatic':
+            if autoSplitt and (self.configuration.Data.unitsPerJob > autoSplittUnitsMax  or  self.configuration.Data.unitsPerJob < autoSplittUnitsMin):
+                msg = "Invalid CRAB configuration: In case of Automatic splitting, the Data.unitsPerJob parameter must be in the [%d, %d] minutes range. You asked for %d minutes." % (autoSplittUnitsMin, autoSplittUnitsMax, self.configuration.Data.unitsPerJob)
+                return False, msg
+        elif not autoSplitt:
             # The default value is only valid for automatic splitting!
-            msg = "Invalid CRAB configuration: Parameter Data.unitsPerJob is missing."
+            msg = "Invalid CRAB configuration: Parameter Data.unitsPerJob is mandatory for '%s' splitting mode." % splitting
             return False, msg
 
         ## Check that JobType.pluginName and JobType.externalPluginFile are not both specified.
@@ -235,6 +247,16 @@ class submit(SubCommand):
             msg  = "Will use CRAB %s plugin" % ("Analysis" if upper(crab_plugin_name) == 'ANALYSIS' else "PrivateMC")
             msg += " (i.e. will run %s job type)." % ("an analysis" if upper(crab_plugin_name) == 'ANALYSIS' else "a MC generation")
             self.logger.debug(msg)
+
+        ## Check that the requested memory does not exceed the allowed maximum.
+        nCores = getattr(self.configuration.JobType, 'numCores', 1)
+        absMaxMemory = max(MAX_MEMORY_SINGLE_CORE, nCores*MAX_MEMORY_PER_CORE)
+        self.defaultMaxMemory = parametersMapping['on-server']['maxmemory']['default']
+        self.maxMemory = getattr(self.configuration.JobType, 'maxMemoryMB', self.defaultMaxMemory)
+        if self.maxMemory > absMaxMemory:
+            msg = "Task requests %s MB of memory, above the allowed maximum of %s" % (self.maxMemory, absMaxMemory)
+            msg += " for a %d core(s) job.\n" % nCores
+            return False, msg
 
         ## Check that the particular combination (Data.publication = True, General.transferOutputs = False) is not specified.
         if getattr(self.configuration.Data, 'publication', getParamDefaultValue('Data.publication')) and \
@@ -427,15 +449,13 @@ class submit(SubCommand):
 
         if not self.options.skipEstimates:
             self.logger.info("The estimated memory requirement is %.0f MB" % float(report['memory']['PeakValueRss']))
-            defaultMaxMemory = parametersMapping['on-server']['maxmemory']['default']
-            maxMemory = getattr(self.configuration.JobType, 'maxmemory', defaultMaxMemory)
-            if float(report['memory']['PeakValueRss']) > maxMemory:
+            if float(report['memory']['PeakValueRss']) > self.maxMemory:
                 msg = "\nWarning: memory estimate of %.0f MB exceeds what has been requested (JobType.maxMemoryMB = %i).\n"\
                     "Jobs which exceed JobType.maxMemoryMB will fail. Increasing JobType.maxMemoryMB more than 500 MB beyond \n"\
                     "the default of %i MB is not recommended, as fewer sites will be able to run your jobs. Please see\n"\
                     "https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideEDMTimingAndMemory for information\n"\
                     "about EDM Timing and Memory tools for checking the memory footprint of your CMSSW configuration."
-                self.logger.warning(msg % (float(report['memory']['PeakValueRss']), maxMemory, defaultMaxMemory))
+                self.logger.warning(msg % (float(report['memory']['PeakValueRss']), self.maxMemory, self.defaultMaxMemory))
 
             self.logger.info("\nTiming quantities given below are ESTIMATES. Keep in mind that external factors\n"\
                              "such as transient file-access delays can reduce estimate reliability.")

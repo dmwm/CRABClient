@@ -5,7 +5,6 @@ import logging
 import os
 
 from WMCore.Credential.Proxy import Proxy, CredentialException
-from WMCore.Services.SiteDB.SiteDB import SiteDBJSON
 from CRABClient.ClientExceptions import ProxyCreationException, EnvironmentException
 from CRABClient.ClientUtilities import colors, StopExecution
 
@@ -78,31 +77,6 @@ class CredentialInteractions(object):
         proxy = self.proxy()
         userdn = proxy.getSubjectFromCert(self.certLocation)
         return userdn
-
-
-    def getUsername(self):
-        proxy = self.proxy()
-        username = proxy.getUsername()
-        return username
-
-
-    def getUsernameFromSiteDB(self):
-        """
-        Retrieve the user's username as it appears in SiteDB.
-        """
-        proxy = self.proxy()
-        userdn = proxy.getSubjectFromCert(self.certLocation)
-        sitedb = SiteDBJSON({"key": proxy.getProxyFilename(), "cert": proxy.getProxyFilename()})
-        username = sitedb.dnUserName(userdn)
-        return username
-
-
-    def getUserName(self):
-        """
-        Return user name from DN
-        """
-        proxy = self.proxy()
-        return proxy.getUserName()
 
 
     def getFilename(self):
@@ -295,7 +269,9 @@ class CredentialInteractions(object):
         Note that a warning message is printed at every command it usercertDaysLeft < timeleftthreshold
         """
         myproxy = Proxy ( self.defaultDelegation )
-        myproxy.userDN = myproxy.getSubjectFromCert(self.certLocation)
+        userDNFromCert = myproxy.getSubjectFromCert(self.certLocation)
+        if userDNFromCert:
+            myproxy.userDN = userDNFromCert
 
         myproxytimeleft = 0
         self.logger.debug("Getting myproxy life time left for %s" % self.defaultDelegation["myProxySvr"])
