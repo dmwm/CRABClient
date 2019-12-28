@@ -8,7 +8,7 @@ import CRABClient.Emulator
 from CRABClient import __version__
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientUtilities import colors, server_info, getUrl
-from CRABClient.ClientExceptions import ConfigurationException, ConfigException, RESTCommunicationException
+from CRABClient.ClientExceptions import ConfigurationException, ConfigException
 
 from ServerUtilities import getColumn
 
@@ -31,28 +31,27 @@ class purge(SubCommand):
         tm_user_sandbox = getColumn(dictresult, 'tm_user_sandbox')
         hashkey = tm_user_sandbox.replace(".tar.gz","")
 
-        # Get the schedd address from the DB info and strip off the 'crab3@' prefix if it exists
-        scheddaddress = getColumn(dictresult, 'tm_schedd')
-        scheddaddress = scheddaddress.split('@')[1] if '@' in scheddaddress else scheddaddress
-
         self.logger.info('Checking task status')
-        serverFactory = CRABClient.Emulator.getEmulator('rest')
-        server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
-        dictresult, _, _ = server.get(self.uri, data = {'workflow': self.cachedinfo['RequestName'], 'verbose': 0})
-
-        dictresult = dictresult['result'][0] #take just the significant part
-
-        self.logger.info('Task status: %s' % dictresult['status'])
+        status = getColumn(dictresult, 'tm_task_status')
+        self.logger.info('Task status: %s' % status)
         accepstate = ['SUBMITFAILED','KILLED','FINISHED','FAILED','KILLFAILED', 'COMPLETED']
-        if dictresult['status'] not in accepstate:
+        if status not in accepstate:
             msg = ('%sError%s: Only tasks with these status can be purged: {0}'.format(accepstate) % (colors.RED, colors.NORMAL))
             raise ConfigurationException(msg)
 
-        #getting the cache url
+        # Get the schedd address from the DB info and strip off the 'crab3@' prefix if it exists
+        scheddaddress = getColumn(dictresult, 'tm_schedd')
+        if scheddaddress:
+            noSchedd = False
+            scheddaddress = scheddaddress.split('@')[1] if '@' in scheddaddress else scheddaddress
+        else:
+            noSchedd = True
+
+        # Getting the cache url
         cacheresult = {}
         scheddresult = {}
         gsisshdict = {}
-        if not self.options.scheddonly:
+        if not self.options.scheddonly or noSchedd:
             baseurl = getUrl(self.instance, resource='info')
             cacheurl = server_info('backendurls', self.serverurl, self.proxyfilename, baseurl)
             cacheurl = cacheurl['cacheSSL']
@@ -77,6 +76,8 @@ class purge(SubCommand):
                 cacheresult = 'FAILED'
 
         if not self.options.cacheonly:
+            if noSchedd:
+                raise ConfigurationException('%sError%s: no schedd assigned to this task.' % (colors.RED, colors.NORMAL))
             self.logger.debug('%sSuccess%s: Successfully got schedd address' % (colors.GREEN, colors.NORMAL))
             self.logger.debug('Schedd address: %s' % scheddaddress)
             self.logger.info('Attempting to remove task from schedd')
