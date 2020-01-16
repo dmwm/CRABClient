@@ -281,5 +281,5 @@ _UseCrab ()
 
     return 0
 }
-complete -F _UseCrab -o filenames crab
+complete -F _UseCrab -o filenames crab crab-prod crab-pre crab-dev
 
