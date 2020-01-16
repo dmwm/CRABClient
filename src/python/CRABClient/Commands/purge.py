@@ -30,15 +30,6 @@ class purge(SubCommand):
 
         tm_user_sandbox = getColumn(dictresult, 'tm_user_sandbox')
         hashkey = tm_user_sandbox.replace(".tar.gz","")
-
-        self.logger.info('Checking task status')
-        status = getColumn(dictresult, 'tm_task_status')
-        self.logger.info('Task status: %s' % status)
-        accepstate = ['SUBMITFAILED','KILLED','FINISHED','FAILED','KILLFAILED', 'COMPLETED']
-        if status not in accepstate:
-            msg = ('%sError%s: Only tasks with these status can be purged: {0}'.format(accepstate) % (colors.RED, colors.NORMAL))
-            raise ConfigurationException(msg)
-
         # Get the schedd address from the DB info and strip off the 'crab3@' prefix if it exists
         scheddaddress = getColumn(dictresult, 'tm_schedd')
         if scheddaddress:
@@ -46,6 +37,15 @@ class purge(SubCommand):
             scheddaddress = scheddaddress.split('@')[1] if '@' in scheddaddress else scheddaddress
         else:
             noSchedd = True
+
+        self.logger.info('Checking task status')
+        dictresult, _, _ = server.get(self.uri, data = {'workflow': self.cachedinfo['RequestName'], 'verbose': 0})
+        status = dictresult['result'][0]['status']
+        self.logger.info('Task status: %s' % status)
+        accepstate = ['SUBMITFAILED','KILLED','FINISHED','FAILED','KILLFAILED', 'COMPLETED']
+        if status not in accepstate:
+            msg = ('%sError%s: Only tasks with these status can be purged: {0}'.format(accepstate) % (colors.RED, colors.NORMAL))
+            raise ConfigurationException(msg)
 
         # Getting the cache url
         cacheresult = {}
