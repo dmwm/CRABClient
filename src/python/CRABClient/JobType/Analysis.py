@@ -7,13 +7,12 @@ import re
 import shutil
 import string
 import tempfile
+import uuid
 from functools import reduce
 
 from httplib import HTTPException
 
 from WMCore.DataStructs.LumiList import LumiList
-
-import PandaServerInterface as PandaInterface
 
 from ServerUtilities import BOOTSTRAP_CFGFILE_DUMP
 
@@ -55,7 +54,7 @@ class Analysis(BasicJobType):
 
         # Build tarball
         if self.workdir:
-            tarUUID =  PandaInterface.wrappedUuidGen()
+            tarUUID = str(uuid.uuid4())
             self.logger.debug('UNIQUE NAME: tarUUID %s ' % tarUUID)
             if len(tarUUID):
                 tarFilename   = os.path.join(self.workdir, tarUUID + 'default.tgz')
