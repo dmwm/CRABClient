@@ -331,6 +331,10 @@ class report(SubCommand):
 
         if reportData['publication']:
             reportData['outputDatasetsInfo'] = self.getDBSPublicationInfo(reportData['outputDatasets'])
+            rep2 = self.getDBSPublicationInfo2(reportData['outputDatasets'])
+            rep3 = self.getDBSPublicationInfo3(reportData['outputDatasets'])
+            assert(reportData['outputDatasetsInfo']==rep2)
+            assert(reportData['outputDatasetsInfo']==rep3)
 
         return reportData
 
@@ -442,6 +446,68 @@ class report(SubCommand):
                     res['outputDatasets'][outputDataset]['numEvents'] += outputFileDetails['NumberOfEvents']
 
         return res
+
+    def getDBSPublicationInfo2(self, outputDatasets):
+        """
+        reimplemenation of getDBSPublicationInfo w/o using the WMCore layer around DBS API
+        Get the lumis and number of events in the published output datasets.
+        """
+        from dbs.apis.dbsClient import DbsApi
+        dbsApi = DbsApi(url="https://cmsweb.cern.ch/dbs/prod/phys03/DBSReader")
+        res = {}
+        res['outputDatasets'] = {}
+        for outputDataset in outputDatasets:
+            res['outputDatasets'][outputDataset] = {'lumis': {}, 'numEvents': 0}
+            # DBS asks us to go by blocks
+            blockList = dbsApi.listBlocks(dataset=outputDataset)
+            for block in blockList:
+                FilesLumis = dbsApi.listFileLumis(block_name=block['block_name'])
+                runlumilist={}
+                for fl in FilesLumis:
+                    # cast run and lumi list in the form liked by LumiList class
+                    run  = fl['run_num']
+                    lumis = fl['lumi_section_num']
+                    runlumilist.setdefault(str(run), []).extend(lumis)
+
+            # convert to a LumiList object
+            outputDatasetLumis = LumiList(runsAndLumis=runlumilist).getCompactList()
+            res['outputDatasets'][outputDataset]['lumis'] = outputDatasetLumis
+            # get total events in dataset
+            summary = dbsApi.listFileSummaries(dataset=outputDataset)[0]
+            res['outputDatasets'][outputDataset]['numEvents'] = summary['num_event']
+
+        return res
+
+    def getDBSPublicationInfo3(self, outputDatasets):
+        """
+        reimplemenation of getDBSPublicationInfo with dasgoclient. Remove dependencey from DBS
+        Get the lumis and number of events in the published output datasets.
+        """
+        res = {}
+        res['outputDatasets'] = {}
+        for outputDataset in outputDatasets:
+            res['outputDatasets'][outputDataset] = {'lumis': {}, 'numEvents': 0}
+
+
+
+            for block in blockList:
+                FilesLumis = dbsApi.listFileLumis(block_name=block['block_name'])
+                runlumilist={}
+                for fl in FilesLumis:
+                    # cast run and lumi list in the form liked by LumiList class
+                    run  = fl['run_num']
+                    lumis = fl['lumi_section_num']
+                    runlumilist.setdefault(str(run), []).extend(lumis)
+
+            # convert to a LumiList object
+            outputDatasetLumis = LumiList(runsAndLumis=runlumilist).getCompactList()
+            res['outputDatasets'][outputDataset]['lumis'] = outputDatasetLumis
+            # get total events in dataset
+            summary = dbsApi.listFileSummaries(dataset=outputDataset)[0]
+            res['outputDatasets'][outputDataset]['numEvents'] = summary['num_event']
+
+        return res
+
 
     def prepareCurl(self):
         curl = pycurl.Curl()
