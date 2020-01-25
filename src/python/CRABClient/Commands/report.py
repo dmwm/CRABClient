@@ -458,11 +458,11 @@ class report(SubCommand):
         res['outputDatasets'] = {}
         for outputDataset in outputDatasets:
             res['outputDatasets'][outputDataset] = {'lumis': {}, 'numEvents': 0}
+            runlumilist={}
             # DBS asks us to go by blocks
             blockList = dbsApi.listBlocks(dataset=outputDataset)
             for block in blockList:
                 FilesLumis = dbsApi.listFileLumis(block_name=block['block_name'])
-                runlumilist={}
                 for fl in FilesLumis:
                     # cast run and lumi list in the form liked by LumiList class
                     run  = fl['run_num']
