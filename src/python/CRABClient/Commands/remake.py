@@ -58,7 +58,7 @@ class remake(SubCommand):
             ex.missingOption = "cmptask"
             raise ex
         else:
-            regex = "^\d{6}_\d{6}_?([^\:]*)\:[a-zA-Z-]+_(crab_)?.+"
+            regex = "^\d{6}_\d{6}_?([^\:]*)\:[a-zA-Z0-9-]+_(crab_)?.+"
             if not re.match(regex, self.options.cmptask):
                 msg = "%sError%s: Task name does not match the regular expression '%s'." % (colors.RED, colors.NORMAL, regex)
                 raise ConfigurationException(msg)
