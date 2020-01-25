@@ -332,9 +332,9 @@ class report(SubCommand):
         if reportData['publication']:
             reportData['outputDatasetsInfo'] = self.getDBSPublicationInfo(reportData['outputDatasets'])
             rep2 = self.getDBSPublicationInfo2(reportData['outputDatasets'])
-            rep3 = self.getDBSPublicationInfo3(reportData['outputDatasets'])
+            #rep3 = self.getDBSPublicationInfo3(reportData['outputDatasets'])
             assert(reportData['outputDatasetsInfo']==rep2)
-            assert(reportData['outputDatasetsInfo']==rep3)
+            #assert(reportData['outputDatasetsInfo']==rep3)
 
         return reportData
 
@@ -490,14 +490,6 @@ class report(SubCommand):
 
 
 
-            for block in blockList:
-                FilesLumis = dbsApi.listFileLumis(block_name=block['block_name'])
-                runlumilist={}
-                for fl in FilesLumis:
-                    # cast run and lumi list in the form liked by LumiList class
-                    run  = fl['run_num']
-                    lumis = fl['lumi_section_num']
-                    runlumilist.setdefault(str(run), []).extend(lumis)
 
             # convert to a LumiList object
             outputDatasetLumis = LumiList(runsAndLumis=runlumilist).getCompactList()
