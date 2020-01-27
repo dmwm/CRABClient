@@ -331,11 +331,12 @@ class report(SubCommand):
         reportData['outputDatasets'] = dictresult['result'][0]['taskDBInfo']['outputDatasets']
 
         if reportData['publication']:
-            reportData['outputDatasetsInfo'] = self.getDBSPublicationInfo(reportData['outputDatasets'])
+            rep = self.getDBSPublicationInfo(reportData['outputDatasets'])
             rep2 = self.getDBSPublicationInfo2(reportData['outputDatasets'])
+            assert(rep==rep2)
             rep3 = self.getDBSPublicationInfo3(reportData['outputDatasets'])
-            assert(reportData['outputDatasetsInfo']==rep2)
-            assert(reportData['outputDatasetsInfo']==rep3)
+            assert(rep==rep3)
+            reportData['outputDatasetsInfo'] = rep
 
         return reportData
 
@@ -488,7 +489,8 @@ class report(SubCommand):
         res['outputDatasets'] = {}
         for outputDataset in outputDatasets:
             res['outputDatasets'][outputDataset] = {'lumis': {}, 'numEvents': 0}
-            query = "'run,lumi dataset=%s'" % outputDataset
+            dbsInstance = "instance=prod/phys03"
+            query = "'run,lumi dataset=%s %s'" % (outputDataset, dbsInstance)
             dasgo = "dasgoclient --query " + query + " --json"
 
             runlumilist = {}
@@ -512,7 +514,7 @@ class report(SubCommand):
             res['outputDatasets'][outputDataset]['lumis'] = outputDatasetLumis
 
             # get total events in dataset
-            query = "'summary dataset=%s'" % outputDataset
+            query = "'summary dataset=%s %s'" % (outputDataset, dbsInstance)
             dasgo = "dasgoclient --query " + query + " --json"
             subp = subprocess.Popen(dasgo, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             stdout, stderr = subp.communicate()
