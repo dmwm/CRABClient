@@ -2,6 +2,7 @@ from __future__ import print_function, division
 
 import os
 import json
+import subprocess
 import pycurl
 import logging
 import tarfile
@@ -330,7 +331,12 @@ class report(SubCommand):
         reportData['outputDatasets'] = dictresult['result'][0]['taskDBInfo']['outputDatasets']
 
         if reportData['publication']:
-            reportData['outputDatasetsInfo'] = self.getDBSPublicationInfo(reportData['outputDatasets'])
+            # try both DBS API and DASGOCLIENT and make sure to get same result
+            # at some point could drop the one based on DBSAPI and keep only DASGOCLIENT
+            repDBS = self.getDBSPublicationInfo_viaDbsApi(reportData['outputDatasets'])
+            repDGO = self.getDBSPublicationInfo_viaDasGoclient(reportData['outputDatasets'])
+            assert(repDBS==repDGO)
+            reportData['outputDatasetsInfo'] = repDGO
 
         return reportData
 
@@ -415,33 +421,89 @@ class report(SubCommand):
 
         return res
 
-    def getDBSPublicationInfo(self, outputDatasets):
+    def getDBSPublicationInfo_viaDbsApi(self, outputDatasets):
         """
-        What has been published
+        reimplemenation of getDBSPublicationInfo w/o using the WMCore layer around DBS API
+        Get the lumis and number of events in the published output datasets.
+        """
+        from dbs.apis.dbsClient import DbsApi
+        dbsApi = DbsApi(url="https://cmsweb.cern.ch/dbs/prod/phys03/DBSReader")
+        res = {}
+        res['outputDatasets'] = {}
+        for outputDataset in outputDatasets:
+            res['outputDatasets'][outputDataset] = {'lumis': {}, 'numEvents': 0}
+            runlumilist={}
+            # DBS asks us to go by blocks
+            blockList = dbsApi.listBlocks(dataset=outputDataset)
+            for block in blockList:
+                FilesLumis = dbsApi.listFileLumis(block_name=block['block_name'])
+                for fl in FilesLumis:
+                    # cast run and lumi list in the form liked by LumiList class
+                    run  = fl['run_num']
+                    lumis = fl['lumi_section_num']
+                    runlumilist.setdefault(str(run), []).extend(lumis)
 
+            # convert to a LumiList object
+            outputDatasetLumis = LumiList(runsAndLumis=runlumilist).getCompactList()
+            res['outputDatasets'][outputDataset]['lumis'] = outputDatasetLumis
+            # get total events in dataset
+            summary = dbsApi.listFileSummaries(dataset=outputDataset)[0]
+            res['outputDatasets'][outputDataset]['numEvents'] = summary['num_event']
+
+        return res
+
+    def getDBSPublicationInfo_viaDasGoclient(self, outputDatasets):
+        """
+        reimplemenation of getDBSPublicationInfo with dasgoclient. Remove dependencey from DBS
         Get the lumis and number of events in the published output datasets.
         """
         res = {}
         res['outputDatasets'] = {}
-
         for outputDataset in outputDatasets:
             res['outputDatasets'][outputDataset] = {'lumis': {}, 'numEvents': 0}
-            try:
-                dbs = DBSReader("https://cmsweb.cern.ch/dbs/prod/phys03/DBSReader",
-                                cert=self.proxyfilename, key=self.proxyfilename)
-                outputDatasetDetails = dbs.listDatasetFileDetails(outputDataset)
-            except Exception as ex:
-                msg  = "Failed to retrieve information from DBS for output dataset %s." % (outputDataset)
-                msg += " Exception while contacting DBS: %s" % (str(ex))
-                self.logger.exception(msg)
+            dbsInstance = "instance=prod/phys03"
+            query = "'run,lumi dataset=%s %s'" % (outputDataset, dbsInstance)
+            dasgo = "dasgoclient --query " + query + " --json"
+
+            runlumilist = {}
+            subp = subprocess.Popen(dasgo, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, stderr = subp.communicate()
+            if subp.returncode or not stdout:
+                print('Failed running command %. Exitcode is %s' % (dasgo, exitcode))
+                if stdout:
+                    print('  Stdout:\n    %s' % str(stdout).replace('\n', '\n    '))
+                if stderr:
+                    print('  Stderr:\n    %s' % str(stderr).replace('\n', '\n    '))
             else:
-                outputDatasetLumis = self.compactLumis(outputDatasetDetails)
-                outputDatasetLumis = LumiList(runsAndLumis=outputDatasetLumis).getCompactList()
-                res['outputDatasets'][outputDataset]['lumis'] = outputDatasetLumis
-                for outputFileDetails in outputDatasetDetails.values():
-                    res['outputDatasets'][outputDataset]['numEvents'] += outputFileDetails['NumberOfEvents']
+                result = json.loads(stdout)
+                for record in result:
+                    run = record['run'][0]['run_number']
+                    lumis = record['lumi'][0]['number']
+                    runlumilist.setdefault(str(run), []).extend(lumis)
+
+            # convert to a LumiList object
+            outputDatasetLumis = LumiList(runsAndLumis=runlumilist).getCompactList()
+            res['outputDatasets'][outputDataset]['lumis'] = outputDatasetLumis
+
+            # get total events in dataset
+            query = "'summary dataset=%s %s'" % (outputDataset, dbsInstance)
+            dasgo = "dasgoclient --query " + query + " --json"
+            subp = subprocess.Popen(dasgo, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, stderr = subp.communicate()
+            if subp.returncode or not stdout:
+                print('Failed running command %. Exitcode is %s' % (dasgo, exitcode))
+                if stdout:
+                    print('  Stdout:\n    %s' % str(stdout).replace('\n', '\n    '))
+                if stderr:
+                    print('  Stderr:\n    %s' % str(stderr).replace('\n', '\n    '))
+                total_events = 0
+            else:
+                result = json.loads(stdout)
+                total_events = result[0]['summary'][0]['nevents']
+            res['outputDatasets'][outputDataset]['numEvents'] = total_events
 
         return res
+
 
     def prepareCurl(self):
         curl = pycurl.Curl()
