@@ -512,7 +512,7 @@ class report(SubCommand):
             res['outputDatasets'][outputDataset]['lumis'] = outputDatasetLumis
 
             # get total events in dataset
-            query = "'summary dataset=%s'" % doutputDataset
+            query = "'summary dataset=%s'" % outputDataset
             dasgo = "dasgoclient --query " + query + " --json"
             subp = subprocess.Popen(dasgo, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             stdout, stderr = subp.communicate()
