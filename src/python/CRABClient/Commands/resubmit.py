@@ -250,7 +250,7 @@ class resubmit(SubCommand):
                                dest = 'wait',
                                default = False,
                                action = 'store_true',
-                               help = "Continuously check the task status after resubmission.")
+                               help = "DEPRECATED")
 
         self.parser.add_option('--force',
                                dest = 'force',

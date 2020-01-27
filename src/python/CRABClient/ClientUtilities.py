@@ -750,7 +750,7 @@ def setSubmitParserOptions(parser):
                            dest = 'wait',
                            default = False,
                            action = 'store_true',
-                           help = "Continuously check the task status after submission.")
+                           help = "DEPRECATED.")
 
     parser.add_option('--dryrun',
                            dest = 'dryrun',
