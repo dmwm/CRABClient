@@ -331,12 +331,12 @@ class report(SubCommand):
         reportData['outputDatasets'] = dictresult['result'][0]['taskDBInfo']['outputDatasets']
 
         if reportData['publication']:
-            rep = self.getDBSPublicationInfo(reportData['outputDatasets'])
-            rep2 = self.getDBSPublicationInfo2(reportData['outputDatasets'])
-            assert(rep==rep2)
-            rep3 = self.getDBSPublicationInfo3(reportData['outputDatasets'])
-            assert(rep==rep3)
-            reportData['outputDatasetsInfo'] = rep
+            # try both DBS API and DASGOCLIENT and make sure to get same result
+            # at some point could drop the one based on DBSAPI and keep only DASGOCLIENT
+            repDBS = self.getDBSPublicationInfo_viaDbsApi(reportData['outputDatasets'])
+            repDGO = self.getDBSPublicationInfo_viaDasGoclient(reportData['outputDatasets'])
+            assert(repDBS==repDGO)
+            reportData['outputDatasetsInfo'] = repDGO
 
         return reportData
 
@@ -421,35 +421,7 @@ class report(SubCommand):
 
         return res
 
-    def getDBSPublicationInfo(self, outputDatasets):
-        """
-        What has been published
-
-        Get the lumis and number of events in the published output datasets.
-        """
-        res = {}
-        res['outputDatasets'] = {}
-
-        for outputDataset in outputDatasets:
-            res['outputDatasets'][outputDataset] = {'lumis': {}, 'numEvents': 0}
-            try:
-                dbs = DBSReader("https://cmsweb.cern.ch/dbs/prod/phys03/DBSReader",
-                                cert=self.proxyfilename, key=self.proxyfilename)
-                outputDatasetDetails = dbs.listDatasetFileDetails(outputDataset)
-            except Exception as ex:
-                msg  = "Failed to retrieve information from DBS for output dataset %s." % (outputDataset)
-                msg += " Exception while contacting DBS: %s" % (str(ex))
-                self.logger.exception(msg)
-            else:
-                outputDatasetLumis = self.compactLumis(outputDatasetDetails)
-                outputDatasetLumis = LumiList(runsAndLumis=outputDatasetLumis).getCompactList()
-                res['outputDatasets'][outputDataset]['lumis'] = outputDatasetLumis
-                for outputFileDetails in outputDatasetDetails.values():
-                    res['outputDatasets'][outputDataset]['numEvents'] += outputFileDetails['NumberOfEvents']
-
-        return res
-
-    def getDBSPublicationInfo2(self, outputDatasets):
+    def getDBSPublicationInfo_viaDbsApi(self, outputDatasets):
         """
         reimplemenation of getDBSPublicationInfo w/o using the WMCore layer around DBS API
         Get the lumis and number of events in the published output datasets.
@@ -480,7 +452,7 @@ class report(SubCommand):
 
         return res
 
-    def getDBSPublicationInfo3(self, outputDatasets):
+    def getDBSPublicationInfo_viaDasGoclient(self, outputDatasets):
         """
         reimplemenation of getDBSPublicationInfo with dasgoclient. Remove dependencey from DBS
         Get the lumis and number of events in the published output datasets.
