@@ -333,9 +333,9 @@ class report(SubCommand):
         if reportData['publication']:
             reportData['outputDatasetsInfo'] = self.getDBSPublicationInfo(reportData['outputDatasets'])
             rep2 = self.getDBSPublicationInfo2(reportData['outputDatasets'])
-            #rep3 = self.getDBSPublicationInfo3(reportData['outputDatasets'])
+            rep3 = self.getDBSPublicationInfo3(reportData['outputDatasets'])
             assert(reportData['outputDatasetsInfo']==rep2)
-            #assert(reportData['outputDatasetsInfo']==rep3)
+            assert(reportData['outputDatasetsInfo']==rep3)
 
         return reportData
 
