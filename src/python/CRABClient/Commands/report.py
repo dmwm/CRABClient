@@ -2,6 +2,7 @@ from __future__ import print_function, division
 
 import os
 import json
+import subprocess
 import pycurl
 import logging
 import tarfile
@@ -487,16 +488,45 @@ class report(SubCommand):
         res['outputDatasets'] = {}
         for outputDataset in outputDatasets:
             res['outputDatasets'][outputDataset] = {'lumis': {}, 'numEvents': 0}
+            query = "'run,lumi dataset=%s'" % outputDataset
+            dasgo = "dasgoclient --query " + query + " --json"
 
-
-
+            runlumilist = {}
+            subp = subprocess.Popen(dasgo, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, stderr = subp.communicate()
+            if subp.returncode or not stdout:
+                print('Failed running command %. Exitcode is %s' % (dasgo, exitcode))
+                if stdout:
+                    print('  Stdout:\n    %s' % str(stdout).replace('\n', '\n    '))
+                if stderr:
+                    print('  Stderr:\n    %s' % str(stderr).replace('\n', '\n    '))
+            else:
+                result = json.loads(stdout)
+                for record in result:
+                    run = record['run'][0]['run_number']
+                    lumis = record['lumi'][0]['number']
+                    runlumilist.setdefault(str(run), []).extend(lumis)
 
             # convert to a LumiList object
             outputDatasetLumis = LumiList(runsAndLumis=runlumilist).getCompactList()
             res['outputDatasets'][outputDataset]['lumis'] = outputDatasetLumis
+
             # get total events in dataset
-            summary = dbsApi.listFileSummaries(dataset=outputDataset)[0]
-            res['outputDatasets'][outputDataset]['numEvents'] = summary['num_event']
+            query = "'summary dataset=%s'" % doutputDataset
+            dasgo = "dasgoclient --query " + query + " --json"
+            subp = subprocess.Popen(dasgo, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, stderr = subp.communicate()
+            if subp.returncode or not stdout:
+                print('Failed running command %. Exitcode is %s' % (dasgo, exitcode))
+                if stdout:
+                    print('  Stdout:\n    %s' % str(stdout).replace('\n', '\n    '))
+                if stderr:
+                    print('  Stderr:\n    %s' % str(stderr).replace('\n', '\n    '))
+                total_events = 0
+            else:
+                result = json.loads(stdout)
+                total_events = result[0]['summary'][0]['nevents']
+            res['outputDatasets'][outputDataset]['numEvents'] = total_events
 
         return res
 
