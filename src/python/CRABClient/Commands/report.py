@@ -12,7 +12,6 @@ import CRABClient.Emulator
 from ast import literal_eval
 
 from WMCore.DataStructs.LumiList import LumiList
-from WMCore.Services.DBS.DBSReader import DBSReader
 
 from CRABClient import __version__
 from CRABClient.ClientUtilities import colors
