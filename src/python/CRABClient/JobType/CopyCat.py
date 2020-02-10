@@ -15,8 +15,6 @@ from httplib import HTTPException
 
 from WMCore.DataStructs.LumiList import LumiList
 
-import PandaServerInterface as PandaInterface
-
 from ServerUtilities import BOOTSTRAP_CFGFILE_DUMP, getProxiedWebDir, NEW_USER_SANDBOX_EXCLUSIONS
 
 import CRABClient.Emulator
