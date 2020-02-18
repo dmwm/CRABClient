@@ -353,11 +353,12 @@ class status(SubCommand):
         ## Dashboard monitoring URL only makes sense if submitted to schedd
         if schedd:
             # define start and end of timer range for dashboard search: from task creation time to now
-            # grafana takes time as seconds fom epoch
+            # grafana takes time as milliseconds fom epoch
             try:
                 taskCreationTime = getEpochFromDBTime(datetime.strptime(dbStartTime, '%Y-%m-%d %H:%M:%S.%f'))
             except:
-                taskCreationTime = int(time.time() - 3*30*24*60*60)  # defaults to now - 3 months
+                taskCreationTime = int(time.time()) - 3*30*24*60*60 # defaults to now - 3 months
+            taskCreationTime = taskCreationTime * 1000 # from sec to msec
             dashboardURL = "https://monit-grafana.cern.ch/d/cmsTMDetail/cms-task-monitoring-task-view?orgId=11&var-user=" + username \
                          + "&var-task=" + taskname + "&from=" + str(taskCreationTime) + "&to=now"
             self.logger.info("Dashboard monitoring URL:\t%s" % (dashboardURL))
