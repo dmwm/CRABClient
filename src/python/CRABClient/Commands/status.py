@@ -359,7 +359,7 @@ class status(SubCommand):
             except:
                 taskCreationTime = int(time.time() - 3*30*24*60*60)  # defaults to now - 3 months
             dashboardURL = "https://monit-grafana.cern.ch/d/cmsTMDetail/cms-task-monitoring-task-view?orgId=11&var-user=" + username \
-                         + "&var-task=" + taskname + "&from=" + taskCreationTime + "&to=now"
+                         + "&var-task=" + taskname + "&from=" + str(taskCreationTime) + "&to=now"
             self.logger.info("Dashboard monitoring URL:\t%s" % (dashboardURL))
             self.logger.info("In case of issues with the dashboard, please provide feedback to %s" % (FEEDBACKMAIL))
 
