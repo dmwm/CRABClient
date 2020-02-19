@@ -5,6 +5,7 @@ import math
 import json
 import urllib
 import logging
+import time
 from ast import literal_eval
 from datetime import datetime
 from httplib import HTTPException
@@ -322,6 +323,7 @@ class status(SubCommand):
         command = getColumn(crabDBInfo, 'tm_task_command')
         warnings = literal_eval(getColumn(crabDBInfo, 'tm_task_warnings'))
         failure = getColumn(crabDBInfo, 'tm_task_failure')
+        dbStartTime = getColumn(crabDBInfo,'tm_start_time')
 
         self.logger.info("CRAB project directory:\t\t%s" % (self.requestarea))
         self.logger.info("Task name:\t\t\t%s" % self.cachedinfo['RequestName'])
@@ -350,8 +352,15 @@ class status(SubCommand):
 
         ## Dashboard monitoring URL only makes sense if submitted to schedd
         if schedd:
+            # define start and end of timer range for dashboard search: from task creation time to now
+            # grafana takes time as milliseconds fom epoch
+            try:
+                taskCreationTime = getEpochFromDBTime(datetime.strptime(dbStartTime, '%Y-%m-%d %H:%M:%S.%f'))
+            except:
+                taskCreationTime = int(time.time()) - 3*30*24*60*60 # defaults to now - 3 months
+            taskCreationTime = taskCreationTime * 1000 # from sec to msec
             dashboardURL = "https://monit-grafana.cern.ch/d/cmsTMDetail/cms-task-monitoring-task-view?orgId=11&var-user=" + username \
-                         + "&var-task=" + taskname
+                         + "&var-task=" + taskname + "&from=" + str(taskCreationTime) + "&to=now"
             self.logger.info("Dashboard monitoring URL:\t%s" % (dashboardURL))
             self.logger.info("In case of issues with the dashboard, please provide feedback to %s" % (FEEDBACKMAIL))
 
