@@ -53,7 +53,9 @@ class purge(SubCommand):
         gsisshdict = {}
         if not self.options.scheddonly or noSchedd:
             baseurl = getUrl(self.instance, resource='info')
-            cacheurl = server_info('backendurls', self.serverurl, self.proxyfilename, baseurl)
+            cacheurl = server_info(subresource='backendurls', serverurl=self.serverurl,
+                                   proxyfilename=self.proxyfilename,
+                                   baserul=baseurl, logger=self.logger)
             cacheurl = cacheurl['cacheSSL']
             cacheurldict = {'endpoint': cacheurl, 'pycurl': True}
 
