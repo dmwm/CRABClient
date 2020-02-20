@@ -55,7 +55,7 @@ class purge(SubCommand):
             baseurl = getUrl(self.instance, resource='info')
             cacheurl = server_info(subresource='backendurls', serverurl=self.serverurl,
                                    proxyfilename=self.proxyfilename,
-                                   baserul=baseurl, logger=self.logger)
+                                   baseurl=baseurl, logger=self.logger)
             cacheurl = cacheurl['cacheSSL']
             cacheurldict = {'endpoint': cacheurl, 'pycurl': True}
 
