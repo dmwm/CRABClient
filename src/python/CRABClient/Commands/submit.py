@@ -96,7 +96,6 @@ class submit(SubCommand):
         serverBackendURLs = server_info(subresource='backendurls', serverurl=self.serverurl,
                                         proxyfilename=self.proxyfilename,
                                         baseurl=getUrl(self.instance, resource='info'), logger=self.logger)
-        )
         #if cacheSSL is specified in the server external configuration we will use it to upload the sandbox
         filecacheurl = serverBackendURLs['cacheSSL'] if 'cacheSSL' in serverBackendURLs else None
         pluginParams = [self.configuration, self.proxyfilename, self.logger, os.path.join(self.requestarea, 'inputs')]
