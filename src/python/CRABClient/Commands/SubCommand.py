@@ -406,7 +406,9 @@ class SubCommand(ConfigCommand):
 
 
     def checkversion(self, baseurl = None):
-        compatibleVersions = server_info('version', self.serverurl, self.proxyfilename, baseurl)
+        compatibleVersions = server_info(subresource='version', serverurl=self.serverurl,
+                                         proxyfilename=self.proxyfilename,
+                                         baserul=baseurl, logger=self.logger)
         for item in compatibleVersions:
             if re.match(item, __version__):
                 self.logger.debug("CRABClient version: %s" % (__version__))
@@ -434,7 +436,9 @@ class SubCommand(ConfigCommand):
                     self.proxy.myproxyAccount = self.serverurl
                     baseurl = getUrl(self.instance, resource = 'info')
                     ## Get the DN of the task workers from the server.
-                    all_task_workers_dns = server_info('delegatedn', self.serverurl, self.proxyfilename, baseurl)
+                    all_task_workers_dns = server_info(subresource='delegatedn', serverurl=self.serverurl,
+                                                       proxyfilename=self.proxyfilename,
+                                                       baserul=baseurl, logger=self.logger)
                     for serverdn in all_task_workers_dns['services']:
                         self.proxy.setServerDN(serverdn)
                         self.proxy.setMyProxyServer('myproxy.cern.ch')

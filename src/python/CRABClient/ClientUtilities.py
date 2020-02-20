@@ -551,7 +551,7 @@ def getUsernameFromSiteDB_wrapped(logger, quiet = False):
             logger.error(msg)
     except Exception:
         msg  = "%sError GenericException%s: Failed to retrieve username from SiteDB." % (colors.RED, colors.NORMAL)
-        msg += "\n%s" % (traceback.format_exc()) 
+        msg += "\n%s" % (traceback.format_exc())
         if quiet:
             logger.debug(msg)
         else:
@@ -789,11 +789,14 @@ def validateSubmitOptions(options, args):
 #If anyone has a better solution please go on, otherwise live with that one :) :)
 from CRABClient import __version__
 
-def server_info(subresource, server, proxyfilename, baseurl, **kwargs):
+def server_info(subresource=None, serverurl='localhost', proxyfilename=None, baseurl='', logger=None, **kwargs):
     """
     Get relevant information about the server
     """
-    server = CRABClient.Emulator.getEmulator('rest')(server, proxyfilename, proxyfilename, version=__version__)
+    # this is usually the first time that a call to the server is made, so where Emulator('rest') is initialized
+    # arguments to Emulator('rest') call must match those for HTTPRequest.__init__ in RESTInteractions.py
+    server = CRABClient.Emulator.getEmulator('rest')(url=serverurl, localcert=proxyfilename, localkey=proxyfilename,
+              version=__version__, retry=2, logger=logger)
     requestdict = {'subresource': subresource}
     requestdict.update(**kwargs)
     dictresult, dummyStatus, dummyReason = server.get(baseurl, requestdict)
