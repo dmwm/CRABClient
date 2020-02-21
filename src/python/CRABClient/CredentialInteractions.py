@@ -323,3 +323,100 @@ class CredentialInteractions(object):
                 msg = ex._message if hasattr(ex, '_message') else str(ex)
                 raise ProxyCreationException("Problems delegating My-proxy. %s" % msg)
 
+    def createNewMyProxy2(self, timeleftthreshold=0, nokey=False):
+        """
+        Handles the MyProxy creation. In this version the credential name will be simply
+        <username>_CRAB  like e.g. belforte_CRAB where username is the CERN username
+
+        Let the following variables be
+
+        timeleftthreshold: the proxy in myproxy should be delegated for at least this time (14 days)
+        myproxytimeleft: current validity of your proxy in myproxy
+        usercertDaysLeft: the number of days left before your user certificate expire
+        myproxyDesiredValidity: delegate the proxy in myproxy for that time (30 days)
+
+        If we need to renew the proxy in myproxy because its atributes has changed or because it is valid for
+        less time than timeleftthreshold then we do it.
+
+        Before doing that, we check when the user certificate is expiring. If it's within the timeleftthreshold (myproxytimeleft < timeleftthreshold)
+        we delegate the proxy just for the time we need (checking first if we did not already do it since at some point
+        usercertDaysLeft ~= myproxytimeleft and we don't need to delegate it at every command even though myproxytimeleft < timeleftthreshold).
+
+        Note that a warning message is printed at every command it usercertDaysLeft < timeleftthreshold
+        """
+
+        """
+        remove non-needed stuff from delegation configuration
+        and add directly the desired credential login name instead
+        self.defaultDelegation has the format:
+        {'group': '',
+         'logger': <logging.Logger object at 0x7ff2e0b60d50>,
+         'myProxySvr': 'myproxy.cern.ch',
+         'myproxyAccount': 'cmsweb.cern.ch',
+         'myproxyValidity': '720:00',
+         'proxyValidity': '24:00',
+         'role': 'NULL',
+         'serverDN': u'/DC=ch/DC=cern/OU=computers/CN=vocms(052|058|030|0118|0105|0109).cern.ch|/DC=ch/DC=cern/OU=computers/CN=crab-(preprod|prod)-tw(02|01).cern.ch',
+         'vo': 'cms'}
+        """
+        defaultDelegation = self.defaultDelegation
+        defaultDelegation['myproxyAccount'] = None
+        from CRABClient.ClientUtilities import getUserDNandUsername
+        username = getUserDNandUsername(self.logger)
+        credentialName = username['username'] + '_CRAB'
+        defaultDelegation['userName'] = credentialName
+        myproxy = Proxy(defaultDelegation)
+        #userDNFromCert = myproxy.getSubjectFromCert(self.certLocation)
+        #if userDNFromCert:
+        #    myproxy.userDN = userDNFromCert
+
+        myproxytimeleft = 0
+        self.logger.debug("Getting myproxy life time left for %s" % self.defaultDelegation["myProxySvr"])
+        # return an integer that indicates the number of seconds to the expiration of the proxy in myproxy
+        # Also catch the exception in case WMCore encounters a problem with the proxy itself (one such case was #4532)
+        try:
+            myproxytimeleft = myproxy.getMyProxyTimeLeft(serverRenewer=True, nokey=nokey)
+        except Exception as ex:
+            logging.exception("Problems calculating proxy lifetime, logging stack trace and raising ProxyCreationException")
+            # WMException may contain the _message attribute. Otherwise, take the exception as a string.
+            msg = ex._message if hasattr(ex, "_message") else str(ex)
+            raise ProxyCreationException("Problems calculating the time left until the expiration of the proxy."
+                    " Please reset your environment or contact hn-cms-computing-tools@cern.ch if the problem persists.\n%s" % msg)
+        self.logger.debug("Myproxy is valid: %i" % myproxytimeleft)
+
+        trustRetrListChanged = myproxy.trustedRetrievers!=self.defaultDelegation['serverDN'] #list on the REST and on myproxy are different
+        if myproxytimeleft < timeleftthreshold or self.proxyChanged or trustRetrListChanged:
+            # checking the enddate of the user certificate
+            usercertDaysLeft = myproxy.getUserCertEnddate()
+            if usercertDaysLeft == 0:
+                msg = "%sYOUR USER CERTIFICATE IS EXPIRED (OR WILL EXPIRE TODAY). YOU CANNOT USE THE CRAB3 CLIENT. PLEASE REQUEST A NEW CERTIFICATE HERE https://gridca.cern.ch/gridca/ AND SEE https://ca.cern.ch/ca/Help/?kbid=024010%s"\
+                                        % (colors.RED, colors.NORMAL)
+                raise ProxyCreationException(msg)
+
+            #if the certificate is going to expire print a warning. This is going to bre printed at every command if
+            #the myproxytimeleft is inferior to the timeleftthreshold
+            if usercertDaysLeft < self.myproxyDesiredValidity:
+                self.logger.info("%sYour user certificate is going to expire in %s days.  https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookStartingGrid#ObtainingCert %s"\
+                                 % (colors.RED, usercertDaysLeft, colors.NORMAL) )
+                #check if usercertDaysLeft ~= myproxytimeleft which means we already delegated the proxy for as long as we could
+                if abs(usercertDaysLeft*60*60*24 - myproxytimeleft) < 60*60*24 and not trustRetrListChanged: #less than one day between usercertDaysLeft and myproxytimeleft
+                    return
+                #adjust the myproxy delegation time accordingly to the user cert validity
+                self.logger.info("%sDelegating your proxy for %s days instead of %s %s"\
+                                 % (colors.RED, usercertDaysLeft, self.myproxyDesiredValidity, colors.NORMAL) )
+                myproxy.myproxyValidity = "%i:00" % (usercertDaysLeft*24)
+
+            # creating the proxy
+            self.logger.debug("Delegating a myproxy for %s hours" % myproxy.myproxyValidity )
+            try:
+                myproxy.delegate(serverRenewer = True, nokey=nokey)
+                myproxytimeleft = myproxy.getMyProxyTimeLeft(serverRenewer=True, nokey=nokey)
+                if myproxytimeleft <= 0:
+                    raise ProxyCreationException("It seems your proxy has not been delegated to myproxy. Please check the logfile for the exact error "+\
+                                                            "(it might simply you typed a wrong password)")
+                else:
+                    self.logger.debug("My-proxy delegated.")
+            except Exception as ex:
+                msg = ex._message if hasattr(ex, '_message') else str(ex)
+                raise ProxyCreationException("Problems delegating My-proxy. %s" % msg)
+
