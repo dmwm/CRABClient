@@ -610,52 +610,17 @@ def getUserDNandUsername(logger):
     userdn = getUserDN_wrapped(logger)
     if not userdn:
         return {'DN': None, 'username': None}
-
     logger.info("Retrieving username for this DN...")
     username = None
-
-    # have do deal with SiteDB -> CRIC transition, only only may be there,
-    # they may disagree etc.
-
-    usernameSiteDB = getUsernameFromSiteDB_wrapped(logger, quiet=True)
-    usernameCric = getUsernameFromCRIC_wrapped(logger, quiet=True)
-
-    if usernameCric == usernameSiteDB:   # great in good or bad, they agree
-        username = usernameCric          # will deal later with the possibility that neither worked
-    else:
-        if not usernameSiteDB:
-            #something went wrong with SiteDB, ignore the details and use CRIC
-            msg = "Failed to get username from SiteDB."
-            msg += "\n Details are in crab.log file"
-            msg += "\nWill try new Coputing Resource Information Catalog CRIC"
-            logger.info(msg)
-            username = usernameCric
-        elif not usernameCric:
-            #something went wrong with CRIC, limp along with SiteDB, but scream
-            username = usernameSiteDB
-            msg = "Failed to get username from CRIC. Will use result from SiteDB"
-            msg += "\nPlease report this to support toghether with following details"
-            logger.warning(msg)
-            usernameCric = getUsernameFromCRIC_wrapped(logger, quiet=False)
-        else:
-            #name mismatch between CRIC and SiteDB
-            msg = "%sWarning:%s username from SiteDB (%s) does not match username from CRIC (%s)" \
-                  % (colors.RED, colors.NORMAL, usernameSiteDB, usernameCric)
-            msg += "\n Please report this to support"
-            logger.info(msg)
-
-    # from now one there is a single username and code is not depending on having
-    # two possible services to query
+    username = getUsernameFromCRIC_wrapped(logger, quiet=True)
     if username:
         logger.info("username is %s" % username)
     else:
-        # ouch
-        msg = "%sERROR:%s Nor SiteDB nor CRIC could resolve the DN into a user name" \
+        msg = "%sERROR:%s CRIC could resolve the DN into a user name" \
               % (colors.RED, colors.NORMAL)
-        msg += "\n Please find below details of both failures for investigation:"
+        msg += "\n Please find below details of failures for investigation:"
         logger.error(msg)
-        usernameSiteDB = getUsernameFromSiteDB_wrapped(logger, quiet=False)
-        usernameCric = getUsernameFromCRIC_wrapped(logger, quiet=False)
+        username = getUsernameFromCRIC_wrapped(logger, quiet=False)
 
     return {'DN': userdn, 'username': username}
 
