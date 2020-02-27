@@ -523,48 +523,6 @@ def getUserDN_wrapped(logger):
     return userdn
 
 
-def getUsernameFromSiteDB_wrapped(logger, quiet = False):
-    """
-    Wrapper function for getUsernameFromSiteDB,
-    catching exceptions and printing messages.
-    """
-    from CRABClient.UserUtilities import getUsernameFromSiteDB
-    username = None
-    msg = "Retrieving username from SiteDB..."
-    if quiet:
-        logger.debug(msg)
-    else:
-        logger.info(msg)
-    try:
-        username = getUsernameFromSiteDB()
-    except ProxyException as ex:
-        msg = "%sError ProxyException%s: %s" % (colors.RED, colors.NORMAL, ex)
-        if quiet:
-            logger.debug(msg)
-        else:
-            logger.error(msg)
-    except UsernameException as ex:
-        msg = "%sError UsernameException%s: %s" % (colors.RED, colors.NORMAL, ex)
-        if quiet:
-            logger.debug(msg)
-        else:
-            logger.error(msg)
-    except Exception:
-        msg  = "%sError GenericException%s: Failed to retrieve username from SiteDB." % (colors.RED, colors.NORMAL)
-        msg += "\n%s" % (traceback.format_exc())
-        if quiet:
-            logger.debug(msg)
-        else:
-            logger.error(msg)
-    else:
-        msg = "Username is: %s" % (username)
-        if quiet:
-            logger.debug(msg)
-        else:
-            logger.info(msg)
-    return username
-
-
 def getUsernameFromCRIC_wrapped(logger, quiet = False):
     """
     Wrapper function for getUsernameFromCRIC,
