@@ -137,8 +137,6 @@ class CredentialInteractions(object):
         """
         ## TODO add the change to have user-cert/key defined in the config.
         proxy = self.proxy()
-        ## Not sure if proxy.userDN is used. We don't have this in createNewVomsProxySimple...
-        proxy.userDN = proxy.getSubjectFromCert(self.certLocation)
         self.logger.debug("Checking credentials")
         proxyFileName = proxy.getProxyFilename()
         if not os.path.isfile(proxyFileName):
