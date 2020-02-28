@@ -110,7 +110,7 @@ def getUsernameFromCRIC():
         msg += " (you can check what is the certificate you currently have mapped"
         msg += " by looking at CERN Certificatiom Authority page."
         msg += "\nFor instructions on how to map a certificate, see "
-        msg += "\n  https://twiki.cern.ch/twiki/bin/viewauth/CMS/SiteDBForCRAB#Adding_your_DN_to_your_profile"
+        msg += "\n  https://twiki.cern.ch/twiki/bin/view/CMSPublic/UsernameForCRAB#Adding_your_DN_to_your_profile"
         raise UsernameException(msg)
     return username
 
