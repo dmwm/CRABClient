@@ -134,11 +134,14 @@ class CredentialInteractions(object):
         Handles the proxy creation:
            - checks if a valid proxy still exists
            - performs the creation if it is expired
+           - returns a dictionary with keys: filename timelect actimeleft grop role subject
         """
+        proxyInfo={}
         ## TODO add the change to have user-cert/key defined in the config.
         proxy = self.proxy()
         self.logger.debug("Checking credentials")
         proxyFileName = proxy.getProxyFilename()
+        proxyInfo['filename'] = proxyFileName
         if not os.path.isfile(proxyFileName):
             self.logger.debug("Proxy file %s not found" % (proxyFileName))
             proxyTimeLeft = 0
@@ -238,13 +241,17 @@ class CredentialInteractions(object):
             ## Check that the created proxy has the expected VO group and role (what
             ## we have set in the defaultDelegation dictionary).
             proxyTimeLeft = proxy.getTimeLeft()
-            group, role = proxy.getUserGroupAndRoleFromProxy(proxy.getProxyFilename())
+            proxyInfo['timeleft'] = proxyTimeLeft
+            group, role = proxy.getUserGroupAndRoleFromProxy(proxyInfo['filename'])
+            proxyInfo['group'] = group
+            proxyInfo['role'] = role
             if proxyTimeLeft > 0 and group == self.defaultDelegation['group'] and role == self.defaultDelegation['role']:
                 self.logger.debug("Proxy created.")
             else:
                 raise ProxyCreationException("Problems creating proxy.")
 
-        return proxy.getProxyFilename()
+        #return proxy.getProxyFilename()
+        return proxyInfo
 
 
     def createNewMyProxy(self, timeleftthreshold=0, nokey=False):
