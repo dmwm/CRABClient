@@ -232,6 +232,7 @@ class CredentialInteractions(object):
 
         ## Create a new proxy if the current one is expired or if we were instructed
         ## to change the proxy for a new one.
+        proxyInfo['timeleft'] = proxyTimeLeft
         if proxyTimeLeft < timeLeftThreshold or self.proxyChanged:
             msg  = "Creating new proxy for %s hours" % (self.defaultDelegation['proxyValidity'])
             msg += " with VO group '%s' and VO role '%s'." % (self.defaultDelegation['group'], self.defaultDelegation['role'])
