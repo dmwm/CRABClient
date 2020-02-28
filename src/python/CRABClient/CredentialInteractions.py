@@ -93,6 +93,7 @@ class CredentialInteractions(object):
         return proxy.getTimeLeft() ## Returns an integer that indicates the number of seconds to the expiration of the proxy
 
 
+"""
     def createNewVomsProxySimple(self, timeLeftThreshold = 0):
         proxy = self.proxy()
         self.logger.debug("Checking credentials")
@@ -126,7 +127,7 @@ class CredentialInteractions(object):
                 raise ProxyCreationException("Problems creating proxy.")
            
         return proxyCreated
-
+"""
 
     def createNewVomsProxy(self, timeLeftThreshold = 0, doProxyGroupRoleCheck = False, proxyCreatedByCRAB = False, proxyOptsSetPlace = None):
         """
