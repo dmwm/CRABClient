@@ -265,7 +265,7 @@ def uploadlogfile(logger, proxyfilename, logfilename = None, logpath = None, ins
         logger.info("%sSuccess%s: Log file uploaded successfully." % (colors.GREEN, colors.NORMAL))
         logfileurl = cacheurl + '/logfile?name='+str(logfilename)
         if not username:
-            username = getUserDNandUsername(logger).get('username')
+            username = getUserDNandUsername(logger=logger).get('username')
         if username:
             logfileurl += '&username='+str(username)
         logger.info("Log file URL: %s" % (logfileurl))
@@ -564,7 +564,9 @@ def getUsernameFromCRIC_wrapped(logger, quiet = False):
             logger.info(msg)
     return username
 
-def getUserDNandUsername(logger):
+def getUserDNandUsername(proxyInfo=None, logger=None):
+    if proxyInfo:
+        logger.info("in getUserDNadnUsername proxyInfo dictionar is: %s", proxyInfo)
     userdn = getUserDN_wrapped(logger)
     if not userdn:
         return {'DN': None, 'username': None}

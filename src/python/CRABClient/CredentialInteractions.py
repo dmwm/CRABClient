@@ -134,7 +134,7 @@ class CredentialInteractions(object):
         Handles the proxy creation:
            - checks if a valid proxy still exists
            - performs the creation if it is expired
-           - returns a dictionary with keys: filename timelect actimeleft grop role subject
+           - returns a dictionary with keys: filename timelect actimeleft grop role userdn
         """
         proxyInfo={}
         ## TODO add the change to have user-cert/key defined in the config.
@@ -367,9 +367,8 @@ class CredentialInteractions(object):
         """
         defaultDelegation = self.defaultDelegation
         defaultDelegation['myproxyAccount'] = None
-        proxyInfo = self.proxyInfo
         from CRABClient.ClientUtilities import getUserDNandUsername
-        username = getUserDNandUsername(self.logger)
+        username = getUserDNandUsername(proxyInfo=self.proxyInfo, logger=self.logger)
         credentialName = username['username'] + '_CRAB'
         defaultDelegation['userName'] = credentialName
         myproxy = Proxy(defaultDelegation)

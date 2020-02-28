@@ -10,7 +10,7 @@ class checkusername(SubCommand):
     name = 'checkusername'
 
     def __call__(self):
-        usernameDict = getUserDNandUsername(self.logger)
+        usernameDict = getUserDNandUsername(logger=self.logger)
         return usernameDict
 
 
