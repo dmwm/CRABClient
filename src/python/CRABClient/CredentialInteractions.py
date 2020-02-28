@@ -28,7 +28,7 @@ class CredentialInteractions(object):
                                   'logger':          logging.getLogger('CRAB3'),
                                   'vo':              'cms',
                                   'myProxySvr':      myproxy,
-                                  'proxyValidity'  : '24:00', ## hh:mm
+                                  'proxyValidity'  : '172:00', ## hh:mm
                                   'myproxyValidity': '%i:00' % (self.myproxyDesiredValidity*24), ## hh:mm
                                   'serverDN' :       serverdn,
                                   'group' :          group,
