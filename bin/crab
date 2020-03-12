@@ -14,6 +14,11 @@ if sys.version_info < (2, 6):
     sys.exit()
 
 import pycurl
+if not 'OpenSSL' in pycurl.version:
+    print('\nError: missing SSL support in pycurl. Make sure you do cmsenv first. Exiting...')
+    print('pycurl version is: %s\n' % pycurl.version)
+    sys.exit()
+
 import logging
 import logging.handlers
 
