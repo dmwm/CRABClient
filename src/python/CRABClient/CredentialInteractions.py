@@ -308,25 +308,11 @@ class CredentialInteractions(object):
         Note that a warning message is printed at every command it usercertDaysLeft < timeleftthreshold
         """
 
-        """
-        remove non-needed stuff from delegation configuration
-        and add directly the desired credential login name instead
-        self.defaultDelegation has the format:
-        {'group': '',
-         'logger': <logging.Logger object at 0x7ff2e0b60d50>,
-         'myProxySvr': 'myproxy.cern.ch',
-         'myproxyAccount': 'cmsweb.cern.ch',
-         'myproxyValidity': '720:00',
-         'proxyValidity': '24:00',
-         'role': 'NULL',
-         'serverDN': u'/DC=ch/DC=cern/OU=computers/CN=vocms(052|058|030|0118|0105|0109).cern.ch|/DC=ch/DC=cern/OU=computers/CN=crab-(preprod|prod)-tw(02|01).cern.ch',
-         'vo': 'cms'}
-        """
         defaultDelegation = self.defaultDelegation
         defaultDelegation['myproxyAccount'] = None
         from  CRABClient.ClientUtilities import getUsername
         username = getUsername(proxyInfo=self.proxyInfo, logger=self.logger)
-        credentialName = username['username'] + '_CRAB'
+        credentialName = username + '_CRAB'
         defaultDelegation['userName'] = credentialName
         myproxy = Proxy(defaultDelegation)
         #userDNFromCert = myproxy.getSubjectFromCert(self.certLocation)
