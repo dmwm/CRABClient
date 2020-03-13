@@ -310,8 +310,6 @@ class SubCommand(ConfigCommand):
         ## (as commented above, we don't really care what are the VO role and group so
         ## far).
         self.proxyCreated = False
-        #if not self.options.proxy and self.cmdconf['initializeProxy']:
-        #   self.proxyCreated = self.proxy.createNewVomsProxySimple(timeLeftThreshold = 720)
 
         ## If there is an input configuration file:
         if hasattr(self.options, 'config') and self.options.config is not None:
