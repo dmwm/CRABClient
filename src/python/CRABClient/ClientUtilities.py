@@ -565,12 +565,9 @@ def getUsernameFromCRIC_wrapped(logger, proxyFileName, quiet = False):
     return username
 
 def getUsername(proxyInfo=None, logger=None):
-    if proxyInfo:
-        logger.info("in getUserDNadnUsername proxyInfo dictionary is: %s", proxyInfo)
-    proxyFileName = proxyInfo['filename']
 
     logger.info("Retrieving username ...")
-    username = None
+    proxyFileName = proxyInfo['filename']
     username = getUsernameFromCRIC_wrapped(logger, proxyFileName, quiet=True)
     if username:
         logger.info("username is %s" % username)
