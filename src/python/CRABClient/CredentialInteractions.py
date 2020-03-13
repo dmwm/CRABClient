@@ -72,13 +72,6 @@ class CredentialInteractions(object):
             raise EnvironmentException('Problem with Grid environment: %s ' % ex._message)
         return proxy
 
-
-    def getUserDN(self):
-        proxy = self.proxy()
-        userdn = proxy.getSubjectFromCert(self.certLocation)
-        return userdn
-
-
     def getFilename(self):
         proxy = self.proxy()
         proxyFileName = proxy.getProxyFilename()
