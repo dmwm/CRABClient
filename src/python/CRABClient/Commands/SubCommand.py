@@ -306,12 +306,10 @@ class SubCommand(ConfigCommand):
         self.proxy = CredentialInteractions('', '', self.voRole, self.voGroup, self.logger, '')
 
         ## If the user didn't use the --proxy command line option, and if there isn't a
-        ## valid proxy already, we create a new one with the current VO role and group
+        ## valid proxy already, we will create a new one with the current VO role and group
         ## (as commented above, we don't really care what are the VO role and group so
         ## far).
         self.proxyCreated = False
-        if not self.options.proxy and self.cmdconf['initializeProxy']:
-            self.proxyCreated = self.proxy.createNewVomsProxySimple(timeLeftThreshold = 720)
 
         ## If there is an input configuration file:
         if hasattr(self.options, 'config') and self.options.config is not None:
@@ -349,8 +347,8 @@ class SubCommand(ConfigCommand):
         ## Update (or create) the CRAB cache file.
         self.updateCRABCacheFile()
 
-        ## At this point there should be a valid proxy, because we have already checked that and
-        ## eventually created a new one. If the proxy was not created by CRAB, we check that the
+        ## At this point we check if there is a valid proxy, and
+        ## eventually create a new one. If the proxy was not created by CRAB, we check that the
         ## VO role/group in the proxy are the same as specified by the user in the configuration
         ## file (or in the command line options). If it is not, we ask the user if he wants to 
         ## overwrite the current proxy. If he doesn't want to overwrite it, we don't continue 
@@ -428,10 +426,11 @@ class SubCommand(ConfigCommand):
             if self.cmdconf['initializeProxy']:
                 self.proxy.setVOGroupVORole(self.voGroup, self.voRole)
                 self.proxy.setMyProxyAccount(self.serverurl)
-                self.proxyfilename = self.proxy.createNewVomsProxy(timeLeftThreshold = 720, \
+                self.proxy.proxyInfo = self.proxy.createNewVomsProxy(timeLeftThreshold = 720, \
                                                                    doProxyGroupRoleCheck = self.cmdconf['doProxyGroupRoleCheck'], \
                                                                    proxyCreatedByCRAB = self.proxyCreated, \
                                                                    proxyOptsSetPlace = proxyOptsSetPlace)
+                self.proxyfilename = self.proxy.proxyInfo['filename']
                 if self.cmdconf['requiresREST']: ## If the command doesn't contact the REST, we can't delegate the proxy.
                     self.proxy.myproxyAccount = self.serverurl
                     baseurl = getUrl(self.instance, resource = 'info')
@@ -444,11 +443,7 @@ class SubCommand(ConfigCommand):
                         self.proxy.setMyProxyServer('myproxy.cern.ch')
                         self.logger.debug("Registering user credentials for server %s" % serverdn)
                         self.proxy.createNewMyProxy(timeleftthreshold = 60 * 60 * 24 * RENEW_MYPROXY_THRESHOLD, nokey = True)
-                        try:
-                            # allow to use older WMCore, simply new funtionality will not be there
-                            self.proxy.createNewMyProxy2(timeleftthreshold=60*60*24 * RENEW_MYPROXY_THRESHOLD, nokey=True)
-                        except:
-                            pass
+                        self.proxy.createNewMyProxy2(timeleftthreshold=60*60*24 * RENEW_MYPROXY_THRESHOLD, nokey=True)
         else:
             self.proxyfilename = self.options.proxy
             os.environ['X509_USER_PROXY'] = self.options.proxy

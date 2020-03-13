@@ -5,7 +5,7 @@ import datetime
 import subprocess
 
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ClientUtilities import colors, getUserDNandUsername, cmd_exist
+from CRABClient.ClientUtilities import colors, getUsername, cmd_exist
 from WMCore.Services.PhEDEx.PhEDEx import PhEDEx
 from CRABClient.ClientExceptions import MissingOptionException, ConfigurationException
 from httplib import HTTPException
@@ -34,7 +34,7 @@ class checkwrite(SubCommand):
             ## assume he/she wants to check in /store/user/<username>. Retrieve his/her
             ## username from the DN
             self.logger.info('Will check write permission in the default location /store/user/<username>')
-            username = getUserDNandUsername(self.logger).get('username')
+            username = getUsername(self.proxy.proxyInfo, logger=self.logger)
             if username:
                 self.lfnsaddprefix = '/store/user/' + username
             else:
@@ -53,7 +53,7 @@ class checkwrite(SubCommand):
         errMsg += "\nLFN %s is not valid." % (self.lfnsaddprefix)
 
         if not username and self.lfnsaddprefix.startswith('/store/user/'):
-            username = getUserDNandUsername(self.logger).get('username')
+            username = getUserDNandUsername(logger=self.logger).get('username')
         if not checkOutLFN(self.lfnsaddprefix, username):
             self.logger.info(errMsg)
             return {'status': 'FAILED'}

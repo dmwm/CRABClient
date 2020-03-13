@@ -28,7 +28,7 @@ class CredentialInteractions(object):
                                   'logger':          logging.getLogger('CRAB3'),
                                   'vo':              'cms',
                                   'myProxySvr':      myproxy,
-                                  'proxyValidity'  : '24:00', ## hh:mm
+                                  'proxyValidity'  : '172:00', ## hh:mm
                                   'myproxyValidity': '%i:00' % (self.myproxyDesiredValidity*24), ## hh:mm
                                   'serverDN' :       serverdn,
                                   'group' :          group,
@@ -72,13 +72,6 @@ class CredentialInteractions(object):
             raise EnvironmentException('Problem with Grid environment: %s ' % ex._message)
         return proxy
 
-
-    def getUserDN(self):
-        proxy = self.proxy()
-        userdn = proxy.getSubjectFromCert(self.certLocation)
-        return userdn
-
-
     def getFilename(self):
         proxy = self.proxy()
         proxyFileName = proxy.getProxyFilename()
@@ -92,54 +85,19 @@ class CredentialInteractions(object):
         proxy = self.proxy()
         return proxy.getTimeLeft() ## Returns an integer that indicates the number of seconds to the expiration of the proxy
 
-
-    def createNewVomsProxySimple(self, timeLeftThreshold = 0):
-        proxy = self.proxy()
-        self.logger.debug("Checking credentials")
-        proxyFileName = proxy.getProxyFilename()
-        if not os.path.isfile(proxyFileName):
-            self.logger.debug("Proxy file %s not found" % (proxyFileName))
-            proxyTimeLeft = 0
-        else:
-            self.logger.debug("Found proxy file %s" % (proxyFileName))
-            self.logger.debug("Getting proxy life time left")
-            proxyTimeLeft = proxy.getTimeLeft()
-            hours, minutes, seconds = int(proxyTimeLeft/3600), int((proxyTimeLeft%3600)/60), int((proxyTimeLeft%3600)%60)
-            self.logger.debug("Proxy valid for %02d:%02d:%02d hours" % (hours, minutes, seconds))
-        ## Create a new proxy if the current one is expired or if we were instructed
-        ## to change the proxy for a new one.
-        proxyCreated = False
-        if proxyTimeLeft < timeLeftThreshold:
-            msg  = "Creating new proxy for %s hours" % (self.defaultDelegation['proxyValidity'])
-            msg += " with VO group '%s' and VO role '%s'." % (self.defaultDelegation['group'], self.defaultDelegation['role'])
-            self.logger.debug(msg)
-            ## Create the proxy.
-            proxy.create()
-            ## Check that the created proxy has the expected VO group and role (what we have
-            ## set in the defaultDelegation dictionary).
-            proxyTimeLeft = proxy.getTimeLeft()
-            group, role = proxy.getUserGroupAndRoleFromProxy(proxy.getProxyFilename())
-            if proxyTimeLeft > 0 and group == self.defaultDelegation['group'] and role == self.defaultDelegation['role']:
-                self.logger.debug("Proxy created.")
-                proxyCreated = True
-            else:
-                raise ProxyCreationException("Problems creating proxy.")
-           
-        return proxyCreated
-
-
     def createNewVomsProxy(self, timeLeftThreshold = 0, doProxyGroupRoleCheck = False, proxyCreatedByCRAB = False, proxyOptsSetPlace = None):
         """
         Handles the proxy creation:
            - checks if a valid proxy still exists
            - performs the creation if it is expired
+           - returns a dictionary with keys: filename timelect actimeleft grop role userdn
         """
+        proxyInfo={}
         ## TODO add the change to have user-cert/key defined in the config.
         proxy = self.proxy()
-        ## Not sure if proxy.userDN is used. We don't have this in createNewVomsProxySimple...
-        proxy.userDN = proxy.getSubjectFromCert(self.certLocation)
         self.logger.debug("Checking credentials")
         proxyFileName = proxy.getProxyFilename()
+        proxyInfo['filename'] = proxyFileName
         if not os.path.isfile(proxyFileName):
             self.logger.debug("Proxy file %s not found" % (proxyFileName))
             proxyTimeLeft = 0
@@ -230,6 +188,7 @@ class CredentialInteractions(object):
 
         ## Create a new proxy if the current one is expired or if we were instructed
         ## to change the proxy for a new one.
+        proxyInfo['timeleft'] = proxyTimeLeft
         if proxyTimeLeft < timeLeftThreshold or self.proxyChanged:
             msg  = "Creating new proxy for %s hours" % (self.defaultDelegation['proxyValidity'])
             msg += " with VO group '%s' and VO role '%s'." % (self.defaultDelegation['group'], self.defaultDelegation['role'])
@@ -239,13 +198,17 @@ class CredentialInteractions(object):
             ## Check that the created proxy has the expected VO group and role (what
             ## we have set in the defaultDelegation dictionary).
             proxyTimeLeft = proxy.getTimeLeft()
-            group, role = proxy.getUserGroupAndRoleFromProxy(proxy.getProxyFilename())
+            proxyInfo['timeleft'] = proxyTimeLeft
+            group, role = proxy.getUserGroupAndRoleFromProxy(proxyInfo['filename'])
+            proxyInfo['group'] = group
+            proxyInfo['role'] = role
             if proxyTimeLeft > 0 and group == self.defaultDelegation['group'] and role == self.defaultDelegation['role']:
                 self.logger.debug("Proxy created.")
             else:
                 raise ProxyCreationException("Problems creating proxy.")
 
-        return proxy.getProxyFilename()
+        #return proxy.getProxyFilename()
+        return proxyInfo
 
 
     def createNewMyProxy(self, timeleftthreshold=0, nokey=False):
@@ -345,25 +308,11 @@ class CredentialInteractions(object):
         Note that a warning message is printed at every command it usercertDaysLeft < timeleftthreshold
         """
 
-        """
-        remove non-needed stuff from delegation configuration
-        and add directly the desired credential login name instead
-        self.defaultDelegation has the format:
-        {'group': '',
-         'logger': <logging.Logger object at 0x7ff2e0b60d50>,
-         'myProxySvr': 'myproxy.cern.ch',
-         'myproxyAccount': 'cmsweb.cern.ch',
-         'myproxyValidity': '720:00',
-         'proxyValidity': '24:00',
-         'role': 'NULL',
-         'serverDN': u'/DC=ch/DC=cern/OU=computers/CN=vocms(052|058|030|0118|0105|0109).cern.ch|/DC=ch/DC=cern/OU=computers/CN=crab-(preprod|prod)-tw(02|01).cern.ch',
-         'vo': 'cms'}
-        """
         defaultDelegation = self.defaultDelegation
         defaultDelegation['myproxyAccount'] = None
-        from CRABClient.ClientUtilities import getUserDNandUsername
-        username = getUserDNandUsername(self.logger)
-        credentialName = username['username'] + '_CRAB'
+        from  CRABClient.ClientUtilities import getUsername
+        username = getUsername(proxyInfo=self.proxyInfo, logger=self.logger)
+        credentialName = username + '_CRAB'
         defaultDelegation['userName'] = credentialName
         myproxy = Proxy(defaultDelegation)
         #userDNFromCert = myproxy.getSubjectFromCert(self.certLocation)
