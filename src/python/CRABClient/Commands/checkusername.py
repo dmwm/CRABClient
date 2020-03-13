@@ -1,5 +1,5 @@
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ClientUtilities import getUserDNandUsername
+from CRABClient.ClientUtilities import getUsername
 
 
 class checkusername(SubCommand):
@@ -10,8 +10,8 @@ class checkusername(SubCommand):
     name = 'checkusername'
 
     def __call__(self):
-        usernameDict = getUserDNandUsername(logger=self.logger)
-        return usernameDict
+        username = getUsername(self.proxy.proxyInfo, logger=self.logger)
+        return username
 
 
     def terminate(self, exitcode):
