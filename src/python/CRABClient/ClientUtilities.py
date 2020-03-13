@@ -265,7 +265,7 @@ def uploadlogfile(logger, proxyfilename, logfilename = None, logpath = None, ins
         logger.info("%sSuccess%s: Log file uploaded successfully." % (colors.GREEN, colors.NORMAL))
         logfileurl = cacheurl + '/logfile?name='+str(logfilename)
         if not username:
-            username = getUserDNandUsername(logger=logger).get('username')
+            username = getUsername(logger=logger).get('username')
         if username:
             logfileurl += '&username='+str(username)
         logger.info("Log file URL: %s" % (logfileurl))
@@ -523,7 +523,7 @@ def getUserDN_wrapped(logger):
     return userdn
 
 
-def getUsernameFromCRIC_wrapped(logger, quiet = False):
+def getUsernameFromCRIC_wrapped(logger, proxyFileName, quiet = False):
     """
     Wrapper function for getUsernameFromCRIC,
     catching exceptions and printing messages.
@@ -536,7 +536,7 @@ def getUsernameFromCRIC_wrapped(logger, quiet = False):
     else:
         logger.info(msg)
     try:
-        username = getUsernameFromCRIC()
+        username = getUsernameFromCRIC(proxyFileName)
     except ProxyException as ex:
         msg = "%sError ProxyException%s: %s" % (colors.RED, colors.NORMAL, ex)
         if quiet:
@@ -564,15 +564,14 @@ def getUsernameFromCRIC_wrapped(logger, quiet = False):
             logger.info(msg)
     return username
 
-def getUserDNandUsername(proxyInfo=None, logger=None):
+def getUsername(proxyInfo=None, logger=None):
     if proxyInfo:
-        logger.info("in getUserDNadnUsername proxyInfo dictionar is: %s", proxyInfo)
-    userdn = getUserDN_wrapped(logger)
-    if not userdn:
-        return {'DN': None, 'username': None}
-    logger.info("Retrieving username for this DN...")
+        logger.info("in getUserDNadnUsername proxyInfo dictionary is: %s", proxyInfo)
+    proxyFileName = proxyInfo['filename']
+
+    logger.info("Retrieving username ...")
     username = None
-    username = getUsernameFromCRIC_wrapped(logger, quiet=True)
+    username = getUsernameFromCRIC_wrapped(logger, proxyFileName, quiet=True)
     if username:
         logger.info("username is %s" % username)
     else:
@@ -580,10 +579,9 @@ def getUserDNandUsername(proxyInfo=None, logger=None):
               % (colors.RED, colors.NORMAL)
         msg += "\n Please find below details of failures for investigation:"
         logger.error(msg)
-        username = getUsernameFromCRIC_wrapped(logger, quiet=False)
+        username = getUsernameFromCRIC_wrapped(logger, proxyFileName, quiet=False)
 
-    return {'DN': userdn, 'username': username}
-
+    return username
 
 def validServerURL(option, opt_str, value, parser):
     """
