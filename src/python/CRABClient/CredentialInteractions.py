@@ -85,43 +85,6 @@ class CredentialInteractions(object):
         proxy = self.proxy()
         return proxy.getTimeLeft() ## Returns an integer that indicates the number of seconds to the expiration of the proxy
 
-
-    """
-    def createNewVomsProxySimple(self, timeLeftThreshold = 0):
-        proxy = self.proxy()
-        self.logger.debug("Checking credentials")
-        proxyFileName = proxy.getProxyFilename()
-        if not os.path.isfile(proxyFileName):
-            self.logger.debug("Proxy file %s not found" % (proxyFileName))
-            proxyTimeLeft = 0
-        else:
-            self.logger.debug("Found proxy file %s" % (proxyFileName))
-            self.logger.debug("Getting proxy life time left")
-            proxyTimeLeft = proxy.getTimeLeft()
-            hours, minutes, seconds = int(proxyTimeLeft/3600), int((proxyTimeLeft%3600)/60), int((proxyTimeLeft%3600)%60)
-            self.logger.debug("Proxy valid for %02d:%02d:%02d hours" % (hours, minutes, seconds))
-        ## Create a new proxy if the current one is expired or if we were instructed
-        ## to change the proxy for a new one.
-        proxyCreated = False
-        if proxyTimeLeft < timeLeftThreshold:
-            msg  = "Creating new proxy for %s hours" % (self.defaultDelegation['proxyValidity'])
-            msg += " with VO group '%s' and VO role '%s'." % (self.defaultDelegation['group'], self.defaultDelegation['role'])
-            self.logger.debug(msg)
-            ## Create the proxy.
-            proxy.create()
-            ## Check that the created proxy has the expected VO group and role (what we have
-            ## set in the defaultDelegation dictionary).
-            proxyTimeLeft = proxy.getTimeLeft()
-            group, role = proxy.getUserGroupAndRoleFromProxy(proxy.getProxyFilename())
-            if proxyTimeLeft > 0 and group == self.defaultDelegation['group'] and role == self.defaultDelegation['role']:
-                self.logger.debug("Proxy created.")
-                proxyCreated = True
-            else:
-                raise ProxyCreationException("Problems creating proxy.")
-           
-        return proxyCreated
-    """
-
     def createNewVomsProxy(self, timeLeftThreshold = 0, doProxyGroupRoleCheck = False, proxyCreatedByCRAB = False, proxyOptsSetPlace = None):
         """
         Handles the proxy creation:
