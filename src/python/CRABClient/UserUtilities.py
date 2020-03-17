@@ -9,9 +9,6 @@ import subprocess
 from urlparse import urlparse
 from httplib import HTTPException
 
-## DBS dependencies
-from dbs.apis.dbsClient import DbsApi
-
 ## WMCore dependencies
 from WMCore.Configuration import Configuration
 from WMCore.DataStructs.LumiList import LumiList
@@ -140,6 +137,9 @@ def getLumiListInValidFiles(dataset, dbsurl = 'phys03'):
 
     Returns a LumiList object.
     """
+
+    from dbs.apis.dbsClient import DbsApi
+
     dbsurl = DBSURLS['reader'].get(dbsurl, dbsurl)
     dbs3api = DbsApi(url=dbsurl)
     try:
