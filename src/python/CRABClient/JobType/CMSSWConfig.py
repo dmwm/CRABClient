@@ -252,11 +252,11 @@ class CMSSWConfig(object):
             msg = "Validation of CMSSW configuration was requested, but there is no configuration to validate."
             return False, msg
 
-        if not getattr(self.fullConfig, 'process'):
+        if not getattr(self.fullConfig, 'process', None):
             msg = "Invalid CMSSW configuration: 'process' object is missing or is wrongly defined."
             return False, msg
 
-        if not getattr(self.fullConfig.process, 'source'):
+        if not getattr(self.fullConfig.process, 'source', None):
             msg = "Invalid CMSSW configuration: 'process' object is missing attribute 'source' or the attribute is wrongly defined."
             return False, msg
 
