@@ -566,11 +566,11 @@ def getUsernameFromCRIC_wrapped(logger, proxyFileName, quiet = False):
 
 def getUsername(proxyInfo=None, logger=None):
 
-    logger.info("Retrieving username ...")
+    logger.debug("Retrieving username ...")
     proxyFileName = proxyInfo['filename']
     username = getUsernameFromCRIC_wrapped(logger, proxyFileName, quiet=True)
     if username:
-        logger.info("username is %s" % username)
+        logger.debug("username is %s" % username)
     else:
         msg = "%sERROR:%s CRIC could resolve the DN into a user name" \
               % (colors.RED, colors.NORMAL)
