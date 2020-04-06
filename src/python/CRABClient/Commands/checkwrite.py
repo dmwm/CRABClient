@@ -21,24 +21,19 @@ class checkwrite(SubCommand):
     def __init__(self, logger, cmdargs = None):
         SubCommand.__init__(self, logger, cmdargs)
         self.phedex = PhEDEx({"cert": self.proxyfilename, "key": self.proxyfilename, "logger": self.logger, "pycurl" : True})
-        self.lfnsaddprefix = None
         self.filename = None
 
 
     def __call__(self):
-        username = None
+
+        username = getUsername(self.proxy.proxyInfo, logger=self.logger)
         if hasattr(self.options, 'userlfn') and self.options.userlfn != None:
             self.lfnsaddprefix = self.options.userlfn
         else:
             ## If the user didn't provide an LFN path where to check the write permission,
-            ## assume he/she wants to check in /store/user/<username>. Retrieve his/her
-            ## username from the DN
+            ## assume he/she wants to check in /store/user/<username>
             self.logger.info('Will check write permission in the default location /store/user/<username>')
-            username = getUsername(self.proxy.proxyInfo, logger=self.logger)
-            if username:
-                self.lfnsaddprefix = '/store/user/' + username
-            else:
-                return {'status': 'FAILED'}
+            self.lfnsaddprefix = '/store/user/' + username
 
         ## Check that the location where we want to check write permission
         ## is one where the user will be allowed to stageout.
@@ -52,8 +47,6 @@ class checkwrite(SubCommand):
         errMsg += " (i.e. the username of your CERN primary account)."
         errMsg += "\nLFN %s is not valid." % (self.lfnsaddprefix)
 
-        if not username and self.lfnsaddprefix.startswith('/store/user/'):
-            username = getUserDNandUsername(logger=self.logger).get('username')
         if not checkOutLFN(self.lfnsaddprefix, username):
             self.logger.info(errMsg)
             return {'status': 'FAILED'}

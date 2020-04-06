@@ -17,6 +17,7 @@ from WMCore.Services.pycurl_manager import RequestHandler
 ## CRAB dependencies
 from RESTInteractions import HTTPRequests
 from CRABClient.ClientUtilities import DBSURLS, LOGLEVEL_MUTE, colors
+from CRABClient.ClientUtilities import getUserProxy_wrapped
 from CRABClient.ClientExceptions import ClientException, UsernameException, ProxyException
 
 def config():
@@ -33,7 +34,7 @@ def config():
     return config
 
 
-def getUsernameFromCRIC(proxyFileName):
+def getUsernameFromCRIC(proxyFileName=None):
     """
     Retrieve username from CRIC by doing a query to
     https://cms-cric.cern.ch/api/accounts/user/query/?json&preset=whoami
@@ -44,6 +45,12 @@ def getUsernameFromCRIC(proxyFileName):
 
     ## Path to certificates.
     capath = os.environ['X509_CERT_DIR'] if 'X509_CERT_DIR' in os.environ else "/etc/grid-security/certificates"
+    # Path to user proxy
+    if not proxyFileName:
+        proxyFileName = getUserProxy_wrapped()
+    if not proxyFileName:
+        msg = "Can't find user proxy file"
+        raise UsernameException(msg)
     ## Retrieve user info from CRIC. Note the curl must be executed in same env. (i.e. CMSSW) as crab
     queryCmd = "curl -sS --capath %s --cert %s --key %s 'https://cms-cric.cern.ch/api/accounts/user/query/?json&preset=whoami'" % (capath, proxyFileName, proxyFileName)
     process = subprocess.Popen(queryCmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
