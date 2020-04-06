@@ -498,7 +498,7 @@ def getUserProxy():
         msg += "\n  Stdout:\n    %s" % (str(stdout).replace('\n', '\n    '))
         msg += "\n  Stderr:\n    %s" % (str(stderr).replace('\n', '\n    '))
         raise ProxyException(msg)
-    proxyFile = str(stdout)
+    proxyFile = str(stdout.strip())
     return proxyFile
 
 def getUsernameFromCRIC_wrapped(logger, proxyFileName=None, quiet = False):
