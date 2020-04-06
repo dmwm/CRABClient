@@ -17,7 +17,7 @@ from WMCore.Services.pycurl_manager import RequestHandler
 ## CRAB dependencies
 from RESTInteractions import HTTPRequests
 from CRABClient.ClientUtilities import DBSURLS, LOGLEVEL_MUTE, colors
-from CRABClient.ClientUtilities import getUserProxy_wrapped
+from CRABClient.ClientUtilities import getUserProxy
 from CRABClient.ClientExceptions import ClientException, UsernameException, ProxyException
 
 def config():
@@ -47,7 +47,7 @@ def getUsernameFromCRIC(proxyFileName=None):
     capath = os.environ['X509_CERT_DIR'] if 'X509_CERT_DIR' in os.environ else "/etc/grid-security/certificates"
     # Path to user proxy
     if not proxyFileName:
-        proxyFileName = getUserProxy_wrapped()
+        proxyFileName = getUserProxy()
     if not proxyFileName:
         msg = "Can't find user proxy file"
         raise UsernameException(msg)

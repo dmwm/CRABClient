@@ -501,28 +501,6 @@ def getUserProxy():
     proxyFile = str(stdout)
     return proxyFile
 
-
-def getUserProxy_wrapped(logger):
-    """
-    Wrapper function for getUserProxy,
-    catching exceptions and printing messages.
-    """
-    proxyFile = None
-    logger.debug('Retrieving user proxy file name...')
-    try:
-        proxyFile = getUserProxy()
-    except ProxyException as ex:
-        msg = "%sError%s: %s" % (colors.RED, colors.NORMAL, ex)
-        logger.error(msg)
-    except Exception:
-        msg  = "%Error%s: Failed to find user proxy." % (colors.RED, colors.NORMAL)
-        msg += "\n%s" % (traceback.format_exc())
-        logger.error(msg)
-    else:
-        logger.debug('proxy file is: %s' % (proxyFile))
-    return proxyFile
-
-
 def getUsernameFromCRIC_wrapped(logger, proxyFileName=None, quiet = False):
     """
     Wrapper function for getUsernameFromCRIC,
