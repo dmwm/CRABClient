@@ -265,7 +265,7 @@ def uploadlogfile(logger, proxyfilename, logfilename = None, logpath = None, ins
         logger.info("%sSuccess%s: Log file uploaded successfully." % (colors.GREEN, colors.NORMAL))
         logfileurl = cacheurl + '/logfile?name='+str(logfilename)
         if not username:
-            username = getUsername(logger=logger).get('username')
+            username = getUsername(proxyFile=proxyfilename, logger=logger)
         if username:
             logfileurl += '&username='+str(username)
         logger.info("Log file URL: %s" % (logfileurl))
@@ -542,19 +542,34 @@ def getUsernameFromCRIC_wrapped(logger, proxyFileName=None, quiet = False):
             logger.info(msg)
     return username
 
-def getUsername(proxyInfo=None, logger=None):
+#def getUsername(proxyInfo=None, logger=None):
+def getUsername(proxyFile=None, logger=None):
+    """
+    get globally unique username to be used for this CRAB work
+    this is a generic high level function which can be called even w/o arguments
+    and will figure out the username from the current authentication credential
+    found in the environment.
+    Yet it allows the called to guide it via optional argument to be quicker
+    and easier to tune to different authentication systemd (X509 now, tokens later e.g.)
+    :param proxyFile: the full path of the file containing the X509 VOMS proxy, if missing
+    :param logger: a logger object to use for messages, if missing, it will report to standard logger
+    :return: username : a string
+    """
 
+    if not logger: logger=logging.getLogger()
     logger.debug("Retrieving username ...")
-    proxyFileName = proxyInfo['filename']
-    username = getUsernameFromCRIC_wrapped(logger, proxyFileName, quiet=True)
+
+    if not proxyFile:
+        proxyFile = '/tmp/x509up_u%d'%os.getuid() if 'X509_USER_PROXY' not in os.environ else os.environ['X509_USER_PROXY']
+    username = getUsernameFromCRIC_wrapped(logger, proxyFile, quiet=True)
     if username:
         logger.debug("username is %s" % username)
     else:
-        msg = "%sERROR:%s CRIC could resolve the DN into a user name" \
+        msg = "%sERROR:%s CRIC could not resolve the DN in the user proxy into a user name" \
               % (colors.RED, colors.NORMAL)
         msg += "\n Please find below details of failures for investigation:"
         logger.error(msg)
-        username = getUsernameFromCRIC_wrapped(logger, proxyFileName, quiet=False)
+        username = getUsernameFromCRIC_wrapped(logger, proxyFile, quiet=False)
 
     return username
 

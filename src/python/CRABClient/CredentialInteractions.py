@@ -37,6 +37,7 @@ class CredentialInteractions(object):
                                   }
         self.proxyChanged = False
         self.certLocation = '~/.globus/usercert.pem' if 'X509_USER_CERT' not in os.environ else os.environ['X509_USER_CERT']
+        self.proxyFile = '/tmp/x509up_u%d' % os.getuid() if 'X509_USER_PROXY' not in os.environ else os.environ['X509_USER_PROXY']
 
 
     def setVOGroupVORole(self, group, role):
@@ -73,12 +74,14 @@ class CredentialInteractions(object):
         return proxy
 
     def getFilename(self):
-        proxy = self.proxy()
-        proxyFileName = proxy.getProxyFilename()
-        if not os.path.isfile(proxyFileName):
-            self.logger.debug("Proxy file %s not found" % (proxyFileName))
-            return ''
-        return proxyFileName
+        return self.proxyFile
+#        proxy = self.proxy()
+#        proxyFileName = proxy.getProxyFilename()
+#        if not os.path.isfile(proxyFileName):
+#            self.logger.debug("Proxy file %s not found" % (proxyFileName))
+#            return ''
+#n
+    # return proxyFileName
 
 
     def getTimeLeft(self):
@@ -311,7 +314,7 @@ class CredentialInteractions(object):
         defaultDelegation = self.defaultDelegation
         defaultDelegation['myproxyAccount'] = None
         from  CRABClient.ClientUtilities import getUsername
-        username = getUsername(proxyInfo=self.proxyInfo, logger=self.logger)
+        username = getUsername(proxyFile=self.proxyInfo['filename'], logger=self.logger)
         credentialName = username + '_CRAB'
         defaultDelegation['userName'] = credentialName
         myproxy = Proxy(defaultDelegation)
