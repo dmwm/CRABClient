@@ -1,6 +1,5 @@
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ClientUtilities import getUsername
-
+from CRABClient.UserUtilities import getUsername
 
 class checkusername(SubCommand):
     """

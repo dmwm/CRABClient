@@ -313,7 +313,7 @@ class CredentialInteractions(object):
 
         defaultDelegation = self.defaultDelegation
         defaultDelegation['myproxyAccount'] = None
-        from  CRABClient.ClientUtilities import getUsername
+        from  CRABClient.UserUtilities import getUsername
         username = getUsername(proxyFile=self.proxyInfo['filename'], logger=self.logger)
         credentialName = username + '_CRAB'
         defaultDelegation['userName'] = credentialName

@@ -5,7 +5,8 @@ import datetime
 import subprocess
 
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ClientUtilities import colors, getUsername, cmd_exist
+from CRABClient.ClientUtilities import colors, cmd_exist
+from CRABClient.UserUtilities import getUsername
 from WMCore.Services.PhEDEx.PhEDEx import PhEDEx
 from CRABClient.ClientExceptions import MissingOptionException, ConfigurationException
 from httplib import HTTPException
