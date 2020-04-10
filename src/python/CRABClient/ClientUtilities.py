@@ -265,7 +265,7 @@ def uploadlogfile(logger, proxyfilename, logfilename = None, logpath = None, ins
         logger.info("%sSuccess%s: Log file uploaded successfully." % (colors.GREEN, colors.NORMAL))
         logfileurl = cacheurl + '/logfile?name='+str(logfilename)
         if not username:
-            username = getUsername(logger=logger).get('username')
+            username = getUsername(proxyFile=proxyfilename, logger=logger)
         if username:
             logfileurl += '&username='+str(username)
         logger.info("Log file URL: %s" % (logfileurl))
@@ -473,9 +473,9 @@ def loadCache(mydir, logger):
     return cPickle.load(loadfile), logfile
 
 
-def getUserDN():
+def getUserProxy():
     """
-    Retrieve the user DN from the proxy.
+    Retrieve the user proxy filename
     """
     undoScram = 'which scram >/dev/null 2>&1 && eval `scram unsetenv -sh`'
     ## Check if there is a proxy.
@@ -489,41 +489,19 @@ def getUserDN():
     #    msg += "\n  Stderr:\n    %s" % (str(stderr).replace('\n', '\n    '))
     #    raise ProxyException(msg)
     ## Retrieve DN from proxy.
-    cmd = undoScram + "; voms-proxy-info -identity"
+    cmd = undoScram + "; voms-proxy-info -path"
     process = subprocess.Popen(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
     stdout, stderr = process.communicate()
     if process.returncode or not stdout:
-        msg  = "Unable to retrieve DN from proxy:"
+        msg  = "Unable to find proxy file:"
         msg += "\nError executing command: %s" % (cmd)
         msg += "\n  Stdout:\n    %s" % (str(stdout).replace('\n', '\n    '))
         msg += "\n  Stderr:\n    %s" % (str(stderr).replace('\n', '\n    '))
         raise ProxyException(msg)
-    userdn = str(stdout.replace('\n', ''))
-    return userdn
+    proxyFile = str(stdout.strip())
+    return proxyFile
 
-
-def getUserDN_wrapped(logger):
-    """
-    Wrapper function for getUserDN,
-    catching exceptions and printing messages.
-    """
-    userdn = None
-    logger.info('Retrieving DN from proxy...')
-    try:
-        userdn = getUserDN()
-    except ProxyException as ex:
-        msg = "%sError%s: %s" % (colors.RED, colors.NORMAL, ex)
-        logger.error(msg)
-    except Exception:
-        msg  = "%Error%s: Failed to retrieve DN from proxy." % (colors.RED, colors.NORMAL)
-        msg += "\n%s" % (traceback.format_exc())
-        logger.error(msg)
-    else:
-        logger.info('DN is: %s' % (userdn))
-    return userdn
-
-
-def getUsernameFromCRIC_wrapped(logger, proxyFileName, quiet = False):
+def getUsernameFromCRIC_wrapped(logger, proxyFileName=None, quiet = False):
     """
     Wrapper function for getUsernameFromCRIC,
     catching exceptions and printing messages.
@@ -562,22 +540,6 @@ def getUsernameFromCRIC_wrapped(logger, proxyFileName, quiet = False):
             logger.debug(msg)
         else:
             logger.info(msg)
-    return username
-
-def getUsername(proxyInfo=None, logger=None):
-
-    logger.debug("Retrieving username ...")
-    proxyFileName = proxyInfo['filename']
-    username = getUsernameFromCRIC_wrapped(logger, proxyFileName, quiet=True)
-    if username:
-        logger.debug("username is %s" % username)
-    else:
-        msg = "%sERROR:%s CRIC could resolve the DN into a user name" \
-              % (colors.RED, colors.NORMAL)
-        msg += "\n Please find below details of failures for investigation:"
-        logger.error(msg)
-        username = getUsernameFromCRIC_wrapped(logger, proxyFileName, quiet=False)
-
     return username
 
 def validServerURL(option, opt_str, value, parser):

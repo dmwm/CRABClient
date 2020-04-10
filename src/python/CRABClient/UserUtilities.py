@@ -17,6 +17,7 @@ from WMCore.Services.pycurl_manager import RequestHandler
 ## CRAB dependencies
 from RESTInteractions import HTTPRequests
 from CRABClient.ClientUtilities import DBSURLS, LOGLEVEL_MUTE, colors
+from CRABClient.ClientUtilities import getUserProxy
 from CRABClient.ClientExceptions import ClientException, UsernameException, ProxyException
 
 def config():
@@ -32,8 +33,38 @@ def config():
     config.section_("Debug")
     return config
 
+def getUsername(proxyFile=None, logger=None):
+    """
+    get globally unique username to be used for this CRAB work
+    this is a generic high level function which can be called even w/o arguments
+    and will figure out the username from the current authentication credential
+    found in the environment.
+    Yet it allows the called to guide it via optional argument to be quicker
+    and easier to tune to different authentication systemd (X509 now, tokens later e.g.)
+    :param proxyFile: the full path of the file containing the X509 VOMS proxy, if missing
+    :param logger: a logger object to use for messages, if missing, it will report to standard logger
+    :return: username : a string
+    """
 
-def getUsernameFromCRIC(proxyFileName):
+    if not logger: logger=logging.getLogger()
+    logger.debug("Retrieving username ...")
+
+    from CRABClient.ClientUtilities import getUsernameFromCRIC_wrapped
+    if not proxyFile:
+        proxyFile = '/tmp/x509up_u%d'%os.getuid() if 'X509_USER_PROXY' not in os.environ else os.environ['X509_USER_PROXY']
+    username = getUsernameFromCRIC_wrapped(logger, proxyFile, quiet=True)
+    if username:
+        logger.debug("username is %s" % username)
+    else:
+        msg = "%sERROR:%s CRIC could not resolve the DN in the user proxy into a user name" \
+              % (colors.RED, colors.NORMAL)
+        msg += "\n Please find below details of failures for investigation:"
+        logger.error(msg)
+        username = getUsernameFromCRIC_wrapped(logger, proxyFile, quiet=False)
+
+    return username
+
+def getUsernameFromCRIC(proxyFileName=None):
     """
     Retrieve username from CRIC by doing a query to
     https://cms-cric.cern.ch/api/accounts/user/query/?json&preset=whoami
@@ -44,6 +75,12 @@ def getUsernameFromCRIC(proxyFileName):
 
     ## Path to certificates.
     capath = os.environ['X509_CERT_DIR'] if 'X509_CERT_DIR' in os.environ else "/etc/grid-security/certificates"
+    # Path to user proxy
+    if not proxyFileName:
+        proxyFileName = getUserProxy()
+    if not proxyFileName:
+        msg = "Can't find user proxy file"
+        raise UsernameException(msg)
     ## Retrieve user info from CRIC. Note the curl must be executed in same env. (i.e. CMSSW) as crab
     queryCmd = "curl -sS --capath %s --cert %s --key %s 'https://cms-cric.cern.ch/api/accounts/user/query/?json&preset=whoami'" % (capath, proxyFileName, proxyFileName)
     process = subprocess.Popen(queryCmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
