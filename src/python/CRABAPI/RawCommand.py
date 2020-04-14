@@ -4,6 +4,8 @@
 """
 import CRABAPI
 
+import traceback
+
 from CRABClient.ClientUtilities import initLoggers, flushMemoryLogger, removeLoggerHandlers
 
 
@@ -49,6 +51,12 @@ def execRaw(command, args):
         # CRABClient #4283 should make this less ugly
         if se.code == 2:
             raise CRABAPI.BadArgumentException
+        else:
+        # We can reach here if the PSet raises a SystemExit exception
+        # Without this, CRAB raises a confusing UnboundLocalError
+            logger.error('PSet raised a SystemExit. Traceback follows:')
+            logger.error(traceback.format_exc())
+            raise
     finally:
         flushMemoryLogger(tblogger, memhandler, logger.logfile)
         removeLoggerHandlers(tblogger)
