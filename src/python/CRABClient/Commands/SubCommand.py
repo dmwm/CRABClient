@@ -235,6 +235,7 @@ class SubCommand(ConfigCommand):
                 localOS = localOS.split(':')[1].strip()
             except:
                 localOS = "Unknown Operating System"
+        self.logger.debug("CRAB Client version: %s", __version__)
         self.logger.debug("Running on: " + localSystem + " - " + localOS)
 
         opensslInfo = subprocess.check_output(["openssl", "version"]).strip('\n')
