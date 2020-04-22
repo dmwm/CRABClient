@@ -536,9 +536,7 @@ def getUsernameFromCRIC_wrapped(logger, proxyFileName=None, quiet = False):
             logger.error(msg)
     else:
         msg = "Username is: %s" % (username)
-        if quiet:
-            logger.debug(msg)
-        else:
+        if not quiet:
             logger.info(msg)
     return username
 
