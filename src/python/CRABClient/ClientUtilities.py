@@ -31,14 +31,14 @@ DBSURLS = {'reader': {'global': 'https://cmsweb.cern.ch/dbs/prod/global/DBSReade
            'writer': {'phys03': 'https://cmsweb.cern.ch/dbs/prod/phys03/DBSWriter'}}
 
 
-BASEURL = '/crabserver/'
-SERVICE_INSTANCES = {'prod': 'cmsweb.cern.ch',
-                     'preprod': 'cmsweb-testbed.cern.ch',
-                     'k8s': 'cmsweb-k8s-testbed.cern.ch',
-                     'test': 'cmsweb-test.cern.ch',
-                     'test1': 'cmsweb-test1.cern.ch',
-                     'test2': 'cmsweb-test2.cern.ch',
-                     'test3': 'cmsweb-test3.cern.ch',
+# these are known, pre-defined nickames for "CRAB configuration" at large
+# which correspond to a well known and specified REST host name and DataBase instance
+SERVICE_INSTANCES = {'prod': {'restHost':'cmsweb.cern.ch', 'dbInstance':'prod'},
+                     'preprod': {'restHost':'cmsweb-testbed.cern.ch', 'dbInstance':'preprod'},
+                     'k8s': {'restHost':'cmsweb-k8s-testbed.cern.ch', 'dbInstance':'preprod'},
+                     'dev': {'restHost':'cmsweb-test2.cern.ch', 'dbInstance':'dev'},
+                     'test': {'restHost':'cmsweb-test.cern.ch', 'dbInstance':'dev'},
+                     'other': {'restHost':None, 'dbInstance':None},
                      }
 BOOTSTRAP_ENVFILE = 'crab3env.json'
 BOOTSTRAP_INFOFILE = 'crab3info.json'
@@ -192,21 +192,12 @@ def getColumn(dictresult, columnName):
     else:
         return value
 
-def getUrl(instance='prod', resource='workflow'):
+def getUrl(dbInstance='prod', resource='workflow'):
     """
-    Retrieve the url depending on the resource we are accessing and the instance.
-    As of August 2019 the Kubernetes server instance (k8s) points to preprod database instance
-    Same for the cmsweb-test* development k8s clusters
+    Retrieve the url depending on the resource we are accessing and the DB instance.
     """
-    if instance in SERVICE_INSTANCES.keys():
-        if instance == 'k8s' or 'test' in instance :
-            return BASEURL + 'preprod' + '/' + resource
-        else:
-            return BASEURL + instance + '/' + resource
-    elif instance == 'private':
-        return BASEURL + 'dev' + '/' + resource
-    raise ConfigurationException('Error: only the following instances can be used: %s' %str(SERVICE_INSTANCES.keys()))
-
+    url = '/crabserver/' + dbInstance + '/' + resource
+    return url
 
 def uploadlogfile(logger, proxyfilename, logfilename = None, logpath = None, instance = 'prod', serverurl = None, username = None):
     ## WMCore dependencies. Moved here to minimize dependencies in the bootstrap script
@@ -250,7 +241,7 @@ def uploadlogfile(logger, proxyfilename, logfilename = None, logpath = None, ins
         logger.debug('No proxy was given')
         doupload = False
 
-    baseurl = getUrl(instance = instance , resource = 'info')
+    baseurl = getUrl(dbInstance=instance , resource = 'info')
     if doupload:
         cacheurl = server_info('backendurls', serverurl, proxyfilename, baseurl)
         # Encode in ascii because old pycurl present in old CMSSW versions
@@ -266,7 +257,7 @@ def uploadlogfile(logger, proxyfilename, logfilename = None, logpath = None, ins
         logfileurl = cacheurl + '/logfile?name='+str(logfilename)
         if not username:
             from CRABClient.UserUtilities import getUsername
-            username = getUsername(proxyFile=proxyfilename, logger=logger
+            username = getUsername(proxyFile=proxyfilename, logger=logger)
         logfileurl += '&username='+str(username)
         logger.info("Log file URL: %s" % (logfileurl))
         return  logfileurl

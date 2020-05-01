@@ -335,15 +335,29 @@ class SubCommand(ConfigCommand):
                 msg = "Using %s as specified in the CRAB configuration file." % (" and ".join(msgadd))
                 self.logger.debug(msg)
 
+
         ## If the VO group/role was not given in the command options, take it from the request cache.
         if self.cmdconf['requiresDirOption']:
             self.setCachedProxy(proxyOptsSetPlace)
+
+
+
+        ## following commented out code should be replaced with something which
+        ## looks for configuration.General.instance, compares with known nicknames,
+        ## extraxts restHost and dbInstance if OK, otherwise gets them from
+        ## configuration.Genarl.restHost and configuration.General.dbInstance
+        ## and sets them in self for all code to use.
+        ## need to review all uses of self.instance and self.serverurl and change or
+        ## check if they can simply be set to dbInstance and restHost repsecitvely
+
+
 
         ## If the server URL isn't already set, we check the args and then the config.
         if not hasattr(self, 'serverurl') and self.cmdconf['requiresREST']:
             self.instance, self.serverurl = self.serverInstance()
         elif not self.cmdconf['requiresREST']:
             self.instance, self.serverurl = None, None
+
 
         ## Update (or create) the CRAB cache file.
         self.updateCRABCacheFile()
@@ -378,30 +392,35 @@ class SubCommand(ConfigCommand):
         via crabconfig.py or crab option --instance. The variable passed via crab option will always be used over the variable
         in crabconfig.py. Instance name other than specify in the SERVICE_INSTANCE will be treated as a private instance.
         """
-
         if hasattr(self.options, 'instance') and self.options.instance is not None:
             if hasattr(self, 'configuration') and hasattr(self.configuration, 'General') and hasattr(self.configuration.General, 'instance') and self.configuration.General.instance is not None:
                 msg  = "%sWarning%s: CRAB configuration parameter General.instance is overwritten by the command option --instance;" % (colors.RED, colors.NORMAL)
                 msg += " %s intance will be used." % (self.options.instance)
                 self.logger.info(msg)
-            if self.options.instance in SERVICE_INSTANCES.keys():
-                instance = self.options.instance
-                serverurl = SERVICE_INSTANCES[instance]
-            else:
-                instance = 'private'
-                serverurl = self.options.instance
+            instance = self.options.instance
         elif hasattr(self, 'configuration') and hasattr(self.configuration, 'General') and hasattr(self.configuration.General, 'instance') and self.configuration.General.instance is not None:
-            if self.configuration.General.instance in SERVICE_INSTANCES.keys():
-                instance = self.configuration.General.instance
-                serverurl = SERVICE_INSTANCES[instance]
-            else:
-                instance = 'private'
-                serverurl = self.configuration.General.instance
+            instance = self.configuration.General.instance
         else:
             instance = getParamDefaultValue('General.instance')
-            serverurl = SERVICE_INSTANCES[instance]
 
-        return instance, serverurl
+        # validate instance
+        if not instance in SERVICE_INSTANCES:
+            msg = 'Invalid value "%s" for configuration.General.instance\n' % instance
+            msg += 'valid values are %s ' % SERVICE_INSTANCES.keys()
+            raise ConfigurationException(msg)
+
+        if instance is not 'other':
+            self.restHost = SERVICE_INSTANCES[instance]['restHost']
+            self.dbInstance = SERVICE_INSTANCES[instance]['dbInstance']
+        else:
+            self.restHost = self.configuration.General.restHost
+            self.dbInstance = self.configuration.General.dbInstance
+
+        # attempt at backward cmpatibility
+        #self.serverurl = self.serverHost
+        #self.instance = self.dbInstance
+
+        return self.dbInstance, self.restHost
 
 
     def checkversion(self, baseurl = None):
