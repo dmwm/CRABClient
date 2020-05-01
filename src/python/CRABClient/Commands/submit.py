@@ -149,7 +149,7 @@ class submit(SubCommand):
             self.logger.info("Task name: %s" % uniquerequestname)
             projDir = os.path.join(getattr(self.configuration.General, 'workArea', '.'), self.requestname)
             self.logger.info("Project dir: %s" % projDir)
-            self.logger.info("Please use 'crab status -d %s' to check how the submission process proceeds.", projDir)
+            self.logger.info("Please use ' crab status -d %s ' to check how the submission process proceeds.", projDir)
         else:
             targetTaskStatus = 'UPLOADED' if self.options.dryrun else 'SUBMITTED'
             checkStatusLoop(self.logger, server, self.uri, uniquerequestname, targetTaskStatus, self.name)
