@@ -266,7 +266,7 @@ def uploadlogfile(logger, proxyfilename, logfilename = None, logpath = None, ins
         logfileurl = cacheurl + '/logfile?name='+str(logfilename)
         if not username:
             from CRABClient.UserUtilities import getUsername
-            username = getUsername(proxyFile=proxyfilename, logger=logger
+            username = getUsername(proxyFile=proxyfilename, logger=logger)
         logfileurl += '&username='+str(username)
         logger.info("Log file URL: %s" % (logfileurl))
         return  logfileurl
