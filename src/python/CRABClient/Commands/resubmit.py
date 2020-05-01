@@ -77,7 +77,7 @@ class resubmit(SubCommand):
             returndict = {'status': 'FAILED'}
         else:
             if not self.options.wait:
-                msg  = "Please use 'crab status' to check how the resubmission process proceeds."
+                msg  = "Please use ' crab status ' to check how the resubmission process proceeds."
                 msg += "\nNotice it may take a couple of minutes for the resubmission to get fully processed."
                 self.logger.info(msg)
             else:
