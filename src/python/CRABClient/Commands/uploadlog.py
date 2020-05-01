@@ -31,9 +31,9 @@ class uploadlog(SubCommand):
             self.logfile = self.options.logpath
         elif os.path.isfile(self.logfile):
             self.logger.debug("crab.log exists")
-            if hasattr(self, 'cachedinfo') and 'RequestName' in self.cachedinfo:
+            try:
                 logfilename = str(self.cachedinfo['RequestName'])+".log"
-            else:
+            except:
                 self.logger.info("Couldn't get information from .requestcache (file likely not created due to submission failure), try\n"
                         "'crab uploadlog --logpath=<path-to-log-file-in-project-dir>'")
                 return
