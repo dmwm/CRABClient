@@ -18,9 +18,12 @@ config.section_("General")
 # Specify a custom server.  This is almost never used; the defaults will point at the central server.
 ## https schema is used. If the port is not specified default 443 will be used
 #config.General.serverUrl     = 'yourserver[:0000]'
-# This identify which type of server you're using. If it is a private instance you must set 'private'
-# (other options are prod/preprod)
-#config.General.instance = 'private'
+# This identify which type of server you're using. If it is a private instance you must set 'other'
+# (other options are prod/preprod/dev/test)
+#config.General.instance = 'other'
+#config.General.restHost = 'yourserver.cern.ch'
+#config.General.dbInstance = 'dev'
+#
 
 ## Specific option of the job type
 ## these options are directly readable from the job type plugin
