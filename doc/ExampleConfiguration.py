@@ -10,7 +10,7 @@ config = Configuration()
 ## General options for the client
 config.section_("General")
 config.General.requestName   = 'MyAnalysis'
-config.General.instance = 'preprod'
+config.General.instance = 'prod'
 
 ## Specific option of the job type
 ## these options are directly readable from the job type plugin

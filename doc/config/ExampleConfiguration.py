@@ -10,8 +10,9 @@ config = Configuration()
 ## General options for the client
 config.section_("General")
 config.General.requestName   = 'MyAnalysis_1'
-#config.General.serverUrl     = 'yourserver'
-#config.General.instance = 'private'
+#config.General.restHost     = 'yourserver'
+#config.General.dbInstance = 'dev'
+#config.General.instance = 'other'
 
 ## Specific option of the job type
 ## these options are directly readable from the job type plugin
