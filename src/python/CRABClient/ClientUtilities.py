@@ -231,8 +231,6 @@ def uploadlogfile(logger, proxyfilename, logfilename = None, logpath = None, ins
 
     if serverurl == None and instance in SERVICE_INSTANCES.keys():
         serverurl = SERVICE_INSTANCES[instance]
-    elif not instance in SERVICE_INSTANCES.keys() and serverurl != None:
-        instance = 'private'
     elif not instance in SERVICE_INSTANCES.keys() and serverurl == None:
         logger.debug('%sError%s: serverurl is None' % (colors.RED, colors.NORMAL))
         doupload = False

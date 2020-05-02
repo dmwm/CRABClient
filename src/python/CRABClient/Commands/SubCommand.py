@@ -390,7 +390,7 @@ class SubCommand(ConfigCommand):
         """
         Deriving the correct instance to use and the server url. Client is allowed to propagate the instance name and corresponding url
         via crabconfig.py or crab option --instance. The variable passed via crab option will always be used over the variable
-        in crabconfig.py. Instance name other than specify in the SERVICE_INSTANCE will be treated as a private instance.
+        in crabconfig.py.
         """
         if hasattr(self.options, 'instance') and self.options.instance is not None:
             if hasattr(self, 'configuration') and hasattr(self.configuration, 'General') and hasattr(self.configuration.General, 'instance') and self.configuration.General.instance is not None:
