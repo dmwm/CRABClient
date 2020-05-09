@@ -214,5 +214,7 @@ if __name__ == "__main__":
 
     if getattr(client, 'cmd', None):
         client.cmd.terminate( exitcode )
+    else:
+        client.logger.info('Log file is %s', client.logger.logfile)
 
     sys.exit( exitcode )
