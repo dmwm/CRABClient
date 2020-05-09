@@ -213,6 +213,9 @@ if __name__ == "__main__":
             flushMemoryLogger(client.tblogger, client.memhandler, client.logger.logfile)
 
     if getattr(client, 'cmd', None):
+        # this will also print out location of log file
         client.cmd.terminate( exitcode )
+    else:
+        client.logger.info('Log file is %s', client.logger.logfile)
 
     sys.exit( exitcode )
