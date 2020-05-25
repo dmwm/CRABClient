@@ -2,7 +2,7 @@ from optparse import OptionParser
 
 from CRABClient import __version__ as client_version
 from CRABClient.ClientUtilities import getAvailCommands
-from CRABClient.ClientUtilities import SERVICE_INSTANCES
+from ServerUtilities import SERVICE_INSTANCES
 
 
 class CRABOptParser(OptionParser):

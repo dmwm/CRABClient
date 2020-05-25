@@ -16,11 +16,12 @@ from httplib import HTTPException
 from WMCore.DataStructs.LumiList import LumiList
 
 from ServerUtilities import BOOTSTRAP_CFGFILE_DUMP, getProxiedWebDir, NEW_USER_SANDBOX_EXCLUSIONS
+from ServerUtilities import SERVICE_INSTANCES
 
 import CRABClient.Emulator
 from CRABClient import __version__
 from CRABClient.UserUtilities import getFileFromURL
-from CRABClient.ClientUtilities import colors, LOGGERS, SERVICE_INSTANCES, getColumn
+from CRABClient.ClientUtilities import colors, LOGGERS, getColumn
 from CRABClient.JobType.UserTarball import UserTarball
 from CRABClient.JobType.CMSSWConfig import CMSSWConfig
 from CRABClient.JobType.BasicJobType import BasicJobType
