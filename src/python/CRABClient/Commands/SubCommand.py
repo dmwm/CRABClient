@@ -13,7 +13,7 @@ from CRABClient import SpellChecker
 from CRABClient import __version__
 from CRABClient.ClientUtilities import colors
 from CRABClient.CRABOptParser import CRABCmdOptParser
-from CRABClient.ClientUtilities import SERVICE_INSTANCES
+from ServerUtilities import SERVICE_INSTANCES
 from CRABClient.CredentialInteractions import CredentialInteractions
 from CRABClient.ClientUtilities import loadCache, getWorkArea, server_info, createWorkArea, getUrl
 from CRABClient.ClientExceptions import ConfigurationException, MissingOptionException, EnvironmentException, CachefileNotFoundException

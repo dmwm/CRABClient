@@ -21,6 +21,7 @@ from optparse import OptionValueError
 
 ## CRAB dependencies
 import CRABClient.Emulator
+from ServerUtilities import SERVICE_INSTANCES
 from CRABClient.ClientExceptions import ClientException, TaskNotFoundException, CachefileNotFoundException, ConfigurationException, ConfigException, UsernameException, ProxyException, RESTCommunicationException
 
 
@@ -30,21 +31,10 @@ DBSURLS = {'reader': {'global': 'https://cmsweb.cern.ch/dbs/prod/global/DBSReade
                       'phys03': 'https://cmsweb.cern.ch/dbs/prod/phys03/DBSReader'},
            'writer': {'phys03': 'https://cmsweb.cern.ch/dbs/prod/phys03/DBSWriter'}}
 
-
-# these are known, pre-defined nickames for "CRAB configuration" at large
-# which correspond to a well known and specified REST host name and DataBase instance
-SERVICE_INSTANCES = {'prod': {'restHost':'cmsweb.cern.ch', 'dbInstance':'prod'},
-                     'preprod': {'restHost':'cmsweb-testbed.cern.ch', 'dbInstance':'preprod'},
-                     'k8s': {'restHost':'cmsweb-k8s-testbed.cern.ch', 'dbInstance':'preprod'},
-                     'dev': {'restHost':'cmsweb-test2.cern.ch', 'dbInstance':'dev'},
-                     'test': {'restHost':'cmsweb-test.cern.ch', 'dbInstance':'dev'},
-                     'other': {'restHost':None, 'dbInstance':None},
-                     }
 BOOTSTRAP_ENVFILE = 'crab3env.json'
 BOOTSTRAP_INFOFILE = 'crab3info.json'
 BOOTSTRAP_CFGFILE = 'PSet.py'
 BOOTSTRAP_CFGFILE_PKL = 'PSet.pkl'
-
 
 class colors:
     colordict = {
