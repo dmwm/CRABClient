@@ -31,7 +31,7 @@ class CRABOptParser(OptionParser):
             epilog += 'https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookCRAB3Tutorial\n'
 
         OptionParser.__init__(self, usage   = usage, epilog  = epilog,
-                                version = "CRAB client v%s" % client_version
+                                version = "CRAB client %s" % client_version
                              )
 
         # This is the important bit
