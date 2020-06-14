@@ -64,7 +64,6 @@ def handleProxy(server, baseurl ,voRole, voGroup, days):
 
         logging.info("Registering user credentials for server %s" % serverdn)
         proxy.createNewMyProxy( timeleftthreshold = 60 * 60 * 24 * RENEW_MYPROXY_THRESHOLD, nokey=True)
-        proxy.createNewMyProxy2( timeleftthreshold = 60 * 60 * 24 * RENEW_MYPROXY_THRESHOLD, nokey=True)
 
 
 if __name__ == '__main__' :
