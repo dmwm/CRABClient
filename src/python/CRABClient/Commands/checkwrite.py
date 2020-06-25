@@ -9,7 +9,7 @@ from CRABClient.ClientUtilities import colors, cmd_exist
 from CRABClient.UserUtilities import getUsername
 from WMCore.Services.PhEDEx.PhEDEx import PhEDEx
 from CRABClient.ClientExceptions import MissingOptionException, ConfigurationException
-from httplib import HTTPException
+from http.client import HTTPException
 from ServerUtilities import checkOutLFN
 
 class checkwrite(SubCommand):

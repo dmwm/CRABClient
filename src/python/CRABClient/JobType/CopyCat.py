@@ -11,7 +11,7 @@ import tempfile
 from functools import reduce
 from ast import literal_eval
 
-from httplib import HTTPException
+from http.client import HTTPException
 
 from WMCore.DataStructs.LumiList import LumiList
 

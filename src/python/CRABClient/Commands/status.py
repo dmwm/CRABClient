@@ -8,7 +8,7 @@ import logging
 import time
 from ast import literal_eval
 from datetime import datetime
-from httplib import HTTPException
+from http.client import HTTPException
 
 import CRABClient.Emulator
 from CRABClient import __version__

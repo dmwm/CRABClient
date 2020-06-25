@@ -9,7 +9,7 @@ from CRABClient.Commands.getcommand import getcommand
 from CRABClient.ClientExceptions import RESTCommunicationException, MissingOptionException
 
 from ServerUtilities import getProxiedWebDir
-from httplib import HTTPException
+from http.client import HTTPException
 
 
 class getlog(getcommand):
