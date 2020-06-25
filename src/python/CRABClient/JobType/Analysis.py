@@ -10,7 +10,7 @@ import tempfile
 import uuid
 from functools import reduce  # pylint: disable=redefined-builtin
 
-from httplib import HTTPException
+from http.client import HTTPException
 
 from WMCore.DataStructs.LumiList import LumiList
 

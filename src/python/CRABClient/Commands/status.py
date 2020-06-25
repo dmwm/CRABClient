@@ -8,7 +8,7 @@ import logging
 import time
 from ast import literal_eval
 from datetime import datetime
-from httplib import HTTPException
+from http.client import HTTPException
 
 from CRABClient.ClientUtilities import colors, validateJobids, compareJobids
 from CRABClient.UserUtilities import getDataFromURL, getColumn
