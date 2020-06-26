@@ -141,9 +141,9 @@ class ConfigCommand:
             msg = "Invalid CRAB configuration: Section 'Site' is missing."
             return False, msg
 
-        # Some parameters may have been renamed. Check here if the configuration file has an old
-        # parameter defined, and in that case tell the user what is the new parameter name.
-        for old_param, new_param in renamedParams.iteritems():
+        ## Some parameters may have been renamed. Check here if the configuration file has an old
+        ## parameter defined, and in that case tell the user what is the new parameter name.
+        for old_param, new_param in renamedParams.items():
             if len(old_param.split('.')) != 2 or len(new_param['newParam'].split('.')) != 2:
                 continue
             old_param_section, old_param_name = old_param.split('.')
@@ -166,11 +166,11 @@ class ConfigCommand:
                         msg += " Maybe you mean %s?" % (SpellChecker.correct(param))
                     return False, msg
 
-        # Check that each parameter specified in the configuration file is of the
-        # type specified in the configuration map.
-        # Check that, if a parameter is a required one and it has no default value,
-        # then it must be specified in the configuration file.
-        for paramName, paramInfo in configParametersInfo.iteritems():
+        ## Check that each parameter specified in the configuration file is of the
+        ## type specified in the configuration map.
+        ## Check that, if a parameter is a required one and it has no default value,
+        ## then it must be specified in the configuration file.
+        for paramName, paramInfo in configParametersInfo.items():
             requiredTypeName = paramInfo['type']
             try:
                 requiredType = getattr(types, requiredTypeName)
