@@ -330,11 +330,7 @@ class report(SubCommand):
         reportData['outputDatasets'] = dictresult['result'][0]['taskDBInfo']['outputDatasets']
 
         if reportData['publication']:
-            # try both DBS API and DASGOCLIENT and make sure to get same result
-            # at some point could drop the one based on DBSAPI and keep only DASGOCLIENT
-            repDBS = self.getDBSPublicationInfo_viaDbsApi(reportData['outputDatasets'])
             repDGO = self.getDBSPublicationInfo_viaDasGoclient(reportData['outputDatasets'])
-            assert(repDBS==repDGO)
             reportData['outputDatasetsInfo'] = repDGO
 
         return reportData
@@ -417,37 +413,6 @@ class report(SubCommand):
             except HTTPException as hte:
                 self.logger.error("Failed to retrieve input dataset duplicate lumis.")
                 logging.getLogger('CRAB3').exception(hte)
-
-        return res
-
-    def getDBSPublicationInfo_viaDbsApi(self, outputDatasets):
-        """
-        reimplemenation of getDBSPublicationInfo w/o using the WMCore layer around DBS API
-        Get the lumis and number of events in the published output datasets.
-        """
-        from dbs.apis.dbsClient import DbsApi
-        dbsApi = DbsApi(url="https://cmsweb.cern.ch/dbs/prod/phys03/DBSReader")
-        res = {}
-        res['outputDatasets'] = {}
-        for outputDataset in outputDatasets:
-            res['outputDatasets'][outputDataset] = {'lumis': {}, 'numEvents': 0}
-            runlumilist={}
-            # DBS asks us to go by blocks
-            blockList = dbsApi.listBlocks(dataset=outputDataset)
-            for block in blockList:
-                FilesLumis = dbsApi.listFileLumis(block_name=block['block_name'])
-                for fl in FilesLumis:
-                    # cast run and lumi list in the form liked by LumiList class
-                    run  = fl['run_num']
-                    lumis = fl['lumi_section_num']
-                    runlumilist.setdefault(str(run), []).extend(lumis)
-
-            # convert to a LumiList object
-            outputDatasetLumis = LumiList(runsAndLumis=runlumilist).getCompactList()
-            res['outputDatasets'][outputDataset]['lumis'] = outputDatasetLumis
-            # get total events in dataset
-            summary = dbsApi.listFileSummaries(dataset=outputDataset)[0]
-            res['outputDatasets'][outputDataset]['numEvents'] = summary['num_event']
 
         return res
 
