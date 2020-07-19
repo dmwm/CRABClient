@@ -462,8 +462,20 @@ class SubCommand(ConfigCommand):
                         self.proxy.setServerDN(serverdn)
                         self.proxy.setMyProxyServer('myproxy.cern.ch')
                         self.logger.debug("Registering user credentials for server %s" % serverdn)
-                        self.proxy.createNewMyProxy(timeleftthreshold = 60 * 60 * 24 * RENEW_MYPROXY_THRESHOLD, nokey = True)
-                        self.proxy.createNewMyProxy2(timeleftthreshold=60*60*24 * RENEW_MYPROXY_THRESHOLD, nokey=True)
+                        try:
+                            self.proxy.createNewMyProxy(timeleftthreshold = 60 * 60 * 24 * RENEW_MYPROXY_THRESHOLD, nokey = True)
+                            p1 = True
+                        except Exception:
+                            p1 = False
+                        try:
+                            self.proxy.createNewMyProxy2(timeleftthreshold=60*60*24 * RENEW_MYPROXY_THRESHOLD, nokey=True)
+                            p2 = True
+                        except Exception as ex:
+                            p2 = False
+                            msg = str(ex)
+                        if (not p1) and (not p2):
+                            from CRABClient.ClientExceptions import ProxyCreationException
+                            raise ProxyCreationException("Problems delegating My-proxy. %s" % msg)
         else:
             self.proxyfilename = self.options.proxy
             os.environ['X509_USER_PROXY'] = self.options.proxy
