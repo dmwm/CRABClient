@@ -238,6 +238,13 @@ class SubCommand(ConfigCommand):
         self.logger.debug("CRAB Client version: %s", __version__)
         self.logger.debug("Running on: " + localSystem + " - " + localOS)
 
+        opensslInfo = subprocess.check_output(["openssl", "version"]).strip('\n')
+        self.logger.debug("OpenSSl version: %s", opensslInfo)
+        opensslVersion = opensslInfo.split()[1]
+        nDots = opensslVersion.count(".")
+        if float(opensslVersion.rsplit(".", nDots-1)[0]) > 1:
+            raise EnvironmentException("Your OpenSSl version (%s) is not supported. Supported versions are < 1.1" % opensslVersion)
+
         self.logger.debug("Executing command: '%s'" % str(self.name))
 
         self.proxy = None
@@ -455,7 +462,8 @@ class SubCommand(ConfigCommand):
                         self.proxy.setServerDN(serverdn)
                         self.proxy.setMyProxyServer('myproxy.cern.ch')
                         self.logger.debug("Registering user credentials for server %s" % serverdn)
-                        self.proxy.createNewMyProxy(timeleftthreshold=60*60*24 * RENEW_MYPROXY_THRESHOLD, nokey=True)
+                        self.proxy.createNewMyProxy(timeleftthreshold = 60 * 60 * 24 * RENEW_MYPROXY_THRESHOLD, nokey = True)
+                        self.proxy.createNewMyProxy2(timeleftthreshold=60*60*24 * RENEW_MYPROXY_THRESHOLD, nokey=True)
         else:
             self.proxyfilename = self.options.proxy
             os.environ['X509_USER_PROXY'] = self.options.proxy
