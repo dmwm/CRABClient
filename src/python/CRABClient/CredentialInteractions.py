@@ -18,7 +18,7 @@ class CredentialInteractions(object):
     '''
     myproxyDesiredValidity = 30 ## days
 
-    def __init__(self, serverdn, myproxy, role, group, logger, myproxyAccount):
+    def __init__(self, serverdn, myproxy, role, group, logger):
         '''
         Constructor
         '''
@@ -33,7 +33,6 @@ class CredentialInteractions(object):
                                   'serverDN' :       serverdn,
                                   'group' :          group,
                                   'role':            role if role != '' else 'NULL',
-                                  'myproxyAccount' : myproxyAccount
                                   }
         self.proxyChanged = False
         self.certLocation = '~/.globus/usercert.pem' if 'X509_USER_CERT' not in os.environ else os.environ['X509_USER_CERT']
@@ -43,11 +42,6 @@ class CredentialInteractions(object):
     def setVOGroupVORole(self, group, role):
         self.defaultDelegation['group'] = group
         self.defaultDelegation['role'] = role if role != '' else 'NULL'
-
-
-    def setMyProxyAccount(self, myproxyAccount):
-        self.defaultDelegation['myproxyAccount'] = myproxyAccount
-
 
     def setProxyValidity(self, validity):
         self.defaultDelegation['proxyValidity'] = '%i:%02d' % (int(validity/60), int(validity%60))

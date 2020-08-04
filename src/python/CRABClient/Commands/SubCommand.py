@@ -445,14 +445,12 @@ class SubCommand(ConfigCommand):
         if not self.options.proxy:
             if self.cmdconf['initializeProxy']:
                 self.proxy.setVOGroupVORole(self.voGroup, self.voRole)
-                self.proxy.setMyProxyAccount(self.serverurl)
                 self.proxy.proxyInfo = self.proxy.createNewVomsProxy(timeLeftThreshold = 720, \
                                                                    doProxyGroupRoleCheck = self.cmdconf['doProxyGroupRoleCheck'], \
                                                                    proxyCreatedByCRAB = self.proxyCreated, \
                                                                    proxyOptsSetPlace = proxyOptsSetPlace)
                 self.proxyfilename = self.proxy.proxyInfo['filename']
                 if self.cmdconf['requiresREST']: ## If the command doesn't contact the REST, we can't delegate the proxy.
-                    self.proxy.myproxyAccount = self.serverurl
                     baseurl = getUrl(self.instance, resource = 'info')
                     ## Get the DN of the task workers from the server.
                     all_task_workers_dns = server_info(subresource='delegatedn', serverurl=self.serverurl,
