@@ -304,7 +304,7 @@ class SubCommand(ConfigCommand):
         ## And this happens in handleProxy(), which is called after we load the
         ## configuration file and retrieve the final values for those parameters.
         ## handleProxy() takes care of passing those parameters to self.proxy.
-        self.proxy = CredentialInteractions('', '', self.voRole, self.voGroup, self.logger, '')
+        self.proxy = CredentialInteractions('', '', self.voRole, self.voGroup, self.logger)
 
         ## If the user didn't use the --proxy command line option, and if there isn't a
         ## valid proxy already, we will create a new one with the current VO role and group
