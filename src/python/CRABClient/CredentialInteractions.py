@@ -235,9 +235,9 @@ class CredentialInteractions(object):
         Note that a warning message is printed at every command it usercertDaysLeft < timeleftthreshold
         """
         myproxy = Proxy ( self.defaultDelegation )
-        userDNFromCert = myproxy.getSubjectFromCert(self.certLocation)
-        if userDNFromCert:
-            myproxy.userDN = userDNFromCert
+        userDNFromProxy = myproxy.getSubject()
+        if userDNFromProxy:
+            myproxy.userDN = userDNFromProxy
 
         myproxytimeleft = 0
         self.logger.debug("Getting myproxy life time left for %s" % self.defaultDelegation["myProxySvr"])
