@@ -7,7 +7,7 @@ import logging
 import traceback
 import subprocess
 from urlparse import urlparse
-from http.client import HTTPException
+from httplib import HTTPException
 
 ## WMCore dependencies
 from WMCore.Configuration import Configuration
