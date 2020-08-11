@@ -1,6 +1,6 @@
 import subprocess
 
-from http.client import HTTPException
+from httplib import HTTPException
 
 from WMCore.Services.UserFileCache.UserFileCache  import UserFileCache
 
