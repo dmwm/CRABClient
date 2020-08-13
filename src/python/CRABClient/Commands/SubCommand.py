@@ -237,14 +237,6 @@ class SubCommand(ConfigCommand):
                 localOS = "Unknown Operating System"
         self.logger.debug("CRAB Client version: %s", __version__)
         self.logger.debug("Running on: " + localSystem + " - " + localOS)
-
-        opensslInfo = subprocess.check_output(["openssl", "version"]).strip('\n')
-        self.logger.debug("OpenSSl version: %s", opensslInfo)
-        opensslVersion = opensslInfo.split()[1]
-        nDots = opensslVersion.count(".")
-        if float(opensslVersion.rsplit(".", nDots-1)[0]) > 1:
-            raise EnvironmentException("Your OpenSSl version (%s) is not supported. Supported versions are < 1.1" % opensslVersion)
-
         self.logger.debug("Executing command: '%s'" % str(self.name))
 
         self.proxy = None

@@ -22,7 +22,7 @@ from CRABClient.ClientExceptions import ConfigurationException, \
     UnknownOptionException, ClientException
 
 from ServerUtilities import FEEDBACKMAIL
-from http.client import HTTPException
+from httplib import HTTPException
 
 class report(SubCommand):
     """
