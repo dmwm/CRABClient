@@ -296,7 +296,7 @@ class SubCommand(ConfigCommand):
         ## And this happens in handleProxy(), which is called after we load the
         ## configuration file and retrieve the final values for those parameters.
         ## handleProxy() takes care of passing those parameters to self.proxy.
-        self.proxy = CredentialInteractions('', '', self.voRole, self.voGroup, self.logger, '')
+        self.proxy = CredentialInteractions('', '', self.voRole, self.voGroup, self.logger)
 
         ## If the user didn't use the --proxy command line option, and if there isn't a
         ## valid proxy already, we will create a new one with the current VO role and group
@@ -437,14 +437,12 @@ class SubCommand(ConfigCommand):
         if not self.options.proxy:
             if self.cmdconf['initializeProxy']:
                 self.proxy.setVOGroupVORole(self.voGroup, self.voRole)
-                self.proxy.setMyProxyAccount(self.serverurl)
                 self.proxy.proxyInfo = self.proxy.createNewVomsProxy(timeLeftThreshold = 720, \
                                                                    doProxyGroupRoleCheck = self.cmdconf['doProxyGroupRoleCheck'], \
                                                                    proxyCreatedByCRAB = self.proxyCreated, \
                                                                    proxyOptsSetPlace = proxyOptsSetPlace)
                 self.proxyfilename = self.proxy.proxyInfo['filename']
                 if self.cmdconf['requiresREST']: ## If the command doesn't contact the REST, we can't delegate the proxy.
-                    self.proxy.myproxyAccount = self.serverurl
                     baseurl = getUrl(self.instance, resource = 'info')
                     ## Get the DN of the task workers from the server.
                     all_task_workers_dns = server_info(subresource='delegatedn', serverurl=self.serverurl,

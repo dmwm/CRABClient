@@ -47,7 +47,7 @@ def server_info(subresource, server, proxyfilename, baseurl):
 def handleProxy(server, baseurl ,voRole, voGroup, days):
     """
     """
-    proxy = CredentialInteractions('', '', voRole, voGroup, logging, myproxyAccount=server)
+    proxy = CredentialInteractions('', '', voRole, voGroup, logging)
     #proxy.myproxyDesiredValidity = days
     proxy.setMyProxyValidity(int(days)*24*60)
 
