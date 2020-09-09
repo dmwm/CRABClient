@@ -6,7 +6,7 @@ from CRABClient.ClientUtilities import validateJobids, colors, getUrl
 from CRABClient.UserUtilities import getMutedStatusInfo
 from CRABClient import __version__
 
-from WMCore.Services.PhEDEx.PhEDEx import PhEDEx
+#from WMCore.Services.PhEDEx.PhEDEx import PhEDEx
 
 import CRABClient.Emulator
 
@@ -102,7 +102,8 @@ class getcommand(SubCommand):
         totalfiles = len(dictresult['result'])
         fileInfoList = dictresult['result']
 
-        self.insertPfns(fileInfoList)
+        #self.insertPfns(fileInfoList)
+        self.insertXrootPfns(fileInfoList)
 
         if len(fileInfoList) > 0:
             if self.options.dump or self.options.xroot:
@@ -187,23 +188,36 @@ class getcommand(SubCommand):
 
         self.transferringIds = transferringIds
 
-    def insertPfns(self, fileInfoList):
-        """
-        Query phedex to retrieve the pfn for each file and store it in the passed fileInfoList.
-        """
-        phedex = PhEDEx({'cert': self.proxyfilename, 'key': self.proxyfilename, 'logger': self.logger, 'pycurl': True})
+    #def insertPfns(self, fileInfoList):
+    #    """
+    #    Query phedex to retrieve the pfn for each file and store it in the passed fileInfoList.
+    #    """
+    #    phedex = PhEDEx({'cert': self.proxyfilename, 'key': self.proxyfilename, 'logger': self.logger, 'pycurl': True})
+    #
+    #    # Pick out the correct lfns and sites
+    #    if len(fileInfoList) > 0:
+    #        for fileInfo in fileInfoList:
+    #            if str(fileInfo['jobid']) in self.transferringIds:
+    #                lfn = fileInfo['tmplfn']
+    #                site = fileInfo['tmpsite']
+    #            else:
+    #                lfn = fileInfo['lfn']
+    #                site = fileInfo['site']
+    #            pfn = phedex.getPFN(site, lfn)[(site, lfn)]
+    #            fileInfo['pfn'] = pfn
 
-        # Pick out the correct lfns and sites
-        if len(fileInfoList) > 0:
-            for fileInfo in fileInfoList:
-                if str(fileInfo['jobid']) in self.transferringIds:
-                    lfn = fileInfo['tmplfn']
-                    site = fileInfo['tmpsite']
-                else:
-                    lfn = fileInfo['lfn']
-                    site = fileInfo['site']
-                pfn = phedex.getPFN(site, lfn)[(site, lfn)]
-                fileInfo['pfn'] = pfn
+    def insertXrootPfns(self, fileInfoList):
+
+        xrootlfn = ["root://cms-xrd-global.cern.ch/%s" % link['lfn'] for link in fileInfoList]
+        for fileInfo in fileInfoList:
+            if str(fileInfo['jobid']) in self.transferringIds:
+                lfn = fileInfo['tmplfn']
+                site = fileInfo['tmpsite']
+            else:
+                lfn = fileInfo['lfn']
+                site = fileInfo['site']
+            pfn = "root://cms-xrd-global.cern.ch/%s" % lfn
+            fileInfo['pfn'] = pfn
 
     def setDestination(self):
         #Setting default destination if -o is not provided
