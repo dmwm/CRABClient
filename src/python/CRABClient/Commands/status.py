@@ -591,6 +591,9 @@ class status(SubCommand):
             self.logger.info("\nThe job splitting of this task is 'Automatic', please refer to this FAQ for a description of the jobs status summary:\n%s", automaticSplittFAQ)
             if statesPJ and not states:
                 self.logger.info("Probe stage log:\t\t%s", proxiedWebDir+"/AutomaticSplitting_Log0.txt")
+            msg = "More details of Automatic Splitting process for this task (including possible failures) are in"
+            msg += " the Dagman Log files in:\n%s" % proxiedWebDir+"/AutomaticSplitting/"
+            self.logger.info(msg)
 
         for jobtype, currStates in toPrint:
             if currStates:
