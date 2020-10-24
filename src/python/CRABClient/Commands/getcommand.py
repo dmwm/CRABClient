@@ -6,8 +6,6 @@ from CRABClient.ClientUtilities import validateJobids, colors, getUrl
 from CRABClient.UserUtilities import getMutedStatusInfo
 from CRABClient import __version__
 
-#from WMCore.Services.PhEDEx.PhEDEx import PhEDEx
-
 import CRABClient.Emulator
 
 import os
@@ -102,7 +100,6 @@ class getcommand(SubCommand):
         totalfiles = len(dictresult['result'])
         fileInfoList = dictresult['result']
 
-        #self.insertPfns(fileInfoList)
         self.insertXrootPfns(fileInfoList)
 
         if len(fileInfoList) > 0:
@@ -191,6 +188,8 @@ class getcommand(SubCommand):
     #def insertPfns(self, fileInfoList):
     #    """
     #    Query phedex to retrieve the pfn for each file and store it in the passed fileInfoList.
+    #    Deprecated since PhEDEx is now off. Keep code around as guide for possible implementation via Rucio
+    #    in case we find that the "all via xrdcp" solution is not good enough
     #    """
     #    phedex = PhEDEx({'cert': self.proxyfilename, 'key': self.proxyfilename, 'logger': self.logger, 'pycurl': True})
     #
