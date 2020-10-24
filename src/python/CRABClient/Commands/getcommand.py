@@ -206,15 +206,16 @@ class getcommand(SubCommand):
     #            fileInfo['pfn'] = pfn
 
     def insertXrootPfns(self, fileInfoList):
-
-        xrootlfn = ["root://cms-xrd-global.cern.ch/%s" % link['lfn'] for link in fileInfoList]
+        """
+        add to fineInfoList an key:value with PFN in format suitable for xroot access
+        :param fileInfoList: a list of dictionaries
+        :return: modified fileInfoList
+        """
         for fileInfo in fileInfoList:
             if str(fileInfo['jobid']) in self.transferringIds:
                 lfn = fileInfo['tmplfn']
-                site = fileInfo['tmpsite']
             else:
                 lfn = fileInfo['lfn']
-                site = fileInfo['site']
             pfn = "root://cms-xrd-global.cern.ch/%s" % lfn
             fileInfo['pfn'] = pfn
 
