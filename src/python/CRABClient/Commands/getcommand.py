@@ -22,7 +22,7 @@ class getcommand(SubCommand):
     visible = False
 
 
-    def __call__(self, **argv):  # pylint: disable arguments-differ
+    def __call__(self, **argv):  # pylint: disable=arguments-differ
         ## Retrieve the transferLogs parameter from the task database.
         taskdbparam, configparam = '', ''
         if argv.get('subresource') in ['logs', 'logs2']:
