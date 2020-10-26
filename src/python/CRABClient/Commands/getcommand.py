@@ -6,8 +6,6 @@ from CRABClient.ClientUtilities import validateJobids, colors, getUrl
 from CRABClient.UserUtilities import getMutedStatusInfo
 from CRABClient import __version__
 
-from WMCore.Services.PhEDEx.PhEDEx import PhEDEx
-
 import CRABClient.Emulator
 
 import os
@@ -24,7 +22,7 @@ class getcommand(SubCommand):
     visible = False
 
 
-    def __call__(self, **argv):
+    def __call__(self, **argv):  # pylint: disable=arguments-differ
         ## Retrieve the transferLogs parameter from the task database.
         taskdbparam, configparam = '', ''
         if argv.get('subresource') in ['logs', 'logs2']:
@@ -102,7 +100,7 @@ class getcommand(SubCommand):
         totalfiles = len(dictresult['result'])
         fileInfoList = dictresult['result']
 
-        self.insertPfns(fileInfoList)
+        self.insertXrootPfns(fileInfoList)
 
         if len(fileInfoList) > 0:
             if self.options.dump or self.options.xroot:
@@ -116,7 +114,7 @@ class getcommand(SubCommand):
                 self.logger.info("\n".join(xrootlfn))
                 returndict = {'xrootd': xrootlfn}
             elif self.options.dump:
-                jobid_pfn_lfn_list = sorted(map(lambda x: (x['jobid'], x['pfn'], x['lfn']), fileInfoList))
+                jobid_pfn_lfn_list = sorted(map(lambda x: (x['jobid'], x['pfn'], x['lfn']), fileInfoList)) # pylint: disable=deprecated-lambda
                 lastjobid = -1
                 filecounter = 1
                 msg = ""
@@ -187,23 +185,39 @@ class getcommand(SubCommand):
 
         self.transferringIds = transferringIds
 
-    def insertPfns(self, fileInfoList):
-        """
-        Query phedex to retrieve the pfn for each file and store it in the passed fileInfoList.
-        """
-        phedex = PhEDEx({'cert': self.proxyfilename, 'key': self.proxyfilename, 'logger': self.logger, 'pycurl': True})
+    #def insertPfns(self, fileInfoList):
+    #    """
+    #    Query phedex to retrieve the pfn for each file and store it in the passed fileInfoList.
+    #    Deprecated since PhEDEx is now off. Keep code around as guide for possible implementation via Rucio
+    #    in case we find that the "all via xrdcp" solution is not good enough
+    #    """
+    #    phedex = PhEDEx({'cert': self.proxyfilename, 'key': self.proxyfilename, 'logger': self.logger, 'pycurl': True})
+    #
+    #    # Pick out the correct lfns and sites
+    #    if len(fileInfoList) > 0:
+    #        for fileInfo in fileInfoList:
+    #            if str(fileInfo['jobid']) in self.transferringIds:
+    #                lfn = fileInfo['tmplfn']
+    #                site = fileInfo['tmpsite']
+    #            else:
+    #                lfn = fileInfo['lfn']
+    #                site = fileInfo['site']
+    #            pfn = phedex.getPFN(site, lfn)[(site, lfn)]
+    #            fileInfo['pfn'] = pfn
 
-        # Pick out the correct lfns and sites
-        if len(fileInfoList) > 0:
-            for fileInfo in fileInfoList:
-                if str(fileInfo['jobid']) in self.transferringIds:
-                    lfn = fileInfo['tmplfn']
-                    site = fileInfo['tmpsite']
-                else:
-                    lfn = fileInfo['lfn']
-                    site = fileInfo['site']
-                pfn = phedex.getPFN(site, lfn)[(site, lfn)]
-                fileInfo['pfn'] = pfn
+    def insertXrootPfns(self, fileInfoList):
+        """
+        add to fineInfoList an key:value with PFN in format suitable for xroot access
+        :param fileInfoList: a list of dictionaries
+        :return: modified fileInfoList
+        """
+        for fileInfo in fileInfoList:
+            if str(fileInfo['jobid']) in self.transferringIds:
+                lfn = fileInfo['tmplfn']
+            else:
+                lfn = fileInfo['lfn']
+            pfn = "root://cms-xrd-global.cern.ch/%s" % lfn
+            fileInfo['pfn'] = pfn
 
     def setDestination(self):
         #Setting default destination if -o is not provided
