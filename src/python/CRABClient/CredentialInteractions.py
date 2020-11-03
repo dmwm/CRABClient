@@ -250,7 +250,7 @@ class CredentialInteractions(object):
         trustRetrListChanged = myproxy.trustedRetrievers!=self.defaultDelegation['serverDN'] #list on the REST and on myproxy are different
         if myproxytimeleft < timeleftthreshold or self.proxyChanged or trustRetrListChanged:
             # checking the enddate of the user certificate
-            usercertDaysLeft = myproxy.getUserCertEnddate()
+            usercertDaysLeft = myproxy.getUserCertEnddate(openSSL=False)
             if usercertDaysLeft == 0:
                 msg = "%sYOUR USER CERTIFICATE IS EXPIRED (OR WILL EXPIRE TODAY). YOU CANNOT USE THE CRAB3 CLIENT. PLEASE REQUEST A NEW CERTIFICATE HERE https://gridca.cern.ch/gridca/ AND SEE https://ca.cern.ch/ca/Help/?kbid=024010%s"\
                                         % (colors.RED, colors.NORMAL)
