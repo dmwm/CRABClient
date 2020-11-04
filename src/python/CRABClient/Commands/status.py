@@ -358,7 +358,7 @@ class status(SubCommand):
             # grafana takes time as milliseconds fom epoch
             try:
                 taskCreationTime = getEpochFromDBTime(datetime.strptime(dbStartTime, '%Y-%m-%d %H:%M:%S.%f'))
-            except:
+            except Exception:
                 taskCreationTime = int(time.time()) - 3*30*24*60*60 # defaults to now - 3 months
             taskCreationTime = taskCreationTime - 3600  # start looking a bit earlier, avoid rounding  at edges
             taskCreationTime = taskCreationTime * 1000 # from sec to msec
@@ -747,10 +747,10 @@ class status(SubCommand):
                         remainder = count
                         if len(ec_errors[ec]) > 3:
                             msg += "\n\t(Showing only the 3 most frequent errors messages for this exit code)"
-                        for nj, i in numjobs[:3]:
-                            error_msg = ec_errors[ec][i]
+                        for nj, ne in numjobs[:3]:
+                            error_msg = ec_errors[ec][ne]
                             msg += ("\n\n\t%" + str(ndigits) + "s jobs failed with following error message:") % (nj)
-                            msg += " (for example, job %s)" % (ec_jobids[ec][i][0])
+                            msg += " (for example, job %s)" % (ec_jobids[ec][ne][0])
                             msg += "\n\n\t\t" + "\n\t\t".join([line for line in error_msg.split('\n') if line])
                             remainder -= nj
                         if remainder > 0:
