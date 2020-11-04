@@ -8,7 +8,6 @@ from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientUtilities import colors, cmd_exist
 from CRABClient.UserUtilities import getUsername
 from CRABClient.ClientExceptions import MissingOptionException, ConfigurationException
-from httplib import HTTPException
 from ServerUtilities import checkOutLFN
 
 class checkwrite(SubCommand):
@@ -18,9 +17,11 @@ class checkwrite(SubCommand):
     name = 'checkwrite'
     shortnames = ['chk']
 
-    def __init__(self, logger, cmdargs = None):
+    def __init__(self, logger, cmdargs=None):
         SubCommand.__init__(self, logger, cmdargs)
         self.filename = None
+        self.subdir = None
+        self.lfnPrefix = None
 
 
     def __call__(self):
@@ -36,7 +37,7 @@ class checkwrite(SubCommand):
 
         ## Check that the location where we want to check write permission
         ## is one where the user will be allowed to stageout.
-        self.logger.info("Validating LFN %s..." % (self.lfnPrefix))
+        self.logger.info("Validating LFN %s...", self.lfnPrefix)
         # if an error message is needed later, prepare it now to keep code below tidy
         errMsg  = "Refusing to check write permission in %s, because this is not an allowed LFN for stageout." % (self.lfnPrefix)
         errMsg += "\nThe LFN must start with either"
@@ -50,7 +51,7 @@ class checkwrite(SubCommand):
             self.logger.info(errMsg)
             return {'status': 'FAILED'}
         else:
-            self.logger.info("LFN %s is valid." % (self.lfnPrefix))
+            self.logger.info("LFN %s is valid.", self.lfnPrefix)
 
         cp_cmd = ""
         if cmd_exist("gfal-copy") and cmd_exist("gfal-rm") and self.command in [None, "GFAL"]:
@@ -71,9 +72,8 @@ class checkwrite(SubCommand):
             self.logger.info("Neither gfal nor lcg command was found")
             return {'status': 'FAILED'}
 
-
-        self.logger.info('Will check write permission in %s on site %s' % (self.lfnPrefix, self.options.sitename))
-        timestamp =  str(time.strftime("%Y%m%d_%H%M%S"))
+        self.logger.info('Will check write permission in %s on site %s', self.lfnPrefix, self.options.sitename)
+        timestamp = str(time.strftime("%Y%m%d_%H%M%S"))
         self.filename = 'crab3checkwrite_' + timestamp  + '.tmp'
         self.subdir = 'crab3checkwrite_' + timestamp
         self.createFile()
@@ -81,7 +81,7 @@ class checkwrite(SubCommand):
         site = self.options.sitename
         try:
             pfn = self.getPFN(site=site, lfn=lfn, username=username)
-        except:
+        except Exception:
             return {'status': 'FAILED'}
         self.logger.info("Will use PFN: %s", pfn)
         dirpfn = pfn[:len(pfn)-len(self.filename)]
@@ -129,16 +129,16 @@ class checkwrite(SubCommand):
         self.logger.info(finalmsg)
         if returndict['status'] == 'FAILED':
             self.logger.info('%sNote%s: You cannot write to a site if you did not ask permission.' % (colors.BOLD, colors.NORMAL))
-	    if 'CH_CERN' in self.options.sitename :
-               dbgmsg = '%sAdditional diagnostic info for CERN EOS%s\n' % (colors.RED, colors.NORMAL)
-               dbgcmd = "echo '== id ==>:';id"
-               dbgcmd += ";echo '== voms-proxy-info -all ==>:';voms-proxy-info -all"
-               dbgcmd += ";echo '== uberftp eoscmsftp.cern.ch pwd ==>:';uberftp eoscmsftp.cern.ch pwd"
-               #self.logger.info('Executing command: %s' % cmd)
-               #self.logger.info('Please wait...')
-               output = subprocess.check_output(dbgcmd, shell = True)
-               dbgmsg += output
-               self.logger.info(dbgmsg)
+        if 'CH_CERN' in self.options.sitename:
+            dbgmsg = '%sAdditional diagnostic info for CERN EOS%s\n' % (colors.RED, colors.NORMAL)
+            dbgcmd = "echo '== id ==>:';id"
+            dbgcmd += ";echo '== voms-proxy-info -all ==>:';voms-proxy-info -all"
+            dbgcmd += ";echo '== uberftp eoscmsftp.cern.ch pwd ==>:';uberftp eoscmsftp.cern.ch pwd"
+            #self.logger.info('Executing command: %s' % cmd)
+            #self.logger.info('Please wait...')
+            output = subprocess.check_output(dbgcmd, shell=True)
+            dbgmsg += output
+            self.logger.info(dbgmsg)
         return returndict
 
 
@@ -158,7 +158,7 @@ class checkwrite(SubCommand):
         abspath = os.path.abspath(self.filename)
         try:
             os.remove(abspath)
-        except:
+        except Exception:
             self.logger.info('%sWarning%s: Failed to delete file %s' % (colors.RED, colors.NORMAL, self.filename))
 
 
@@ -180,13 +180,13 @@ exit(0)
 """
         rucioScript = template.format(site=site, username=username, lfn=lfn)
         import tempfile
-        (_, scriptName) = tempfile.mkstemp(dir='/tmp',prefix='lfn2pfn-',suffix='.py')
+        (_, scriptName) = tempfile.mkstemp(dir='/tmp', prefix='lfn2pfn-', suffix='.py')
         with open(scriptName, 'w') as ofile:
             ofile.write(rucioScript)
         cmd = 'eval `scram unsetenv -sh`; '
         cmd += 'source /cvmfs/cms.cern.ch/rucio/setup.sh 2>/dev/null; export RUCIO_ACCOUNT=%s; ' % username
         cmd += 'python %s; ' % scriptName
-        callRucio = subprocess.Popen(cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
+        callRucio = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         rucioOut, rucioErr = callRucio.communicate()
         exitcode = callRucio.returncode
         os.unlink(scriptName)
@@ -200,6 +200,7 @@ exit(0)
         pfn = rucioOut.rstrip()
         return pfn
 
+
     def cp(self, pfn, command):
 
         abspath = os.path.abspath(self.filename)
@@ -209,7 +210,7 @@ exit(0)
         cpcmd = undoScram + "; " + command + abspath + " '" + pfn + "'"
         self.logger.info('Executing command: %s' % cpcmd)
         self.logger.info('Please wait...')
-        cpprocess = subprocess.Popen(cpcmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
+        cpprocess = subprocess.Popen(cpcmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         cpout, cperr = cpprocess.communicate()
         cpexitcode = cpprocess.returncode
         if cpexitcode:
@@ -228,7 +229,7 @@ exit(0)
         rmcmd = undoScram + "; " + command + "'" + pfn + "'"
         self.logger.info('Executing command: %s' % rmcmd)
         self.logger.info('Please wait...')
-        delprocess = subprocess.Popen(rmcmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
+        delprocess = subprocess.Popen(rmcmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         delout, delerr = delprocess.communicate()
         delexitcode = delprocess.returncode
         if delexitcode:
@@ -252,22 +253,22 @@ exit(0)
         This allows to set specific command options
         """
         self.parser.add_option('--site',
-                               dest = 'sitename',
-                               default = None,
-                               help = 'The PhEDEx node name of the site to be checked.')
+                               dest='sitename',
+                               default=None,
+                               help='The PhEDEx node name of the site to be checked.')
         self.parser.add_option('--lfn',
-                               dest = 'userlfn',
-                               default = None,
-                               help = 'A user lfn address.')
+                               dest='userlfn',
+                               default=None,
+                               help='A user lfn address.')
         self.parser.add_option('--checksum',
-                               dest = 'checksum',
-                               default = 'no',
-                               help = 'Set it to yes if needed. It will use ADLER32 checksum' +\
+                               dest='checksum',
+                               default='no',
+                               help='Set it to yes if needed. It will use ADLER32 checksum' +\
                                        'Allowed values are yes/no. Default is no.')
         self.parser.add_option('--command',
-                               dest = 'command',
-                               default = None,
-                               help = 'A command which to use. Available commands are LCG or GFAL.')
+                               dest='command',
+                               default=None,
+                               help='A command which to use. Available commands are LCG or GFAL.')
 
 
     def validateOptions(self):
