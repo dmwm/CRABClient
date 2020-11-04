@@ -337,8 +337,10 @@ class status(SubCommand):
             else:
                 msg += "%s" % (statusToPr)
                 if statusToPr == 'TAPERECALL':
-                    phedexRequest = "https://cmsweb.cern.ch/phedex/prod/Data::Subscriptions#state=%s" % urllib.quote("filter="+getColumn(crabDBInfo, 'tm_input_dataset'), safe='')
-                    msg += "\nPhEDEx request:\t\t\t%s" % phedexRequest
+                    # a placeholder for possibly printint explanatory messages, it used to be a
+                    # pointer to PhEDEx requests for that dataset..
+                    # msg += "Status of dataset recalling to disk can be checked via DAS"
+                    pass
         self.logger.info(msg)
 
         # Show server and dashboard URL for the task.
