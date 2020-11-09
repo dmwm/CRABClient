@@ -250,7 +250,7 @@ class CredentialInteractions(object):
         trustRetrListChanged = myproxy.trustedRetrievers!=self.defaultDelegation['serverDN'] #list on the REST and on myproxy are different
         if myproxytimeleft < timeleftthreshold or self.proxyChanged or trustRetrListChanged:
             # checking the enddate of the user certificate
-            usercertDaysLeft = myproxy.getUserCertEnddate(openSSL=False)
+            usercertDaysLeft = myproxy.getUserCertEnddate()
             if usercertDaysLeft == 0:
                 msg = "%sYOUR USER CERTIFICATE IS EXPIRED (OR WILL EXPIRE TODAY). YOU CANNOT USE THE CRAB3 CLIENT. PLEASE REQUEST A NEW CERTIFICATE HERE https://gridca.cern.ch/gridca/ AND SEE https://ca.cern.ch/ca/Help/?kbid=024010%s"\
                                         % (colors.RED, colors.NORMAL)
@@ -276,7 +276,7 @@ class CredentialInteractions(object):
                 myproxytimeleft = myproxy.getMyProxyTimeLeft(serverRenewer=True, nokey=nokey)
                 if myproxytimeleft <= 0:
                     raise ProxyCreationException("It seems your proxy has not been delegated to myproxy. Please check the logfile for the exact error "+\
-                                                            "(it might simply you typed a wrong password)")
+                                                            "(Maybe you simply typed a wrong password)")
                 else:
                     self.logger.debug("My-proxy delegated.")
             except Exception as ex:

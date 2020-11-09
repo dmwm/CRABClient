@@ -229,11 +229,11 @@ class SubCommand(ConfigCommand):
         try:
             localOS = subprocess.check_output(['grep', 'PRETTY_NAME', '/etc/os-release'], stderr=subprocess.STDOUT).strip('\n')
             localOS = localOS.split('=')[1].strip('"')
-        except:
+        except Exception as ex:
             try:
                 localOS = subprocess.check_output(['lsb_release', '-d']).strip('\n')
                 localOS = localOS.split(':')[1].strip()
-            except:
+            except Exception as ex:
                 localOS = "Unknown Operating System"
         self.logger.debug("CRAB Client version: %s", __version__)
         self.logger.debug("Running on: " + localSystem + " - " + localOS)
@@ -455,17 +455,21 @@ class SubCommand(ConfigCommand):
                         try:
                             self.proxy.createNewMyProxy(timeleftthreshold = 60 * 60 * 24 * RENEW_MYPROXY_THRESHOLD, nokey = True)
                             p1 = True
-                        except Exception:
+                            msg1 = "Successfully created credential with DN hash in the login name"
+                        except Exception as ex:
                             p1 = False
+                            msg1 = "Error trying to create credential with DN hash in the login name\n %s" % str(ex)
                         try:
                             self.proxy.createNewMyProxy2(timeleftthreshold=60*60*24 * RENEW_MYPROXY_THRESHOLD, nokey=True)
                             p2 = True
+                            msg2 = "Successfully created credential with username_CRAB as login name"
                         except Exception as ex:
                             p2 = False
-                            msg = str(ex)
+                            msg2 = "Error trying to create credential with username_CRAB as login name\n %s" % str(ex)
                         if (not p1) and (not p2):
                             from CRABClient.ClientExceptions import ProxyCreationException
-                            raise ProxyCreationException("Problems delegating My-proxy. %s" % msg)
+                            raise ProxyCreationException("Problems delegating My-proxy.\n%s\n%s" % (msg1,msg2))
+                        self.logger.debug("Result of myproxy credential check:\n  %s\n  %s", msg1, msg2)
         else:
             self.proxyfilename = self.options.proxy
             os.environ['X509_USER_PROXY'] = self.options.proxy
