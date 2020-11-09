@@ -55,7 +55,7 @@ class colors:
         RED, GREEN, BLUE, GRAY, NORMAL, BOLD = '', '', '', '', '', ''
 
 
-class StopExecution():
+class StopExecution(Exception):
     """
     Raise it to stop a client command execution without an error.
     """
