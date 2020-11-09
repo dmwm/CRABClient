@@ -1,10 +1,9 @@
+from datetime import timedelta
+
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.UserUtilities import getUsername
 
 from CRABClient.CredentialInteractions import CredentialInteractions
 from CRABClient.ClientUtilities import server_info
-
-from RESTInteractions import HTTPRequests
 
 class createmyproxy(SubCommand):
     """
@@ -25,7 +24,8 @@ class createmyproxy(SubCommand):
 
         proxy = CredentialInteractions('', '', '', '', self.logger)
         days = self.options.days
-        proxy.setMyProxyValidity(int(days) * 24 * 60)
+        proxy.setMyProxyValidity(int(days) * 24 * 60)  # minutes
+        timeLeftThreshold = int(days) * 24 * 60 * 60 # seconds
 
         self.logger.info("Checking credentials")
 
@@ -40,8 +40,12 @@ class createmyproxy(SubCommand):
             proxy.defaultDelegation['myProxySvr'] = 'myproxy.cern.ch'
 
             self.logger.info("Registering user credentials for server %s" % serverdn)
-            proxy.createNewMyProxy(timeleftthreshold=60 * 60 * 24 * days, nokey=True)
-            proxy.createNewMyProxy2(timeleftthreshold=60 * 60 * 24 * days, nokey=True)
+            (credentialName, myproxyTimeleft) = proxy.createNewMyProxy(timeleftthreshold=timeLeftThreshold, nokey=True)
+            self.logger.info("Credential exists on myproxy: username: %s  - validity: %s", credentialName,
+                             str(timedelta(seconds=myproxyTimeleft)))
+            (credentialName, myproxyTimeleft) = proxy.createNewMyProxy2(timeleftthreshold=timeLeftThreshold, nokey=True)
+            self.logger.info("Credential exists on myproxy: username: %s  - validity: %s", credentialName,
+                             str(timedelta(seconds=myproxyTimeleft)))
 
         return
 
@@ -54,11 +58,10 @@ class createmyproxy(SubCommand):
         """
 
         self.parser.add_option('--days',
-                               dest = 'days',
-                               default = 30,
-                               type = 'int',
-                               help = "Set the validity (in days) for the credential. Default is 30.")
+                               dest='days',
+                               default=30,
+                               type='int',
+                               help="Set the validity (in days) for the credential. Default is 30.")
 
     #def terminate(self, exitcode):
     #    pass
-
