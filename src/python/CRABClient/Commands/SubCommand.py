@@ -229,11 +229,11 @@ class SubCommand(ConfigCommand):
         try:
             localOS = subprocess.check_output(['grep', 'PRETTY_NAME', '/etc/os-release'], stderr=subprocess.STDOUT).strip('\n')
             localOS = localOS.split('=')[1].strip('"')
-        except Exception as ex:
+        except Exception as ex:  # pylint: disable=unused-variable
             try:
                 localOS = subprocess.check_output(['lsb_release', '-d']).strip('\n')
                 localOS = localOS.split(':')[1].strip()
-            except Exception as ex:
+            except Exception as ex:  # pylint: disable=unused-variable
                 localOS = "Unknown Operating System"
         self.logger.debug("CRAB Client version: %s", __version__)
         self.logger.debug("Running on: " + localSystem + " - " + localOS)
