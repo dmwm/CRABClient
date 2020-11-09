@@ -64,7 +64,7 @@ class CredentialInteractions(object):
             proxy = Proxy(self.defaultDelegation)
         except CredentialException as ex:
             self.logger.debug(ex)
-            raise EnvironmentException('Problem with Grid environment: %s ' % ex._message)
+            raise EnvironmentException('Problem with Grid environment: %s ' % str(ex))
         return proxy
 
     def getFilename(self):
@@ -242,7 +242,7 @@ class CredentialInteractions(object):
         except Exception as ex:
             logging.exception("Problems calculating proxy lifetime, logging stack trace and raising ProxyCreationException")
             # WMException may contain the _message attribute. Otherwise, take the exception as a string.
-            msg = ex._message if hasattr(ex, "_message") else str(ex)
+            msg = ex._message if hasattr(ex, "_message") else str(ex)  # pylint: disable=protected-access, no-member
             raise ProxyCreationException("Problems calculating the time left until the expiration of the proxy."
                     " Please reset your environment or contact hn-cms-computing-tools@cern.ch if the problem persists.\n%s" % msg)
         self.logger.debug("Myproxy is valid: %i" % myproxytimeleft)
@@ -280,7 +280,7 @@ class CredentialInteractions(object):
                 else:
                     self.logger.debug("My-proxy delegated.")
             except Exception as ex:
-                msg = ex._message if hasattr(ex, '_message') else str(ex)
+                msg = ex._message if hasattr(ex, '_message') else str(ex)  # pylint: disable=protected-access, no-member
                 raise ProxyCreationException("Problems delegating My-proxy. %s" % msg)
 
     def createNewMyProxy2(self, timeleftthreshold=0, nokey=False):
@@ -325,7 +325,7 @@ class CredentialInteractions(object):
         except Exception as ex:
             logging.exception("Problems calculating proxy lifetime, logging stack trace and raising ProxyCreationException")
             # WMException may contain the _message attribute. Otherwise, take the exception as a string.
-            msg = ex._message if hasattr(ex, "_message") else str(ex)
+            msg = ex._message if hasattr(ex, "_message") else str(ex)  # pylint: disable=protected-access, no-member
             raise ProxyCreationException("Problems calculating the time left until the expiration of the proxy."
                     " Please reset your environment or contact hn-cms-computing-tools@cern.ch if the problem persists.\n%s" % msg)
         self.logger.debug("Myproxy is valid: %i" % myproxytimeleft)
@@ -363,6 +363,6 @@ class CredentialInteractions(object):
                 else:
                     self.logger.debug("My-proxy delegated.")
             except Exception as ex:
-                msg = ex._message if hasattr(ex, '_message') else str(ex)
+                msg = ex._message if hasattr(ex, '_message') else str(ex)  # pylint: disable=protected-access, no-member
                 raise ProxyCreationException("Problems delegating My-proxy. %s" % msg)
 
