@@ -171,10 +171,13 @@ client = Client()
 rse = "{site}"
 lfn = ["user.{username}:{lfn}"]
 try:
-    out = client.lfns2pfns(rse, lfn)
+    out = client.lfns2pfns(rse, lfn, operation='write')
 except Exception as ex:
-    print("Failed to resolve LNF to PFN via Rucio. Error is:\\n %s" % str(ex))
-    exit(1)
+    try:
+        out = client.lfns2pfns(rse, lfn, operation='read')
+    except Exception as ex:
+        print("Failed to resolve LNF to PFN via Rucio. Error is:\\n %s" % str(ex))
+        exit(1)
 print(out[lfn[0]])
 exit(0)
 """
