@@ -338,6 +338,12 @@ class CredentialInteractions(object):
         # Also catch the exception in case WMCore encounters a problem with the proxy itself (one such case was #4532)
         try:
             myproxytimeleft = myproxy.getMyProxyTimeLeft(serverRenewer=True, nokey=nokey)
+        except CredentialException as ex:
+            msg = "WMCore could not computer valid time for credential %s .\n Error detail: " % credentialName
+            msg += "%s" % str(ex._message)
+            msg += "\nTry to remove old myproxy credentials as per https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3FAQ#crab_command_fails_with_Impossib"
+            self.logger.error(msg)
+            raise ProxyCreationException("no valid credential for %s" % credentialName)
         except Exception as ex:
             logging.exception("Problems calculating proxy lifetime, logging stack trace and raising ProxyCreationException")
             # WMException may contain the _message attribute. Otherwise, take the exception as a string.
