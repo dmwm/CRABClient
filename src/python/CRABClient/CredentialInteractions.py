@@ -88,7 +88,7 @@ class CredentialInteractions(object):
         Handles the proxy creation:
            - checks if a valid proxy still exists
            - performs the creation if it is expired
-           - returns a dictionary with keys: filename timelect actimeleft grop role userdn
+           - returns a dictionary with keys: filename timelect actimeleft group role userdn
         """
         proxyInfo = {}
         ## TODO add the change to have user-cert/key defined in the config.
