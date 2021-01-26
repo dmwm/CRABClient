@@ -43,6 +43,7 @@ class status(SubCommand):
     def __call__(self):
         # Get all of the columns from the database for a certain task
         taskname = self.cachedinfo['RequestName']
+        uriNoApi = getUrl(self.instance)
         uri = getUrl(self.instance, resource = 'task')
         server = self.RESTServer
         crabDBInfo, _, _ =  server.get(uri, data = {'subresource': 'search', 'workflow': taskname})
@@ -98,7 +99,8 @@ class status(SubCommand):
 
         self.logger.debug("Webdir is located at %s", webdir)
 
-        proxiedWebDir = getProxiedWebDir(taskname, self.serverurl, uri, self.proxyfilename, self.logger.debug)
+        proxiedWebDir = getProxiedWebDir(RESTServer=self.RESTServer, task=taskname, uriNoApi=uriNoApi, logFunction=self.logger.debug)
+
         if not proxiedWebDir:
             msg = "Failed to get the proxied webdir from CRABServer. "
             msg += "\nWill fall back to the regular webdir url for file downloads "
@@ -233,11 +235,10 @@ class status(SubCommand):
     def publicationStatus(self, workflow, asourl, asodb, user):
         """Gets some information about the state of publication of jobs from the server.
         """
-        uri = getUrl(self.instance, resource = 'workflow')
-        serverFactory = CRABClient.Emulator.getEmulator('rest')
-        server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
+        uri = getUrl(self.instance, resource='workflow')
+        server = self.RESTServer
 
-        pubInfo, _, _ =  server.get(uri, data = {'subresource': 'publicationstatus', 'workflow': workflow, 'asourl': asourl, 'asodb': asodb, 'username': user})
+        pubInfo, _, _ = server.get(uri, data = {'subresource': 'publicationstatus', 'workflow': workflow, 'asourl': asourl, 'asodb': asodb, 'username': user})
 
         # Dictionary received from the server should have a structure like this:
         # {"result": [

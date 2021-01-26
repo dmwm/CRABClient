@@ -38,7 +38,7 @@ class ConfigCommand:
         """
         Load the configuration file
         """
-        ## If the configuration is alredy an object it doesn't need to be loaded from the file.
+        # If the configuration is alredy an object it doesn't need to be loaded from the file.
         if isinstance(configname, Configuration):
             self.configuration = configname
             valid, configmsg = self.validateConfig()
@@ -54,11 +54,11 @@ class ConfigCommand:
         try:
             self.logger.debug("Loading CRAB configuration file.")
             self.configuration = loadConfigurationFile(os.path.abspath(configname))
-            ## Overwrite configuration parameters passed as arguments in the command line.
+            # Overwrite configuration parameters passed as arguments in the command line.
             if overrideargs:
                 for singlearg in overrideargs:
-                    ## The next line is needed, because we allow the config to be passed as argument
-                    ## instead via the --config option.
+                    # The next line is needed, because we allow the config to be passed as argument
+                    # instead via the --config option.
                     if singlearg == configname: continue
                     if len(singlearg.split('=', 1)) == 1:
                         self.logger.info("Wrong format in command-line argument '%s'. Expected format is <section-name>.<parameter-name>=<parameter-value>." % (singlearg))
@@ -80,7 +80,7 @@ class ConfigCommand:
                     else:
                         setattr(getattr(self.configuration, parnames[0]), parnames[1], literal_eval("%s" % parval))
                         self.logger.debug("Overriden parameter %s with %s" % (fullparname, parval))
-            valid, configmsg = self.validateConfig() ## Subclasses of SubCommand overwrite this method if needed.
+            valid, configmsg = self.validateConfig() # Subclasses of SubCommand overwrite this method if needed.
         except RuntimeError as runErr:
             configmsg = "Error while loading CRAB configuration:\n%s" % (self._extractReason(configname, runErr))
             configmsg += "\nPlease refer to https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3CommonErrors#Syntax_error_in_CRAB_configurati"
@@ -124,10 +124,10 @@ class ConfigCommand:
         Checking if needed input parameters are there.
         Not all the commands require a configuration.
         """
-        ## Check that the configuration object has the sections we expect it to have.
-        ## (WMCore already checks that attributes added to the configuration object are of type ConfigSection.)
-        ## Even if not all configuration sections need to be there, we anyway request
-        ## the user to add all the sections in the configuration file.
+        # Check that the configuration object has the sections we expect it to have.
+        # (WMCore already checks that attributes added to the configuration object are of type ConfigSection.)
+        # Even if not all configuration sections need to be there, we anyway request
+        # the user to add all the sections in the configuration file.
         if not hasattr(self.configuration, 'General'):
             msg = "Invalid CRAB configuration: Section 'General' is missing."
             return False, msg
@@ -141,8 +141,8 @@ class ConfigCommand:
             msg = "Invalid CRAB configuration: Section 'Site' is missing."
             return False, msg
 
-        ## Some parameters may have been renamed. Check here if the configuration file has an old
-        ## parameter defined, and in that case tell the user what is the new parameter name.
+        # Some parameters may have been renamed. Check here if the configuration file has an old
+        # parameter defined, and in that case tell the user what is the new parameter name.
         for old_param, new_param in renamedParams.iteritems():
             if len(old_param.split('.')) != 2 or len(new_param['newParam'].split('.')) != 2:
                 continue
@@ -154,7 +154,7 @@ class ConfigCommand:
                 msg += "; please change your configuration file accordingly."
                 return False, msg
 
-        ## Check if there are unknown parameters (and try to suggest the correct parameter name).
+        # Check if there are unknown parameters (and try to suggest the correct parameter name).
         all_config_params = configParametersInfo.keys()
         SpellChecker.DICTIONARY = SpellChecker.train(all_config_params)
         for section in self.configuration.listSections_():
@@ -166,10 +166,10 @@ class ConfigCommand:
                         msg += " Maybe you mean %s?" % (SpellChecker.correct(param))
                     return False, msg
 
-        ## Check that each parameter specified in the configuration file is of the
-        ## type specified in the configuration map.
-        ## Check that, if a parameter is a required one and it has no default value,
-        ## then it must be specified in the configuration file.
+        # Check that each parameter specified in the configuration file is of the
+        # type specified in the configuration map.
+        # Check that, if a parameter is a required one and it has no default value,
+        # then it must be specified in the configuration file.
         for paramName, paramInfo in configParametersInfo.iteritems():
             requiredTypeName = paramInfo['type']
             try:
@@ -205,8 +205,8 @@ class ConfigCommand:
 
 class SubCommand(ConfigCommand):
 
-    ####### These options can be overrhidden if needed ########
-    ## setting visible = False doesn't allow the sub-command to be called from CLI
+    #### These options can be overrhidden if needed ####
+    # setting visible = False doesn't allow the sub-command to be called from CLI
     visible = True
     proxyfilename = None
     shortnames = []
@@ -222,7 +222,7 @@ class SubCommand(ConfigCommand):
             self.name = self.__class__.__name__
 
         ConfigCommand.__init__(self)
-        ## The command logger.
+        # The command logger.
         self.logger = logger
         self.logfile = self.logger.logfile
 
@@ -241,25 +241,24 @@ class SubCommand(ConfigCommand):
         self.logger.debug("Executing command: '%s'" % str(self.name))
 
         self.proxy = None
-        self.restClass = CRABClient.Emulator.getEmulator('rest')
 
-        ## Get the command configuration.
+        # Get the command configuration.
         self.cmdconf = commandsConfiguration.get(self.name)
         if not self.cmdconf:
             raise RuntimeError("Canot find command %s in commandsConfiguration inside ClientMapping. Are you a developer"
                                "trying to add a command without it's correspondant configuration?" % self.name)
 
-        ## Get the CRAB cache file.
+        # Get the CRAB cache file.
         self.cachedinfo = None
         self.crab3dic = self.getConfiDict()
 
-        ## The options parser.
+        # The options parser.
         self.parser = CRABCmdOptParser(self.name, self.__doc__, disable_interspersed_args)
 
-        ## Define the command options.
+        # Define the command options.
         self.setSuperOptions()
 
-        ## Parse the command options/arguments.
+        # Parse the command options/arguments.
         cmdargs = cmdargs or []
         (self.options, self.args) = self.parser.parse_args(cmdargs)
 
@@ -267,13 +266,13 @@ class SubCommand(ConfigCommand):
         self.dest = None
 
         self.validateLogpathOption()
-        ## Validate first the SubCommand options
+        # Validate first the SubCommand options
         SubCommand.validateOptions(self)
-        ## then the config option for the submit command
+        # then the config option for the submit command
         self.validateConfigOption()
 
-        ## Get the VO group/role from the command options (if the command requires these
-        ## options).
+        # Get the VO group/role from the command options (if the command requires these
+        # options).
         proxyOptsSetPlace = {'set_in': {'group': "default", 'role': "default"}, 'for_set_use': ""}
         msgadd = []
         self.voGroup, self.voRole = "", "NULL"
@@ -291,30 +290,30 @@ class SubCommand(ConfigCommand):
             msg = "Using %s as specified in the crab command options." % (" and ".join(msgadd))
             self.logger.debug(msg)
 
-        ## Create the object that will do the proxy operations. We don't really care
-        ## what VO role and group and server URL we pass to the constructor, because
-        ## these are not used until we do the proxy delegation to the myproxy server.
-        ## And this happens in handleProxy(), which is called after we load the
-        ## configuration file and retrieve the final values for those parameters.
-        ## handleProxy() takes care of passing those parameters to self.proxy.
+        # Create the object that will do the proxy operations. We don't really care
+        # what VO role and group and server URL we pass to the constructor, because
+        # these are not used until we do the proxy delegation to the myproxy server.
+        # And this happens in handleProxy(), which is called after we load the
+        # configuration file and retrieve the final values for those parameters.
+        # handleProxy() takes care of passing those parameters to self.proxy.
         self.proxy = CredentialInteractions('', '', self.voRole, self.voGroup, self.logger)
 
-        ## If the user didn't use the --proxy command line option, and if there isn't a
-        ## valid proxy already, we will create a new one with the current VO role and group
-        ## (as commented above, we don't really care what are the VO role and group so
-        ## far).
+        # If the user didn't use the --proxy command line option, and if there isn't a
+        # valid proxy already, we will create a new one with the current VO role and group
+        # (as commented above, we don't really care what are the VO role and group so
+        # far).
         self.proxyCreated = False
 
-        ## If there is an input configuration file:
+        # If there is an input configuration file:
         if hasattr(self.options, 'config') and self.options.config is not None:
             proxyOptsSetPlace['for_set_use'] = "config"
-            ## Load the configuration file and validate it.
+            # Load the configuration file and validate it.
             self.loadConfig(self.options.config, self.args)
-            ## Create the CRAB project directory.
-            self.requestarea, self.requestname, self.logfile = createWorkArea(self.logger, \
-                                                                              getattr(self.configuration.General, 'workArea', None), \
-                                                                              getattr(self.configuration.General, 'requestName', None))
-            ## Get the VO group/role from the configuration file.
+            # Create the CRAB project directory.
+            self.requestarea, self.requestname, self.logfile = createWorkArea(
+                self.logger, getattr(self.configuration.General, 'workArea', None),
+                getattr(self.configuration.General, 'requestName', None))
+            # Get the VO group/role from the configuration file.
             msgadd = []
             if hasattr(self.configuration, 'User') and hasattr(self.configuration.User, 'voGroup'):
                 self.voGroup = self.configuration.User.voGroup
@@ -328,51 +327,50 @@ class SubCommand(ConfigCommand):
                 msg = "Using %s as specified in the CRAB configuration file." % (" and ".join(msgadd))
                 self.logger.debug(msg)
 
-
-        ## If the VO group/role was not given in the command options, take it from the request cache.
+        # If the VO group/role was not given in the command options, take it from the request cache.
         if self.cmdconf['requiresDirOption']:
             self.setCachedProxy(proxyOptsSetPlace)
 
-
-
-        ## following commented out code should be replaced with something which
-        ## looks for configuration.General.instance, compares with known nicknames,
-        ## extraxts restHost and dbInstance if OK, otherwise gets them from
-        ## configuration.Genarl.restHost and configuration.General.dbInstance
-        ## and sets them in self for all code to use.
-        ## need to review all uses of self.instance and self.serverurl and change or
-        ## check if they can simply be set to dbInstance and restHost repsecitvely
-
-
-
-        ## If the server URL isn't already set, we check the args and then the config.
+        # If the server URL isn't already set, we check the args and then the config.
         if not hasattr(self, 'serverurl') and self.cmdconf['requiresREST']:
             self.instance, self.serverurl = self.serverInstance()
         elif not self.cmdconf['requiresREST']:
             self.instance, self.serverurl = None, None
 
-
-        ## Update (or create) the CRAB cache file.
+        # Update (or create) the CRAB cache file.
         self.updateCRABCacheFile()
 
-        ## At this point we check if there is a valid proxy, and
-        ## eventually create a new one. If the proxy was not created by CRAB, we check that the
-        ## VO role/group in the proxy are the same as specified by the user in the configuration
-        ## file (or in the command line options). If it is not, we ask the user if he wants to 
-        ## overwrite the current proxy. If he doesn't want to overwrite it, we don't continue 
-        ## and ask him to provide the VO role/group as in the existing proxy. 
-        ## Finally, delegate the proxy to myproxy server.
-        self.handleProxy(proxyOptsSetPlace)
+        # At this point we check if there is a valid proxy, and
+        # eventually create a new one. If the proxy was not created by CRAB, we check that the
+        # VO role/group in the proxy are the same as specified by the user in the configuration
+        # file (or in the command line options). If it is not, we ask the user if he wants to 
+        # overwrite the current proxy. If he doesn't want to overwrite it, we don't continue 
+        # and ask him to provide the VO role/group as in the existing proxy. 
+        # Finally, delegate the proxy to myproxy server.
+        self.handleVomsProxy(proxyOptsSetPlace)
 
-        ## Validate the command options
+        # only if this command talks to the REST we create a RESTServer object to communicate with CRABServer
+        # and check/upate credentials on myproxy
+        # this is usually the first time that a call to the server is made, so where Emulator('rest') is initialized
+        # arguments to Emulator('rest') call must match those for HTTPRequest.__init__ in RESTInteractions.py
+        #server = CRABClient.Emulator.getEmulator('rest')(url=serverurl, localcert=proxyfilename, localkey=proxyfilename,
+        #          version=__version__, retry=2, logger=logger)
+        if self.cmdconf['requiresREST']:
+            restClass = CRABClient.Emulator.getEmulator('rest')
+            self.RESTServer = restClass(url=self.serverurl, localcert=self.proxyfilename, localkey=self.proxyfilename,
+                                        retry=2, logger=self.logger, verbose=False, version=__version__,
+                                        userAgent='CRABClient')
+            self.handleMyProxy()
+
+        # Validate the command options
         self.validateOptions()
 
-        ## Logging user command and options used for debuging purpose.
+        # Log user command and options used for debuging purpose.
         self.logger.debug('Command use: %s' % self.name)
         self.logger.debug('Options use: %s' % cmdargs)
         if self.cmdconf['requiresREST']:
-            self.checkversion(getUrl(self.instance, resource='info'))
-            self.uri = getUrl(self.instance)
+            self.checkversion(getUrl(self.instance))
+            self.uri = getUrl(self.instance, resource='workflow')
         self.logger.debug("Instance is %s" %(self.instance))
         self.logger.debug("Server base url is %s" %(self.serverurl))
         if self.cmdconf['requiresREST']:
@@ -416,10 +414,8 @@ class SubCommand(ConfigCommand):
         return self.dbInstance, self.restHost
 
 
-    def checkversion(self, baseurl=None):
-        compatibleVersions = server_info(subresource='version', serverurl=self.serverurl,
-                                         proxyfilename=self.proxyfilename,
-                                         baseurl=baseurl, logger=self.logger)
+    def checkversion(self, uriNoApi=None):
+        compatibleVersions = server_info(RESTServer=self.RESTServer, uriNoApi=uriNoApi, subresource='version')
         for item in compatibleVersions:
             if re.match(item, __version__):
                 self.logger.debug("CRABClient version: %s" % (__version__))
@@ -431,52 +427,67 @@ class SubCommand(ConfigCommand):
             self.logger.info(msg)
 
 
-    def handleProxy(self, proxyOptsSetPlace):
-        """ 
-        Init the user proxy, and delegate it if necessary.
+    def handleVomsProxy(self, proxyOptsSetPlace):
         """
-        if not self.options.proxy:
-            if self.cmdconf['initializeProxy']:
-                self.proxy.setVOGroupVORole(self.voGroup, self.voRole)
-                self.proxy.proxyInfo = self.proxy.createNewVomsProxy(timeLeftThreshold=720, \
-                                                                   doProxyGroupRoleCheck=self.cmdconf['doProxyGroupRoleCheck'], \
-                                                                   proxyCreatedByCRAB=self.proxyCreated, \
-                                                                   proxyOptsSetPlace=proxyOptsSetPlace)
-                self.proxyfilename = self.proxy.proxyInfo['filename']
-                if self.cmdconf['requiresREST']: ## If the command doesn't contact the REST, we can't delegate the proxy.
-                    baseurl = getUrl(self.instance, resource='info')
-                    ## Get the DN of the task workers from the server.
-                    all_task_workers_dns = server_info(subresource='delegatedn', serverurl=self.serverurl,
-                                                       proxyfilename=self.proxyfilename,
-                                                       baseurl=baseurl, logger=self.logger)
-                    for serverdn in all_task_workers_dns['services']:
-                        self.proxy.setServerDN(serverdn)
-                        self.proxy.setMyProxyServer('myproxy.cern.ch')
-                        self.logger.debug("Registering user credentials for server %s" % serverdn)
-                        try:
-                            (credentialName, myproxyTimeleft) = self.proxy.createNewMyProxy(timeleftthreshold=60 * 60 * 24 * RENEW_MYPROXY_THRESHOLD, nokey=True)
-                            p1 = True
-                            msg1 = "Credential exists on myproxy: username: %s  - validity: %s" %\
-                                   (credentialName, str(timedelta(seconds=myproxyTimeleft)))
-                        except Exception as ex:
-                            p1 = False
-                            msg1 = "Error trying to create credential:\n %s" % str(ex)
-                        try:
-                            (credentialName, myproxyTimeleft) = self.proxy.createNewMyProxy2(timeleftthreshold=60*60*24 * RENEW_MYPROXY_THRESHOLD, nokey=True)
-                            p2 = True
-                            msg2 = "Credential exists on myproxy: username: %s  - validity: %s" %\
-                                   (credentialName, str(timedelta(seconds=myproxyTimeleft)))
-                        except Exception as ex:
-                            p2 = False
-                            msg2 = "Error trying to create credential:\n %s" % str(ex)
-                        if (not p1) and (not p2):
-                            from CRABClient.ClientExceptions import ProxyCreationException
-                            raise ProxyCreationException("Problems delegating My-proxy.\n%s\n%s" % (msg1, msg2))
-                        self.logger.debug("Result of myproxy credential check:\n  %s\n  %s", msg1, msg2)
-        else:
+        Make sure that there is a valid VOMS proxy
+        :param proxyOptsSetPlace: a complicated dictionary to keep track of VOMS group/roles in options/proxyfile/requestcache
+                                  used by  CredentialInteractions/createNewVomsProxy()
+        :return: nothing
+                    a dictionary with proxy info is added to self as self.proxyInfo and
+                    the file name of a valid proxy is addded as self.proxyfilename
+        """
+        if self.options.proxy:  # user passed a proxy as option
             self.proxyfilename = self.options.proxy
             os.environ['X509_USER_PROXY'] = self.options.proxy
             self.logger.debug('Skipping proxy creation')
+            return
+        if self.cmdconf['initializeProxy']:  # actually atm all commands require a proxy, see ClientMapping.py
+            self.proxy.setVOGroupVORole(self.voGroup, self.voRole)
+            self.proxy.proxyInfo = self.proxy.createNewVomsProxy(timeLeftThreshold=720, \
+                                                               doProxyGroupRoleCheck=self.cmdconf['doProxyGroupRoleCheck'], \
+                                                               proxyCreatedByCRAB=self.proxyCreated, \
+                                                               proxyOptsSetPlace=proxyOptsSetPlace)
+            self.proxyfilename = self.proxy.proxyInfo['filename']
+        return
+
+    def handleMyProxy(self):
+        """ 
+        check myproxy credential and delegate again it if necessary.
+        takes no input and returns no output, bur raises exception if delegation failed
+        """
+        if not self.cmdconf['requiresREST']:  # If the command doesn't contact the REST, we can't delegate the proxy.
+            return
+        if self.options.proxy:  # if user passed a proxy as option we don't contact myproxy
+            return
+
+        if not self.options.proxy:
+            uriNoApi = getUrl(self.instance)
+            # Get the DN of the task workers from the server.
+            all_task_workers_dns = server_info(self.RESTServer, uriNoApi=uriNoApi, subresource='delegatedn')
+            for serverdn in all_task_workers_dns['services']:
+                self.proxy.setServerDN(serverdn)
+                self.proxy.setMyProxyServer('myproxy.cern.ch')
+                self.logger.debug("Registering user credentials for server %s" % serverdn)
+                try:
+                    (credentialName, myproxyTimeleft) = self.proxy.createNewMyProxy(timeleftthreshold=60 * 60 * 24 * RENEW_MYPROXY_THRESHOLD, nokey=True)
+                    p1 = True
+                    msg1 = "Credential exists on myproxy: username: %s  - validity: %s" %\
+                           (credentialName, str(timedelta(seconds=myproxyTimeleft)))
+                except Exception as ex:
+                    p1 = False
+                    msg1 = "Error trying to create credential:\n %s" % str(ex)
+                try:
+                    (credentialName, myproxyTimeleft) = self.proxy.createNewMyProxy2(timeleftthreshold=60*60*24 * RENEW_MYPROXY_THRESHOLD, nokey=True)
+                    p2 = True
+                    msg2 = "Credential exists on myproxy: username: %s  - validity: %s" %\
+                           (credentialName, str(timedelta(seconds=myproxyTimeleft)))
+                except Exception as ex:
+                    p2 = False
+                    msg2 = "Error trying to create credential:\n %s" % str(ex)
+                if (not p1) and (not p2):
+                    from CRABClient.ClientExceptions import ProxyCreationException
+                    raise ProxyCreationException("Problems delegating My-proxy.\n%s\n%s" % (msg1, msg2))
+                self.logger.debug("Result of myproxy credential check:\n  %s\n  %s", msg1, msg2)
 
 
     def loadLocalCache(self):
@@ -627,13 +638,13 @@ class SubCommand(ConfigCommand):
                 msg += " %s is not a valid CRAB project directory." % (self.options.projdir)
                 raise ConfigurationException(msg)
 
-            ## If an input project directory was given, load the request cache and take the
-            ## server URL from it.
+            # If an input project directory was given, load the request cache and take the
+            # server URL from it.
             self.loadLocalCache()
 
-        ## If the command does not take any arguments, but some arguments were passed,
-        ## clear the arguments list and give a warning message saying that the given
-        ## arguments will be ignored.
+        # If the command does not take any arguments, but some arguments were passed,
+        # clear the arguments list and give a warning message saying that the given
+        # arguments will be ignored.
         if not self.cmdconf['acceptsArguments'] and len(self.args):
             msg = "%sWarning%s:" % (colors.RED, colors.NORMAL)
             msg += " 'crab %s' command takes no arguments, %d given." % (self.name, len(self.args))

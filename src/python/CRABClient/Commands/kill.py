@@ -15,8 +15,7 @@ class kill(SubCommand):
     visible = True
 
     def __call__(self):
-        serverFactory = CRABClient.Emulator.getEmulator('rest')
-        server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
+        server = self.RESTServer
 
         self.logger.debug("Killing task %s" % self.cachedinfo['RequestName'])
         inputs = {'workflow' : self.cachedinfo['RequestName']}

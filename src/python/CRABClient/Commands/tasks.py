@@ -14,9 +14,8 @@ Note that STATUS in here is task status from database which does not include gri
 task status does not progress beyond SUBMITTED unless the task is KILLED
     """
     def __call__(self):
-        server = HTTPRequests(self.serverurl, self.proxyfilename, self.proxyfilename,
-                              version=__version__, userAgent='CRABClient')
-        dictresult, status, reason = server.get(self.uri, data = {'timestamp': self.date})
+        server = self.RESTServer
+        dictresult, status, reason = server.get(self.uri, data={'timestamp': self.date})
         dictresult = dictresult['result'] #take just the significant part
 
         if status != 200:

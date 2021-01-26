@@ -23,8 +23,7 @@ class purge(SubCommand):
 
         self.logger.info('Getting the tarball hash key')
         inputlist = {'subresource': 'search', 'workflow': self.cachedinfo['RequestName']}
-        serverFactory = CRABClient.Emulator.getEmulator('rest')
-        server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
+        server = self.RESTServer
         uri = getUrl(self.instance, resource = 'task')
         dictresult, _, _ =  server.get(uri, data = inputlist)
 
@@ -52,10 +51,8 @@ class purge(SubCommand):
         scheddresult = {}
         gsisshdict = {}
         if not self.options.scheddonly or noSchedd:
-            baseurl = getUrl(self.instance, resource='info')
-            cacheurl = server_info(subresource='backendurls', serverurl=self.serverurl,
-                                   proxyfilename=self.proxyfilename,
-                                   baseurl=baseurl, logger=self.logger)
+            baseurl = getUrl(self.instance)
+            cacheurl = server_info(RESTServer=server, uriNoApi=baseurl, subresource='backendurls')
             cacheurl = cacheurl['cacheSSL']
             cacheurldict = {'endpoint': cacheurl, 'pycurl': True}
 

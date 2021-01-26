@@ -284,8 +284,7 @@ class report(SubCommand):
         """
         reportData = {}
 
-        serverFactory = CRABClient.Emulator.getEmulator('rest')
-        server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
+        server = self.RESTServer
 
         self.logger.debug('Looking up report for task %s' % self.cachedinfo['RequestName'])
 

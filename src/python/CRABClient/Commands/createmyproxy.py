@@ -32,9 +32,8 @@ class createmyproxy(SubCommand):
         # need an X509 proxy in order to talk with CRABServer to get list of myproxy authorized retrievers
         proxy.proxyInfo = proxy.createNewVomsProxy(timeLeftThreshold=720)
         proxyfilename = proxy.proxyInfo['filename']
-        serverurl = 'cmsweb.cern.ch'
-        baseurl = '/crabserver/prod/info'
-        alldns = server_info(subresource='delegatedn', serverurl=serverurl, proxyfilename=proxyfilename, baseurl=baseurl)
+        baseurl = '/crabserver/prod'
+        alldns = server_info(RESTServer=self.RESTServer, uriNoApi=baseurl, subresource='delegatedn')
         for serverdn in alldns['services']:
             proxy.defaultDelegation['serverDN'] = serverdn
             proxy.defaultDelegation['myProxySvr'] = 'myproxy.cern.ch'

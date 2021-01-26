@@ -63,9 +63,9 @@ class preparelocal(SubCommand):
 
         #Get task status from the task DB
         self.logger.debug("Getting status from he DB")
+        uriNoApi = getUrl(self.instance)
         uri = getUrl(self.instance, resource = 'task')
-        serverFactory = CRABClient.Emulator.getEmulator('rest')
-        server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version = __version__)
+        server = self.RESTServer
         crabDBInfo, _, _ =  server.get(uri, data = {'subresource': 'search', 'workflow': taskname})
         status = getColumn(crabDBInfo, 'tm_task_status')
         self.destination = getColumn(crabDBInfo, 'tm_asyncdest')
@@ -79,7 +79,9 @@ class preparelocal(SubCommand):
             with tarfile.open('dry-run-sandbox.tar.gz') as tf:
                 tf.extractall()
         elif status == 'SUBMITTED':
-            webdir = getProxiedWebDir(taskname, self.serverurl, uri, self.proxyfilename, self.logger.debug)
+            #webdir = getProxiedWebDir(taskname, self.serverurl, uri, self.proxyfilename, self.logger.debug)
+            webdir = getProxiedWebDir(RESTServer=self.RESTServer, task=taskname, uriNoApi=uriNoApi,
+                                      logFunction=self.logger.debug)
             if not webdir:
                 webdir = getColumn(crabDBInfo, 'tm_user_webdir')
             self.logger.debug("Downloading 'InputFiles.tar.gz' from %s" % webdir)

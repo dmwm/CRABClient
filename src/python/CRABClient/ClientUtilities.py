@@ -182,11 +182,11 @@ def getColumn(dictresult, columnName):
     else:
         return value
 
-def getUrl(dbInstance='prod', resource='workflow'):
+def getUrl(dbInstance='prod', resource=None):
     """
     Retrieve the url depending on the resource we are accessing and the DB instance.
     """
-    url = '/crabserver/' + dbInstance + '/' + resource
+    url = '/crabserver/' + dbInstance + '/' + resource if resource else '/crabserver/' + dbInstance
     return url
 
 def uploadlogfile(logger, proxyfilename, logfilename = None, logpath = None, instance = 'prod', serverurl = None, username = None):
@@ -229,9 +229,15 @@ def uploadlogfile(logger, proxyfilename, logfilename = None, logpath = None, ins
         logger.debug('No proxy was given')
         doupload = False
 
-    baseurl = getUrl(dbInstance=instance , resource = 'info')
+    baseurl = getUrl(dbInstance=instance)
     if doupload:
-        cacheurl = server_info('backendurls', serverurl, proxyfilename, baseurl)
+        # uploadLog is executed directly from crab main script, does not inherit from SubCommand
+        # so it needs its own RESTServer instantiation
+        restClass = CRABClient.Emulator.getEmulator('rest')
+        RESTServer = restClass(url=serverurl, localcert=proxyfilename, localkey=proxyfilename,
+                                        retry=2, logger=logger, verbose=False, version=__version__,
+                                        userAgent='CRABClient')
+        cacheurl = server_info(RESTServer=RESTServer, uriNoApi=baseurl, subresource='backendurls')
         # Encode in ascii because old pycurl present in old CMSSW versions
         # doesn't support unicode.
         cacheurl = cacheurl['cacheSSL'].encode('ascii')
@@ -648,17 +654,15 @@ def validateSubmitOptions(options, args):
 #If anyone has a better solution please go on, otherwise live with that one :) :)
 from CRABClient import __version__
 
-def server_info(subresource=None, serverurl='localhost', proxyfilename=None, baseurl='', logger=None, **kwargs):
+def server_info(RESTServer=None, uriNoApi='crabserver/prod', subresource=None):
     """
     Get relevant information about the server
     """
-    # this is usually the first time that a call to the server is made, so where Emulator('rest') is initialized
-    # arguments to Emulator('rest') call must match those for HTTPRequest.__init__ in RESTInteractions.py
-    server = CRABClient.Emulator.getEmulator('rest')(url=serverurl, localcert=proxyfilename, localkey=proxyfilename,
-              version=__version__, retry=2, logger=logger)
-    requestdict = {'subresource': subresource}
-    requestdict.update(**kwargs)
-    dictresult, dummyStatus, dummyReason = server.get(baseurl, requestdict)
+
+    uri = uriNoApi + '/info'
+    requestdict = {'subresource': subresource} if subresource else {}
+
+    dictresult, dummyStatus, dummyReason = RESTServer.get(uri, requestdict)
 
     return dictresult['result'][0]
 

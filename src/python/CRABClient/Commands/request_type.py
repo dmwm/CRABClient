@@ -10,10 +10,7 @@ class request_type(SubCommand):
 
     def __call__(self):
 
-
-        proxyfile = self.options.proxyfile if self.options.proxyfile else self.proxyfilename
-        serverFactory = CRABClient.Emulator.getEmulator('rest')
-        server = serverFactory(self.serverurl, proxyfile, proxyfile, version=__version__)
+        server = self.RESTServer
 
         self.logger.debug('Looking type for task %s' % self.cachedinfo['RequestName'])
         dictresult, status, reason = server.get(self.uri, data = {'workflow': self.cachedinfo['RequestName'], 'subresource': 'type'})

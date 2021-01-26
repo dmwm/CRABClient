@@ -34,8 +34,7 @@ class getcommand(SubCommand):
 
         transferFlag = 'unknown'
         inputlist = {'subresource': 'search', 'workflow': self.cachedinfo['RequestName']}
-        serverFactory = CRABClient.Emulator.getEmulator('rest')
-        server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
+        server = self.RESTServer
         uri = getUrl(self.instance, resource = 'task')
         dictresult, status, _ =  server.get(uri, data = inputlist)
         self.logger.debug('Server result: %s' % dictresult)
@@ -88,8 +87,7 @@ class getcommand(SubCommand):
         if getattr(self.options, 'jobids', None):
             self.logger.debug('Retrieving jobs %s' % self.options.jobids)
             inputlist.extend(self.options.jobids)
-        serverFactory = CRABClient.Emulator.getEmulator('rest')
-        server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
+        server = self.RESTServer
         dictresult, status, reason = server.get(self.uri, data = urllib.urlencode(inputlist))
         self.logger.debug('Server result: %s' % dictresult)
 

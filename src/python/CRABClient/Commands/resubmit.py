@@ -68,7 +68,7 @@ class resubmit(SubCommand):
         configreq_encoded = self._encodeRequest(configreq)
         self.logger.debug("Encoded resubmit request: %s" % (configreq_encoded))
 
-        dictresult, _, _ = self.server.post(self.uri, data = configreq_encoded)
+        dictresult, _, _ = self.RESTServer.post(self.uri, data = configreq_encoded)
         self.logger.debug("Result: %s" % (dictresult))
         self.logger.info("Resubmit request sent to the server.")
         if dictresult['result'][0]['result'] != 'ok':
@@ -272,10 +272,8 @@ class resubmit(SubCommand):
         """
         SubCommand.validateOptions(self)
 
-        serverFactory = CRABClient.Emulator.getEmulator('rest')
-        self.server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version = __version__)
         uri = getUrl(self.instance, resource = 'task')
-        crabDBInfo, _, _ = self.server.get(uri, data = {'subresource': 'search', 'workflow': self.cachedinfo['RequestName']})
+        crabDBInfo, _, _ = self.RESTServer.get(uri, data = {'subresource': 'search', 'workflow': self.cachedinfo['RequestName']})
         self.splitting = getColumn(crabDBInfo, 'tm_split_algo')
 
         if self.options.publication:

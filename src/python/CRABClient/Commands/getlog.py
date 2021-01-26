@@ -26,10 +26,11 @@ class getlog(getcommand):
         if self.options.short:
             taskname = self.cachedinfo['RequestName']
             inputlist = {'subresource': 'search', 'workflow': taskname}
-            serverFactory = CRABClient.Emulator.getEmulator('rest')
-            server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
-            uri = getUrl(self.instance, resource = 'task')
-            webdir = getProxiedWebDir(taskname, self.serverurl, uri, self.proxyfilename, self.logger.debug)
+            server = self.RESTServer
+            uriNoApi = getUrl(self.instance)
+            uri = getUrl(self.instance, resource='task')
+            webdir = getProxiedWebDir(RESTServer=self.RESTServer, task=taskname, uriNoApi=uriNoApi, logFunction=self.logger.debug)
+            #webdir = getProxiedWebDir(taskname, self.serverurl, uri, self.proxyfilename, self.logger.debug)
             dictresult, status, reason = server.get(uri, data = inputlist)
             if not webdir:
                 webdir = dictresult['result'][0]
