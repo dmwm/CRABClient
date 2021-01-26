@@ -331,16 +331,6 @@ class report(SubCommand):
 
         return reportData
 
-    def compactLumis(self, datasetInfo):
-        """ Help function that allow to convert from runLumis divided per file (result of listDatasetFileDetails)
-            to an aggregated result.
-        """
-        lumilist = {}
-        for _, info in datasetInfo.iteritems():
-            for run, lumis in info['Lumis'].iteritems():
-                lumilist.setdefault(str(run), []).extend(lumis)
-        return lumilist
-
     def getLumisToProcess(self, userWebDirURL, jobs, workflow):
         """
         What each job was requested to process
@@ -465,23 +455,6 @@ class report(SubCommand):
         return res
 
 
-    def prepareCurl(self):
-        curl = pycurl.Curl()
-        curl.setopt(pycurl.NOSIGNAL, 0)
-        curl.setopt(pycurl.TIMEOUT, 30)
-        curl.setopt(pycurl.CONNECTTIMEOUT, 30)
-        curl.setopt(pycurl.FOLLOWLOCATION, 0)
-        curl.setopt(pycurl.MAXREDIRS, 0)
-        return curl
-
-    def myPerform(self, curl, url):
-        try:
-            curl.perform()
-        except pycurl.error as e:
-            raise ClientException(("Failed to contact Grid scheduler when getting URL %s. " + \
-                                   "This might be a temporary error, please retry later and " + \
-                                   "contact %s if the error persist. Error from curl: %s" % \
-                                   (url, FEEDBACKMAIL, str(e))))
     def setOptions(self):
         """
         __setOptions__
@@ -519,3 +492,33 @@ class report(SubCommand):
             msg = "%sError%s:" % (colors.RED, colors.NORMAL)
             msg += " The --recovery option only accepts the following values: %s" % (recoveryMethods)
             raise ConfigurationException(msg)
+
+################# Unused functions moved here just in case we find out why this code is here ###############
+
+    def compactLumis(self, datasetInfo):
+        """ Help function that allow to convert from runLumis divided per file (result of listDatasetFileDetails)
+            to an aggregated result.
+        """
+        lumilist = {}
+        for _, info in datasetInfo.iteritems():
+            for run, lumis in info['Lumis'].iteritems():
+                lumilist.setdefault(str(run), []).extend(lumis)
+        return lumilist
+
+    def prepareCurl(self):
+        curl = pycurl.Curl()
+        curl.setopt(pycurl.NOSIGNAL, 0)
+        curl.setopt(pycurl.TIMEOUT, 30)
+        curl.setopt(pycurl.CONNECTTIMEOUT, 30)
+        curl.setopt(pycurl.FOLLOWLOCATION, 0)
+        curl.setopt(pycurl.MAXREDIRS, 0)
+        return curl
+
+    def myPerform(self, curl, url):
+        try:
+            curl.perform()
+        except pycurl.error as e:
+            raise ClientException(("Failed to contact Grid scheduler when getting URL %s. "
+                                   "This might be a temporary error, please retry later and "
+                                   "contact %s if the error persist. Error from curl: %s" % \
+                                   (url, FEEDBACKMAIL, str(e))))

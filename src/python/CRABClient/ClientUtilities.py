@@ -43,14 +43,14 @@ class colors:  # pylint: disable=no-init
                 'BLUE':'\033[93m',
                 'GRAY':'\033[90m',
                 'NORMAL':'\033[0m',
-                'BOLD':'\033[1m' }
+                'BOLD':'\033[1m'}
     if sys.stdout.isatty():
-        RED    = colordict['RED']
-        GREEN  = colordict['GREEN']
-        BLUE   = colordict['BLUE']
-        GRAY   = colordict['GRAY']
+        RED = colordict['RED']
+        GREEN = colordict['GREEN']
+        BLUE = colordict['BLUE']
+        GRAY = colordict['GRAY']
         NORMAL = colordict['NORMAL']
-        BOLD   = colordict['BOLD']
+        BOLD = colordict['BOLD']
     else:
         RED, GREEN, BLUE, GRAY, NORMAL, BOLD = '', '', '', '', '', ''
 
@@ -144,8 +144,8 @@ def getLoggers():
 
 
 def setConsoleLogLevelVar(lvl):
-    global CONSOLE_LOGLEVEL
-    CONSOLE_LOGLEVEL = lvl  # pylint: disable=global-statement
+    global CONSOLE_LOGLEVEL  # pylint: disable=global-statement
+    CONSOLE_LOGLEVEL = lvl
 
 
 def changeFileLogger(logger, workingpath=os.getcwd(), logname='crab.log'):
@@ -548,7 +548,7 @@ def validURL(serverurl, attrtohave=None, attrtonothave=None):
     parsedurl = urlparse(tempurl)
     for elem in attrtohave:
         elemval = getattr(parsedurl, elem, None)
-        if str( elemval) == '' or elemval is None:
+        if str(elemval) == '' or elemval is None:
             return False
     for elem in attrtonothave:
         elemval = getattr(parsedurl, elem, None)
