@@ -180,4 +180,3 @@ def getParamServerName(paramName):
 
 def getParamDefaultValue(paramName):
     return configParametersInfo.get(paramName, {}).get('default')
-

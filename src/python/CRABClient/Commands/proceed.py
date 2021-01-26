@@ -1,9 +1,7 @@
+import urllib
+
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import RESTCommunicationException
-from CRABClient import __version__
-import CRABClient.Emulator
-
-import urllib
 
 class proceed(SubCommand):
     """

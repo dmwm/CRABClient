@@ -1,11 +1,9 @@
-from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ClientExceptions import RESTCommunicationException
-from CRABClient import __version__
-import CRABClient.Emulator
 
-from urllib import urlencode
+import urllib
 from base64 import b64encode
 
+from CRABClient.Commands.SubCommand import SubCommand
+from CRABClient.ClientExceptions import RESTCommunicationException
 
 class kill(SubCommand):
     """
@@ -22,7 +20,7 @@ class kill(SubCommand):
         if self.options.killwarning:
             inputs.update({'killwarning' : b64encode(self.options.killwarning)})
 
-        dictresult, status, reason = server.delete(self.uri, data=urlencode(inputs))
+        dictresult, status, reason = server.delete(self.uri, data=urllib.urlencode(inputs))
         self.logger.debug("Result: %s" % dictresult)
 
         if status != 200:
@@ -45,10 +43,10 @@ class kill(SubCommand):
 
         This allows to set specific command options
         """
-        self.parser.add_option( '--killwarning',
-                                dest = 'killwarning',
-                                default = None,
-                                help = 'A warning message to be appended to the warnings list shown by "crab status"')
+        self.parser.add_option('--killwarning',
+                               dest='killwarning',
+                               default=None,
+                               help='A warning message to be appended to the warnings list shown by "crab status"')
 
     def validateOptions(self):
         SubCommand.validateOptions(self)

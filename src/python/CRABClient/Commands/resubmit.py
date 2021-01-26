@@ -4,8 +4,6 @@ import re
 import urllib
 
 ## CRAB dependencies.
-import CRABClient.Emulator
-from CRABClient import __version__
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ConfigurationException
 from CRABClient.UserUtilities import getMutedStatusInfo, getColumn
@@ -15,7 +13,7 @@ class resubmit(SubCommand):
     """
     Resubmit jobs of the task identified by the -d/--dir option.
     """
-    def __init__(self, logger, cmdargs = None):
+    def __init__(self, logger, cmdargs=None):
         """
         Class constructor.
         """
@@ -33,13 +31,13 @@ class resubmit(SubCommand):
         jobList = statusDict['jobList']
 
         if self.splitting == 'Automatic' and statusDict['dbStatus'] == 'KILLED':
-            msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
+            msg = "%sError%s:" % (colors.RED, colors.NORMAL)
             msg += " Tasks using automatic splitting cannot be resubmitted after a kill."
             self.logger.info(msg)
             return None
 
         if not jobList:
-            msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
+            msg = "%sError%s:" % (colors.RED, colors.NORMAL)
             msg += " Status information is unavailable, will not proceed with the resubmission."
             msg += " Try again a few minutes later if the task has just been submitted."
             self.logger.info(msg)
@@ -68,7 +66,7 @@ class resubmit(SubCommand):
         configreq_encoded = self._encodeRequest(configreq)
         self.logger.debug("Encoded resubmit request: %s" % (configreq_encoded))
 
-        dictresult, _, _ = self.RESTServer.post(self.uri, data = configreq_encoded)
+        dictresult, _, _ = self.RESTServer.post(self.uri, data=configreq_encoded)
         self.logger.debug("Result: %s" % (dictresult))
         self.logger.info("Resubmit request sent to the server.")
         if dictresult['result'][0]['result'] != 'ok':
@@ -77,7 +75,7 @@ class resubmit(SubCommand):
             returndict = {'status': 'FAILED'}
         else:
             if not self.options.wait:
-                msg  = "Please use ' crab status ' to check how the resubmission process proceeds."
+                msg = "Please use ' crab status ' to check how the resubmission process proceeds."
                 msg += "\nNotice it may take a couple of minutes for the resubmission to get fully processed."
                 self.logger.info(msg)
             else:
@@ -201,68 +199,68 @@ class resubmit(SubCommand):
         This allows to set specific command options.
         """
         self.parser.add_option('--jobids',
-                               dest = 'jobids',
-                               default = None,
-                               help = "The ids of the jobs to resubmit. Comma separated list of integers.",
-                               metavar = 'JOBIDS')
+                               dest='jobids',
+                               default=None,
+                               help="The ids of the jobs to resubmit. Comma separated list of integers.",
+                               metavar='JOBIDS')
 
         self.parser.add_option('--sitewhitelist',
-                               dest = 'sitewhitelist',
-                               default = None,
-                               help = "Set the sites you want to whitelist for the resubmission." + \
+                               dest='sitewhitelist',
+                               default=None,
+                               help="Set the sites you want to whitelist for the resubmission." + \
                                       " Comma separated list of CMS site names (e.g.: T2_ES_CIEMAT,T2_IT_Rome[...]).")
 
         self.parser.add_option('--siteblacklist',
-                               dest = 'siteblacklist',
-                               default = None,
-                               help = "Set the sites you want to blacklist for the resubmission." + \
+                               dest='siteblacklist',
+                               default=None,
+                               help="Set the sites you want to blacklist for the resubmission." + \
                                       " Comma separated list of CMS site names (e.g.: T2_ES_CIEMAT,T2_IT_Rome[...]).")
 
         self.parser.add_option('--maxjobruntime',
-                               dest = 'maxjobruntime',
-                               default = None,
-                               type = 'int',
-                               help = "Set the maximum time (in minutes) jobs in this task are allowed to run." + \
+                               dest='maxjobruntime',
+                               default=None,
+                               type='int',
+                               help="Set the maximum time (in minutes) jobs in this task are allowed to run." + \
                                       " Default is 1315 (21 hours 50 minutes).")
 
         self.parser.add_option('--maxmemory',
-                               dest = 'maxmemory',
-                               default = None,
-                               type = 'int',
-                               help = "Set the maximum memory (in MB) used per job in this task." + \
+                               dest='maxmemory',
+                               default=None,
+                               type='int',
+                               help="Set the maximum memory (in MB) used per job in this task." + \
                                       " Default is 2000.")
 
         self.parser.add_option('--numcores',
-                               dest = 'numcores',
-                               default = None,
-                               type = 'int',
-                               help = "Set the number of cores used per job in this task." + \
+                               dest='numcores',
+                               default=None,
+                               type='int',
+                               help="Set the number of cores used per job in this task." + \
                                       " (e.g.: 1 for single-threaded applications).")
 
         self.parser.add_option('--priority',
-                               dest = 'priority',
-                               default = None,
-                               type = 'int',
-                               help = "Set the priority of this task compared to other tasks you own; tasks default to 10." + \
+                               dest='priority',
+                               default=None,
+                               type='int',
+                               help="Set the priority of this task compared to other tasks you own; tasks default to 10." + \
                                       " Tasks with higher priority values run first. This does not change your share compared to other users.")
 
         self.parser.add_option('--wait',
-                               dest = 'wait',
-                               default = False,
-                               action = 'store_true',
-                               help = "DEPRECATED")
+                               dest='wait',
+                               default=False,
+                               action='store_true',
+                               help="DEPRECATED")
 
         self.parser.add_option('--force',
-                               dest = 'force',
-                               default = False,
-                               action = 'store_true',
-                               help = "Force resubmission of successful jobs indicated in --jobids option.")
+                               dest='force',
+                               default=False,
+                               action='store_true',
+                               help="Force resubmission of successful jobs indicated in --jobids option.")
 
         self.parser.add_option('--publication',
-                               dest = 'publication',
-                               default = False,
-                               action = 'store_true',
-                               help = "Resubmit only the failed publications.")
+                               dest='publication',
+                               default=False,
+                               action='store_true',
+                               help="Resubmit only the failed publications.")
 
 
     def validateOptions(self):
@@ -272,28 +270,28 @@ class resubmit(SubCommand):
         """
         SubCommand.validateOptions(self)
 
-        uri = getUrl(self.instance, resource = 'task')
-        crabDBInfo, _, _ = self.RESTServer.get(uri, data = {'subresource': 'search', 'workflow': self.cachedinfo['RequestName']})
+        uri = getUrl(self.instance, resource='task')
+        crabDBInfo, _, _ = self.RESTServer.get(uri, data={'subresource': 'search', 'workflow': self.cachedinfo['RequestName']})
         self.splitting = getColumn(crabDBInfo, 'tm_split_algo')
 
         if self.options.publication:
             if self.options.sitewhitelist is not None or self.options.siteblacklist is not None or \
                self.options.maxjobruntime is not None or self.options.maxmemory is not None or \
                self.options.numcores is not None or self.options.priority is not None:
-                msg  = "The options --sitewhitelist, --siteblacklist,"
+                msg = "The options --sitewhitelist, --siteblacklist,"
                 msg += " --maxjobruntime, --maxmemory, --numcores and  --priority"
                 msg += " can not be specified together with the option --publication."
                 msg += " The last option is to only resubmit (failed) publications,"
                 msg += " in which case all of the first options make no sense."
                 raise ConfigurationException(msg)
             if self.options.jobids:
-                msg  = "The option --jobids"
+                msg = "The option --jobids"
                 msg += " can not be specified together with the option --publication."
                 msg += " The last option is to only resubmit (failed) publications,"
                 msg += " which does not allow yet filtering on job ids (ALL failed publications will be resubmitted)."
                 raise ConfigurationException(msg)
             if self.options.force:
-                msg  = "The option --force"
+                msg = "The option --force"
                 msg += " can not be specified together with the option --publication."
                 msg += " The last option is to only resubmit failed publications."
                 msg += " Publications in a status other than 'failed' can not be resubmitted."
@@ -342,7 +340,7 @@ class resubmit(SubCommand):
                 if getattr(self.options, sitelist) != "":
                     for site_name in getattr(self.options, sitelist).split(','):
                         if '*' not in site_name and not sn_rec.match(site_name):
-                            msg  = "The site name '%s' does not look like a valid CMS site name" % (site_name)
+                            msg = "The site name '%s' does not look like a valid CMS site name" % (site_name)
                             msg += " (it is not matching the regular expression '%s')." % (sn_re)
                             raise ConfigurationException(msg)
                     setattr(self, sitelist, getattr(self.options, sitelist).split(','))

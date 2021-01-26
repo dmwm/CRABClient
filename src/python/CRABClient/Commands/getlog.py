@@ -1,15 +1,14 @@
 from __future__ import print_function
 from __future__ import division
 
-import CRABClient.Emulator
-from CRABClient import __version__
+from httplib import HTTPException
+
 from CRABClient.ClientUtilities import colors, getUrl, validateJobids, getColumn
 from CRABClient.UserUtilities import getFileFromURL
 from CRABClient.Commands.getcommand import getcommand
 from CRABClient.ClientExceptions import RESTCommunicationException, MissingOptionException
 
 from ServerUtilities import getProxiedWebDir
-from httplib import HTTPException
 
 
 class getlog(getcommand):
@@ -22,7 +21,7 @@ class getlog(getcommand):
     shortnames = ['log']
     visible = True #overwrite getcommand
 
-    def __call__(self):
+    def __call__(self):  # pylint: disable=arguments-differ
         if self.options.short:
             taskname = self.cachedinfo['RequestName']
             inputlist = {'subresource': 'search', 'workflow': taskname}
@@ -31,30 +30,30 @@ class getlog(getcommand):
             uri = getUrl(self.instance, resource='task')
             webdir = getProxiedWebDir(RESTServer=self.RESTServer, task=taskname, uriNoApi=uriNoApi, logFunction=self.logger.debug)
             #webdir = getProxiedWebDir(taskname, self.serverurl, uri, self.proxyfilename, self.logger.debug)
-            dictresult, status, reason = server.get(uri, data = inputlist)
+            dictresult, status, reason = server.get(uri, data=inputlist)
             if not webdir:
                 webdir = dictresult['result'][0]
                 self.logger.info('Server result: %s' % webdir)
                 if status != 200:
                     msg = "Problem retrieving information from the server:\ninput:%s\noutput:%s\nreason:%s" % (str(inputlist), str(dictresult), str(reason))
                     raise RESTCommunicationException(msg)
-            splitting = getColumn(dictresult,'tm_split_algo')
+            splitting = getColumn(dictresult, 'tm_split_algo')
             if getattr(self.options, 'jobids', None):
                 self.options.jobids = validateJobids(self.options.jobids, splitting != 'Automatic')
             self.setDestination()
             self.logger.info("Setting the destination to %s " % self.dest)
             failed, success = self.retrieveShortLogs(webdir, self.proxyfilename)
             if failed:
-                msg = "%sError%s: Failed to retrieve the following files: %s" % (colors.RED,colors.NORMAL,failed)
+                msg = "%sError%s: Failed to retrieve the following files: %s" % (colors.RED, colors.NORMAL, failed)
                 self.logger.info(msg)
             else:
-                self.logger.info("%sSuccess%s: All files successfully retrieved." % (colors.GREEN,colors.NORMAL))
+                self.logger.info("%sSuccess%s: All files successfully retrieved." % (colors.GREEN, colors.NORMAL))
             returndict = {'success': success, 'failed': failed}
         else:
             # Different from the old getlog code: set 'logs2' as subresource so that 'getcommand' uses the new logic.
-            returndict = getcommand.__call__(self, subresource = 'logs2')
+            returndict = getcommand.__call__(self, subresource='logs2')
             if ('success' in returndict and not returndict['success']) or \
-               ('failed'  in returndict and returndict['failed']):
+               ('failed' in returndict and returndict['failed']):
                 msg = "You can use the --short option to retrieve a short version of the log files from the Grid scheduler."
                 self.logger.info(msg)
 
@@ -67,20 +66,20 @@ class getlog(getcommand):
 
         This allows to set specific command options
         """
-        self.parser.add_option( '--quantity',
-                                dest = 'quantity',
-                                help = 'The number of logs you want to retrieve (or "all"). Ignored if --jobids is used.' )
-        self.parser.add_option( '--parallel',
-                                dest = 'nparallel',
-                                help = 'Number of parallel download, default is 10 parallel download.',)
-        self.parser.add_option( '--wait',
-                                dest = 'waittime',
-                                help = 'Increase the sendreceive-timeout in second.',)
-        self.parser.add_option( '--short',
-                                dest = 'short',
-                                default = False,
-                                action = 'store_true',
-                                help = 'Get the short version of the log file. Use with --dir and --jobids.',)
+        self.parser.add_option('--quantity',
+                               dest='quantity',
+                               help='The number of logs you want to retrieve (or "all"). Ignored if --jobids is used.')
+        self.parser.add_option('--parallel',
+                               dest='nparallel',
+                               help='Number of parallel download, default is 10 parallel download.',)
+        self.parser.add_option('--wait',
+                               dest='waittime',
+                               help='Increase the sendreceive-timeout in second.',)
+        self.parser.add_option('--short',
+                               dest='short',
+                               default=False,
+                               action='store_true',
+                               help='Get the short version of the log file. Use with --dir and --jobids.',)
         getcommand.setOptions(self)
 
 
@@ -88,7 +87,7 @@ class getlog(getcommand):
         getcommand.validateOptions(self)
         if self.options.short:
             if self.options.jobids is None:
-                msg  = "%sError%s: Please specify the job ids for which to retrieve the logs." % (colors.GREEN, colors.NORMAL)
+                msg = "%sError%s: Please specify the job ids for which to retrieve the logs." % (colors.GREEN, colors.NORMAL)
                 msg += " Use the --jobids option."
                 ex = MissingOptionException(msg)
                 ex.missingOption = "jobids"
