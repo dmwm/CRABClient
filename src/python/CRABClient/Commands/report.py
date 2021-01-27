@@ -3,17 +3,15 @@ from __future__ import print_function, division
 import os
 import json
 import subprocess
-import pycurl
 import logging
 import tarfile
-
-import CRABClient.Emulator
-
+from httplib import HTTPException
 from ast import literal_eval
+
+import pycurl
 
 from WMCore.DataStructs.LumiList import LumiList
 
-from CRABClient import __version__
 from CRABClient.ClientUtilities import colors
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.JobType.BasicJobType import BasicJobType
@@ -22,7 +20,6 @@ from CRABClient.ClientExceptions import ConfigurationException, \
     UnknownOptionException, ClientException
 
 from ServerUtilities import FEEDBACKMAIL
-from httplib import HTTPException
 
 class report(SubCommand):
     """
@@ -40,7 +37,7 @@ class report(SubCommand):
         reportData = self.collectReportData()
 
         if not reportData:
-            msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
+            msg = "%sError%s:" % (colors.RED, colors.NORMAL)
             msg += " Status information is unavailable, will not proceed with the report."
             msg += " Try again a few minutes later if the task has just been submitted."
             self.logger.info(msg)
@@ -48,7 +45,7 @@ class report(SubCommand):
 
         returndict = {}
         if self.options.recovery == 'notPublished' and not reportData['publication']:
-            msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
+            msg = "%sError%s:" % (colors.RED, colors.NORMAL)
             msg += " The option --recovery=%s has been specified" % (self.options.recovery)
             msg += " (which instructs to determine the not processed lumis based on published datasets),"
             msg += " but publication has been disabled in the CRAB configuration."
@@ -56,7 +53,7 @@ class report(SubCommand):
 
         onlyDBSSummary = False
         if not reportData['lumisToProcess'] or not reportData['runsAndLumis']:
-            msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
+            msg = "%sError%s:" % (colors.RED, colors.NORMAL)
             msg += " Cannot get all the needed information for the report."
             msg += " Notice, if your task has been submitted more than 30 days ago, then everything has been cleaned."
             self.logger.info(msg)
@@ -217,7 +214,7 @@ class report(SubCommand):
         ##    other general information about the task, but not on failed/running jobs).
         if not onlyDBSSummary:
             self.logger.info("Summary from jobs in status 'finished':")
-            msg  = "  Number of files processed: %d" % (numFilesProcessed)
+            msg = "  Number of files processed: %d" % (numFilesProcessed)
             msg += "\n  Number of events read: %d" % (numEventsRead)
             msg += "\n  Number of events written in EDM files: %d" % (numEventsWritten.get('EDM', 0))
             msg += "\n  Number of events written in TFileService files: %d" % (numEventsWritten.get('TFile', 0))
@@ -284,13 +281,12 @@ class report(SubCommand):
         """
         reportData = {}
 
-        serverFactory = CRABClient.Emulator.getEmulator('rest')
-        server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
+        server = self.RESTServer
 
         self.logger.debug('Looking up report for task %s' % self.cachedinfo['RequestName'])
 
         # Query server for information from the taskdb, intput/output file metadata from metadatadb
-        dictresult, status, _ = server.get(self.uri, data = {'workflow': self.cachedinfo['RequestName'], 'subresource': 'report2'})
+        dictresult, status, _ = server.get(self.uri, data={'workflow': self.cachedinfo['RequestName'], 'subresource': 'report2'})
 
         self.logger.debug("Result: %s" % dictresult)
         self.logger.info("Running crab status first to fetch necessary information.")
@@ -334,16 +330,6 @@ class report(SubCommand):
             reportData['outputDatasetsInfo'] = repDGO
 
         return reportData
-
-    def compactLumis(self, datasetInfo):
-        """ Help function that allow to convert from runLumis divided per file (result of listDatasetFileDetails)
-            to an aggregated result.
-        """
-        lumilist = {}
-        for _, info in datasetInfo.iteritems():
-            for run, lumis in info['Lumis'].iteritems():
-                lumilist.setdefault(str(run), []).extend(lumis)
-        return lumilist
 
     def getLumisToProcess(self, userWebDirURL, jobs, workflow):
         """
@@ -433,7 +419,7 @@ class report(SubCommand):
             subp = subprocess.Popen(dasgo, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             stdout, stderr = subp.communicate()
             if subp.returncode or not stdout:
-                print('Failed running command %. Exitcode is %s' % (dasgo, exitcode))
+                print('Failed running command %s. Exitcode is %s' % (dasgo, subp.returncode))
                 if stdout:
                     print('  Stdout:\n    %s' % str(stdout).replace('\n', '\n    '))
                 if stderr:
@@ -455,7 +441,7 @@ class report(SubCommand):
             subp = subprocess.Popen(dasgo, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             stdout, stderr = subp.communicate()
             if subp.returncode or not stdout:
-                print('Failed running command %. Exitcode is %s' % (dasgo, exitcode))
+                print('Failed running command %s. Exitcode is %s' % (dasgo, subp.returncode))
                 if stdout:
                     print('  Stdout:\n    %s' % str(stdout).replace('\n', '\n    '))
                 if stderr:
@@ -468,6 +454,56 @@ class report(SubCommand):
 
         return res
 
+
+    def setOptions(self):
+        """
+        __setOptions__
+
+        This allows to set specific command options
+        """
+        self.parser.add_option("--outputdir",
+                               dest="outdir",
+                               default=None,
+                               help="Directory where to write the lumi summary files.")
+
+        self.parser.add_option("--recovery",
+                               dest="recovery",
+                               default="notFinished",
+                               help="Method to calculate not processed lumis: notFinished," + \
+                                      " notPublished or failed [default: %default].")
+
+        self.parser.add_option("--dbs",
+                               dest="usedbs",
+                               default=None,
+                               help="Deprecated option removed in CRAB v3.3.1603.")
+
+    def validateOptions(self):
+        """
+        Check if the output file is given and set as attribute
+        """
+        SubCommand.validateOptions(self)
+
+        if self.options.usedbs is not None:
+            msg = "CRAB command option error: the option --dbs has been deprecated since CRAB v3.3.1603."
+            raise UnknownOptionException(msg)
+
+        recoveryMethods = ['notFinished', 'notPublished', 'failed']
+        if self.options.recovery not in recoveryMethods:
+            msg = "%sError%s:" % (colors.RED, colors.NORMAL)
+            msg += " The --recovery option only accepts the following values: %s" % (recoveryMethods)
+            raise ConfigurationException(msg)
+
+################# Unused functions moved here just in case we find out why this code is here ###############
+
+    def compactLumis(self, datasetInfo):
+        """ Help function that allow to convert from runLumis divided per file (result of listDatasetFileDetails)
+            to an aggregated result.
+        """
+        lumilist = {}
+        for _, info in datasetInfo.iteritems():
+            for run, lumis in info['Lumis'].iteritems():
+                lumilist.setdefault(str(run), []).extend(lumis)
+        return lumilist
 
     def prepareCurl(self):
         curl = pycurl.Curl()
@@ -483,43 +519,6 @@ class report(SubCommand):
             curl.perform()
         except pycurl.error as e:
             raise ClientException(("Failed to contact Grid scheduler when getting URL %s. "
-                             "This might be a temporary error, please retry later and "
-                             "contact %s if the error persist. Error from curl: %s"
-                             % (url, FEEDBACKMAIL, str(e))))
-    def setOptions(self):
-        """
-        __setOptions__
-
-        This allows to set specific command options
-        """
-        self.parser.add_option("--outputdir",
-                               dest = "outdir",
-                               default = None,
-                               help = "Directory where to write the lumi summary files.")
-
-        self.parser.add_option("--recovery",
-                               dest = "recovery",
-                               default = "notFinished",
-                               help = "Method to calculate not processed lumis: notFinished," + \
-                                      " notPublished or failed [default: %default].")
-
-        self.parser.add_option("--dbs",
-                               dest = "usedbs",
-                               default = None,
-                               help = "Deprecated option removed in CRAB v3.3.1603.")
-
-    def validateOptions(self):
-        """
-        Check if the output file is given and set as attribute
-        """
-        SubCommand.validateOptions(self)
-
-        if self.options.usedbs is not None:
-            msg = "CRAB command option error: the option --dbs has been deprecated since CRAB v3.3.1603."
-            raise UnknownOptionException(msg)
-
-        recoveryMethods = ['notFinished', 'notPublished', 'failed']
-        if self.options.recovery not in recoveryMethods:
-            msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
-            msg += " The --recovery option only accepts the following values: %s" % (recoveryMethods)
-            raise ConfigurationException(msg)
+                                   "This might be a temporary error, please retry later and "
+                                   "contact %s if the error persist. Error from curl: %s" % \
+                                   (url, FEEDBACKMAIL, str(e))))

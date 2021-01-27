@@ -10,8 +10,6 @@ from ast import literal_eval
 from datetime import datetime
 from httplib import HTTPException
 
-import CRABClient.Emulator
-from CRABClient import __version__
 from CRABClient.ClientUtilities import colors, validateJobids, compareJobids, getUrl
 from CRABClient.UserUtilities import getDataFromURL, getColumn
 from CRABClient.Commands.SubCommand import SubCommand
@@ -35,7 +33,7 @@ class status(SubCommand):
 
     shortnames = ['st']
 
-    def __init__(self, logger, cmdargs = None):
+    def __init__(self, logger, cmdargs=None):
         self.jobids = None
         self.indentation = '\t\t'
         SubCommand.__init__(self, logger, cmdargs)
@@ -43,10 +41,10 @@ class status(SubCommand):
     def __call__(self):
         # Get all of the columns from the database for a certain task
         taskname = self.cachedinfo['RequestName']
-        uri = getUrl(self.instance, resource = 'task')
-        serverFactory = CRABClient.Emulator.getEmulator('rest')
-        server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
-        crabDBInfo, _, _ =  server.get(uri, data = {'subresource': 'search', 'workflow': taskname})
+        uriNoApi = getUrl(self.instance)
+        uri = getUrl(self.instance, resource='task')
+        server = self.RESTServer
+        crabDBInfo, _, _ = server.get(uri, data={'subresource':'search', 'workflow':taskname})
         self.logger.debug("Got information from server oracle database: %s", crabDBInfo)
 
         # Until the task lands on a schedd we'll show the status from the DB
@@ -74,16 +72,16 @@ class status(SubCommand):
 
         if not webdir:
             # Query condor through the server for information about this task
-            uri = getUrl(self.instance, resource = 'workflow')
-            params = {'subresource': 'taskads', 'workflow': taskname}
+            uri = getUrl(self.instance, resource='workflow')
+            params = {'subresource':'taskads', 'workflow':taskname}
 
-            res = server.get(uri, data = params)[0]['result'][0]
+            res = server.get(uri, data=params)[0]['result'][0]
             # JobStatus 5 = Held
             if res['JobStatus'] == '5' and 'DagmanHoldReason' in res:
                 # If we didn't find a webdir in the DB and the DAG is held,
                 # the task bootstrapping failed before or during the webdir
                 # upload and the reason should be printed.
-                failureMsg  = "The task failed to bootstrap on the Grid scheduler."
+                failureMsg = "The task failed to bootstrap on the Grid scheduler."
                 failureMsg += " Please send an e-mail to %s." % (FEEDBACKMAIL)
                 failureMsg += "\nHold reason: %s" % (res['DagmanHoldReason'])
                 self.logger.info(failureMsg)
@@ -99,7 +97,8 @@ class status(SubCommand):
 
         self.logger.debug("Webdir is located at %s", webdir)
 
-        proxiedWebDir = getProxiedWebDir(taskname, self.serverurl, uri, self.proxyfilename, self.logger.debug)
+        proxiedWebDir = getProxiedWebDir(RESTServer=self.RESTServer, task=taskname, uriNoApi=uriNoApi, logFunction=self.logger.debug)
+
         if not proxiedWebDir:
             msg = "Failed to get the proxied webdir from CRABServer. "
             msg += "\nWill fall back to the regular webdir url for file downloads "
@@ -140,7 +139,7 @@ class status(SubCommand):
                                           shortResult['numUnpublishable'], asourl, asodb, taskname, user, crabDBInfo)
         self.printErrors(statusCacheInfo, automaticSplitt)
 
-        if not self.options.long and not self.options.sort: # already printed for these options 
+        if not self.options.long and not self.options.sort:  # already printed for these options
             self.printDetails(statusCacheInfo, automaticSplitt, self.jobids, True, maxMemory, maxJobRuntime, numCores)
 
         if self.options.summary:
@@ -149,7 +148,7 @@ class status(SubCommand):
             # If user correctly passed some jobid CSVs to use in the status --long, self.jobids
             # will be a list of strings already parsed from the input by the validateOptions()
             if self.jobids:
-                ## Check the format of the jobids option.
+                # Check the format of the jobids option.
                 if self.options.jobids:
                     jobidstuple = validateJobids(self.options.jobids, not automaticSplitt)
                     self.jobids = [str(jobid) for (_, jobid) in jobidstuple]
@@ -166,10 +165,10 @@ class status(SubCommand):
 
         return statusDict
 
-    def makeStatusReturnDict(self, crabDBInfo, combinedStatus, dagStatus = '',
-                             statusFailureMsg = '', shortResult = None,
-                             statusCacheInfo = None, pubStatus = None,
-                             proxiedWebDir = ''):
+    def makeStatusReturnDict(self, crabDBInfo, combinedStatus, dagStatus='',
+                             statusFailureMsg='', shortResult=None,
+                             statusCacheInfo=None, pubStatus=None,
+                             proxiedWebDir=''):
         """ Create a dictionary which is mostly identical to the dictionary
             that was being returned by the old status (plus a few other keys
             needed by the other client commands). This is to ensure backward
@@ -234,11 +233,11 @@ class status(SubCommand):
     def publicationStatus(self, workflow, asourl, asodb, user):
         """Gets some information about the state of publication of jobs from the server.
         """
-        uri = getUrl(self.instance, resource = 'workflow')
-        serverFactory = CRABClient.Emulator.getEmulator('rest')
-        server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
+        uri = getUrl(self.instance, resource='workflow')
+        server = self.RESTServer
 
-        pubInfo, _, _ =  server.get(uri, data = {'subresource': 'publicationstatus', 'workflow': workflow, 'asourl': asourl, 'asodb': asodb, 'username': user})
+        pubInfo, _, _ = server.get(uri, data={'subresource':'publicationstatus', 'workflow':workflow,
+                                              'asourl':asourl, 'asodb':asodb, 'username':user})
 
         # Dictionary received from the server should have a structure like this:
         # {"result": [
@@ -323,11 +322,11 @@ class status(SubCommand):
         command = getColumn(crabDBInfo, 'tm_task_command')
         warnings = literal_eval(getColumn(crabDBInfo, 'tm_task_warnings'))
         failure = getColumn(crabDBInfo, 'tm_task_failure')
-        dbStartTime = getColumn(crabDBInfo,'tm_start_time')
+        dbStartTime = getColumn(crabDBInfo, 'tm_start_time')
 
         self.logger.info("CRAB project directory:\t\t%s" % (self.requestarea))
         self.logger.info("Task name:\t\t\t%s" % self.cachedinfo['RequestName'])
-        self.logger.info("Grid scheduler - Task Worker:\t%s - %s" % (schedd,twname))
+        self.logger.info("Grid scheduler - Task Worker:\t%s - %s" % (schedd, twname))
         msg = "Status on the CRAB server:\t"
         if 'FAILED' in statusToPr:
             msg += "%s%s%s" % (colors.RED, statusToPr, colors.NORMAL)
@@ -346,13 +345,13 @@ class status(SubCommand):
         # Show server and dashboard URL for the task.
         taskname = urllib.quote(self.cachedinfo['RequestName'])
 
-        ## CRAB Server UI URL for this task is always useful
+        # CRAB Server UI URL for this task is always useful
         #crabServerUIURL has a format like "https://cmsweb.cern.ch/crabserver/ui/task/" + taskname
         crabServerUIURL = "https://" + self.serverurl + "/crabserver/ui/task/" + taskname
         msg = "%sTask URL to use for HELP:\t%s%s" % (colors.GREEN, crabServerUIURL, colors.NORMAL)
         self.logger.info(msg)
 
-        ## Dashboard monitoring URL only makes sense if submitted to schedd
+        # Dashboard monitoring URL only makes sense if submitted to schedd
         if schedd:
             # define start and end of timer range for dashboard search: from task creation time to now
             # grafana takes time as milliseconds fom epoch
@@ -374,7 +373,7 @@ class status(SubCommand):
             for warningMsg in warnings:
                 self.logger.warning("%sWarning%s:%s%s" % (colors.RED, colors.NORMAL, warningIndent, warningMsg.replace('\n', '\n\t'+warningIndent)))
         if failure and 'FAILED' in statusToPr:
-            msg  = "%sFailure message from server%s:" % (colors.RED, colors.NORMAL)
+            msg = "%sFailure message from server%s:" % (colors.RED, colors.NORMAL)
             msg += "\t%s" % (failure.replace('\n', '\n\t\t\t\t'))
             self.logger.error(msg)
 
@@ -386,11 +385,14 @@ class status(SubCommand):
         if wrongJobIds:
             raise ConfigurationException("The following jobids were not found in the task: %s" % wrongJobIds)
 
-    def printDetails(self, dictresult, automaticSplitt, jobids=None, quiet=False, maxMemory=parametersMapping['on-server']['maxmemory']['default'], maxJobRuntime=parametersMapping['on-server']['maxjobruntime']['default'], numCores=parametersMapping['on-server']['numcores']['default']):
+    def printDetails(self, dictresult, automaticSplitt, jobids=None, quiet=False,
+                     maxMemory=parametersMapping['on-server']['maxmemory']['default'],
+                     maxJobRuntime=parametersMapping['on-server']['maxjobruntime']['default'],
+                     numCores=parametersMapping['on-server']['numcores']['default']):
         """ Print detailed information about a task and each job.
         """
         sortdict = {}
-        outputMsg  = "\nExtended Job Status Table:\n"
+        outputMsg = "\nExtended Job Status Table:\n"
         outputMsg += "\n%4s %-12s %-20s %10s %10s %10s %10s %10s %10s %15s" \
                    % ("Job", "State", "Most Recent Site", "Runtime", "Mem (MB)", "CPU %", "Retries", "Restarts", "Waste", "Exit Code")
         mem_cnt = 0
@@ -476,7 +478,8 @@ class status(SubCommand):
             sortdict[str(jobid)] = {'state': state, 'site': site, 'runtime': wall_str, 'memory': mem, 'cpu': cpu, \
                                     'retries': info.get('Retries', 0), 'restarts': info.get('Restarts', 0), 'waste': waste, 'exitcode': ec}
             outputMsg += "\n%4s %-12s %-20s %10s %10s %10s %10s %10s %10s %15s" \
-                       % (jobid, state, site, wall_str, mem, cpu, info.get('Retries', 0), info.get('Restarts', 0), waste, ' Postprocessing failed' if ec == '90000' else ec)
+                       % (jobid, state, site, wall_str, mem, cpu, info.get('Retries', 0),
+                          info.get('Restarts', 0), waste, ' Postprocessing failed' if ec == '90000' else ec)
         if not quiet:
             self.logger.info(outputMsg)
 
@@ -492,7 +495,8 @@ class status(SubCommand):
         if mem_cnt or run_cnt:
             # Print a summary with memory/cpu usage.
             hint = "improve the jobs splitting (e.g. config.Data.splitting = 'Automatic') in a new task"
-            usage = {'memory':[mem_max,maxMemory,0.7,parametersMapping['on-server']['maxmemory']['default'],'MB'], 'runtime':[run_max/60,maxJobRuntime,0.3,0,'min']}
+            usage = {'memory':[mem_max, maxMemory, 0.7, parametersMapping['on-server']['maxmemory']['default'], 'MB'],
+                     'runtime':[run_max/60, maxJobRuntime, 0.3, 0, 'min']}
             for param, values in usage.items():
                 if values[0] and values[1] > values[3]:
                     if values[0] < values[2]*values[1]:
@@ -611,46 +615,46 @@ class status(SubCommand):
                 {'10': {'State': 'running'}, '1': {'State': 'failed', 'Error' : [10,'error message']}, '3': {'State': 'failed', 'Error' : [10,'error message']} ...
             and group the errors per exit code counting how many jobs exited with a certain exit code, and print the summary
         """
-        ## In general, there are N_{ec}_{em} jobs that failed with exit code ec and
-        ## error message em.
-        ## Since there may be different error messages for a given exit code, we use a
-        ## map containing the exit code as key and as value a list with the different
-        ## exit messages. For example:
-        ## ec_errors = { '1040' : ["Failed due to bla", "Failed due to blabla"],
-        ##              '60302' : ["File X does not exist", "File Y does not exist"]
-        ##             }
+        # In general, there are N_{ec}_{em} jobs that failed with exit code ec and
+        # error message em.
+        # Since there may be different error messages for a given exit code, we use a
+        # map containing the exit code as key and as value a list with the different
+        # exit messages. For example:
+        # ec_errors = { '1040' : ["Failed due to bla", "Failed due to blabla"],
+        #              '60302' : ["File X does not exist", "File Y does not exist"]
+        #             }
         ec_errors = {}
-        ## We also want a map containing again the exit code as key, but as value a list
-        ## with the lists of job ids that failed with given exit code and error message.
-        ## For example:
-        ## ec_jobids = { '1040' : [[1, 2, 3, 4, 5], [10, 12, 14]],
-        ##              '60302' : [[6, 7, 8, 9, 10], [11, 13, 15]]
-        ##             }
-        ## where jobs [1, 2, 3, 4, 5] failed with error message "Failed due to bla",
-        ## jobs [10, 12, 14] with "Failed due to blabla", jobs [6, 7, 8, 9, 10] with
-        ## "File X does not exist" and jobs [11, 13, 15] with "File Y does not exist".
+        # We also want a map containing again the exit code as key, but as value a list
+        # with the lists of job ids that failed with given exit code and error message.
+        # For example:
+        # ec_jobids = { '1040' : [[1, 2, 3, 4, 5], [10, 12, 14]],
+        #              '60302' : [[6, 7, 8, 9, 10], [11, 13, 15]]
+        #             }
+        # where jobs [1, 2, 3, 4, 5] failed with error message "Failed due to bla",
+        # jobs [10, 12, 14] with "Failed due to blabla", jobs [6, 7, 8, 9, 10] with
+        # "File X does not exist" and jobs [11, 13, 15] with "File Y does not exist".
         ec_jobids = {}
-        ## We also want a map containing again the exit code as key, but as value a list
-        ## with the numbers N_{ec}_{em}. For example:
-        ## ec_numjobs = { '1040' : [N_{1040}_{"Failed due to bla"}, N_{1040}_{"Failed due to blabla"}],
-        ##               '60302' : [N_{60302}_{"File X does not exist"}, N_{60302}_{"File Y does not exist"}]
-        ##              }
-        ## Actually, for later convenience when sorting by most frequent error messages
-        ## for each exit code (i.e. sorting by N_{ec}_{em}), we add a second number
-        ## representing the position of the error message em in the corresponding list
-        ## in ec_errors[ec]. For example:
-        ## ec_numjobs = { '1040' : [(N_{1040}_{"Failed due to bla"}, 1), (N_{1040}_{"Failed due to blabla"}, 2)],
-        ##               '60302' : [(N_{60302}_{"File X does not exist"}, 1), (N_{60302}_{"File Y does not exist"}, 2)]
-        ##              }
-        ## We will later sort ec_numjobs[ec], which sorts according to the first number
-        ## in the 2-tuples. So the sorted ec_numjobs dictionary could be for example:
-        ## ec_numjobs = { '1040' : [(N_{1040}_{"Failed due to bla"}, 1), (N_{1040}_{"Failed due to blabla"}, 2)],
-        ##               '60302' : [(N_{60302}_{"File Y does not exist"}, 2), (N_{60302}_{"File X does not exist"}, 1)]
-        ##              }
-        ## The second number in the 2-tuples allows to get the error message from
-        ## ec_errors[ec]: given the sorted ec_numjobs dictionary, for each exit code
-        ## (i.e. for each key) ec in the dictionary, the most frequent error messages
-        ## are ec_errors[ec][ec_numjobs[ec][0][1]], ec_errors[ec][ec_numjobs[ec][1][1]], etc.
+        # We also want a map containing again the exit code as key, but as value a list
+        # with the numbers N_{ec}_{em}. For example:
+        # ec_numjobs = { '1040' : [N_{1040}_{"Failed due to bla"}, N_{1040}_{"Failed due to blabla"}],
+        #               '60302' : [N_{60302}_{"File X does not exist"}, N_{60302}_{"File Y does not exist"}]
+        #              }
+        # Actually, for later convenience when sorting by most frequent error messages
+        # for each exit code (i.e. sorting by N_{ec}_{em}), we add a second number
+        # representing the position of the error message em in the corresponding list
+        # in ec_errors[ec]. For example:
+        # ec_numjobs = { '1040' : [(N_{1040}_{"Failed due to bla"}, 1), (N_{1040}_{"Failed due to blabla"}, 2)],
+        #               '60302' : [(N_{60302}_{"File X does not exist"}, 1), (N_{60302}_{"File Y does not exist"}, 2)]
+        #              }
+        # We will later sort ec_numjobs[ec], which sorts according to the first number
+        # in the 2-tuples. So the sorted ec_numjobs dictionary could be for example:
+        # ec_numjobs = { '1040' : [(N_{1040}_{"Failed due to bla"}, 1), (N_{1040}_{"Failed due to blabla"}, 2)],
+        #               '60302' : [(N_{60302}_{"File Y does not exist"}, 2), (N_{60302}_{"File X does not exist"}, 1)]
+        #              }
+        # The second number in the 2-tuples allows to get the error message from
+        # ec_errors[ec]: given the sorted ec_numjobs dictionary, for each exit code
+        # (i.e. for each key) ec in the dictionary, the most frequent error messages
+        # are ec_errors[ec][ec_numjobs[ec][0][1]], ec_errors[ec][ec_numjobs[ec][1][1]], etc.
         ec_numjobs = {}
         unknown = 0
         are_failed_jobs = False
@@ -684,9 +688,9 @@ class status(SubCommand):
                 else:
                     unknown += 1
         if are_failed_jobs:
-            ## If option --sort=exitcodes was specified, show the error summary with the
-            ## exit codes sorted. Otherwise show it sorted from most frequent exit code to
-            ## less frequent.
+            # If option --sort=exitcodes was specified, show the error summary with the
+            # exit codes sorted. Otherwise show it sorted from most frequent exit code to
+            # less frequent.
             exitCodes = []
             if self.options.sort == "exitcode":
                 for ec in ec_numjobs.keys():
@@ -705,29 +709,29 @@ class status(SubCommand):
                 for _, ec in numjobsec:
                     if ec not in exitCodes:
                         exitCodes.append(ec)
-            ## Sort the job ids in ec_jobids. Remember that ec_jobids[ec] is a list of lists
-            ## of job ids, and that each job id is a string.
+            # Sort the job ids in ec_jobids. Remember that ec_jobids[ec] is a list of lists
+            # of job ids, and that each job id is a string.
             for ec in ec_jobids.keys():
                 for i in range(len(ec_jobids[ec])):
                     ec_jobids[ec][i] = [str(y) for y in sorted([x for x in ec_jobids[ec][i]], cmp=compareJobids)]
-            ## Error summary header.
+            # Error summary header.
             msg = "\nError Summary:"
             if not self.options.verboseErrors:
                 msg += " (use crab status --verboseErrors for details about the errors)"
-            ## Auxiliary variable for the layout of the error summary messages.
+            # Auxiliary variable for the layout of the error summary messages.
             totnumjobs = len(dictresult)
             ndigits = int(math.ceil(math.log(totnumjobs+1, 10)))
-            ## For each exit code:
+            # For each exit code:
             for i, ec in enumerate(exitCodes):
-                ## Sort the error messages for this exit code from most frequent one to less
-                ## frequent one.
+                # Sort the error messages for this exit code from most frequent one to less
+                # frequent one.
                 numjobs = sorted(ec_numjobs[ec])
                 numjobs.reverse()
-                ## Count the total number of failed jobs with this exit code.
+                # Count the total number of failed jobs with this exit code.
                 count = 0
                 for nj, _ in numjobs:
                     count += nj
-                ## Exit code 90000 means failure in postprocessing stage.
+                # Exit code 90000 means failure in postprocessing stage.
                 if ec == 90000:
                     msg += ("\n\n%" + str(ndigits) + "s jobs failed in postprocessing step%s") \
                          % (count, ":" if self.options.verboseErrors else "")
@@ -735,15 +739,15 @@ class status(SubCommand):
                     msg += ("\n\n%" + str(ndigits) + "s jobs failed with exit code %s%s") \
                          % (count, ec, ":" if self.options.verboseErrors else "")
                 if self.options.verboseErrors:
-                    ## Costumize the message depending on whether there is only one error message or
-                    ## more than one.
+                    # Costumize the message depending on whether there is only one error message or
+                    # more than one.
                     if len(ec_errors[ec]) == 1:
                         error_msg = ec_errors[ec][0]
                         msg += ("\n\n\t%" + str(ndigits) + "s jobs failed with following error message:") % (nj)
                         msg += " (for example, job %s)" % (ec_jobids[ec][0][0])
                         msg += "\n\n\t\t" + "\n\t\t".join([line for line in error_msg.split('\n') if line])
                     else:
-                        ## Show up to three different error messages.
+                        # Show up to three different error messages.
                         remainder = count
                         if len(ec_errors[ec]) > 3:
                             msg += "\n\t(Showing only the 3 most frequent errors messages for this exit code)"
@@ -834,7 +838,7 @@ class status(SubCommand):
                     valuedict[value] = [jobid]
                 else:
                     valuedict[value].append(jobid)
-            elif sortby in ['state' , 'site']:
+            elif sortby in ['state', 'site']:
                 value = sortdict[jobid][sortby]
                 if value not in valuedict:
                     valuedict[value] = [jobid]
@@ -854,7 +858,7 @@ class status(SubCommand):
                 sortmatrix.append((realvalue, value, jobid))
                 sortmatrix.sort()
         if sortby in ['exitcode']:
-            msg  = "Jobs sorted by exit code:\n"
+            msg = "Jobs sorted by exit code:\n"
             msg += "\n%-20s %-20s\n" % ('Exit Code', 'Job Id(s)')
             for value in sortmatrix:
                 if value == 999999:
@@ -864,8 +868,8 @@ class status(SubCommand):
                 jobids = sorted(valuedict[value], cmp=compareJobids)
                 msg += "\n%-20s %-s" % (esignvalue, ", ".join(jobids))
             self.logger.info(msg)
-        elif sortby in ['state' , 'site']:
-            msg  = "Jobs sorted by %s:\n" % (sortby)
+        elif sortby in ['state', 'site']:
+            msg = "Jobs sorted by %s:\n" % (sortby)
             msg += "\n%-20s %-20s\n" % (sortby.title(), 'Job Id(s)')
             for value in valuedict:
                 msg += "\n%-20s %-s" % (value, ", ".join(valuedict[value]))
@@ -885,8 +889,8 @@ class status(SubCommand):
                     esignvalue = value[0]
                 msg += "%10s %10s\n" % (str(esignvalue).center(10), value[1].center(10))
             self.logger.info(msg)
-        elif sortby in ['runtime' ,'waste']:
-            msg  = "Jobs sorted by %s used:\n" % (sortby)
+        elif sortby in ['runtime', 'waste']:
+            msg = "Jobs sorted by %s used:\n" % (sortby)
             msg += "%-10s %-5s\n" % (sortby.title(), "Job Id")
             for value in sortmatrix:
                 msg += "%-10s %-5s\n" % (value[1], value[2].center(5))
@@ -894,7 +898,7 @@ class status(SubCommand):
 
         self.logger.info('')
 
-    def printOutputDatasets(self, outputDatasets, includeDASURL = False):
+    def printOutputDatasets(self, outputDatasets, includeDASURL=False):
         """
         Function to print the list of output datasets (with or without the DAS URL).
         """
@@ -926,59 +930,59 @@ class status(SubCommand):
         pubInfo['publication'] = pubStatus.get('status', {})
         pubInfo['publicationFailures'] = pubStatus.get('failure_reasons', {})
 
-        ## The output datasets are written into the Task DB by the post-job
-        ## when uploading the output files metadata.
+        # The output datasets are written into the Task DB by the post-job
+        # when uploading the output files metadata.
         outdatasets = literal_eval(getColumn(crabDBInfo, 'tm_output_dataset') if getColumn(crabDBInfo, 'tm_output_dataset') else 'None')
         pubInfo['outdatasets'] = outdatasets
         pubInfo['jobsPerStatus'] = jobsPerStatus
 
         if 'publication' not in pubInfo:
             return pubStatus
-        ## If publication was disabled, print a pertinent message and return.
+        # If publication was disabled, print a pertinent message and return.
         if 'disabled' in pubInfo['publication']:
             msg = "\nNo publication information (publication has been disabled in the CRAB configuration file)"
             self.logger.info(msg)
             return pubStatus
-        ## List of output datasets that are going to be (or are already) published. This
-        ## list is written into the Tasks DB by the post-job when it does the upload of
-        ## the output files metadata. This means that the list will be empty until one
-        ## of the post-jobs will finish executing.
+        # List of output datasets that are going to be (or are already) published. This
+        # list is written into the Tasks DB by the post-job when it does the upload of
+        # the output files metadata. This means that the list will be empty until one
+        # of the post-jobs will finish executing.
         outputDatasets = pubInfo.get('outdatasets')
 
-        ## If publication information is not available yet, print a pertinent message
-        ## (print first the list of output datasets, without the DAS URL) and return.
+        # If publication information is not available yet, print a pertinent message
+        # (print first the list of output datasets, without the DAS URL) and return.
         if not pubInfo['publication']:
             self.printOutputDatasets(outputDatasets)
             msg = "\nNo publication information available yet"
             self.logger.info(msg)
             return pubStatus
-        ## Case in which there was an error in retrieving the publication status.
+        # Case in which there was an error in retrieving the publication status.
         pubSource = "\n(from CRAB internal bookkeeping in transferdb)"
         if 'error' in pubInfo['publication']:
             msg = "\nPublication status:\t\t%s" % (pubInfo['publication']['error'])
             msg += pubSource
             self.logger.info(msg)
-            ## Print the output datasets with the corresponding DAS URL.
-            self.printOutputDatasets(outputDatasets, includeDASURL = True)
+            # Print the output datasets with the corresponding DAS URL.
+            self.printOutputDatasets(outputDatasets, includeDASURL=True)
             return pubStatus
         if pubInfo['publication'] and outputDatasets:
             states = pubInfo['publication']
-            ## Don't consider publication states for which 0 files are in this state.
+            # Don't consider publication states for which 0 files are in this state.
             states_tmp = states.copy()
             for s in states:
                 if states[s] == 0:
                     del states_tmp[s]
             states = states_tmp.copy()
-            ## Count the total number of files to publish. For this we count the number of
-            ## jobs and the number of files to publish per job (which is equal to the number
-            ## of output datasets produced by the task, because, when multiple EDM files are
-            ## produced, each EDM file goes into a different output dataset).
+            # Count the total number of files to publish. For this we count the number of
+            # jobs and the number of files to publish per job (which is equal to the number
+            # of output datasets produced by the task, because, when multiple EDM files are
+            # produced, each EDM file goes into a different output dataset).
             numJobs = sum(pubInfo['jobsPerStatus'].values()) - numProbes - numUnpublishable
             numOutputDatasets = len(outputDatasets)
             numFilesToPublish = numJobs * numOutputDatasets
-            ## Count how many of these files have not yet been considered for publication.
+            # Count how many of these files have not yet been considered for publication.
             states['unsubmitted'] = numFilesToPublish - sum(states.values())
-            ## Print the publication status.
+            # Print the publication status.
             statesList = sorted(states)
             msg = "\nPublication status of {0} dataset(s):\t{1}{2}{3}".format(numOutputDatasets, self._printState(statesList[0], 13), self.indentation, \
                                                                               self._percentageString(statesList[0], states[statesList[0]], numFilesToPublish))
@@ -988,7 +992,7 @@ class status(SubCommand):
                     msg += "\n\t\t\t\t\t{0}{1}{2}".format(self._printState(jobStatus, 13), self.indentation, \
                                                           self._percentageString(jobStatus, states[jobStatus], numFilesToPublish))
             self.logger.info(msg)
-            ## Print the publication errors.
+            # Print the publication errors.
             if pubInfo.get('publicationFailures'):
                 msg = "\nPublication error summary:"
                 if 'error' in pubInfo['publicationFailures']:
@@ -998,8 +1002,8 @@ class status(SubCommand):
                     for failureReason, numFailedFiles in pubInfo['publicationFailures']['result']:
                         msg += ("\n\n\t%" + str(ndigits) + "s files failed to publish with following error message:\n\n\t\t%s") % (numFailedFiles, failureReason)
                 self.logger.info(msg)
-            ## Print the output datasets with the corresponding DAS URL.
-            self.printOutputDatasets(outputDatasets, includeDASURL = True)
+            # Print the output datasets with the corresponding DAS URL.
+            self.printOutputDatasets(outputDatasets, includeDASURL=True)
 
         return pubStatus
 
@@ -1012,33 +1016,33 @@ class status(SubCommand):
         """
 
         self.parser.add_option("--long",
-                               dest = "long",
-                               default = False,
-                               action = "store_true",
-                               help = "Print one status line per job.")
+                               dest="long",
+                               default=False,
+                               action="store_true",
+                               help="Print one status line per job.")
         self.parser.add_option("--sort",
-                               dest = "sort",
-                               default = None,
-                               help = "Sort failed jobs by 'state', 'site', 'runtime', 'memory', 'cpu', 'retries', 'waste' or 'exitcode'.")
+                               dest="sort",
+                               default=None,
+                               help="Sort failed jobs by 'state', 'site', 'runtime', 'memory', 'cpu', 'retries', 'waste' or 'exitcode'.")
         self.parser.add_option("--json",
-                               dest = "json",
-                               default = False,
-                               action = "store_true",
-                               help = "Print status results in JSON format.")
+                               dest="json",
+                               default=False,
+                               action="store_true",
+                               help="Print status results in JSON format.")
         self.parser.add_option("--summary",
-                               dest = "summary",
-                               default = False,
-                               action = "store_true",
-                               help = "Print site summary.")
+                               dest="summary",
+                               default=False,
+                               action="store_true",
+                               help="Print site summary.")
         self.parser.add_option("--verboseErrors",
-                               dest = "verboseErrors",
-                               default = False,
-                               action = "store_true",
-                               help = "Expand error summary, showing error messages for all failed jobs.")
+                               dest="verboseErrors",
+                               default=False,
+                               action="store_true",
+                               help="Expand error summary, showing error messages for all failed jobs.")
         self.parser.add_option("--jobids",
-                               dest = "jobids",
-                               default = None,
-                               help = "The ids of jobs to print in crab status --long or --sort."
+                               dest="jobids",
+                               default=None,
+                               help="The ids of jobs to print in crab status --long or --sort." + \
                                     " Comma separated list of integers.")
 
 
@@ -1048,7 +1052,7 @@ class status(SubCommand):
         if self.options.sort is not None:
             sortOpts = ["state", "site", "runtime", "memory", "cpu", "retries", "waste", "exitcode"]
             if self.options.sort not in sortOpts:
-                msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
+                msg = "%sError%s:" % (colors.RED, colors.NORMAL)
                 msg += " Only the following values are accepted for --sort option: %s" % (sortOpts)
                 raise ConfigurationException(msg)
 
@@ -1068,4 +1072,3 @@ def to_hms(val):
     val -= m
     h = val / 60
     return "%d:%02d:%02d" % (h, m, s)
-

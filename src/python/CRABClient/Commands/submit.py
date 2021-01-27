@@ -11,15 +11,14 @@ import urllib
 import tarfile
 import tempfile
 import subprocess
-from string import upper
 
 import CRABClient.Emulator
-from CRABClient import __version__
 from CRABClient.ClientUtilities import DBSURLS
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientMapping import parametersMapping, getParamDefaultValue
 from CRABClient.ClientExceptions import ClientException, RESTCommunicationException
-from CRABClient.ClientUtilities import getJobTypes, createCache, addPlugin, server_info, colors, getUrl, setSubmitParserOptions, validateSubmitOptions, checkStatusLoop
+from CRABClient.ClientUtilities import getJobTypes, createCache, addPlugin, server_info, colors,\
+    getUrl, setSubmitParserOptions, validateSubmitOptions, checkStatusLoop
 
 from ServerUtilities import MAX_MEMORY_PER_CORE, MAX_MEMORY_SINGLE_CORE
 
@@ -40,8 +39,6 @@ class submit(SubCommand):
 
     def __call__(self):
         self.logger.debug("Started submission")
-        serverFactory = CRABClient.Emulator.getEmulator('rest')
-
         uniquerequestname = None
 
         self.logger.debug("Working on %s" % str(self.requestarea))
@@ -93,15 +90,15 @@ class submit(SubCommand):
 
         jobconfig = {}
         #get the backend URLs from the server external configuration
-        serverBackendURLs = server_info(subresource='backendurls', serverurl=self.serverurl,
-                                        proxyfilename=self.proxyfilename,
-                                        baseurl=getUrl(self.instance, resource='info'), logger=self.logger)
+
+        uriNoApi = getUrl(self.instance)
+        serverBackendURLs = server_info(RESTServer=self.RESTServer, uriNoApi=uriNoApi, subresource='backendurls')
         #if cacheSSL is specified in the server external configuration we will use it to upload the sandbox
         filecacheurl = serverBackendURLs['cacheSSL'] if 'cacheSSL' in serverBackendURLs else None
         pluginParams = [self.configuration, self.proxyfilename, self.logger, os.path.join(self.requestarea, 'inputs')]
         crab_job_types = getJobTypes()
-        if upper(self.configreq['jobtype']) in crab_job_types:
-            plugjobtype = crab_job_types[upper(self.configreq['jobtype'])](*pluginParams)
+        if self.configreq['jobtype'].upper() in crab_job_types:
+            plugjobtype = crab_job_types[self.configreq['jobtype'].upper()](*pluginParams)
             dummy_inputfiles, jobconfig = plugjobtype.run(filecacheurl)
         else:
             fullname = self.configreq['jobtype']
@@ -113,11 +110,12 @@ class submit(SubCommand):
         if self.configreq['publication']:
             non_edm_files = jobconfig['tfileoutfiles'] + jobconfig['addoutputfiles']
             if non_edm_files:
-                msg = "%sWarning%s: The following output files will not be published, as they are not EDM files: %s" % (colors.RED, colors.NORMAL, non_edm_files)
+                msg = "%sWarning%s: The following output files will not be published, as they are not EDM files: %s"\
+                      % (colors.RED, colors.NORMAL, non_edm_files)
                 self.logger.warning(msg)
 
         self.configreq.update(jobconfig)
-        server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
+        server = self.RESTServer
 
         self.logger.info("Sending the request to the server at %s" % self.serverurl)
         self.logger.debug("Submitting %s " % str(self.configreq))
@@ -127,7 +125,7 @@ class submit(SubCommand):
         self.configreq_encoded = self._encodeRequest(self.configreq, listParams)
         self.logger.debug('Encoded submit request: %s' % (self.configreq_encoded))
 
-        dictresult, status, reason = server.put(self.uri, data = self.configreq_encoded)
+        dictresult, status, reason = server.put(self.uri, data=self.configreq_encoded)
         self.logger.debug("Result: %s" % dictresult)
         if status != 200:
             msg = "Problem sending the request:\ninput:%s\noutput:%s\nreason:%s" % (str(self.configreq), str(dictresult), str(reason))
@@ -159,7 +157,7 @@ class submit(SubCommand):
 
         self.logger.debug("About to return")
 
-        return {'requestname': self.requestname , 'uniquerequestname': uniquerequestname}
+        return {'requestname':self.requestname, 'uniquerequestname':uniquerequestname}
 
 
     def setOptions(self):
@@ -242,19 +240,19 @@ class submit(SubCommand):
         if external_plugin_name:
             addPlugin(external_plugin_name) # Do we need to do this here?
         if crab_plugin_name:
-            if upper(crab_plugin_name) not in crab_job_types:
+            if crab_plugin_name.upper() not in crab_job_types:
                 msg = "Invalid CRAB configuration: Parameter JobType.pluginName has an invalid value ('%s')." % (crab_plugin_name)
                 msg += "\nAllowed values are: %s." % (", ".join(['%s' % job_type for job_type in crab_job_types.keys()]))
                 return False, msg
-            msg  = "Will use CRAB %s plugin" % ("Analysis" if upper(crab_plugin_name) == 'ANALYSIS' else "PrivateMC")
-            msg += " (i.e. will run %s job type)." % ("an analysis" if upper(crab_plugin_name) == 'ANALYSIS' else "a MC generation")
+            msg = "Will use CRAB %s plugin" % ("Analysis" if crab_plugin_name.upper() == 'ANALYSIS' else "PrivateMC")
+            msg += " (i.e. will run %s job type)." % ("an analysis" if crab_plugin_name.upper() == 'ANALYSIS' else "a MC generation")
             self.logger.debug(msg)
 
         ## Check that the requested memory does not exceed the allowed maximum.
         nCores = getattr(self.configuration.JobType, 'numCores', 1)
         absMaxMemory = max(MAX_MEMORY_SINGLE_CORE, nCores*MAX_MEMORY_PER_CORE)
-        self.defaultMaxMemory = parametersMapping['on-server']['maxmemory']['default']
-        self.maxMemory = getattr(self.configuration.JobType, 'maxMemoryMB', self.defaultMaxMemory)
+        self.defaultMaxMemory = parametersMapping['on-server']['maxmemory']['default']  # pylint: disable=attribute-defined-outside-init
+        self.maxMemory = getattr(self.configuration.JobType, 'maxMemoryMB', self.defaultMaxMemory)  # pylint: disable=attribute-defined-outside-init
         if self.maxMemory > absMaxMemory:
             msg = "Task requests %s MB of memory, above the allowed maximum of %s" % (self.maxMemory, absMaxMemory)
             msg += " for a %d core(s) job.\n" % nCores
@@ -263,7 +261,7 @@ class submit(SubCommand):
         ## Check that the particular combination (Data.publication = True, General.transferOutputs = False) is not specified.
         if getattr(self.configuration.Data, 'publication', getParamDefaultValue('Data.publication')) and \
            not getattr(self.configuration.General, 'transferOutputs', getParamDefaultValue('General.transferOutputs')):
-            msg  = "Invalid CRAB configuration: Data.publication is True, but General.transferOutputs is False."
+            msg = "Invalid CRAB configuration: Data.publication is True, but General.transferOutputs is False."
             msg += "\nPublication can not be performed if the output files are not transferred to a permanent storage."
             return False, msg
 
@@ -282,7 +280,7 @@ class submit(SubCommand):
                 dbs_urls_aliases = DBSURLS['reader'].keys()
                 dbs_urls = DBSURLS['reader'].values()
                 if (self.configuration.Data.inputDBS not in dbs_urls_aliases) and (self.configuration.Data.inputDBS.rstrip('/') not in dbs_urls):
-                    msg  = "Invalid CRAB configuration: Parameter Data.inputDBS has an invalid value ('%s')." % (self.configuration.Data.inputDBS)
+                    msg = "Invalid CRAB configuration: Parameter Data.inputDBS has an invalid value ('%s')." % (self.configuration.Data.inputDBS)
                     msg += "\nAllowed values are: "
                     msg += "\n                    ".join(["'%s' ('%s')" % (alias, url) for alias, url in DBSURLS['reader'].iteritems()])
                 local_dbs_urls_aliases = ['phys01', 'phys02', 'phys03']
@@ -293,7 +291,7 @@ class submit(SubCommand):
                     inputDataset_tier = inputDataset_parts[-1] if len(inputDataset_parts) == 3 else None
                     user_data_tiers = ['USER']
                     if inputDataset_tier not in user_data_tiers:
-                        msg  = "Invalid CRAB configuration: A local DBS instance '%s' was specified for reading an input dataset of tier %s." \
+                        msg = "Invalid CRAB configuration: A local DBS instance '%s' was specified for reading an input dataset of tier %s." \
                                % (self.configuration.Data.inputDBS, inputDataset_tier)
                         msg += "\nDatasets of tier different than %s must be read from the global DBS instance; this is, set Data.inputDBS = 'global'." \
                                % (", ".join(user_data_tiers[:-1]) + " or " + user_data_tiers[-1] if len(user_data_tiers) > 1 else user_data_tiers[0])
@@ -302,7 +300,8 @@ class submit(SubCommand):
                     if inputDBS_default:
                         inputDBS_default, inputDBS_default_alias = self.getDBSURLAndAlias(inputDBS_default, 'reader')
                         if inputDBS_default and inputDBS_default_alias:
-                            msg += "\nIf Data.inputDBS would not be specified, the default '%s' ('%s') would be used." % (inputDBS_default_alias, inputDBS_default)
+                            msg += "\nIf Data.inputDBS would not be specified, the default '%s' ('%s') would be used." \
+                                   % (inputDBS_default_alias, inputDBS_default)
                     return False, msg
 
         ## If a publication DBS URL is specified and publication is ON, check that the DBS URL is a good one.
@@ -311,7 +310,7 @@ class submit(SubCommand):
                 dbs_urls = DBSURLS['writer'].values()
                 dbs_urls_aliases = DBSURLS['writer'].keys()
                 if (self.configuration.Data.publishDBS not in dbs_urls_aliases) and (self.configuration.Data.publishDBS.rstrip('/') not in dbs_urls):
-                    msg  = "Invalid CRAB configuration: Parameter Data.publishDBS has an invalid value ('%s')." % (self.configuration.Data.publishDBS)
+                    msg = "Invalid CRAB configuration: Parameter Data.publishDBS has an invalid value ('%s')." % (self.configuration.Data.publishDBS)
                     msg += "\nAllowed values are: "
                     msg += "\n                    ".join(["'%s' ('%s')" % (alias, url) for alias, url in DBSURLS['writer'].iteritems()])
                     publishDBS_default = getParamDefaultValue('Data.publishDBS')
@@ -408,7 +407,7 @@ class submit(SubCommand):
                 #Therefore the 'jobReport.json' will not be in the cwd. We will delete these three lines of code in the future
                 jobReport = 'jobReport.json'
                 if not os.path.isfile(jobReport):
-                    jobReport = os.path.join( self.configreq["jobsw"], jobReport)
+                    jobReport = os.path.join(self.configreq["jobsw"], jobReport)
                 with open(jobReport) as f:
                     report = json.load(f)['steps']['cmsRun']['performance']
                 events += (maxSeconds / float(report['cpu']['AvgEventTime']))
@@ -520,4 +519,3 @@ def getCMSRunAnalysisOpts(ad, dag, job=1, events=10):
     def repl(match):
         return info[match.group(1)]
     return [re.sub(r'\$\((\w+)\)', repl, arg) for arg in args]
-

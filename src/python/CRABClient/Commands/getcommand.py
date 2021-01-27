@@ -1,17 +1,14 @@
-from CRABClient.Commands.remote_copy import remote_copy
-from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ClientExceptions import ConfigurationException , RESTCommunicationException,\
-    ClientException
-from CRABClient.ClientUtilities import validateJobids, colors, getUrl
-from CRABClient.UserUtilities import getMutedStatusInfo
-from CRABClient import __version__
-
-import CRABClient.Emulator
-
 import os
 import re
 import copy
 import urllib
+
+from CRABClient.Commands.remote_copy import remote_copy
+from CRABClient.Commands.SubCommand import SubCommand
+from CRABClient.ClientExceptions import ConfigurationException, RESTCommunicationException,\
+    ClientException
+from CRABClient.ClientUtilities import validateJobids, colors, getUrl
+from CRABClient.UserUtilities import getMutedStatusInfo
 
 class getcommand(SubCommand):
     """
@@ -34,16 +31,15 @@ class getcommand(SubCommand):
 
         transferFlag = 'unknown'
         inputlist = {'subresource': 'search', 'workflow': self.cachedinfo['RequestName']}
-        serverFactory = CRABClient.Emulator.getEmulator('rest')
-        server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
-        uri = getUrl(self.instance, resource = 'task')
-        dictresult, status, _ =  server.get(uri, data = inputlist)
+        server = self.RESTServer
+        uri = getUrl(self.instance, resource='task')
+        dictresult, status, _ = server.get(uri, data=inputlist)
         self.logger.debug('Server result: %s' % dictresult)
         splitting = None
         if status == 200:
             if 'desc' in dictresult and 'columns' in dictresult['desc']:
                 position = dictresult['desc']['columns'].index(taskdbparam)
-                transferFlag = dictresult['result'][position] #= 'T' or 'F'
+                transferFlag = dictresult['result'][position]  # = 'T' or 'F'
                 position = dictresult['desc']['columns'].index('tm_split_algo')
                 splitting = dictresult['result'][position]
             else:
@@ -64,7 +60,7 @@ class getcommand(SubCommand):
                 position = dictresult['desc']['columns'].index('tm_outfiles')
                 tm_outfiles = dictresult['result'][position]
             if tm_edm_outfiles == '[]' and tm_tfile_outfiles == '[]' and tm_outfiles == '[]':
-                msg  = "%sWarning%s:" % (colors.RED, colors.NORMAL)
+                msg = "%sWarning%s:" % (colors.RED, colors.NORMAL)
                 msg += " There are no output files to retrieve, because CRAB could not detect any in the CMSSW configuration"
                 msg += " nor was any explicitly specified in the CRAB configuration."
                 self.logger.warning(msg)
@@ -77,7 +73,7 @@ class getcommand(SubCommand):
 
         #Retrieving output files location from the server
         self.logger.debug('Retrieving locations for task %s' % self.cachedinfo['RequestName'])
-        inputlist =  [('workflow', self.cachedinfo['RequestName'])]
+        inputlist = [('workflow', self.cachedinfo['RequestName'])]
         inputlist.extend(list(argv.iteritems()))
         if getattr(self.options, 'quantity', None):
             self.logger.debug('Retrieving %s file locations' % self.options.quantity)
@@ -88,9 +84,8 @@ class getcommand(SubCommand):
         if getattr(self.options, 'jobids', None):
             self.logger.debug('Retrieving jobs %s' % self.options.jobids)
             inputlist.extend(self.options.jobids)
-        serverFactory = CRABClient.Emulator.getEmulator('rest')
-        server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
-        dictresult, status, reason = server.get(self.uri, data = urllib.urlencode(inputlist))
+        server = self.RESTServer
+        dictresult, status, reason = server.get(self.uri, data=urllib.urlencode(inputlist))
         self.logger.debug('Server result: %s' % dictresult)
 
         if status != 200:
@@ -136,10 +131,10 @@ class getcommand(SubCommand):
                 copyoutput = remote_copy(self.logger, arglist)
                 successdict, faileddict = copyoutput()
                 #need to use deepcopy because successdict and faileddict are dict that is under the a manage dict, accessed multithreadly
-                returndict = {'success': copy.deepcopy(successdict) , 'failed': copy.deepcopy(faileddict)}
+                returndict = {'success': copy.deepcopy(successdict), 'failed': copy.deepcopy(faileddict)}
         if totalfiles == 0:
             self.logger.info("No files to retrieve.")
-            returndict = {'success': {} , 'failed': {}}
+            returndict = {'success': {}, 'failed': {}}
 
         if transferFlag == 'unknown':
             if ('success' in returndict and not returndict['success']) and \
@@ -241,38 +236,38 @@ class getcommand(SubCommand):
 
         This allows to set specific command options
         """
-        self.parser.add_option( '--outputpath',
-                                dest = 'outputpath',
-                                default = None,
-                                help = 'Where the files retrieved will be stored.  Defaults to the results/ directory.',
-                                metavar = 'URL' )
+        self.parser.add_option('--outputpath',
+                               dest='outputpath',
+                               default=None,
+                               help='Where the files retrieved will be stored.  Defaults to the results/ directory.',
+                               metavar='URL')
 
-        self.parser.add_option( '--dump',
-                                dest = 'dump',
-                                default = False,
-                                action = 'store_true',
-                                help = 'Instead of performing the transfer, dump the source URLs.' )
+        self.parser.add_option('--dump',
+                               dest='dump',
+                               default=False,
+                               action='store_true',
+                               help='Instead of performing the transfer, dump the source URLs.')
 
-        self.parser.add_option( '--xrootd',
-                                dest = 'xroot',
-                                default = False,
-                                action = 'store_true',
-                                help = 'Give XrootD url for the file.')
+        self.parser.add_option('--xrootd',
+                               dest='xroot',
+                               default=False,
+                               action='store_true',
+                               help='Give XrootD url for the file.')
 
-        self.parser.add_option( '--jobids',
-                                dest = 'jobids',
-                                default = None,
-                                help = 'Ids of the jobs you want to retrieve. Comma separated list of integers.',
-                                metavar = 'JOBIDS' )
+        self.parser.add_option('--jobids',
+                               dest='jobids',
+                               default=None,
+                               help='Ids of the jobs you want to retrieve. Comma separated list of integers.',
+                               metavar='JOBIDS')
         self.parser.add_option('--checksum',
-                                dest = 'checksum',
-                                default = 'yes',
-                                help = 'Set it to yes if needed. It will use ADLER32 checksum' +\
+                               dest='checksum',
+                               default='yes',
+                               help='Set it to yes if needed. It will use ADLER32 checksum' +\
                                        'Allowed values are yes/no. Default is yes.')
         self.parser.add_option('--command',
-                                dest = 'command',
-                                default = None,
-                                help = 'A command which to use. Available commands are LCG or GFAL.')
+                               dest='command',
+                               default=None,
+                               help='A command which to use. Available commands are LCG or GFAL.')
 
     def validateOptions(self):
         #Figuring out the destination directory
@@ -280,8 +275,8 @@ class getcommand(SubCommand):
         if self.options.outputpath is not None:
             if re.match("^[a-z]+://", self.options.outputpath):
                 self.dest = self.options.outputpath
-            elif not os.path.isabs( self.options.outputpath ):
-                self.dest = os.path.abspath( self.options.outputpath )
+            elif not os.path.isabs(self.options.outputpath):
+                self.dest = os.path.abspath(self.options.outputpath)
             else:
                 self.dest = self.options.outputpath
 
@@ -290,7 +285,7 @@ class getcommand(SubCommand):
             self.options.quantity = -1
 
 
-        if hasattr(self.options, 'command') and self.options.command != None:
+        if hasattr(self.options, 'command') and self.options.command is not None:
             AvailableCommands = ['LCG', 'GFAL']
             self.command = self.options.command.upper()
             if self.command not in AvailableCommands:

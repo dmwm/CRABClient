@@ -4,8 +4,6 @@ from httplib import HTTPException
 
 from WMCore.Services.UserFileCache.UserFileCache  import UserFileCache
 
-import CRABClient.Emulator
-from CRABClient import __version__
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientUtilities import colors, server_info, getUrl
 from CRABClient.ClientExceptions import ConfigurationException, ConfigException
@@ -23,13 +21,12 @@ class purge(SubCommand):
 
         self.logger.info('Getting the tarball hash key')
         inputlist = {'subresource': 'search', 'workflow': self.cachedinfo['RequestName']}
-        serverFactory = CRABClient.Emulator.getEmulator('rest')
-        server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
-        uri = getUrl(self.instance, resource = 'task')
-        dictresult, _, _ =  server.get(uri, data = inputlist)
+        server = self.RESTServer
+        uri = getUrl(self.instance, resource='task')
+        dictresult, _, _ = server.get(uri, data=inputlist)
 
         tm_user_sandbox = getColumn(dictresult, 'tm_user_sandbox')
-        hashkey = tm_user_sandbox.replace(".tar.gz","")
+        hashkey = tm_user_sandbox.replace(".tar.gz", "")
         # Get the schedd address from the DB info and strip off the 'crab3@' prefix if it exists
         scheddaddress = getColumn(dictresult, 'tm_schedd')
         if scheddaddress:
@@ -39,10 +36,10 @@ class purge(SubCommand):
             noSchedd = True
 
         self.logger.info('Checking task status')
-        dictresult, _, _ = server.get(self.uri, data = {'workflow': self.cachedinfo['RequestName'], 'verbose': 0})
+        dictresult, _, _ = server.get(self.uri, data={'workflow': self.cachedinfo['RequestName'], 'verbose': 0})
         status = dictresult['result'][0]['status']
         self.logger.info('Task status: %s' % status)
-        accepstate = ['SUBMITFAILED','KILLED','FINISHED','FAILED','KILLFAILED', 'COMPLETED']
+        accepstate = ['SUBMITFAILED', 'KILLED', 'FINISHED', 'FAILED', 'KILLFAILED', 'COMPLETED']
         if status not in accepstate:
             msg = ('%sError%s: Only tasks with these status can be purged: {0}'.format(accepstate) % (colors.RED, colors.NORMAL))
             raise ConfigurationException(msg)
@@ -52,10 +49,8 @@ class purge(SubCommand):
         scheddresult = {}
         gsisshdict = {}
         if not self.options.scheddonly or noSchedd:
-            baseurl = getUrl(self.instance, resource='info')
-            cacheurl = server_info(subresource='backendurls', serverurl=self.serverurl,
-                                   proxyfilename=self.proxyfilename,
-                                   baseurl=baseurl, logger=self.logger)
+            baseurl = getUrl(self.instance)
+            cacheurl = server_info(RESTServer=server, uriNoApi=baseurl, subresource='backendurls')
             cacheurl = cacheurl['cacheSSL']
             cacheurldict = {'endpoint': cacheurl, 'pycurl': True}
 
@@ -67,7 +62,7 @@ class purge(SubCommand):
                 ufcresult = ufc.removeFile(hashkey)
             except HTTPException as re:
                 if 'X-Error-Info' in re.headers and 'Not such file' in re.headers['X-Error-Info']:
-                    self.logger.info('%sError%s: Failed to find task file in crab server cache; the file might have been already purged' % (colors.RED,colors.NORMAL))
+                    self.logger.info('%sError%s: Failed to find task file in crab server cache; the file might have been already purged' % (colors.RED, colors.NORMAL))
                 raise
 
             if ufcresult == '':
@@ -87,21 +82,21 @@ class purge(SubCommand):
             gssishrm = 'gsissh -o ConnectTimeout=60 -o PasswordAuthentication=no ' + scheddaddress + ' rm -rf ' + self.cachedinfo['RequestName']
             self.logger.debug('gsissh command: %s' % gssishrm)
 
-            delprocess=subprocess.Popen(gssishrm, stdout= subprocess.PIPE, stderr= subprocess.PIPE, shell=True)
+            delprocess = subprocess.Popen(gssishrm, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
             stdout, stderr = delprocess.communicate()
             exitcode = delprocess.returncode
 
-            if exitcode == 0 :
+            if exitcode == 0:
                 self.logger.info('%sSuccess%s: Successfully removed task from schedd' % (colors.GREEN, colors.NORMAL))
                 scheddresult = 'SUCCESS'
                 gsisshdict = {}
-            else :
+            else:
                 self.logger.info('%sError%s: Failed to remove task from schedd' % (colors.RED, colors.NORMAL))
                 scheddaddress = 'FAILED'
-                self.logger.debug('gsissh stdout: %s\ngsissh stderr: %s\ngsissh exitcode: %s' % (stdout,stderr,exitcode))
-                gsisshdict = {'stdout' : stdout, 'stderr' : stderr , 'exitcode' : exitcode}
+                self.logger.debug('gsissh stdout: %s\ngsissh stderr: %s\ngsissh exitcode: %s' % (stdout, stderr, exitcode))
+                gsisshdict = {'stdout': stdout, 'stderr': stderr, 'exitcode': exitcode}
 
-            return {'cacheresult' : cacheresult , 'scheddresult' : scheddresult , 'gsiresult' : gsisshdict}
+            return {'cacheresult': cacheresult, 'scheddresult': scheddresult, 'gsiresult': gsisshdict}
 
 
     def setOptions(self):
@@ -112,16 +107,16 @@ class purge(SubCommand):
         """
 
         self.parser.add_option('--schedd',
-                               dest = 'scheddonly',
-                               action = 'store_true',
-                               default = False,
-                               help = 'Only clean schedd for the given workflow.')
+                               dest='scheddonly',
+                               action='store_true',
+                               default=False,
+                               help='Only clean schedd for the given workflow.')
 
         self.parser.add_option('--cache',
-                               dest = 'cacheonly',
-                               action = 'store_true',
-                               default = False,
-                               help = 'Only clean crab server cache for the given workflow.')
+                               dest='cacheonly',
+                               action='store_true',
+                               default=False,
+                               help='Only clean crab server cache for the given workflow.')
 
     def validateOptions(self):
         SubCommand.validateOptions(self)

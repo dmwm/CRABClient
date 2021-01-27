@@ -1,19 +1,17 @@
-from ServerUtilities import getProxiedWebDir, getColumn
-
-import CRABClient.Emulator
-from CRABClient import __version__
-from CRABClient.ClientUtilities import getUrl
-from CRABClient.UserUtilities import getFileFromURL
-from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ClientExceptions import ClientException
-
-
 import os
 import json
 import shutil
 import tarfile
 import tempfile
 import subprocess
+
+from ServerUtilities import getProxiedWebDir, getColumn
+
+import CRABClient.Emulator
+from CRABClient.ClientUtilities import getUrl
+from CRABClient.UserUtilities import getFileFromURL
+from CRABClient.Commands.SubCommand import SubCommand
+from CRABClient.ClientExceptions import ClientException
 
 
 class preparelocal(SubCommand):
@@ -27,9 +25,10 @@ class preparelocal(SubCommand):
 
     def __call__(self):
         #Creating dest directory if needed
-        if self.options.destdir == None:
+        if self.options.destdir is None:
             self.options.destdir = os.path.join(self.requestarea, 'local')
-        os.path.isdir(self.options.destdir) or os.makedirs(self.options.destdir)
+        if not os.path.isdir(self.options.destdir):
+            os.makedirs(self.options.destdir)
         self.options.destdir = os.path.abspath(self.options.destdir)
         cwd = os.getcwd()
         try:
@@ -63,10 +62,10 @@ class preparelocal(SubCommand):
 
         #Get task status from the task DB
         self.logger.debug("Getting status from he DB")
-        uri = getUrl(self.instance, resource = 'task')
-        serverFactory = CRABClient.Emulator.getEmulator('rest')
-        server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version = __version__)
-        crabDBInfo, _, _ =  server.get(uri, data = {'subresource': 'search', 'workflow': taskname})
+        uriNoApi = getUrl(self.instance)
+        uri = getUrl(self.instance, resource='task')
+        server = self.RESTServer
+        crabDBInfo, _, _ = server.get(uri, data={'subresource': 'search', 'workflow': taskname})
         status = getColumn(crabDBInfo, 'tm_task_status')
         self.destination = getColumn(crabDBInfo, 'tm_asyncdest')
 
@@ -79,7 +78,9 @@ class preparelocal(SubCommand):
             with tarfile.open('dry-run-sandbox.tar.gz') as tf:
                 tf.extractall()
         elif status == 'SUBMITTED':
-            webdir = getProxiedWebDir(taskname, self.serverurl, uri, self.proxyfilename, self.logger.debug)
+            #webdir = getProxiedWebDir(taskname, self.serverurl, uri, self.proxyfilename, self.logger.debug)
+            webdir = getProxiedWebDir(RESTServer=self.RESTServer, task=taskname, uriNoApi=uriNoApi,
+                                      logFunction=self.logger.debug)
             if not webdir:
                 webdir = getColumn(crabDBInfo, 'tm_user_webdir')
             self.logger.debug("Downloading 'InputFiles.tar.gz' from %s" % webdir)
@@ -133,7 +134,8 @@ class preparelocal(SubCommand):
 
         self.logger.debug("Creating InputArgs.txt file")
         inputArgsStr = "-a %(CRAB_Archive)s --sourceURL=%(CRAB_ISB)s --jobNumber=%(CRAB_Id)s --cmsswVersion=%(CRAB_JobSW)s --scramArch=%(CRAB_JobArch)s --inputFile=%(inputFiles)s --runAndLumis=%(runAndLumiMask)s --lheInputFiles=%(lheInputFiles)s --firstEvent=%(firstEvent)s --firstLumi=%(firstLumi)s --lastEvent=%(lastEvent)s --firstRun=%(firstRun)s --seeding=%(seeding)s --scriptExe=%(scriptExe)s --eventsPerLumi=%(eventsPerLumi)s --maxRuntime=%(maxRuntime)s --scriptArgs=%(scriptArgs)s -o %(CRAB_AdditionalOutputFiles)s\n"
-        for f in [ "gWMS-CMSRunAnalysis.sh", "CMSRunAnalysis.sh", "cmscp.py", "CMSRunAnalysis.tar.gz", "sandbox.tar.gz", "run_and_lumis.tar.gz", "input_files.tar.gz", "Job.submit"]:
+        for f in ["gWMS-CMSRunAnalysis.sh", "CMSRunAnalysis.sh", "cmscp.py", "CMSRunAnalysis.tar.gz",
+                  "sandbox.tar.gz", "run_and_lumis.tar.gz", "input_files.tar.gz", "Job.submit"]:
             shutil.copy2(f, targetDir)
         with open(os.path.join(targetDir, "InputArgs.txt"), "w") as fd:
             for ia in inputArgs:
@@ -190,20 +192,20 @@ cat jobsubmit_fixups/job${1} >> Job.${1}.submit
         This allows to set specific command options
         """
         self.parser.add_option("--jobid",
-                               dest = "jobid",
-                               default = None,
+                               dest="jobid",
+                               default=None,
                                type="int",
-                               help = "Optional id of the job you want to execute locally")
+                               help="Optional id of the job you want to execute locally")
 
         self.parser.add_option("--enableStageout",
-                           dest = "enableStageout",
-                           default = False,
-                           action = "store_true",
-                           help = "After the job runs copy the output file on the storage destination")
+                               dest="enableStageout",
+                               default=False,
+                               action="store_true",
+                               help="After the job runs copy the output file on the storage destination")
 
         self.parser.add_option("--destdir",
-                               dest = "destdir",
-                               default = None )
+                               dest="destdir",
+                               default=None)
 
     def validateOptions(self):
         SubCommand.validateOptions(self)
@@ -212,4 +214,4 @@ cat jobsubmit_fixups/job${1} >> Job.${1}.submit
             try:
                 int(self.options.jobid)
             except ValueError:
-               raise ClientException("The --jobid option has to be an integer")
+                raise ClientException("The --jobid option has to be an integer")

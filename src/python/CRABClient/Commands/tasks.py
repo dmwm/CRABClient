@@ -1,9 +1,7 @@
 from datetime import datetime, date, timedelta
 
-from RESTInteractions import HTTPRequests
 from ServerUtilities import TASKDBSTATUSES
 
-from CRABClient import __version__
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ConfigurationException, RESTCommunicationException
 
@@ -14,8 +12,8 @@ Note that STATUS in here is task status from database which does not include gri
 task status does not progress beyond SUBMITTED unless the task is KILLED
     """
     def __call__(self):
-        server = HTTPRequests(self.serverurl, self.proxyfilename, self.proxyfilename, version=__version__)
-        dictresult, status, reason = server.get(self.uri, data = {'timestamp': self.date})
+        server = self.RESTServer
+        dictresult, status, reason = server.get(self.uri, data={'timestamp': self.date})
         dictresult = dictresult['result'] #take just the significant part
 
         if status != 200:
@@ -64,26 +62,25 @@ task status does not progress beyond SUBMITTED unless the task is KILLED
         This allows to set specific command options
         """
 
-        self.parser.add_option( '--fromdate',
-                                dest = 'fromdate',
-                                default = None,
-                                help = 'Give the user tasks since YYYY-MM-DD.',
-                                metavar = 'YYYY-MM-DD' )
+        self.parser.add_option('--fromdate',
+                               dest='fromdate',
+                               default=None,
+                               help='Give the user tasks since YYYY-MM-DD.',
+                               metavar='YYYY-MM-DD')
 
-        self.parser.add_option( '--days',
-                                dest = 'days',
-                                default = None,
-                                type = 'int',
-                                help = 'Give the user tasks from the previous N days.',
-                                metavar = 'N' )
+        self.parser.add_option('--days',
+                               dest='days',
+                               default=None,
+                               type='int',
+                               help='Give the user tasks from the previous N days.',
+                               metavar='N')
 
-        self.parser.add_option( '--status',
-                                dest = 'status',
-                                default = None,
-                                help = 'Give the user tasks with the given STATUS.',
-                                metavar = 'STATUS' )
+        self.parser.add_option('--status',
+                               dest='status',
+                               default=None,
+                               help='Give the user tasks with the given STATUS.',
+                               metavar='STATUS')
 
-        			    
     def validateOptions(self):
 
         if self.options.fromdate is not None and self.options.days is not None:
@@ -109,4 +106,4 @@ task status does not progress beyond SUBMITTED unless the task is KILLED
         if self.options.status is not None:
             if self.options.status not in TASKDBSTATUSES:
                 msg = "Please enter a valid task status. Valid task statuses are: %s" % (TASKDBSTATUSES)
-                raise ConfigurationException(msg) 
+                raise ConfigurationException(msg)

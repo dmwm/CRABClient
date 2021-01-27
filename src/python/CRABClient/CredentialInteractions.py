@@ -88,7 +88,7 @@ class CredentialInteractions(object):
         Handles the proxy creation:
            - checks if a valid proxy still exists
            - performs the creation if it is expired
-           - returns a dictionary with keys: filename timelect actimeleft grop role userdn
+           - returns a dictionary with keys: filename timelect actimeleft group role userdn
         """
         proxyInfo = {}
         ## TODO add the change to have user-cert/key defined in the config.
@@ -340,7 +340,7 @@ class CredentialInteractions(object):
             myproxytimeleft = myproxy.getMyProxyTimeLeft(serverRenewer=True, nokey=nokey)
         except CredentialException as ex:
             msg = "WMCore could not computer valid time for credential %s .\n Error detail: " % credentialName
-            msg += "%s" % str(ex._message)
+            msg += "%s" % str(ex._message)  # pylint: disable=protected-access
             msg += "\nTry to remove old myproxy credentials as per https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3FAQ#crab_command_fails_with_Impossib"
             self.logger.error(msg)
             raise ProxyCreationException("no valid credential for %s" % credentialName)

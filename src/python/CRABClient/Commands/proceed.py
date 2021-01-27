@@ -1,9 +1,7 @@
+import urllib
+
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import RESTCommunicationException
-from CRABClient import __version__
-import CRABClient.Emulator
-
-import urllib
 
 class proceed(SubCommand):
     """
@@ -14,8 +12,7 @@ class proceed(SubCommand):
         SubCommand.__init__(self, logger, cmdargs)
 
     def __call__(self):
-        serverFactory = CRABClient.Emulator.getEmulator('rest')
-        server = serverFactory(self.serverurl, self.proxyfilename, self.proxyfilename, version = __version__)
+        server = self.RESTServer
 
         msg = "Continuing submission of task %s" % (self.cachedinfo['RequestName'])
         self.logger.debug(msg)
