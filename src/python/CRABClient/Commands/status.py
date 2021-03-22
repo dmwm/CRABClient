@@ -122,17 +122,39 @@ class status(SubCommand):
             logging.getLogger("CRAB3").exception(ce)
             combinedStatus = "UNKNOWN"
             return self.makeStatusReturnDict(crabDBInfo, combinedStatus, statusFailureMsg=failureMsg)
-        else:
-            # We skip first two lines of the file because they contain the checkpoint locations
-            # for the job_log / fjr_parse_results files and are used by the status caching script.
-            # Load the job_report summary
-            statusCacheInfo = literal_eval(statusCacheData.split('\n')[2])
-            self.logger.debug("Got information from status cache file: %s", statusCacheInfo)
+            
+        # Normally the first two lines of the file contain the checkpoint locations
+        # for the job_log / fjr_parse_results files and are used by the status caching script.
+        # Load the job_report summary
+        statusCacheInfo = literal_eval(statusCacheData.split('\n')[2])
+        self.logger.debug("Got information from status cache file: %s", statusCacheInfo)
 
         automaticSplitt = splitting == 'Automatic'
 
         # If the task is already on the grid, show the dagman status
         combinedStatus = dagStatus = self.printDAGStatus(dbStatus, statusCacheInfo)
+
+        # If the job has just bootstrapped the first lines of the file are:
+        #  line1: a readable message  line2: bootstrap time in seconds from Epoch
+        #  Example:
+        #   # Task bootstrapped at 2021-03-22 16:23:54 UTC
+        #   1616430956
+        # and a dummy, empty, status record follows
+        if statusCacheData.split('\n')[0].startswith('#'):
+            bootstrapTime = statusCacheData.split('\n')[1]
+            bootstrapMsg = statusCacheData.split('\n')[0].lstrip('#').lstrip()
+            if bootstrapTime:
+                bootingTime = int(time.time()) - literal_eval(bootstrapTime)
+            else:
+                bootingTime = 199
+            bootstrapMsg += ". %d seconds ago" % bootingTime
+            self.logger.info(bootstrapMsg)
+            if bootingTime  <= 300:
+                self.logger.info("Status information will be available within a few minutes")
+            else:
+                msg = "Task bootstrapped on schedd more than %d minutes ago\n" % (bootingTime//60)
+                msg += "But no status info is available yet. If this persists report it to %s " % FEEDBACKMAIL
+                self.logger.error(msg)
 
         shortResult = self.printOverview(statusCacheInfo, automaticSplitt, proxiedWebDir)
         pubStatus = self.printPublication(publicationEnabled, shortResult['jobsPerStatus'], shortResult['numProbes'],
