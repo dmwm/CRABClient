@@ -364,7 +364,6 @@ class status(SubCommand):
             dashboardURL = "https://monit-grafana.cern.ch/d/cmsTMDetail/cms-task-monitoring-task-view?orgId=11&var-user=" + username \
                          + "&var-task=" + taskname + "&from=" + str(taskCreationTime) + "&to=now"
             self.logger.info("Dashboard monitoring URL:\t%s" % (dashboardURL))
-            self.logger.info("In case of issues with the dashboard, please provide feedback to %s" % (FEEDBACKMAIL))
 
         # Print the warning messages (these are the warnings in the Tasks DB,
         # and/or maybe some warning added by the REST Interface to the status result).
