@@ -1,3 +1,4 @@
+#pylint: disable=attribute-defined-outside-init
 """
 CMSSW job type plug-in
 """
@@ -5,10 +6,9 @@ CMSSW job type plug-in
 import os
 import re
 import shutil
-import string
 import tempfile
 import uuid
-from functools import reduce
+from functools import reduce  # pylint: disable=redefined-builtin
 
 from httplib import HTTPException
 
@@ -24,7 +24,7 @@ from CRABClient.ClientMapping import getParamDefaultValue
 from CRABClient.JobType.LumiMask import getLumiList, getRunList
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
 from CRABClient.ClientUtilities import bootstrapDone, BOOTSTRAP_CFGFILE, BOOTSTRAP_CFGFILE_PKL
-from CRABClient.ClientExceptions import ClientException, EnvironmentException, ConfigurationException, SandboxTooBigException
+from CRABClient.ClientExceptions import ClientException, EnvironmentException, ConfigurationException
 
 
 class Analysis(BasicJobType):
@@ -33,7 +33,7 @@ class Analysis(BasicJobType):
     """
 
 
-    def run(self, filecacheurl = None):
+    def run(self, filecacheurl = None):  # pylint: disable=arguments-differ
         """
         Override run() for JobType
         """
@@ -111,9 +111,9 @@ class Analysis(BasicJobType):
         ## If JobType.disableAutomaticOutputCollection = True, ignore the EDM and TFile
         ## output files that are not listed in JobType.outputFiles.
         if getattr(self.config.JobType, 'disableAutomaticOutputCollection', getParamDefaultValue('JobType.disableAutomaticOutputCollection')):
-            outputFiles = [re.sub(r'^file:', '', file) for file in getattr(self.config.JobType, 'outputFiles', [])]
-            edmfiles = [file for file in edmfiles if file in outputFiles]
-            tfiles = [file for file in tfiles if file in outputFiles]
+            outputFiles = [re.sub(r'^file:', '', f) for f in getattr(self.config.JobType, 'outputFiles', [])]
+            edmfiles = [f for f in edmfiles if f in outputFiles]
+            tfiles = [f for f in tfiles if f in outputFiles]
         ## Get the list of additional output files that have to be collected as given
         ## in JobType.outputFiles, but remove duplicates listed already as EDM files or
         ## TFiles.
@@ -196,8 +196,8 @@ class Analysis(BasicJobType):
         userFilesList = getattr(self.config.Data, 'userInputFiles', None)
         if userFilesList:
             self.logger.debug("Attaching list of user-specified primary input files.")
-            userFilesList = map(string.strip, userFilesList)
-            userFilesList = [file for file in userFilesList if file]
+            userFilesList = [f.strip() for f in userFilesList]
+            userFilesList = [f for f in userFilesList if f]
             if len(userFilesList) != len(set(userFilesList)):
                 msg  = "%sWarning%s:" % (colors.RED, colors.NORMAL)
                 msg += " CRAB configuration parameter Data.userInputFiles contains duplicated entries."
