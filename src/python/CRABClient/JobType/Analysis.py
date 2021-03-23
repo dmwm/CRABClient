@@ -121,6 +121,12 @@ class Analysis(BasicJobType):
         outputWarn = "The following user output files (not listed as PoolOuputModule or TFileService in the CMSSW PSet) will be collected: %s" % ", ".join(["'{0}'".format(x) for x in addoutputFiles])
         self.logger.debug("The following EDM output files will be collected: %s" % edmfiles)
         self.logger.debug("The following TFile output files will be collected: %s" % tfiles)
+        if getattr(self.config.Data,'publication', False) and len(edmfiles)>1 :
+            self.logger.error("The input PSet produces multiple EDM output files: %s", edmfiles)
+            self.logger.error("But current CRAB version can't publish more than one dataset per task")
+            self.logger.error("Either disable publication or submit multiple times with only one output at a time")
+            msg = "Submission refused"
+            raise ClientException(msg)
         if addoutputFiles:
             self.logger.warning(outputWarn)
         else:
