@@ -349,32 +349,34 @@ class SubCommand(ConfigCommand):
         # Finally, delegate the proxy to myproxy server.
         self.handleVomsProxy(proxyOptsSetPlace)
 
-        # only if this command talks to the REST we create a RESTServer object to communicate with CRABServer
+        # only if this command talks to the REST we create a CRABRest object to communicate with CRABServer
         # and check/upate credentials on myproxy
         # this is usually the first time that a call to the server is made, so where Emulator('rest') is initialized
         # arguments to Emulator('rest') call must match those for HTTPRequest.__init__ in RESTInteractions.py
         #server = CRABClient.Emulator.getEmulator('rest')(url=serverurl, localcert=proxyfilename, localkey=proxyfilename,
         #          version=__version__, retry=2, logger=logger)
         if self.cmdconf['requiresREST']:
-            restClass = CRABClient.Emulator.getEmulator('rest')
-            self.RESTServer = restClass(url=self.serverurl, localcert=self.proxyfilename, localkey=self.proxyfilename,
+            crabRest = CRABClient.Emulator.getEmulator('rest')
+            self.crabserver = crabRest(hostname=self.serverurl, localcert=self.proxyfilename, localkey=self.proxyfilename,
                                         retry=2, logger=self.logger, verbose=False, version=__version__,
                                         userAgent='CRABClient')
+            self.crabserver.setDbInstance(self.instance)
             self.handleMyProxy()
 
         # Validate the command options
+        self.validateOptions()
         self.validateOptions()
 
         # Log user command and options used for debuging purpose.
         self.logger.debug('Command use: %s' % self.name)
         self.logger.debug('Options use: %s' % cmdargs)
         if self.cmdconf['requiresREST']:
-            self.checkversion(getUrl(self.instance))
-            self.uri = getUrl(self.instance, resource='workflow')
+            self.checkversion()
+            self.defaultApi = 'workflow'
         self.logger.debug("Instance is %s" %(self.instance))
         self.logger.debug("Server base url is %s" %(self.serverurl))
         if self.cmdconf['requiresREST']:
-            self.logger.debug("Command url %s" %(self.uri))
+            self.logger.debug("Command api %s" %(self.defaultApi))
 
 
     def serverInstance(self):
@@ -414,8 +416,8 @@ class SubCommand(ConfigCommand):
         return self.dbInstance, self.restHost
 
 
-    def checkversion(self, uriNoApi=None):
-        compatibleVersions = server_info(RESTServer=self.RESTServer, uriNoApi=uriNoApi, subresource='version')
+    def checkversion(self):
+        compatibleVersions = server_info(crabserver=self.crabserver, subresource='version')
         for item in compatibleVersions:
             if re.match(item, __version__):
                 self.logger.debug("CRABClient version: %s" % (__version__))
@@ -463,7 +465,7 @@ class SubCommand(ConfigCommand):
         if not self.options.proxy:
             uriNoApi = getUrl(self.instance)
             # Get the DN of the task workers from the server.
-            all_task_workers_dns = server_info(self.RESTServer, uriNoApi=uriNoApi, subresource='delegatedn')
+            all_task_workers_dns = server_info(self.crabserver, subresource='delegatedn')
             for serverdn in all_task_workers_dns['services']:
                 self.proxy.setServerDN(serverdn)
                 self.proxy.setMyProxyServer('myproxy.cern.ch')

@@ -18,10 +18,11 @@ class BasicJobType(object):
     TODO: thinking on having a job type help here...
     """
 
-    def __init__(self, config, proxyfilename, logger, workingdir):
+    def __init__(self, config, proxyfilename, logger, workingdir, crabserver):
         self.logger = logger
         self.proxyfilename = proxyfilename
         self.automaticAvail = False
+        self.crabserver = crabserver
         ## Before everything, check if the config is ok.
         if config:
             valid, msg = self.validateConfig(config)

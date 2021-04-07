@@ -25,6 +25,6 @@ def setEmulator(name, value):
 def getDefaults():
     import RESTInteractions
     from WMCore.Services.UserFileCache.UserFileCache import UserFileCache
-    return {'rest' : RESTInteractions.HTTPRequests,
+    return {'rest' : RESTInteractions.CRABRest,
                 'ufc' : UserFileCache}
 

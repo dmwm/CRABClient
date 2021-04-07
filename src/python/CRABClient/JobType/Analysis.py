@@ -33,7 +33,7 @@ class Analysis(BasicJobType):
     """
 
 
-    def run(self, filecacheurl = None):  # pylint: disable=arguments-differ
+    def run(self, filecacheurl = None, ):  # pylint: disable=arguments-differ
         """
         Override run() for JobType
         """
@@ -151,7 +151,7 @@ class Analysis(BasicJobType):
         ## Since ScramEnvironment is already called above and the exception is not
         ## handled, we are sure that if we reached this point it will not raise EnvironmentException.
         ## But otherwise we should take this into account.
-        with UserTarball(name=tarFilename, logger=self.logger, config=self.config) as tb:
+        with UserTarball(name=tarFilename, logger=self.logger, config=self.config, crabserver=self.crabserver) as tb:
             inputFiles = [re.sub(r'^file:', '', file) for file in getattr(self.config.JobType, 'inputFiles', [])]
             tb.addFiles(userFiles=inputFiles, cfgOutputName=cfgOutputName)
             try:
@@ -176,7 +176,7 @@ class Analysis(BasicJobType):
                 raise ClientException(msg)
 
         debugFilesUploadResult = None
-        with UserTarball(name=debugTarFilename, logger=self.logger, config=self.config) as dtb:
+        with UserTarball(name=debugTarFilename, logger=self.logger, config=self.config, crabserver=self.crabserver) as dtb:
             dtb.addMonFiles()
             try:
                 # convert from unicode to ascii to make it work with older pycurl versions

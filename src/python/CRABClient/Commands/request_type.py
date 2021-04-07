@@ -8,10 +8,10 @@ class request_type(SubCommand):
 
     def __call__(self):
 
-        server = self.RESTServer
+        server = self.crabserver
 
         self.logger.debug('Looking type for task %s' % self.cachedinfo['RequestName'])
-        dictresult, status, reason = server.get(self.uri,  # pylint: disable=unused-variable
+        dictresult, status, reason = server.get(api=self.defaultApi,  # pylint: disable=unused-variable
                                                 data={'workflow': self.cachedinfo['RequestName'], 'subresource': 'type'})
         self.logger.debug('Task type %s' % dictresult['result'][0])
         return dictresult['result'][0]

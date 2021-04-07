@@ -21,7 +21,7 @@ class purge(SubCommand):
 
         self.logger.info('Getting the tarball hash key')
         inputlist = {'subresource': 'search', 'workflow': self.cachedinfo['RequestName']}
-        server = self.RESTServer
+        server = self.crabserver
         uri = getUrl(self.instance, resource='task')
         dictresult, _, _ = server.get(uri, data=inputlist)
 
@@ -36,7 +36,7 @@ class purge(SubCommand):
             noSchedd = True
 
         self.logger.info('Checking task status')
-        dictresult, _, _ = server.get(self.uri, data={'workflow': self.cachedinfo['RequestName'], 'verbose': 0})
+        dictresult, _, _ = server.get(api=self.defaultApi, data={'workflow': self.cachedinfo['RequestName'], 'verbose': 0})
         status = dictresult['result'][0]['status']
         self.logger.info('Task status: %s' % status)
         accepstate = ['SUBMITFAILED', 'KILLED', 'FINISHED', 'FAILED', 'KILLFAILED', 'COMPLETED']
@@ -50,7 +50,7 @@ class purge(SubCommand):
         gsisshdict = {}
         if not self.options.scheddonly or noSchedd:
             baseurl = getUrl(self.instance)
-            cacheurl = server_info(RESTServer=server, uriNoApi=baseurl, subresource='backendurls')
+            cacheurl = server_info(crabserver=server, subresource='backendurls')
             cacheurl = cacheurl['cacheSSL']
             cacheurldict = {'endpoint': cacheurl, 'pycurl': True}
 

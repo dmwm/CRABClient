@@ -12,7 +12,7 @@ class proceed(SubCommand):
         SubCommand.__init__(self, logger, cmdargs)
 
     def __call__(self):
-        server = self.RESTServer
+        server = self.crabserver
 
         msg = "Continuing submission of task %s" % (self.cachedinfo['RequestName'])
         self.logger.debug(msg)
@@ -21,7 +21,7 @@ class proceed(SubCommand):
 
         self.logger.info("Sending the request to the server")
         self.logger.debug("Submitting %s " % str(request))
-        result, status, reason = server.post(self.uri, data=urllib.urlencode(request))
+        result, status, reason = server.post(api=self.defaultApi, data=urllib.urlencode(request))
         self.logger.debug("Result: %s" % (result))
         if status != 200:
             msg = "Problem continuing task submission:\ninput:%s\noutput:%s\nreason:%s" \

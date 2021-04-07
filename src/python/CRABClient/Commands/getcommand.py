@@ -31,9 +31,8 @@ class getcommand(SubCommand):
 
         transferFlag = 'unknown'
         inputlist = {'subresource': 'search', 'workflow': self.cachedinfo['RequestName']}
-        server = self.RESTServer
-        uri = getUrl(self.instance, resource='task')
-        dictresult, status, _ = server.get(uri, data=inputlist)
+        server = self.crabserver
+        dictresult, status, _ = server.get(api='task', data=inputlist)
         self.logger.debug('Server result: %s' % dictresult)
         splitting = None
         if status == 200:
@@ -84,8 +83,7 @@ class getcommand(SubCommand):
         if getattr(self.options, 'jobids', None):
             self.logger.debug('Retrieving jobs %s' % self.options.jobids)
             inputlist.extend(self.options.jobids)
-        server = self.RESTServer
-        dictresult, status, reason = server.get(self.uri, data=urllib.urlencode(inputlist))
+        dictresult, status, reason = server.get(api=self.defaultApi, data=urllib.urlencode(inputlist))
         self.logger.debug('Server result: %s' % dictresult)
 
         if status != 200:

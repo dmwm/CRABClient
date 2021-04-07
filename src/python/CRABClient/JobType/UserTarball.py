@@ -20,6 +20,7 @@ from CRABClient.ClientExceptions import EnvironmentException, InputFileNotFoundE
 
 from ServerUtilities import NEW_USER_SANDBOX_EXCLUSIONS, BOOTSTRAP_CFGFILE_DUMP
 from ServerUtilities import FILE_SIZE_LIMIT
+from ServerUtilities import uploadToS3
 
 
 
@@ -34,7 +35,7 @@ class UserTarball(object):
             Also adds user specified files in the right place.
     """
 
-    def __init__(self, name=None, mode='w:bz2', config=None, logger=None):
+    def __init__(self, name=None, mode='w:bz2', config=None, logger=None, crabserver=None):
         self.config = config
         self.logger = logger
         self.scram = ScramEnvironment(logger=self.logger)
@@ -42,6 +43,7 @@ class UserTarball(object):
         self.tarfile = tarfile.open(name=name , mode=mode, dereference=True)
         self.checksum = None
         self.content = None
+        self.crabserver = crabserver
 
     def addFiles(self, userFiles=None, cfgOutputName=None):
         """
@@ -179,12 +181,34 @@ class UserTarball(object):
         msg=("Uploading archive %s (%s) to the CRAB cache. Using URI %s" % (archiveName, archiveSize, filecacheurl))
         self.logger.debug(msg)
 
-        ufc = CRABClient.Emulator.getEmulator('ufc')({'endpoint' : filecacheurl, "pycurl": True})
-        result = ufc.upload(archiveName, excludeList = NEW_USER_SANDBOX_EXCLUSIONS)
-        if 'hashkey' not in result:
-            self.logger.error("Failed to upload archive: %s" % str(result))
-            raise CachefileNotFoundException
-        return str(result['hashkey'])
+        if 'S3' in filecacheurl.upper() :
+            # use S3
+            # generate a 32char hash like UserFileCache used to do
+            import hashlib
+            hasher = hashlib.sha256()
+            with open(archiveName) as f:
+                BUF_SIZE = 1024*1024  # lets read stuff in 1MByte chunks!
+                while True:
+                    data = f.read(BUF_SIZE)
+                    if not data:
+                        break
+                hasher.update(data)
+            hashkey = hasher.hexdigest()
+            cachename = "%s.tgz" % hashkey
+            # current code requires a taskname to extract username. Any dummy one will do
+            # next version of RESTCache will get username from cmsweb FE headers
+            faketaskname = '210401_210401:belforte_crab_210401_210401'
+            uploadToS3(crabserver=self.crabserver, object='sandbox', filepath=archiveName,
+                       taskname=faketaskname, cachename=cachename, logger=self.logger)
+        else:
+            # old way using UFC
+            ufc = CRABClient.Emulator.getEmulator('ufc')({'endpoint' : filecacheurl, "pycurl": True})
+            result = ufc.upload(archiveName, excludeList = NEW_USER_SANDBOX_EXCLUSIONS)
+            if 'hashkey' not in result:
+                self.logger.error("Failed to upload archive: %s" % str(result))
+                raise CachefileNotFoundException
+            hashkey = str(result['hashkey'])
+        return hashkey
 
 
     def checkdirectory(self, dir_):

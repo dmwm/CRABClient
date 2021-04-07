@@ -66,7 +66,7 @@ class resubmit(SubCommand):
         configreq_encoded = self._encodeRequest(configreq)
         self.logger.debug("Encoded resubmit request: %s" % (configreq_encoded))
 
-        dictresult, _, _ = self.RESTServer.post(self.uri, data=configreq_encoded)
+        dictresult, _, _ = self.crabserver.post(api=self.defaultApi, data=configreq_encoded)
         self.logger.debug("Result: %s" % (dictresult))
         self.logger.info("Resubmit request sent to the server.")
         if dictresult['result'][0]['result'] != 'ok':
@@ -80,7 +80,7 @@ class resubmit(SubCommand):
                 self.logger.info(msg)
             else:
                 targetTaskStatus = 'SUBMITTED'
-                checkStatusLoop(self.logger, self.server, self.uri, self.cachedinfo['RequestName'], targetTaskStatus, self.name)
+                checkStatusLoop(self.logger, self.server, self.defaultApi, self.cachedinfo['RequestName'], targetTaskStatus, self.name)
             returndict = {'status': 'SUCCESS'}
 
         return returndict
@@ -270,8 +270,7 @@ class resubmit(SubCommand):
         """
         SubCommand.validateOptions(self)
 
-        uri = getUrl(self.instance, resource='task')
-        crabDBInfo, _, _ = self.RESTServer.get(uri, data={'subresource': 'search', 'workflow': self.cachedinfo['RequestName']})
+        crabDBInfo, _, _ = self.crabserver.get(api='task', data={'subresource': 'search', 'workflow': self.cachedinfo['RequestName']})
         self.splitting = getColumn(crabDBInfo, 'tm_split_algo')
 
         if self.options.publication:

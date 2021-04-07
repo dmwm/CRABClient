@@ -231,12 +231,12 @@ def uploadlogfile(logger, proxyfilename, logfilename=None, logpath=None, instanc
     baseurl = getUrl(dbInstance=instance)
     if doupload:
         # uploadLog is executed directly from crab main script, does not inherit from SubCommand
-        # so it needs its own RESTServer instantiation
+        # so it needs its own REST server instantiation
         restClass = CRABClient.Emulator.getEmulator('rest')
-        RESTServer = restClass(url=serverurl, localcert=proxyfilename, localkey=proxyfilename,
+        crabserver = restClass(hostname=serverurl, localcert=proxyfilename, localkey=proxyfilename,
                                retry=2, logger=logger, verbose=False, version=__version__,
                                userAgent='CRABClient')
-        cacheurl = server_info(RESTServer=RESTServer, uriNoApi=baseurl, subresource='backendurls')
+        cacheurl = server_info(crabserver=crabserver, subresource='backendurls')
         # Encode in ascii because old pycurl present in old CMSSW versions
         # doesn't support unicode.
         cacheurl = cacheurl['cacheSSL'].encode('ascii')
@@ -653,15 +653,14 @@ def validateSubmitOptions(options, args):
 #If anyone has a better solution please go on, otherwise live with that one :) :)
 from CRABClient import __version__
 
-def server_info(RESTServer=None, uriNoApi='crabserver/prod', subresource=None):
+def server_info(crabserver=None, subresource=None):
     """
     Get relevant information about the server
     """
 
-    uri = uriNoApi + '/info'
+    api = 'info'
     requestdict = {'subresource': subresource} if subresource else {}
-
-    dictresult, dummyStatus, dummyReason = RESTServer.get(uri, requestdict)
+    dictresult, dummyStatus, dummyReason = crabserver.get(api, requestdict)
 
     return dictresult['result'][0]
 
