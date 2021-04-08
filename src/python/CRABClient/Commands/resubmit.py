@@ -74,13 +74,9 @@ class resubmit(SubCommand):
             self.logger.info(msg)
             returndict = {'status': 'FAILED'}
         else:
-            if not self.options.wait:
-                msg = "Please use ' crab status ' to check how the resubmission process proceeds."
-                msg += "\nNotice it may take a couple of minutes for the resubmission to get fully processed."
-                self.logger.info(msg)
-            else:
-                targetTaskStatus = 'SUBMITTED'
-                checkStatusLoop(self.logger, self.server, self.defaultApi, self.cachedinfo['RequestName'], targetTaskStatus, self.name)
+            msg = "Please use ' crab status ' to check how the resubmission process proceeds."
+            msg += "\nNotice it may take a couple of minutes for the resubmission to get fully processed."
+            self.logger.info(msg)
             returndict = {'status': 'SUCCESS'}
 
         return returndict
@@ -243,12 +239,6 @@ class resubmit(SubCommand):
                                type='int',
                                help="Set the priority of this task compared to other tasks you own; tasks default to 10." + \
                                       " Tasks with higher priority values run first. This does not change your share compared to other users.")
-
-        self.parser.add_option('--wait',
-                               dest='wait',
-                               default=False,
-                               action='store_true',
-                               help="DEPRECATED")
 
         self.parser.add_option('--force',
                                dest='force',
