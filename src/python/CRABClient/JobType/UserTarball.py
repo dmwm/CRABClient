@@ -192,7 +192,7 @@ class UserTarball(object):
                     data = f.read(BUF_SIZE)
                     if not data:
                         break
-                hasher.update(data)
+                    hasher.update(data)
             hashkey = hasher.hexdigest()
             cachename = "%s.tgz" % hashkey
             # current code requires a taskname to extract username. Any dummy one will do
