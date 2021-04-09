@@ -666,7 +666,7 @@ def cmd_exist(cmd):
     except OSError:
         return False
 
-def checkStatusLoop(logger, server, uri, uniquerequestname, targetstatus, cmdname):
+def checkStatusLoop(logger, server, api, uniquerequestname, targetstatus, cmdname):
     logger.info("Waiting for task to be processed")
 
     maxwaittime = 900 #in second, changed to 15 minute max wait time, the original 1 hour is too long
@@ -691,7 +691,7 @@ def checkStatusLoop(logger, server, uri, uniquerequestname, targetstatus, cmdnam
 
         logger.debug("Looking up detailed status of task %s" % (uniquerequestname))
 
-        dictresult, status, reason = server.get(uri, data={'workflow' : uniquerequestname})
+        dictresult, status, reason = server.get(api=api, data={'workflow' : uniquerequestname})
         dictresult = dictresult['result'][0]
 
         if status != 200:
