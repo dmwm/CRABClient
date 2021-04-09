@@ -152,7 +152,7 @@ class Analysis(BasicJobType):
         ## handled, we are sure that if we reached this point it will not raise EnvironmentException.
         ## But otherwise we should take this into account.
         with UserTarball(name=tarFilename, logger=self.logger, config=self.config, crabserver=self.crabserver) as tb:
-            inputFiles = [re.sub(r'^file:', '', file) for file in getattr(self.config.JobType, 'inputFiles', [])]
+            inputFiles = [re.sub(r'^file:', '', f) for f in getattr(self.config.JobType, 'inputFiles', [])]
             tb.addFiles(userFiles=inputFiles, cfgOutputName=cfgOutputName)
             try:
                 # convert from unicode to ascii to make it work with older pycurl versions
