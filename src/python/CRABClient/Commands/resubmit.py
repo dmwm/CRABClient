@@ -7,7 +7,7 @@ import urllib
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ConfigurationException
 from CRABClient.UserUtilities import getMutedStatusInfo, getColumn
-from CRABClient.ClientUtilities import validateJobids, checkStatusLoop, colors, getUrl
+from CRABClient.ClientUtilities import validateJobids, colors
 
 class resubmit(SubCommand):
     """
@@ -66,7 +66,7 @@ class resubmit(SubCommand):
         configreq_encoded = self._encodeRequest(configreq)
         self.logger.debug("Encoded resubmit request: %s" % (configreq_encoded))
 
-        dictresult, _, _ = self.RESTServer.post(self.uri, data=configreq_encoded)
+        dictresult, _, _ = self.crabserver.post(api=self.defaultApi, data=configreq_encoded)
         self.logger.debug("Result: %s" % (dictresult))
         self.logger.info("Resubmit request sent to the server.")
         if dictresult['result'][0]['result'] != 'ok':
@@ -74,13 +74,9 @@ class resubmit(SubCommand):
             self.logger.info(msg)
             returndict = {'status': 'FAILED'}
         else:
-            if not self.options.wait:
-                msg = "Please use ' crab status ' to check how the resubmission process proceeds."
-                msg += "\nNotice it may take a couple of minutes for the resubmission to get fully processed."
-                self.logger.info(msg)
-            else:
-                targetTaskStatus = 'SUBMITTED'
-                checkStatusLoop(self.logger, self.server, self.uri, self.cachedinfo['RequestName'], targetTaskStatus, self.name)
+            msg = "Please use ' crab status ' to check how the resubmission process proceeds."
+            msg += "\nNotice it may take a couple of minutes for the resubmission to get fully processed."
+            self.logger.info(msg)
             returndict = {'status': 'SUCCESS'}
 
         return returndict
@@ -244,12 +240,6 @@ class resubmit(SubCommand):
                                help="Set the priority of this task compared to other tasks you own; tasks default to 10." + \
                                       " Tasks with higher priority values run first. This does not change your share compared to other users.")
 
-        self.parser.add_option('--wait',
-                               dest='wait',
-                               default=False,
-                               action='store_true',
-                               help="DEPRECATED")
-
         self.parser.add_option('--force',
                                dest='force',
                                default=False,
@@ -270,8 +260,7 @@ class resubmit(SubCommand):
         """
         SubCommand.validateOptions(self)
 
-        uri = getUrl(self.instance, resource='task')
-        crabDBInfo, _, _ = self.RESTServer.get(uri, data={'subresource': 'search', 'workflow': self.cachedinfo['RequestName']})
+        crabDBInfo, _, _ = self.crabserver.get(api='task', data={'subresource': 'search', 'workflow': self.cachedinfo['RequestName']})
         self.splitting = getColumn(crabDBInfo, 'tm_split_algo')
 
         if self.options.publication:

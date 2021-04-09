@@ -10,7 +10,7 @@ from ast import literal_eval
 from datetime import datetime
 from httplib import HTTPException
 
-from CRABClient.ClientUtilities import colors, validateJobids, compareJobids, getUrl
+from CRABClient.ClientUtilities import colors, validateJobids, compareJobids
 from CRABClient.UserUtilities import getDataFromURL, getColumn
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ConfigurationException
@@ -41,10 +41,8 @@ class status(SubCommand):
     def __call__(self):
         # Get all of the columns from the database for a certain task
         taskname = self.cachedinfo['RequestName']
-        uriNoApi = getUrl(self.instance)
-        uri = getUrl(self.instance, resource='task')
-        server = self.RESTServer
-        crabDBInfo, _, _ = server.get(uri, data={'subresource':'search', 'workflow':taskname})
+        server = self.crabserver
+        crabDBInfo, _, _ = server.get(api='task', data={'subresource':'search', 'workflow':taskname})
         self.logger.debug("Got information from server oracle database: %s", crabDBInfo)
 
         # Until the task lands on a schedd we'll show the status from the DB
@@ -72,10 +70,8 @@ class status(SubCommand):
 
         if not webdir:
             # Query condor through the server for information about this task
-            uri = getUrl(self.instance, resource='workflow')
             params = {'subresource':'taskads', 'workflow':taskname}
-
-            res = server.get(uri, data=params)[0]['result'][0]
+            res = server.get(api='workflow', data=params)[0]['result'][0]
             # JobStatus 5 = Held
             if res['JobStatus'] == '5' and 'DagmanHoldReason' in res:
                 # If we didn't find a webdir in the DB and the DAG is held,
@@ -97,7 +93,7 @@ class status(SubCommand):
 
         self.logger.debug("Webdir is located at %s", webdir)
 
-        proxiedWebDir = getProxiedWebDir(RESTServer=self.RESTServer, task=taskname, uriNoApi=uriNoApi, logFunction=self.logger.debug)
+        proxiedWebDir = getProxiedWebDir(crabserver=self.crabserver, task=taskname, logFunction=self.logger.debug)
 
         if not proxiedWebDir:
             msg = "Failed to get the proxied webdir from CRABServer. "
@@ -255,10 +251,10 @@ class status(SubCommand):
     def publicationStatus(self, workflow, asourl, asodb, user):
         """Gets some information about the state of publication of jobs from the server.
         """
-        uri = getUrl(self.instance, resource='workflow')
-        server = self.RESTServer
+        api = 'workflow'
+        server = self.crabserver
 
-        pubInfo, _, _ = server.get(uri, data={'subresource':'publicationstatus', 'workflow':workflow,
+        pubInfo, _, _ = server.get(api, data={'subresource':'publicationstatus', 'workflow':workflow,
                                               'asourl':asourl, 'asodb':asodb, 'username':user})
 
         # Dictionary received from the server should have a structure like this:

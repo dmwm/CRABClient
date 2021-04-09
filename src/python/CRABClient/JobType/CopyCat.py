@@ -1,3 +1,6 @@
+# this is an experimantal new feature introduced by Marco and never fully tested/used
+# will worry about pylint if and when we decide to use it and look at details
+#pylint: skip-file
 """
 CopyCat job type plug-in
 """
@@ -27,7 +30,7 @@ from CRABClient.JobType.CMSSWConfig import CMSSWConfig
 from CRABClient.JobType.BasicJobType import BasicJobType
 from CRABClient.ClientMapping import getParamDefaultValue
 from CRABClient.JobType.LumiMask import getLumiList, getRunList
-from CRABClient.ClientUtilities import bootstrapDone, BOOTSTRAP_CFGFILE, BOOTSTRAP_CFGFILE_PKL, getUrl
+from CRABClient.ClientUtilities import bootstrapDone, BOOTSTRAP_CFGFILE, BOOTSTRAP_CFGFILE_PKL
 from CRABClient.ClientExceptions import ClientException, EnvironmentException, ConfigurationException, CachefileNotFoundException
 
 
@@ -42,8 +45,7 @@ class CopyCat(BasicJobType):
         serverFactory = CRABClient.Emulator.getEmulator('rest')
         serverhost = SERVICE_INSTANCES.get(self.config.JobType.copyCatInstance)
         server = serverFactory(serverhost, self.proxyfilename, self.proxyfilename, version=__version__)
-        uri = getUrl(self.config.JobType.copyCatInstance, resource='task')
-        dictresult, dummyStatus, dummyReason = server.get(uri, data=inputlist)
+        dictresult, dummyStatus, dummyReason = server.get(api='task', data=inputlist)
         webdir = getProxiedWebDir(self.config.JobType.copyCatTaskname, serverhost, uri, self.proxyfilename, self.logger.debug)
         if not webdir:
             webdir = getColumn(dictresult, 'tm_user_webdir')

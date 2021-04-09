@@ -3,7 +3,7 @@ from __future__ import division
 
 from httplib import HTTPException
 
-from CRABClient.ClientUtilities import colors, getUrl, validateJobids, getColumn
+from CRABClient.ClientUtilities import colors, validateJobids, getColumn
 from CRABClient.UserUtilities import getFileFromURL
 from CRABClient.Commands.getcommand import getcommand
 from CRABClient.ClientExceptions import RESTCommunicationException, MissingOptionException
@@ -25,12 +25,9 @@ class getlog(getcommand):
         if self.options.short:
             taskname = self.cachedinfo['RequestName']
             inputlist = {'subresource': 'search', 'workflow': taskname}
-            server = self.RESTServer
-            uriNoApi = getUrl(self.instance)
-            uri = getUrl(self.instance, resource='task')
-            webdir = getProxiedWebDir(RESTServer=self.RESTServer, task=taskname, uriNoApi=uriNoApi, logFunction=self.logger.debug)
-            #webdir = getProxiedWebDir(taskname, self.serverurl, uri, self.proxyfilename, self.logger.debug)
-            dictresult, status, reason = server.get(uri, data=inputlist)
+            server = self.crabserver
+            webdir = getProxiedWebDir(crabserver=self.crabserver, task=taskname, logFunction=self.logger.debug)
+            dictresult, status, reason = server.get(api='task', data=inputlist)
             if not webdir:
                 webdir = dictresult['result'][0]
                 self.logger.info('Server result: %s' % webdir)

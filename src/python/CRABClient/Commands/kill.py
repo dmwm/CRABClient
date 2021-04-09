@@ -13,14 +13,14 @@ class kill(SubCommand):
     visible = True
 
     def __call__(self):
-        server = self.RESTServer
+        server = self.crabserver
 
         self.logger.debug("Killing task %s" % self.cachedinfo['RequestName'])
         inputs = {'workflow' : self.cachedinfo['RequestName']}
         if self.options.killwarning:
             inputs.update({'killwarning' : b64encode(self.options.killwarning)})
 
-        dictresult, status, reason = server.delete(self.uri, data=urllib.urlencode(inputs))
+        dictresult, status, reason = server.delete(api=self.defaultApi, data=urllib.urlencode(inputs))
         self.logger.debug("Result: %s" % dictresult)
 
         if status != 200:

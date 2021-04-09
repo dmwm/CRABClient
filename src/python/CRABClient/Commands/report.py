@@ -281,12 +281,12 @@ class report(SubCommand):
         """
         reportData = {}
 
-        server = self.RESTServer
+        server = self.crabserver
 
         self.logger.debug('Looking up report for task %s' % self.cachedinfo['RequestName'])
 
         # Query server for information from the taskdb, intput/output file metadata from metadatadb
-        dictresult, status, _ = server.get(self.uri, data={'workflow': self.cachedinfo['RequestName'], 'subresource': 'report2'})
+        dictresult, status, _ = server.get(api=self.defaultApi, data={'workflow': self.cachedinfo['RequestName'], 'subresource': 'report2'})
 
         self.logger.debug("Result: %s" % dictresult)
         self.logger.info("Running crab status first to fetch necessary information.")

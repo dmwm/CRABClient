@@ -18,7 +18,7 @@ from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientMapping import parametersMapping, getParamDefaultValue
 from CRABClient.ClientExceptions import ClientException, RESTCommunicationException
 from CRABClient.ClientUtilities import getJobTypes, createCache, addPlugin, server_info, colors,\
-    getUrl, setSubmitParserOptions, validateSubmitOptions, checkStatusLoop
+    setSubmitParserOptions, validateSubmitOptions, checkStatusLoop
 
 from ServerUtilities import MAX_MEMORY_PER_CORE, MAX_MEMORY_SINGLE_CORE
 
@@ -91,11 +91,11 @@ class submit(SubCommand):
         jobconfig = {}
         #get the backend URLs from the server external configuration
 
-        uriNoApi = getUrl(self.instance)
-        serverBackendURLs = server_info(RESTServer=self.RESTServer, uriNoApi=uriNoApi, subresource='backendurls')
+        serverBackendURLs = server_info(crabserver=self.crabserver, subresource='backendurls')
         #if cacheSSL is specified in the server external configuration we will use it to upload the sandbox
         filecacheurl = serverBackendURLs['cacheSSL'] if 'cacheSSL' in serverBackendURLs else None
-        pluginParams = [self.configuration, self.proxyfilename, self.logger, os.path.join(self.requestarea, 'inputs')]
+        pluginParams = [self.configuration, self.proxyfilename, self.logger,
+                        os.path.join(self.requestarea, 'inputs'), self.crabserver]
         crab_job_types = getJobTypes()
         if self.configreq['jobtype'].upper() in crab_job_types:
             plugjobtype = crab_job_types[self.configreq['jobtype'].upper()](*pluginParams)
@@ -115,7 +115,7 @@ class submit(SubCommand):
                 self.logger.warning(msg)
 
         self.configreq.update(jobconfig)
-        server = self.RESTServer
+        server = self.crabserver
 
         self.logger.info("Sending the request to the server at %s" % self.serverurl)
         self.logger.debug("Submitting %s " % str(self.configreq))
@@ -125,7 +125,7 @@ class submit(SubCommand):
         self.configreq_encoded = self._encodeRequest(self.configreq, listParams)
         self.logger.debug('Encoded submit request: %s' % (self.configreq_encoded))
 
-        dictresult, status, reason = server.put(self.uri, data=self.configreq_encoded)
+        dictresult, status, reason = server.put(api=self.defaultApi, data=self.configreq_encoded)
         self.logger.debug("Result: %s" % dictresult)
         if status != 200:
             msg = "Problem sending the request:\ninput:%s\noutput:%s\nreason:%s" % (str(self.configreq), str(dictresult), str(reason))
@@ -150,7 +150,7 @@ class submit(SubCommand):
             self.logger.info("Please use ' crab status -d %s ' to check how the submission process proceeds.", projDir)
         else:
             targetTaskStatus = 'UPLOADED' if self.options.dryrun else 'SUBMITTED'
-            checkStatusLoop(self.logger, server, self.uri, uniquerequestname, targetTaskStatus, self.name)
+            checkStatusLoop(self.logger, server, self.defaultApi, uniquerequestname, targetTaskStatus, self.name)
 
         if self.options.dryrun:
             self.printDryRunResults(*self.executeTestRun(filecacheurl))
