@@ -7,7 +7,7 @@ from CRABClient.Commands.remote_copy import remote_copy
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ConfigurationException, RESTCommunicationException,\
     ClientException
-from CRABClient.ClientUtilities import validateJobids, colors, getUrl
+from CRABClient.ClientUtilities import validateJobids, colors
 from CRABClient.UserUtilities import getMutedStatusInfo
 
 class getcommand(SubCommand):

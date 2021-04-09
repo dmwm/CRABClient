@@ -17,7 +17,7 @@ from CRABClient import __version__
 from CRABClient.ClientUtilities import colors
 from CRABClient.CRABOptParser import CRABCmdOptParser
 from CRABClient.CredentialInteractions import CredentialInteractions
-from CRABClient.ClientUtilities import loadCache, getWorkArea, server_info, createWorkArea, getUrl
+from CRABClient.ClientUtilities import loadCache, getWorkArea, server_info, createWorkArea
 from CRABClient.ClientExceptions import ConfigurationException, MissingOptionException, EnvironmentException, CachefileNotFoundException
 from CRABClient.ClientMapping import renamedParams, commandsConfiguration, configParametersInfo, getParamDefaultValue
 
@@ -463,7 +463,6 @@ class SubCommand(ConfigCommand):
             return
 
         if not self.options.proxy:
-            uriNoApi = getUrl(self.instance)
             # Get the DN of the task workers from the server.
             all_task_workers_dns = server_info(self.crabserver, subresource='delegatedn')
             for serverdn in all_task_workers_dns['services']:

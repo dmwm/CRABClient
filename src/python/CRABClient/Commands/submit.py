@@ -18,7 +18,7 @@ from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientMapping import parametersMapping, getParamDefaultValue
 from CRABClient.ClientExceptions import ClientException, RESTCommunicationException
 from CRABClient.ClientUtilities import getJobTypes, createCache, addPlugin, server_info, colors,\
-    getUrl, setSubmitParserOptions, validateSubmitOptions, checkStatusLoop
+    setSubmitParserOptions, validateSubmitOptions, checkStatusLoop
 
 from ServerUtilities import MAX_MEMORY_PER_CORE, MAX_MEMORY_SINGLE_CORE
 

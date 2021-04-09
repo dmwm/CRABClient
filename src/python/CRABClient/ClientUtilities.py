@@ -181,13 +181,6 @@ def getColumn(dictresult, columnName):
     else:
         return value
 
-def getUrl(dbInstance='prod', resource=None):
-    """
-    Retrieve the url depending on the resource we are accessing and the DB instance.
-    """
-    url = '/crabserver/' + dbInstance + '/' + resource if resource else '/crabserver/' + dbInstance
-    return url
-
 def uploadlogfile(logger, proxyfilename, logfilename=None, logpath=None, instance='prod', serverurl=None, username=None):
     ## WMCore dependencies. Moved here to minimize dependencies in the bootstrap script
     from WMCore.Services.UserFileCache.UserFileCache import UserFileCache
@@ -228,7 +221,6 @@ def uploadlogfile(logger, proxyfilename, logfilename=None, logpath=None, instanc
         logger.debug('No proxy was given')
         doupload = False
 
-    baseurl = getUrl(dbInstance=instance)
     if doupload:
         # uploadLog is executed directly from crab main script, does not inherit from SubCommand
         # so it needs its own REST server instantiation

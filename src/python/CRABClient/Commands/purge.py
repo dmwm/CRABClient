@@ -5,7 +5,7 @@ from httplib import HTTPException
 from WMCore.Services.UserFileCache.UserFileCache  import UserFileCache
 
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ClientUtilities import colors, server_info, getUrl
+from CRABClient.ClientUtilities import colors, server_info
 from CRABClient.ClientExceptions import ConfigurationException, ConfigException
 
 from ServerUtilities import getColumn
@@ -22,8 +22,7 @@ class purge(SubCommand):
         self.logger.info('Getting the tarball hash key')
         inputlist = {'subresource': 'search', 'workflow': self.cachedinfo['RequestName']}
         server = self.crabserver
-        uri = getUrl(self.instance, resource='task')
-        dictresult, _, _ = server.get(uri, data=inputlist)
+        dictresult, _, _ = server.get(api='task', data=inputlist)
 
         tm_user_sandbox = getColumn(dictresult, 'tm_user_sandbox')
         hashkey = tm_user_sandbox.replace(".tar.gz", "")
@@ -49,7 +48,6 @@ class purge(SubCommand):
         scheddresult = {}
         gsisshdict = {}
         if not self.options.scheddonly or noSchedd:
-            baseurl = getUrl(self.instance)
             cacheurl = server_info(crabserver=server, subresource='backendurls')
             cacheurl = cacheurl['cacheSSL']
             cacheurldict = {'endpoint': cacheurl, 'pycurl': True}

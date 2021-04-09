@@ -3,7 +3,7 @@ from __future__ import division
 
 from httplib import HTTPException
 
-from CRABClient.ClientUtilities import colors, getUrl, validateJobids, getColumn
+from CRABClient.ClientUtilities import colors, validateJobids, getColumn
 from CRABClient.UserUtilities import getFileFromURL
 from CRABClient.Commands.getcommand import getcommand
 from CRABClient.ClientExceptions import RESTCommunicationException, MissingOptionException

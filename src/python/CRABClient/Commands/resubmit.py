@@ -7,7 +7,7 @@ import urllib
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ConfigurationException
 from CRABClient.UserUtilities import getMutedStatusInfo, getColumn
-from CRABClient.ClientUtilities import validateJobids, checkStatusLoop, colors, getUrl
+from CRABClient.ClientUtilities import validateJobids, colors
 
 class resubmit(SubCommand):
     """

@@ -8,7 +8,6 @@ import subprocess
 from ServerUtilities import getProxiedWebDir, getColumn
 
 import CRABClient.Emulator
-from CRABClient.ClientUtilities import getUrl
 from CRABClient.UserUtilities import getFileFromURL
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ClientException

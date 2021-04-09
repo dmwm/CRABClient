@@ -10,7 +10,7 @@ from ast import literal_eval
 from datetime import datetime
 from httplib import HTTPException
 
-from CRABClient.ClientUtilities import colors, validateJobids, compareJobids, getUrl
+from CRABClient.ClientUtilities import colors, validateJobids, compareJobids
 from CRABClient.UserUtilities import getDataFromURL, getColumn
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ConfigurationException
