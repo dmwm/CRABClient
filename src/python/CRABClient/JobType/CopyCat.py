@@ -1,3 +1,6 @@
+# this is an experimantal new feature introduced by Marco and never fully tested/used
+# will worry about pylint if and when we decide to use it and look at details
+#pylint: skip-file
 """
 CopyCat job type plug-in
 """

@@ -1,3 +1,4 @@
+# pylint: disable=global-statement
 """
     Used to perform dependency injection necessary for testing
 """
@@ -26,5 +27,4 @@ def getDefaults():
     import RESTInteractions
     from WMCore.Services.UserFileCache.UserFileCache import UserFileCache
     return {'rest' : RESTInteractions.CRABRest,
-                'ufc' : UserFileCache}
-
+            'ufc' : UserFileCache}

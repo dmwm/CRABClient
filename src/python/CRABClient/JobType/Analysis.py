@@ -117,7 +117,7 @@ class Analysis(BasicJobType):
         ## Get the list of additional output files that have to be collected as given
         ## in JobType.outputFiles, but remove duplicates listed already as EDM files or
         ## TFiles.
-        addoutputFiles = [re.sub(r'^file:', '', file) for file in getattr(self.config.JobType, 'outputFiles', []) if re.sub(r'^file:', '', file) not in edmfiles+tfiles]
+        addoutputFiles = [re.sub(r'^file:', '', f) for f in getattr(self.config.JobType, 'outputFiles', []) if re.sub(r'^file:', '', f) not in edmfiles+tfiles]
         outputWarn = "The following user output files (not listed as PoolOuputModule or TFileService in the CMSSW PSet) will be collected: %s" % ", ".join(["'{0}'".format(x) for x in addoutputFiles])
         self.logger.debug("The following EDM output files will be collected: %s" % edmfiles)
         self.logger.debug("The following TFile output files will be collected: %s" % tfiles)
