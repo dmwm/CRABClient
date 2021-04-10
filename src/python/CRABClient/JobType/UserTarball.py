@@ -199,7 +199,7 @@ class UserTarball(object):
             # next version of RESTCache will get username from cmsweb FE headers
             #faketaskname = '210401_210401:belforte_crab_210401_210401'
             uploadToS3(crabserver=self.crabserver, objecttype='sandbox', filepath=archiveName,
-                       taskname=faketaskname, tarballname=cachename, logger=self.logger)
+                       tarballname=cachename, logger=self.logger)
         else:
             # old way using UFC
             ufc = CRABClient.Emulator.getEmulator('ufc')({'endpoint' : filecacheurl, "pycurl": True})
