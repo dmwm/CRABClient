@@ -197,9 +197,8 @@ class UserTarball(object):
             cachename = "%s.tgz" % hashkey
             # current code requires a taskname to extract username. Any dummy one will do
             # next version of RESTCache will get username from cmsweb FE headers
-            faketaskname = '210401_210401:belforte_crab_210401_210401'
-            uploadToS3(crabserver=self.crabserver, object='sandbox', filepath=archiveName,
-                       taskname=faketaskname, cachename=cachename, logger=self.logger)
+            uploadToS3(crabserver=self.crabserver, objecttype='sandbox', filepath=archiveName,
+                       tarballname=cachename, logger=self.logger)
         else:
             # old way using UFC
             ufc = CRABClient.Emulator.getEmulator('ufc')({'endpoint' : filecacheurl, "pycurl": True})

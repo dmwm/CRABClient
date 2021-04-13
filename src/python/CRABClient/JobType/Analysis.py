@@ -175,6 +175,7 @@ class Analysis(BasicJobType):
                        "More details can be found in %s" % (e, self.logger.logfile))
                 raise ClientException(msg)
 
+        # upload debug files
         debugFilesUploadResult = None
         with UserTarball(name=debugTarFilename, logger=self.logger, config=self.config, crabserver=self.crabserver) as dtb:
             dtb.addMonFiles()
