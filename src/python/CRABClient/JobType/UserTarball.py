@@ -194,7 +194,9 @@ class UserTarball(object):
                         break
                     hasher.update(data)
             hashkey = hasher.hexdigest()
-            cachename = "%s.tgz" % hashkey
+            # the ".tar.gz" suffix here is forced by other places in the client which add it when
+            # storing tarball name in task table. Not very elegant to need to hardcode in several places.
+            cachename = "%s.tar.gz" % hashkey
             # current code requires a taskname to extract username. Any dummy one will do
             # next version of RESTCache will get username from cmsweb FE headers
             uploadToS3(crabserver=self.crabserver, objecttype='sandbox', filepath=archiveName,
