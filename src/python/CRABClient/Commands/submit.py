@@ -153,7 +153,7 @@ class submit(SubCommand):
             checkStatusLoop(self.logger, server, self.defaultApi, uniquerequestname, targetTaskStatus, self.name)
 
         if self.options.dryrun:
-            self.printDryRunResults(*self.executeTestRun(filecacheurl))
+            self.printDryRunResults(*self.executeTestRun(filecacheurl, uniquerequestname))
 
         self.logger.debug("About to return")
 
@@ -364,7 +364,7 @@ class submit(SubCommand):
         return str(encoded)
 
 
-    def executeTestRun(self, filecacheurl):
+    def executeTestRun(self, filecacheurl, uniquerequestname):
         """
         Downloads the dry run tarball from the User File Cache and unpacks it in a temporary directory.
         Runs a trial to obtain the performance report. Repeats trial with successively larger input events
@@ -377,7 +377,7 @@ class submit(SubCommand):
             os.chdir(tmpDir)
             if 'S3' in filecacheurl.upper():
                 downloadFromS3(crabserver=self.crabserver, filepath=os.path.join(tmpDir, 'dry-run-sandbox.tar.gz'),
-                               objecttype='runtimefiles', taskname= , logger=self.logger)
+                               objecttype='runtimefiles', taskname=uniquerequestname, logger=self.logger)
             else:
                 ufc = CRABClient.Emulator.getEmulator('ufc')({'endpoint' : filecacheurl, "pycurl": True})
                 ufc.downloadLog('dry-run-sandbox.tar.gz', output=os.path.join(tmpDir, 'dry-run-sandbox.tar.gz'))
