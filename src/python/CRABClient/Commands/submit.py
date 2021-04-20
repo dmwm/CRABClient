@@ -372,8 +372,8 @@ class submit(SubCommand):
         """
         cwd = os.getcwd()
         try:
-            self.logger.info('Creating temporary directory for dry run sandbox in %s' % tmpDir)
             tmpDir = tempfile.mkdtemp()
+            self.logger.info('Created temporary directory for dry run sandbox in %s' % tmpDir)
             os.chdir(tmpDir)
             if 'S3' in filecacheurl.upper():
                 downloadFromS3(crabserver=self.crabserver, filepath=os.path.join(tmpDir, 'dry-run-sandbox.tar.gz'),
