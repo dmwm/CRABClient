@@ -20,7 +20,7 @@ from CRABClient.ClientExceptions import ClientException, RESTCommunicationExcept
 from CRABClient.ClientUtilities import getJobTypes, createCache, addPlugin, server_info, colors,\
     setSubmitParserOptions, validateSubmitOptions, checkStatusLoop
 
-from ServerUtilities import MAX_MEMORY_PER_CORE, MAX_MEMORY_SINGLE_CORE
+from ServerUtilities import MAX_MEMORY_PER_CORE, MAX_MEMORY_SINGLE_CORE, downloadFromS3
 
 class submit(SubCommand):
     """
@@ -370,13 +370,17 @@ class submit(SubCommand):
         Runs a trial to obtain the performance report. Repeats trial with successively larger input events
         until a job length of maxSeconds is reached (this improves accuracy for fast-running CMSSW parameter sets.)
         """
-        ufc = CRABClient.Emulator.getEmulator('ufc')({'endpoint' : filecacheurl, "pycurl": True})
         cwd = os.getcwd()
         try:
+            self.logger.info('Creating temporary directory for dry run sandbox in %s' % tmpDir)
             tmpDir = tempfile.mkdtemp()
             os.chdir(tmpDir)
-            self.logger.info('Creating temporary directory for dry run sandbox in %s' % tmpDir)
-            ufc.downloadLog('dry-run-sandbox.tar.gz', output=os.path.join(tmpDir, 'dry-run-sandbox.tar.gz'))
+            if 'S3' in filecacheurl.upper():
+                downloadFromS3(crabserver=self.crabserver, filepath=os.path.join(tmpDir, 'dry-run-sandbox.tar.gz'),
+                               objecttype='runtimefiles', taskname= , logger=self.logger)
+            else:
+                ufc = CRABClient.Emulator.getEmulator('ufc')({'endpoint' : filecacheurl, "pycurl": True})
+                ufc.downloadLog('dry-run-sandbox.tar.gz', output=os.path.join(tmpDir, 'dry-run-sandbox.tar.gz'))
             for name in ['dry-run-sandbox.tar.gz', 'InputFiles.tar.gz', 'CMSRunAnalysis.tar.gz', 'sandbox.tar.gz']:
                 tf = tarfile.open(os.path.join(tmpDir, name))
                 tf.extractall(tmpDir)
