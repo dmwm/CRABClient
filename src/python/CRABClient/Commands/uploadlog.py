@@ -25,6 +25,7 @@ class uploadlog(SubCommand):
 
     def __call__(self):
         self.logger.debug("uploadlog started")
+        taskname = None
         #veryfing the log file exist
         if self.options.logpath is not None:
             logfilename = str(time.strftime("%Y-%m-%d_%H%M%S"))+'_crab.log'
@@ -32,7 +33,8 @@ class uploadlog(SubCommand):
         elif os.path.isfile(self.logfile):
             self.logger.debug("crab.log exists")
             try:
-                logfilename = str(self.cachedinfo['RequestName'])+".log"
+                taskname = self.cachedinfo['RequestName']
+                logfilename = str(taskname)+".log"
             except:
                 self.logger.info("Couldn't get information from .requestcache (file likely not created due to submission failure), try\n"
                         "'crab uploadlog --logpath=<path-to-log-file-in-project-dir>'")
@@ -43,7 +45,7 @@ class uploadlog(SubCommand):
             raise ConfigurationException
 
         self.logger.info("Will upload file %s." % (self.logfile))
-        logfileurl = uploadlogfile(self.logger, self.proxyfilename, logfilename = logfilename, \
+        logfileurl = uploadlogfile(self.logger, self.proxyfilename, taskname = taskname, logfilename = logfilename, \
                                    logpath = str(self.logfile), instance = self.instance, \
                                    serverurl = self.serverurl)
         return {'result' : {'status' : 'SUCCESS' , 'logurl' : logfileurl}}
@@ -84,3 +86,4 @@ class uploadlog(SubCommand):
                 ex = MissingOptionException(msg)
                 ex.missingOption = "task"
             raise ex
+

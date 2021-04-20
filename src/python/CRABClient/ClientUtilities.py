@@ -21,7 +21,7 @@ from optparse import OptionValueError
 
 ## CRAB dependencies
 import CRABClient.Emulator
-from ServerUtilities import SERVICE_INSTANCES
+from ServerUtilities import SERVICE_INSTANCES, uploadToS3
 from CRABClient.ClientExceptions import ClientException, TaskNotFoundException, CachefileNotFoundException, ConfigurationException, ConfigException, UsernameException, ProxyException, RESTCommunicationException
 
 
@@ -181,7 +181,7 @@ def getColumn(dictresult, columnName):
     else:
         return value
 
-def uploadlogfile(logger, proxyfilename, logfilename=None, logpath=None, instance='prod', serverurl=None, username=None):
+def uploadlogfile(logger, proxyfilename, taskname=None, logfilename=None, logpath=None, instance='prod', serverurl=None, username=None):
     ## WMCore dependencies. Moved here to minimize dependencies in the bootstrap script
     from WMCore.Services.UserFileCache.UserFileCache import UserFileCache
 
@@ -220,8 +220,10 @@ def uploadlogfile(logger, proxyfilename, logfilename=None, logpath=None, instanc
     if proxyfilename == None:
         logger.debug('No proxy was given')
         doupload = False
-
+        
     if doupload:
+        logfileurl = False
+        logger.info("Uploading log file...")
         # uploadLog is executed directly from crab main script, does not inherit from SubCommand
         # so it needs its own REST server instantiation
         restClass = CRABClient.Emulator.getEmulator('rest')
@@ -232,23 +234,26 @@ def uploadlogfile(logger, proxyfilename, logfilename=None, logpath=None, instanc
         # Encode in ascii because old pycurl present in old CMSSW versions
         # doesn't support unicode.
         cacheurl = cacheurl['cacheSSL'].encode('ascii')
-        cacheurldict = {'endpoint': cacheurl, "pycurl": True}
 
-        ufc = UserFileCache(cacheurldict)
-        logger.debug("cacheURL: %s\nLog file name: %s" % (cacheurl, logfilename))
-        logger.info("Uploading log file...")
-        ufc.uploadLog(logpath, logfilename)
+        if 'S3' in cacheurl.upper():
+            #below line uploads log file to S3
+            uploadToS3(crabserver=crabserver, filepath=logpath, objecttype='clientlog', taskname=taskname, logger=logger)
+        else:
+            cacheurldict = {'endpoint': cacheurl, "pycurl": True}
+            ufc = UserFileCache(cacheurldict)
+            logger.debug("cacheURL: %s\nLog file name: %s" % (cacheurl, logfilename))
+            ufc.uploadLog(logpath, logfilename)
+            #logger.info("%sSuccess%s: Log file uploaded successfully." % (colors.GREEN, colors.NORMAL))
+            logfileurl = cacheurl + '/logfile?name='+str(logfilename)
+            if not username:
+                from CRABClient.UserUtilities import getUsername
+                username = getUsername(proxyFile=proxyfilename, logger=logger)
+            logfileurl += '&username='+str(username)
+            logger.info("Log file URL: %s" % (logfileurl))
         logger.info("%sSuccess%s: Log file uploaded successfully." % (colors.GREEN, colors.NORMAL))
-        logfileurl = cacheurl + '/logfile?name='+str(logfilename)
-        if not username:
-            from CRABClient.UserUtilities import getUsername
-            username = getUsername(proxyFile=proxyfilename, logger=logger)
-        logfileurl += '&username='+str(username)
-        logger.info("Log file URL: %s" % (logfileurl))
-        return  logfileurl
+
     else:
         logger.info('Failed to upload the log file')
-        logfileurl = False
 
     return  logfileurl
 
@@ -747,4 +752,7 @@ def checkStatusLoop(logger, server, api, uniquerequestname, targetstatus, cmdnam
             logger.info(msg)
 
     print('\a') #Generate audio bell
+
     logger.debug("Ended %s process." % ("resubmission" if cmdname == "resubmit" else "submission"))
+
+
