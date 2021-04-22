@@ -79,7 +79,6 @@ class CRABClient(object):
         ## this happens just before the program exits).
         ## In this function:
         ## - make sure everything is logged to the crab.log file;
-        ## - upload the crab.log file to the CRAB cache (if there is a valid proxy).
         ## However, we already have a `finally' clause where we make sure everything is
         ## logged to the crab log file.
         def log_exception(exc_type, exc_value, tback):
@@ -117,19 +116,7 @@ class CRABClient(object):
             logger.error("\n\tPlease email %s for support with the crab.log file or crab.log URL." % (FEEDBACKMAIL))
             logger.error("\tClient Version: %s" % client_version)
 
-            ## Upload the log file.
-            if hasattr(clientinstance, 'cmd') and hasattr(clientinstance.cmd, 'proxyfilename') and clientinstance.cmd.proxyfilename != None:
-                try:
-                    logurl = uploadlogfile(tbLogger, clientinstance.cmd.proxyfilename, logfilename = None, \
-                                           logpath = str(client.logger.logfile), instance = 'prod')
-                    msg  = "\tThe log file %s has been uploaded automatically to the CRAB cache." % (client.logger.logfile)
-                    msg += "\n\tPlease email the following URL '%s' to %s if you need help from Analysis Operations." % (logurl, FEEDBACKMAIL)
-                    logger.error(msg)
-                except Exception:
-                    logger.debug('Failed to upload log file automatically')
-                    logger.error("\tPlease use 'crab uploadlog' to upload the log file %s to the CRAB cache." % (client.logger.logfile))
-            else:
-                logger.error("\tPlease use 'crab uploadlog' to upload the log file %s to the CRAB cache." % (client.logger.logfile))
+            logger.error("\tPlease use 'crab uploadlog' to upload the log file %s to the CRAB cache." % (client.logger.logfile))
 
         sys.excepthook = log_exception
 
