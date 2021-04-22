@@ -222,10 +222,6 @@ def uploadlogfile(logger, proxyfilename, taskname=None, logfilename=None, logpat
         doupload = False
         
     if doupload:
-        if not username:
-            from CRABClient.UserUtilities import getUsername
-            username = getUsername(proxyFile=proxyfilename, logger=logger)
-
         # uploadLog is executed directly from crab main script, does not inherit from SubCommand
         # so it needs its own REST server instantiation
         restClass = CRABClient.Emulator.getEmulator('rest')
@@ -241,13 +237,16 @@ def uploadlogfile(logger, proxyfilename, taskname=None, logfilename=None, logpat
         if 'S3' in cacheurl.upper():
             objecttype = 'clientlog'
             uploadToS3(crabserver=crabserver, filepath=logpath, objecttype=objecttype, taskname=taskname, logger=logger)
-            logfileurl = getDownloadUrlFromS3(crabserver=crabserver, filepath=logpath, objecttype=objecttype, taskname=taskname, username=username, logger=logger)
+            logfileurl = getDownloadUrlFromS3(crabserver=crabserver, objecttype=objecttype, taskname=taskname, logger=logger)
         else:
             cacheurldict = {'endpoint': cacheurl, "pycurl": True}
             ufc = UserFileCache(cacheurldict)
             logger.debug("cacheURL: %s\nLog file name: %s" % (cacheurl, logfilename))
             ufc.uploadLog(logpath, logfilename)
             logfileurl = cacheurl + '/logfile?name='+str(logfilename)
+            if not username:
+              from CRABClient.UserUtilities import getUsername
+              username = getUsername(proxyFile=proxyfilename, logger=logger)            
             logfileurl += '&username='+str(username)
         logger.info("Log file URL: %s" % (logfileurl))
         logger.info("%sSuccess%s: Log file uploaded successfully." % (colors.GREEN, colors.NORMAL))
