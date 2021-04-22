@@ -30,7 +30,7 @@ from CRABClient.CRABOptParser import CRABOptParser
 from CRABClient import __version__ as client_version
 from CRABClient.ClientMapping import parametersMapping
 from CRABClient.ClientExceptions import ClientException
-from CRABClient.ClientUtilities import getAvailCommands, uploadlogfile, initLoggers, setConsoleLogLevelVar, StopExecution, flushMemoryLogger, LOGFORMATTER
+from CRABClient.ClientUtilities import getAvailCommands, initLoggers, setConsoleLogLevelVar, StopExecution, flushMemoryLogger, LOGFORMATTER
 
 
 class MyNullHandler(logging.Handler):
@@ -79,7 +79,6 @@ class CRABClient(object):
         ## this happens just before the program exits).
         ## In this function:
         ## - make sure everything is logged to the crab.log file;
-        ## - upload the crab.log file to the CRAB cache (if there is a valid proxy).
         ## However, we already have a `finally' clause where we make sure everything is
         ## logged to the crab log file.
         def log_exception(exc_type, exc_value, tback):
@@ -93,7 +92,6 @@ class CRABClient(object):
             import traceback,pprint;
             pprint.pprint(traceback.format_tb(tback))
             """
-            clientinstance = self
 
             ## Add to the CRAB3 logger a file handler to the log file (if it doesn't have it
             ## already).
@@ -113,23 +111,11 @@ class CRABClient(object):
             ## This goes to the console (via the CRAB3.all logger) and to the log file (via
             ## the parent CRAB3 logger).
             logger = logging.getLogger('CRAB3.all')
-            logger.error("ERROR: %s: %s" % (exc_type.__name__, exc_value))
-            logger.error("\n\tPlease email %s for support with the crab.log file or crab.log URL." % (FEEDBACKMAIL))
-            logger.error("\tClient Version: %s" % client_version)
+            logger.error("ERROR: %s: %s", exc_type.__name__, exc_value)
+            logger.error("\n\tPlease email %s for support with the crab.log file or crab.log URL.", FEEDBACKMAIL)
+            logger.error("\tClient Version: %s", client_version)
 
-            ## Upload the log file.
-            if hasattr(clientinstance, 'cmd') and hasattr(clientinstance.cmd, 'proxyfilename') and clientinstance.cmd.proxyfilename != None:
-                try:
-                    logurl = uploadlogfile(tbLogger, clientinstance.cmd.proxyfilename, logfilename = None, \
-                                           logpath = str(client.logger.logfile), instance = 'prod')
-                    msg  = "\tThe log file %s has been uploaded automatically to the CRAB cache." % (client.logger.logfile)
-                    msg += "\n\tPlease email the following URL '%s' to %s if you need help from Analysis Operations." % (logurl, FEEDBACKMAIL)
-                    logger.error(msg)
-                except Exception:
-                    logger.debug('Failed to upload log file automatically')
-                    logger.error("\tPlease use 'crab uploadlog' to upload the log file %s to the CRAB cache." % (client.logger.logfile))
-            else:
-                logger.error("\tPlease use 'crab uploadlog' to upload the log file %s to the CRAB cache." % (client.logger.logfile))
+            logger.error("\tPlease use 'crab uploadlog' to upload the log file %s to the CRAB cache.", client.logger.logfile)
 
         sys.excepthook = log_exception
 
@@ -170,16 +156,16 @@ if __name__ == "__main__":
         if he.status==503 and he.result.find("CMSWEB Error: Service unavailable")!=-1:
             client.logger.info(schedInterv)
         if 'X-Error-Detail' in he.headers:
-            client.logger.info('Server answered with: %s' % he.headers['X-Error-Detail'])
+            client.logger.info('Server answered with: %s', he.headers['X-Error-Detail'])
         if 'X-Error-Info' in he.headers:
             reason = he.headers['X-Error-Info']
             for parname in parametersMapping['on-server']:
                 tmpmsg = "'%s'" % (parname)
                 if tmpmsg in reason and parametersMapping['on-server'][parname]['config']:
                     reason = reason.replace(tmpmsg, tmpmsg.replace(parname, ' or '.join(parametersMapping['on-server'][parname]['config'])))
-            client.logger.info('Reason is: %s' % reason)
+            client.logger.info('Reason is: %s', reason)
         if 'X-Error-Id' in he.headers:
-            client.logger.info('Error Id: %s' % he.headers['X-Error-Id'])
+            client.logger.info('Error Id: %s', he.headers['X-Error-Id'])
         #The following goes to the logfile.
         errmsg = "ERROR: %s (%s): " % (he.reason, he.status)
         ## answer can be a json or not
@@ -188,9 +174,9 @@ if __name__ == "__main__":
         except ValueError:
             pass
         client.logger.debug(errmsg)
-        client.logger.debug('Command failed with URI: %s' % he.url)
-        client.logger.debug('     Input data: %s' % he.req_data)
-        client.logger.debug('     Request headers: %s' % he.headers)
+        client.logger.debug('Command failed with URI: %s', he.url)
+        client.logger.debug('     Input data: %s', he.req_data)
+        client.logger.debug('     Request headers: %s', he.headers)
         logging.getLogger('CRAB3').exception('Caught HTTPException exception')
         exitcode = he.status
     except pycurl.error as pe:
