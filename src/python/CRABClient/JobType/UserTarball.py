@@ -48,7 +48,7 @@ def testS3upload(s3tester, archiveName, logger):
                    tarballname=cachename, logger=logger)
         status = 'OK'
     except Exception as e:
-        self.logger.exception(str(e))
+        logger.exception(str(e))
         status = 'FAIL'
         reason = str(e)
     t2 = time.time()
@@ -62,7 +62,6 @@ def testS3upload(s3tester, archiveName, logger):
     s3report['KBytes'] = tarballKB
     s3report['seconds'] = int(t2-t1)
     return s3report
-
 
 class UserTarball(object):
     """
