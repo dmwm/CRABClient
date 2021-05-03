@@ -79,7 +79,7 @@ class UserTarball(object):
         self.logger = logger
         self.scram = ScramEnvironment(logger=self.logger)
         self.logger.debug("Making tarball in %s" % name)
-        self.tarfile = tarfile.open(name=name , mode=mode, dereference=True)
+        self.tarfile = tarfile.open(name=name, mode=mode, dereference=True)
         self.checksum = None
         self.content = None
         self.crabserver = crabserver
@@ -104,7 +104,7 @@ class UserTarball(object):
         # Note that dataDirs are only looked-for and added under the src/ folder.
         # /data/ subdirs contain data files needed by the code
         # /interface/ subdirs contain C++ header files needed e.g. by ROOT6
-        dataDirs    = ['data','interface']
+        dataDirs = ['data', 'interface']
         userFiles = userFiles or []
 
         # Tar up whole directories
@@ -120,7 +120,7 @@ class UserTarball(object):
         srcPath = os.path.join(self.scram.getCmsswBase(), 'src')
         for root, _, _ in os.walk(srcPath):
             if os.path.basename(root) in dataDirs:
-                directory = root.replace(srcPath,'src')
+                directory = root.replace(srcPath, 'src')
                 self.logger.debug("Adding data directory %s to tarball" % root)
                 self.checkdirectory(root)
                 self.tarfile.add(root, directory, recursive=True)
@@ -155,8 +155,8 @@ class UserTarball(object):
         configtmp.write(str(self.config))
         configtmp.flush()
         psetfilename = getattr(self.config.JobType, 'psetName', None)
-        if not psetfilename == None:
-            self.tarfile.add(psetfilename,'/debug/originalPSet.py')
+        if psetfilename:
+            self.tarfile.add(psetfilename, '/debug/originalPSet.py')
         else:
             self.logger.debug('Failed to add pset to debug_files.tar.gz')
 
@@ -189,7 +189,7 @@ class UserTarball(object):
         sortedContent = sorted(self.content, reverse=True)
         biggestFileSize = sortedContent[0][0]
         ndigits = int(math.ceil(math.log(biggestFileSize+1, 10)))
-        contentList  = "\nsandbox content sorted by size[Bytes]:"
+        contentList = "\nsandbox content sorted by size[Bytes]:"
         for (size, name) in sortedContent:
             contentList += ("\n%" + str(ndigits) + "s\t%s") % (size, name)
         return contentList
@@ -206,25 +206,26 @@ class UserTarball(object):
 
 	# in python3 and python2 with __future__ division, double / means integer division
         archiveSizeKB = archiveSizeBytes//1024
-        if archiveSizeKB <= 512 :
+        if archiveSizeKB <= 512:
             archiveSize = "%d KB" % archiveSizeKB
-        elif archiveSizeKB < 1024*10 :
+        elif archiveSizeKB < 1024*10:
             # in python3 and python2 with __future__ division, single / means floating point division
             archiveSize = "%3f.1 MB" % (archiveSizeKB/1024)
         else:
             archiveSize = "%d MB" % (archiveSizeKB//1024)
-        if archiveSizeBytes > FILE_SIZE_LIMIT :
-            msg=("%sError%s: input tarball size %s exceeds maximum allowed limit of %d MB" % (colors.RED, colors.NORMAL, archiveSize, FILE_SIZE_LIMIT//1024//1024))
+        if archiveSizeBytes > FILE_SIZE_LIMIT:
+            msg = ("%sError%s: input tarball size %s exceeds maximum allowed limit of %d MB" %
+                 (colors.RED, colors.NORMAL, archiveSize, FILE_SIZE_LIMIT//1024//1024))
             msg += self.printSortedContent()
             raise SandboxTooBigException(msg)
 
-        msg=("Uploading archive %s (%s) to the CRAB cache. Using URI %s" % (archiveName, archiveSize, filecacheurl))
+        msg = ("Uploading archive %s (%s) to the CRAB cache. Using URI %s" %
+               (archiveName, archiveSize, filecacheurl))
         self.logger.debug(msg)
 
-        if 'S3' in filecacheurl.upper() :
+        if 'S3' in filecacheurl.upper():
             # use S3
             # generate a 32char hash like UserFileCache used to do
-            import hashlib
             hasher = hashlib.sha256()
             with open(archiveName) as f:
                 BUF_SIZE = 1024*1024  # lets read stuff in 1MByte chunks!
@@ -245,7 +246,7 @@ class UserTarball(object):
             # old way using UFC
             ufc = CRABClient.Emulator.getEmulator('ufc')({'endpoint' : filecacheurl, "pycurl": True})
             t1 = time.time()
-            result = ufc.upload(archiveName, excludeList = NEW_USER_SANDBOX_EXCLUSIONS)
+            result = ufc.upload(archiveName, excludeList=NEW_USER_SANDBOX_EXCLUSIONS)
             ufcSeconds = int(time.time()-t1)
             if 'hashkey' not in result:
                 self.logger.error("Failed to upload archive: %s" % str(result))
@@ -257,7 +258,7 @@ class UserTarball(object):
             # report also how log it tool uploading to UFC (which surely worked if we are here)
             s3report['ufcseconds'] = ufcSeconds
             reportFile = '/tmp/crabs3report.' + uuid.uuid4().hex
-            with open(reportFile,'w') as fp:
+            with open(reportFile, 'w') as fp:
                 json.dump(s3report, fp)
             reportName = s3report['timestamp'] + ':s3report.json'
             try:
@@ -271,12 +272,12 @@ class UserTarball(object):
     def checkdirectory(self, dir_):
         #checking for infinite symbolic link loop
         try:
-            for root , _ , files in os.walk(dir_, followlinks = True):
+            for root, _, files in os.walk(dir_, followlinks=True):
                 for file_ in files:
-                    os.stat(os.path.join(root, file_ ))
+                    os.stat(os.path.join(root, file_))
         except OSError as msg:
             err = '%sError%s: Infinite directory loop found in: %s \nStderr: %s' % \
-                    (colors.RED, colors.NORMAL, dir_ , msg)
+                    (colors.RED, colors.NORMAL, dir_, msg)
             raise EnvironmentException(err)
 
 
