@@ -35,7 +35,7 @@ def testS3upload(s3tester, archiveName, logger):
             data = f.read(BUF_SIZE)
             if not data:
                 break
-        hasher.update(data)
+            hasher.update(data)
     s3hash = hasher.hexdigest()
     cachename = "%s.tgz" % s3hash
     try:
