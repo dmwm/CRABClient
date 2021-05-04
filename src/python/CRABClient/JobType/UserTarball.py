@@ -47,8 +47,9 @@ def testS3upload(s3tester, archiveName, logger):
             uploadToS3(crabserver=s3tester, objecttype='sandbox', filepath=archiveName,
                        tarballname=cachename, logger=logger)
         status = 'OK'
+        logger.debug('Successfully uploaded tarball to S3 as well')
     except Exception as e:
-        logger.exception(str(e))
+        logger.debug(str(e))
         status = 'FAIL'
         reason = str(e)
     t2 = time.time()
@@ -263,8 +264,9 @@ class UserTarball(object):
             reportName = s3report['timestamp'] + ':s3report.json'
             try:
                 ufc.uploadLog(reportFile, reportName)
+                self.logger.debug('Report of S3 upload stored on CrabCache as %', reportName)
             except Exception as e:
-                self.logger.exception(str(e))
+                self.logger.debug(str(e))
             os.remove(reportFile)
         return hashkey
 
