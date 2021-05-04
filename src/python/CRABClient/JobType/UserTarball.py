@@ -49,7 +49,7 @@ def testS3upload(s3tester, archiveName, logger):
         status = 'OK'
         logger.debug('Successfully uploaded tarball to S3 as well')
     except Exception as e:
-        logger.debug(str(e))
+        logger.debug('Tarball upload to S3 failed:\n%s', str(e))
         status = 'FAIL'
         reason = str(e)
     t2 = time.time()
