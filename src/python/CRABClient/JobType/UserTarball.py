@@ -264,7 +264,7 @@ class UserTarball(object):
             reportName = s3report['timestamp'] + ':s3report.json'
             try:
                 ufc.uploadLog(reportFile, reportName)
-                self.logger.debug('Report of S3 upload stored on CrabCache as %', reportName)
+                self.logger.debug('Report of S3 upload stored on CrabCache as %s', reportName)
             except Exception as e:
                 self.logger.debug(str(e))
             os.remove(reportFile)
