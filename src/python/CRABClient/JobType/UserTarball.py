@@ -25,7 +25,7 @@ from CRABClient.ClientExceptions import EnvironmentException, InputFileNotFoundE
 
 from ServerUtilities import NEW_USER_SANDBOX_EXCLUSIONS, BOOTSTRAP_CFGFILE_DUMP
 from ServerUtilities import FILE_SIZE_LIMIT
-from ServerUtilities import uploadToS3
+from ServerUtilities import uploadToS3, tempSetLogLevel
 
 def testS3upload(s3tester, archiveName, logger):
     hasher = hashlib.sha256()
@@ -43,9 +43,9 @@ def testS3upload(s3tester, archiveName, logger):
         timestamp = time.strftime('%y%m%d_%H%M%S', time.gmtime())
         msecs = int((t1 - int(t1)) * 1000)
         timestamp += '.%03d' % msecs
-
-        uploadToS3(crabserver=s3tester, objecttype='sandbox', filepath=archiveName,
-                   tarballname=cachename, logger=logger)
+        with tempSetLogLevel(logger=logger, level=1000):  # disable all logging for this call
+            uploadToS3(crabserver=s3tester, objecttype='sandbox', filepath=archiveName,
+                       tarballname=cachename, logger=logger)
         status = 'OK'
     except Exception as e:
         logger.exception(str(e))
