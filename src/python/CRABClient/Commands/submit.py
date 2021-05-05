@@ -95,7 +95,7 @@ class submit(SubCommand):
         #if cacheSSL is specified in the server external configuration we will use it to upload the sandbox
         filecacheurl = serverBackendURLs['cacheSSL'] if 'cacheSSL' in serverBackendURLs else None
         pluginParams = [self.configuration, self.proxyfilename, self.logger,
-                        os.path.join(self.requestarea, 'inputs'), self.crabserver]
+                        os.path.join(self.requestarea, 'inputs'), self.crabserver, self.s3tester]
         crab_job_types = getJobTypes()
         if self.configreq['jobtype'].upper() in crab_job_types:
             plugjobtype = crab_job_types[self.configreq['jobtype'].upper()](*pluginParams)
