@@ -57,9 +57,11 @@ def testS3upload(s3tester, archiveName, logger):
     if status == 'FAIL':
         s3report['reason'] = reason
     thisSite = socket.gethostname()
+    thisIP = socket.gethostbyname(thisSite)
     tarballKB = os.stat(archiveName).st_size // 1024
     s3report['timestamp'] = timestamp
-    s3report['origin'] = thisSite
+    s3report['clienthost'] = thisSite
+    s3report['clientip'] = thisIP
     s3report['KBytes'] = tarballKB
     s3report['seconds'] = int(t2-t1)
     return s3report
@@ -255,13 +257,13 @@ class UserTarball(object):
             hashkey = str(result['hashkey'])
             # upload a copy to S3 dev as well, just to stress it a bit, this never raises
             s3report = testS3upload(self.s3tester, archiveName, self.logger)
-            # upload S3 test report to crabcache
-            # report also how log it tool uploading to UFC (which surely worked if we are here)
+            # report also how long it took uploading to UFC (which surely worked if we are here)
             s3report['ufcseconds'] = ufcSeconds
+            # upload S3 test report to crabcache
             reportFile = '/tmp/crabs3report.' + uuid.uuid4().hex
             with open(reportFile, 'w') as fp:
                 json.dump(s3report, fp)
-            reportName = s3report['timestamp'] + ':s3report.json'
+            reportName = 'S3-' + s3report['timestamp'] + ':s3report.json'
             try:
                 ufc.uploadLog(reportFile, reportName)
                 self.logger.debug('Report of S3 upload stored on CrabCache as %s', reportName)
