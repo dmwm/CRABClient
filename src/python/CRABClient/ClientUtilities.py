@@ -16,7 +16,10 @@ import sys
 import pickle
 import subprocess
 import traceback
-from urlparse import urlparse
+if sys.version_info >= (3, 0):
+    from urllib.parse import urlparse
+if sys.version_info < (3, 0):
+    from urlparse import urlparse
 from optparse import OptionValueError
 
 ## CRAB dependencies

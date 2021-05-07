@@ -6,8 +6,10 @@ import os
 import logging
 import traceback
 import subprocess
-from urlparse import urlparse
-from http.client import HTTPException
+if sys.version_info >= (3, 0):
+    from urllib.parse import urlparse
+if sys.version_info < (3, 0):
+    from urlparse import urlparse
 
 ## WMCore dependencies
 from WMCore.Configuration import Configuration
