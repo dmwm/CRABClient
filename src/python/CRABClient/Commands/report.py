@@ -5,7 +5,7 @@ import json
 import subprocess
 import logging
 import tarfile
-from httplib import HTTPException
+from http.client import HTTPException
 from ast import literal_eval
 
 import pycurl
@@ -20,7 +20,6 @@ from CRABClient.ClientExceptions import ConfigurationException, \
     UnknownOptionException, ClientException
 
 from ServerUtilities import FEEDBACKMAIL
-from http.client import HTTPException
 
 class report(SubCommand):
     """
