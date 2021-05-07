@@ -141,6 +141,8 @@ class ConfigCommand:
             msg = "Invalid CRAB configuration: Section 'Site' is missing."
             return False, msg
 
+        return True, "Valid configuration"
+
         ## Some parameters may have been renamed. Check here if the configuration file has an old
         ## parameter defined, and in that case tell the user what is the new parameter name.
         for old_param, new_param in renamedParams.items():
