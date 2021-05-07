@@ -6,6 +6,7 @@ import os
 import logging
 import traceback
 import subprocess
+import sys
 if sys.version_info >= (3, 0):
     from urllib.parse import urlparse
 if sys.version_info < (3, 0):
