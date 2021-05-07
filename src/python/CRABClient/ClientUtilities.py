@@ -13,7 +13,7 @@ import time
 from time import gmtime
 import pkgutil
 import sys
-import cPickle
+import pickle
 import subprocess
 import traceback
 from urlparse import urlparse
@@ -421,7 +421,7 @@ def createCache(requestarea, host, port, uniquerequestname, voRole, voGroup, ins
         "instance" : instance,
         "OriginalConfig" : originalConfig
     }
-    cPickle.dump(neededhandlers, touchfile)
+    pickle.dump(neededhandlers, touchfile)
     touchfile.close()
 
 
@@ -451,7 +451,7 @@ def loadCache(mydir, logger):
         msg = "Cannot find .requestcache file in CRAB project directory %s" % (requestarea)
         raise CachefileNotFoundException(msg)
     logfile = changeFileLogger(logger, workingpath=requestarea)
-    return cPickle.load(loadfile), logfile
+    return pickle.load(loadfile), logfile
 
 
 def getUserProxy():
