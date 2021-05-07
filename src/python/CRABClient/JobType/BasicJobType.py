@@ -64,7 +64,7 @@ class BasicJobType(object):
         #merge the lumis from single files
         for reports in inputdata.values():
             for report in reports:
-                for run, lumis in literal_eval(report['runlumi']).iteritems():
+                for run, lumis in literal_eval(report['runlumi']).items():
                     for lumi in lumis:
                         mergedLumis.add((run,int(lumi))) #lumi is str, but need int
         mergedLumis = LumiList(lumis=mergedLumis)
@@ -95,7 +95,7 @@ class BasicJobType(object):
             }
         """
         doubleLumis = set()
-        for run, lumis in lumisDict.iteritems():
+        for run, lumis in lumisDict.items():
             seen = set()
             doubleLumis.update(set((run, lumi) for lumi in lumis if (run, lumi) in seen or seen.add((run, lumi))))
         doubleLumis = LumiList(lumis=doubleLumis)

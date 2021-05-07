@@ -572,7 +572,7 @@ class status(SubCommand):
         statesPJ = {}
         statesTJ = {}
         failedProcessing = 0
-        for jobid, statusDict in statusCacheInfo.iteritems():
+        for jobid, statusDict in statusCacheInfo.items():
             jobStatus = statusDict['State'] if statusDict['State'] != 'cooloff' else 'toRetry'
             if jobid.startswith('0-'):
                 statesPJ[jobStatus] = statesPJ.setdefault(jobStatus, 0) + 1
@@ -682,7 +682,7 @@ class status(SubCommand):
             if automaticSplitt and (jobid.startswith('0-') or '-' not in jobid):
                 return False
             return True
-        for jobid, jobStatus in dictresult.iteritems():
+        for jobid, jobStatus in dictresult.items():
             if jobStatus['State'] == 'failed' and consider(jobid):
                 are_failed_jobs = True
                 if 'Error' in jobStatus:
@@ -716,7 +716,7 @@ class status(SubCommand):
                 exitCodes.sort()
             else:
                 numjobsec = []
-                for ec, numjobs in ec_numjobs.iteritems():
+                for ec, numjobs in ec_numjobs.items():
                     count = 0
                     for nj, _ in numjobs:
                         count += nj

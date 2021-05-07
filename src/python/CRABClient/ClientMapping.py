@@ -151,7 +151,7 @@ commandsConfiguration = {
 def revertParamsMapping():
     import copy
     revertedMapping = {}
-    for serverParamName, paramInfo in parametersMapping['on-server'].iteritems():
+    for serverParamName, paramInfo in parametersMapping['on-server'].items():
         info = copy.deepcopy(paramInfo)
         info.pop('config')
         for clientParamName in paramInfo['config']:

@@ -83,7 +83,7 @@ class logfilter(logging.Filter):
         def removecolor(text):
             if not text:
                 return text
-            for dummyColor, colorval in colors.colordict.iteritems():
+            for dummyColor, colorval in colors.colordict.items():
                 if colorval in text:
                     text = text.replace(colorval, '')
             return text

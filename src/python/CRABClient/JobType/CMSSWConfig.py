@@ -206,7 +206,7 @@ class CMSSWConfig(object):
                     modulesOnEndPaths.add(n)
 
         outputModules = set()
-        for n,o in process.outputModules_().iteritems():
+        for n,o in process.outputModules_().items():
             if n in modulesOnEndPaths and hasattr(o, 'fileName'):
                 edmfile = re.sub(r'^file:', '', o.fileName.value())
                 edmfile = os.path.basename(edmfile)
