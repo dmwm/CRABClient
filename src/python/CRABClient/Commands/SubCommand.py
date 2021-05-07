@@ -226,13 +226,13 @@ class SubCommand(ConfigCommand):
         self.logger = logger
         self.logfile = self.logger.logfile
 
-        localSystem = subprocess.check_output(['uname', '-a']).strip('\n')
+        localSystem = str(subprocess.check_output(['uname', '-a'])).strip('\n')
         try:
-            localOS = subprocess.check_output(['grep', 'PRETTY_NAME', '/etc/os-release'], stderr=subprocess.STDOUT).strip('\n')
+            localOS = str(subprocess.check_output(['grep', 'PRETTY_NAME', '/etc/os-release'], stderr=subprocess.STDOUT)).strip('\n')
             localOS = localOS.split('=')[1].strip('"')
         except Exception as ex:  # pylint: disable=unused-variable
             try:
-                localOS = subprocess.check_output(['lsb_release', '-d']).strip('\n')
+                localOS = str(subprocess.check_output(['lsb_release', '-d'])).strip('\n')
                 localOS = localOS.split(':')[1].strip()
             except Exception as ex:  # pylint: disable=unused-variable
                 localOS = "Unknown Operating System"
