@@ -1,6 +1,7 @@
 """
 Module to handle lumiMask.json file
 """
+import sys
 if sys.version_info >= (3, 0):
     from urllib.parse import urlparse
 if sys.version_info < (3, 0):
