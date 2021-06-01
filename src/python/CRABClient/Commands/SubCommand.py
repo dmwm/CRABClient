@@ -362,7 +362,7 @@ class SubCommand(ConfigCommand):
                                         userAgent='CRABClient')
             self.crabserver.setDbInstance(self.instance)
             # prepare also a test crabserver instance which will send tarballs to S3
-            self.s3tester = crabRest(hostname='cmsweb-test2.cern.ch',
+            self.s3tester = crabRest(hostname='cmsweb-testbed.cern.ch',
                                       localcert=self.proxyfilename, localkey=self.proxyfilename,
                                       retry=0, logger=self.logger, verbose=False, version=__version__,
                                       userAgent='CRABClient')
