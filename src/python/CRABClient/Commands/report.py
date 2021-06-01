@@ -449,7 +449,10 @@ class report(SubCommand):
                 total_events = 0
             else:
                 result = json.loads(stdout)
-                total_events = result[0]['summary'][0]['nevents']
+                if result:
+                    total_events = result[0]['summary'][0]['nevents']
+                else:
+                    total_events = 0
             res['outputDatasets'][outputDataset]['numEvents'] = total_events
 
         return res
