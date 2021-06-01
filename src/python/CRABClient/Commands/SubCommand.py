@@ -366,7 +366,7 @@ class SubCommand(ConfigCommand):
                                       localcert=self.proxyfilename, localkey=self.proxyfilename,
                                       retry=0, logger=self.logger, verbose=False, version=__version__,
                                       userAgent='CRABClient')
-            self.s3tester.setDbInstance('dev')
+            self.s3tester.setDbInstance('preprod')
             self.handleMyProxy()
 
         # Validate the command options
