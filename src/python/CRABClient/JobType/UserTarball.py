@@ -80,7 +80,7 @@ def calculateChecksum(tarfile_, exclude=None):
     to the hasher object. The file is read in chuncks of 4096 bytes to avoid memory
     issues.
     """
-    if exclude == None:  # [] is a dangerous value for a param
+    if not exclude:  # [] is a dangerous value for a param
         exclude = []
 
     hasher = hashlib.sha256()
@@ -271,7 +271,7 @@ class UserTarball(object):
             archiveSize = "%d MB" % (archiveSizeKB//1024)
         if archiveSizeBytes > FILE_SIZE_LIMIT:
             msg = ("%sError%s: input tarball size %s exceeds maximum allowed limit of %d MB" %
-                 (colors.RED, colors.NORMAL, archiveSize, FILE_SIZE_LIMIT//1024//1024))
+                   (colors.RED, colors.NORMAL, archiveSize, FILE_SIZE_LIMIT//1024//1024))
             msg += self.printSortedContent()
             raise SandboxTooBigException(msg)
 
