@@ -282,15 +282,7 @@ class UserTarball(object):
         if 'S3' in filecacheurl.upper():
             # use S3
             # generate a 32char hash like UserFileCache used to do
-            hasher = hashlib.sha256()
-            with open(archiveName) as f:
-                BUF_SIZE = 1024*1024  # lets read stuff in 1MByte chunks!
-                while True:
-                    data = f.read(BUF_SIZE)
-                    if not data:
-                        break
-                    hasher.update(data)
-            hashkey = hasher.hexdigest()
+            hashkey = calculateChecksum(archiveName, exclude=NEW_USER_SANDBOX_EXCLUSIONS)
             # the ".tar.gz" suffix here is forced by other places in the client which add it when
             # storing tarball name in task table. Not very elegant to need to hardcode in several places.
             cachename = "%s.tar.gz" % hashkey
