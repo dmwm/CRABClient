@@ -59,65 +59,65 @@ def testS3upload(s3tester, archiveName, hashkey, logger):
     return s3report
 
 def calculateChecksum(tarfile_, exclude=None):
-        """
-        Imported here from WMCore/Services/UserFileCache.py
-        Originally written by Marco Mascheroni: refs
-        https://github.com/mmascher/WMCore/commit/01855223030c4936234be62df6a5a0b2a911144e
-        https://github.com/dmwm/WMCore/commit/5e910461eb82e7bfcba473def6511e3f94259672
-        https://github.com/dmwm/CRABServer/issues/4948
+    """
+    Imported here from WMCore/Services/UserFileCache.py
+    Originally written by Marco Mascheroni: refs
+    https://github.com/mmascher/WMCore/commit/01855223030c4936234be62df6a5a0b2a911144e
+    https://github.com/dmwm/WMCore/commit/5e910461eb82e7bfcba473def6511e3f94259672
+    https://github.com/dmwm/CRABServer/issues/4948
 
-        Calculate the checksum of the tar file in input.
-        The tarfile_ input parameter could be a string or a file object (anything compatible
-        with the fileobj parameter of tarfile.open).
-        The exclude parameter could be a list of strings, or a callable that takes as input
-        the output of  the list of tarfile.getmembers() and return a list of strings.
-        The exclude param is interpreted as a list of files that will not be taken into consideration
-        when calculating the checksum.
-        The output is the checksum of the tar input file.
-        The checksum is calculated taking into consideration the names of the objects
-        in the tarfile (files, directories etc) and the content of each file.
-        Each file is exctracted, read, and then deleted right after the input is passed
-        to the hasher object. The file is read in chuncks of 4096 bytes to avoid memory
-        issues.
-        """
-        if exclude == None:  # [] is a dangerous value for a param
-            exclude = []
+    Calculate the checksum of the tar file in input.
+    The tarfile_ input parameter could be a string or a file object (anything compatible
+    with the fileobj parameter of tarfile.open).
+    The exclude parameter could be a list of strings, or a callable that takes as input
+    the output of  the list of tarfile.getmembers() and return a list of strings.
+    The exclude param is interpreted as a list of files that will not be taken into consideration
+    when calculating the checksum.
+    The output is the checksum of the tar input file.
+    The checksum is calculated taking into consideration the names of the objects
+    in the tarfile (files, directories etc) and the content of each file.
+    Each file is exctracted, read, and then deleted right after the input is passed
+    to the hasher object. The file is read in chuncks of 4096 bytes to avoid memory
+    issues.
+    """
+    if exclude == None:  # [] is a dangerous value for a param
+        exclude = []
 
-        hasher = hashlib.sha256()
+    hasher = hashlib.sha256()
 
-        ## "massage" out the input parameters
-        if isinstance(tarfile_, (str, bytes)):
-            tar = tarfile.open(tarfile_, mode='r')
-        else:
-            tar = tarfile.open(fileobj=tarfile_, mode='r')
+    ## "massage" out the input parameters
+    if isinstance(tarfile_, (str, bytes)):
+        tar = tarfile.open(tarfile_, mode='r')
+    else:
+        tar = tarfile.open(fileobj=tarfile_, mode='r')
 
-        if exclude and hasattr(exclude, '__call__'):
-            excludeList = exclude(tar.getmembers())
-        else:
-            excludeList = exclude
+    if exclude and hasattr(exclude, '__call__'):
+        excludeList = exclude(tar.getmembers())
+    else:
+        excludeList = exclude
 
-        tmpDir = tempfile.mkdtemp()
-        try:
-            for tarmember in tar:
-                if tarmember.name in excludeList:
-                    continue
-                hasher.update(tarmember.name)
-                if tarmember.isfile() and tarmember.name.split('.')[-1] != 'pkl':
-                    tar.extractall(path=tmpDir, members=[tarmember])
-                    fn = os.path.join(tmpDir, tarmember.name)
-                    with open(fn, 'rb') as fd:
-                        while True:
-                            buf = fd.read(4096)
-                            if not buf:
-                                break
-                            hasher.update(buf)
-                    os.remove(fn)
-        finally:
-            # never leave tmddir around
-            shutil.rmtree(tmpDir)
-        checksum = hasher.hexdigest()
+    tmpDir = tempfile.mkdtemp()
+    try:
+        for tarmember in tar:
+            if tarmember.name in excludeList:
+                continue
+            hasher.update(tarmember.name)
+            if tarmember.isfile() and tarmember.name.split('.')[-1] != 'pkl':
+                tar.extractall(path=tmpDir, members=[tarmember])
+                fn = os.path.join(tmpDir, tarmember.name)
+                with open(fn, 'rb') as fd:
+                    while True:
+                        buf = fd.read(4096)
+                        if not buf:
+                            break
+                        hasher.update(buf)
+                os.remove(fn)
+    finally:
+        # never leave tmddir around
+        shutil.rmtree(tmpDir)
+    checksum = hasher.hexdigest()
 
-        return checksum
+    return checksum
 
 
 class UserTarball(object):
