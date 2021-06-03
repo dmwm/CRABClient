@@ -28,17 +28,8 @@ from ServerUtilities import NEW_USER_SANDBOX_EXCLUSIONS, BOOTSTRAP_CFGFILE_DUMP
 from ServerUtilities import FILE_SIZE_LIMIT
 from ServerUtilities import uploadToS3, tempSetLogLevel
 
-def testS3upload(s3tester, archiveName, logger):
-    hasher = hashlib.sha256()
-    with open(archiveName) as f:
-        BUF_SIZE = 1024 * 1024  # lets read stuff in 1MByte chunks!
-        while True:
-            data = f.read(BUF_SIZE)
-            if not data:
-                break
-            hasher.update(data)
-    s3hash = hasher.hexdigest()
-    cachename = "%s.tgz" % s3hash
+def testS3upload(s3tester, archiveName, hashkey, logger):
+    cachename = "%s.tgz" % hashkey
     try:
         t1 = time.time()
         timestamp = time.strftime('%y%m%d_%H%M%S', time.gmtime())
@@ -318,7 +309,7 @@ class UserTarball(object):
                 raise CachefileNotFoundException
             hashkey = str(result['hashkey'])
             # upload a copy to S3 dev as well, just to stress it a bit, this never raises
-            s3report = testS3upload(self.s3tester, archiveName, self.logger)
+            s3report = testS3upload(self.s3tester, archiveName, hashkey, self.logger)
             # report also how long it took uploading to UFC (which surely worked if we are here)
             s3report['ufcseconds'] = ufcSeconds
             # upload S3 test report to crabcache
