@@ -473,10 +473,9 @@ class SubCommand(ConfigCommand):
         if not self.options.proxy:
             # Get the DN of the task workers from the server.
             all_task_workers_dns = server_info(self.crabserver, subresource='delegatedn')
-            for serverdn in all_task_workers_dns['services']:
-                self.proxy.setServerDN(serverdn)
-                self.proxy.setMyProxyServer('myproxy.cern.ch')
-                self.logger.debug("Registering user credentials for server %s" % serverdn)
+            for authorizedDNs in all_task_workers_dns['services']:
+                self.proxy.setRetrievers(authorizedDNs)
+                self.logger.debug("Registering user credentials on myproxy for %s" % authorizedDNs)
                 try:
                     (credentialName, myproxyTimeleft) = self.proxy.createNewMyProxy(timeleftthreshold=60 * 60 * 24 * RENEW_MYPROXY_THRESHOLD, nokey=True)
                     p1 = True
@@ -485,18 +484,10 @@ class SubCommand(ConfigCommand):
                 except Exception as ex:
                     p1 = False
                     msg1 = "Error trying to create credential:\n %s" % str(ex)
-                try:
-                    (credentialName, myproxyTimeleft) = self.proxy.createNewMyProxy2(timeleftthreshold=60*60*24 * RENEW_MYPROXY_THRESHOLD, nokey=True)
-                    p2 = True
-                    msg2 = "Credential exists on myproxy: username: %s  - validity: %s" %\
-                           (credentialName, str(timedelta(seconds=myproxyTimeleft)))
-                except Exception as ex:
-                    p2 = False
-                    msg2 = "Error trying to create credential:\n %s" % str(ex)
-                if (not p1) and (not p2):
+                if (not p1):
                     from CRABClient.ClientExceptions import ProxyCreationException
-                    raise ProxyCreationException("Problems delegating My-proxy.\n%s\n%s" % (msg1, msg2))
-                self.logger.debug("Result of myproxy credential check:\n  %s\n  %s", msg1, msg2)
+                    raise ProxyCreationException("Problems delegating My-proxy.\n%s" % msg1)
+                self.logger.debug("Result of myproxy credential check:\n  %s", msg1)
 
 
     def loadLocalCache(self):
