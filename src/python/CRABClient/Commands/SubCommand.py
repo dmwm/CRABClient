@@ -410,7 +410,7 @@ class SubCommand(ConfigCommand):
             msg += 'valid values are %s ' % SERVICE_INSTANCES.keys()
             raise ConfigurationException(msg)
 
-        if instance is not 'other':
+        if instance != 'other':
             self.restHost = SERVICE_INSTANCES[instance]['restHost']
             self.dbInstance = SERVICE_INSTANCES[instance]['dbInstance']
         else:
