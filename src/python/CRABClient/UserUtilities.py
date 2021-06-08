@@ -20,7 +20,7 @@ from WMCore.Services.pycurl_manager import RequestHandler
 ## CRAB dependencies
 from RESTInteractions import HTTPRequests
 from CRABClient.ClientUtilities import DBSURLS, LOGLEVEL_MUTE, colors
-from CRABClient.ClientUtilities import getUserProxy
+from CRABClient.ClientUtilities import execute_command, getUserProxy
 from CRABClient.ClientExceptions import ClientException, UsernameException, ProxyException
 
 def config():
@@ -86,9 +86,8 @@ def getUsernameFromCRIC(proxyFileName=None):
         raise UsernameException(msg)
     ## Retrieve user info from CRIC. Note the curl must be executed in same env. (i.e. CMSSW) as crab
     queryCmd = "curl -sS --capath %s --cert %s --key %s 'https://cms-cric.cern.ch/api/accounts/user/query/?json&preset=whoami'" % (capath, proxyFileName, proxyFileName)
-    process = subprocess.Popen(queryCmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
-    stdout, stderr = process.communicate()
-    if process.returncode or not stdout:
+    stdout, stderr, rc = execute_command(queryCmd)
+    if rc or not stdout:
         msg  = "Error contacting CRIC."
         msg += "\nDetails follow:"
         msg += "\n  Executed command: %s" % (queryCmd)
@@ -97,8 +96,7 @@ def getUsernameFromCRIC(proxyFileName=None):
         raise UsernameException(msg)
     ## Extract the username from the above command output.
     parseCmd = "echo '%s' | tr ':,' '\n' | grep -A1 login | tail -1 | tr -d ' \n\"'" % (str(stdout))
-    process = subprocess.Popen(parseCmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)
-    username, stderr = process.communicate()
+    username, stderr, rc = execute_command(parseCmd)
     if username == 'null' or not username:
         msg  = "Failed to retrieve username from CRIC."
         msg += "\nDetails follow:"

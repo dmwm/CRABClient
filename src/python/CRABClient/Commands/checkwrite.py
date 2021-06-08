@@ -5,7 +5,7 @@ import datetime
 import subprocess
 
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ClientUtilities import colors, cmd_exist
+from CRABClient.ClientUtilities import execute_command, colors, cmd_exist
 from CRABClient.UserUtilities import getUsername
 from CRABClient.ClientExceptions import MissingOptionException, ConfigurationException
 from ServerUtilities import checkOutLFN
@@ -193,9 +193,7 @@ exit(0)
         cmd = 'eval `scram unsetenv -sh`; '
         cmd += 'source /cvmfs/cms.cern.ch/rucio/setup.sh 2>/dev/null; export RUCIO_ACCOUNT=%s; ' % username
         cmd += 'python %s; ' % scriptName
-        callRucio = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        rucioOut, rucioErr = callRucio.communicate()
-        exitcode = callRucio.returncode
+        rucioOut, rucioErr, exitcode = execute_command(cmd)
         os.unlink(scriptName)
         if exitcode:
             self.logger.info('PFN lookup failed')
@@ -217,9 +215,7 @@ exit(0)
         cpcmd = undoScram + "; " + command + abspath + " '" + pfn + "'"
         self.logger.info('Executing command: %s' % cpcmd)
         self.logger.info('Please wait...')
-        cpprocess = subprocess.Popen(cpcmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        cpout, cperr = cpprocess.communicate()
-        cpexitcode = cpprocess.returncode
+        cpout, cperr, cpexitcode = execute_command(cpcmd)
         if cpexitcode:
             self.logger.info('Failed running copy command')
             if cpout:
@@ -236,9 +232,7 @@ exit(0)
         rmcmd = undoScram + "; " + command + "'" + pfn + "'"
         self.logger.info('Executing command: %s' % rmcmd)
         self.logger.info('Please wait...')
-        delprocess = subprocess.Popen(rmcmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        delout, delerr = delprocess.communicate()
-        delexitcode = delprocess.returncode
+        delout, delerr, delexitcode = execute_command(rmcmd)
         if delexitcode:
             self.logger.info('Failed running delete command')
             if delout:
