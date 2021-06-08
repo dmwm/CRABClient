@@ -62,7 +62,7 @@ class CredentialInteractions(object):
         try:
             vp = VomsProxy(logger=self.defaultDelegation['logger'])
             vp.setVOGroupVORole(group=self.defaultDelegation['group'], role=self.defaultDelegation['role'])
-        except CredentialException as ex:
+        except ProxyCreationException as ex:
             self.logger.debug(ex)
             raise EnvironmentException('Problem with Grid environment: %s ' % str(ex))
         return vp
@@ -70,16 +70,6 @@ class CredentialInteractions(object):
     def myProxy(self):
         mp = MyProxy(logger=self.defaultDelegation['logger'], username=self.defaultDelegation['username'])
         return mp
-
-#    def proxy(self):
-#        try:
-#            self.vomsProxy = vomsProxy(...)
-#            self.myProxy = myProxy(...)
-#            proxy = Proxy(self.defaultDelegation)
-#        except CredentialException as ex:
-#            self.logger.debug(ex)
-#            raise EnvironmentException('Problem with Grid environment: %s ' % str(ex))
-#        return proxy
 
     def getFilename(self):
         return self.proxyFile
@@ -97,7 +87,7 @@ class CredentialInteractions(object):
         try:
             proxy = VomsProxy(logger=self.defaultDelegation['logger'])
             proxy.setVOGroupVORole(group=self.defaultDelegation['group'], role=self.defaultDelegation['role'])
-        except CredentialException as ex:
+        except ProxyCreationException as ex:
             self.logger.debug(ex)
             raise EnvironmentException('Problem with Grid environment: %s ' % str(ex))
         self.logger.debug("Checking credentials")
