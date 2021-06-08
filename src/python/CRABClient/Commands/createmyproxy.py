@@ -24,7 +24,8 @@ class createmyproxy(SubCommand):
         proxy = CredentialInteractions('', '', '', '', self.logger)
         days = self.options.days
         proxy.setMyProxyValidity(int(days) * 24 * 60)  # minutes
-        timeLeftThreshold = int(days) * 24 * 60 * 60  # seconds
+        # give a bit of slack to the threshold, avoid that repeating the c
+        timeLeftThreshold = int(days-1) * 24 * 60 * 60  # seconds
 
         self.logger.info("Checking credentials")
 
