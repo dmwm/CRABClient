@@ -162,7 +162,7 @@ class CredentialInteractions(object):
                                         setmsg = "(in the CRAB configuration file) "
                                     elif proxyOptsSetPlace['for_set_use'] == "cmdopts":
                                         setmsg = "(in the crab command options) "
-                                    msgadd2.append("you have not explicitely specified %sto use " % (setmsg) + \
+                                    msgadd2.append("you have not explicitely specified %s to use " % (setmsg) + \
                                                    "VO %s '%s'" % (attr, proxyAttrs[attr]))
                     msg = "Proxy file %s exists with %s, but %s." % (proxyFileName, " and ".join(msgadd1), " and ".join(msgadd2))
                     self.logger.info(msg)
@@ -262,7 +262,7 @@ class CredentialInteractions(object):
         self.logger.debug("Myproxy is valid: %i" % myproxytimeleft)
 
         trustRetrListChanged = trustedRetrievers != self.defaultDelegation['retrievers'] #list on the REST and on myproxy are different
-        if myproxytimeleft < timeleftthreshold or self.proxyChanged or trustRetrListChanged:
+        if myproxytimeleft < timeleftthreshold or trustRetrListChanged:
             # checking the enddate of the user certificate
             usercertDaysLeft = myproxy.getUserCertEndDate()
             if usercertDaysLeft == 0:
