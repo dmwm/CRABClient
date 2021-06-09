@@ -242,8 +242,6 @@ class SubCommand(ConfigCommand):
         self.logger.debug("Running on: " + localSystem + " - " + localOS)
         self.logger.debug("Executing command: '%s'" % str(self.name))
 
-        self.proxy = None
-
         # Get the command configuration.
         self.cmdconf = commandsConfiguration.get(self.name)
         if not self.cmdconf:
@@ -297,8 +295,8 @@ class SubCommand(ConfigCommand):
         # these are not used until we do the proxy delegation to the myproxy server.
         # And this happens in handleProxy(), which is called after we load the
         # configuration file and retrieve the final values for those parameters.
-        # handleProxy() takes care of passing those parameters to self.proxy.
-        self.proxy = CredentialInteractions('', '', self.voRole, self.voGroup, self.logger)
+        # handleProxy() takes care of passing those parameters to self.credentialHandler
+        self.credentialHandler = CredentialInteractions(self.logger)
 
         # If the user didn't use the --proxy command line option, and if there isn't a
         # valid proxy already, we will create a new one with the current VO role and group
@@ -452,12 +450,11 @@ class SubCommand(ConfigCommand):
             self.logger.debug('Skipping proxy creation')
             return
         if self.cmdconf['initializeProxy']:  # actually atm all commands require a proxy, see ClientMapping.py
-            self.proxy.setVOGroupVORole(self.voGroup, self.voRole)
-            self.proxy.proxyInfo = self.proxy.createNewVomsProxy(timeLeftThreshold=720, \
-                                                               doProxyGroupRoleCheck=self.cmdconf['doProxyGroupRoleCheck'], \
+            self.credentialHandler.setVOGroupVORole(self.voGroup, self.voRole)
+            proxyInfo = self.credentialHandler.createNewVomsProxy(timeLeftThreshold=720, \
                                                                proxyCreatedByCRAB=self.proxyCreated, \
                                                                proxyOptsSetPlace=proxyOptsSetPlace)
-            self.proxyfilename = self.proxy.proxyInfo['filename']
+            self.proxyfilename = proxyInfo['filename']
         return
 
     def handleMyProxy(self):
@@ -474,10 +471,11 @@ class SubCommand(ConfigCommand):
             # Get the DN of the task workers from the server.
             all_task_workers_dns = server_info(self.crabserver, subresource='delegatedn')
             for authorizedDNs in all_task_workers_dns['services']:
-                self.proxy.setRetrievers(authorizedDNs)
+                self.credentialHandler.setRetrievers(authorizedDNs)
                 self.logger.debug("Registering user credentials on myproxy for %s" % authorizedDNs)
                 try:
-                    (credentialName, myproxyTimeleft) = self.proxy.createNewMyProxy(timeleftthreshold=60 * 60 * 24 * RENEW_MYPROXY_THRESHOLD, nokey=True)
+                    (credentialName, myproxyTimeleft) = \
+                        self.credentialHandler.createNewMyProxy(timeleftthreshold=60 * 60 * 24 * RENEW_MYPROXY_THRESHOLD)
                     p1 = True
                     msg1 = "Credential exists on myproxy: username: %s  - validity: %s" %\
                            (credentialName, str(timedelta(seconds=myproxyTimeleft)))

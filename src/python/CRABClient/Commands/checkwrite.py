@@ -26,7 +26,7 @@ class checkwrite(SubCommand):
 
     def __call__(self):
 
-        username = getUsername(self.proxy.getFilename(), logger=self.logger)
+        username = getUsername(self.proxyfilename, logger=self.logger)
         if hasattr(self.options, 'userlfn') and self.options.userlfn != None:
             self.lfnPrefix = self.options.userlfn
         else:
