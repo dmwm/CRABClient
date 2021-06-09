@@ -30,6 +30,8 @@ class CredentialInteractions(object):
                                   'myProxyServer':   'myproxy.cern.ch',
                                   'proxyValidity'  : '172:00', ## hh:mm
                                   'myproxyValidity': '%i:00' % (self.myproxyDesiredValidity*24), ## hh:mm
+                                  'group':           '',
+                                  'role':            'NULL',
                                   'retrievers':      '',
                                   }
         self.proxyChanged = False
@@ -40,6 +42,9 @@ class CredentialInteractions(object):
     def setProxyValidity(self, validity):
         self.defaultDelegation['proxyValidity'] = '%i:%02d' % (int(validity/60), int(validity%60))
 
+    def setVOGroupVORole(self, group, role):
+        self.defaultDelegation['group'] = group
+        self.defaultDelegation['role'] = role if role != '' else 'NULL'
 
     def setMyProxyValidity(self, validity):
         """
@@ -54,18 +59,6 @@ class CredentialInteractions(object):
 
     def setMyProxyServer(self, server):
         self.defaultDelegation['myProxyServer'] = server
-
-    def vomsProxy(self):
-        try:
-            vp = VomsProxy(logger=self.defaultDelegation['logger'])
-        except ProxyCreationException as ex:
-            self.logger.debug(ex)
-            raise EnvironmentException('Problem with Grid environment: %s ' % str(ex))
-        return vp
-
-    def myProxy(self):
-        mp = MyProxy(logger=self.defaultDelegation['logger'], username=self.defaultDelegation['username'])
-        return mp
 
     def getFilename(self):
         return self.proxyFile
@@ -82,6 +75,7 @@ class CredentialInteractions(object):
         #proxy = self.vomsProxy()
         try:
             proxy = VomsProxy(logger=self.defaultDelegation['logger'])
+            proxy.setVOGroupVORole(group=self.defaultDelegation['group'], role=self.defaultDelegation['role'])
         except ProxyCreationException as ex:
             self.logger.debug(ex)
             raise EnvironmentException('Problem with Grid environment: %s ' % str(ex))

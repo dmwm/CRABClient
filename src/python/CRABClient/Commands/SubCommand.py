@@ -450,6 +450,7 @@ class SubCommand(ConfigCommand):
             self.logger.debug('Skipping proxy creation')
             return
         if self.cmdconf['initializeProxy']:  # actually atm all commands require a proxy, see ClientMapping.py
+            self.proxy.setVOGroupVORole(self.voGroup, self.voRole)
             self.proxy.proxyInfo = self.proxy.createNewVomsProxy(timeLeftThreshold=720, \
                                                                proxyCreatedByCRAB=self.proxyCreated, \
                                                                proxyOptsSetPlace=proxyOptsSetPlace)
