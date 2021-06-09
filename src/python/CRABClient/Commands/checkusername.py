@@ -9,7 +9,7 @@ class checkusername(SubCommand):
     name = 'checkusername'
 
     def __call__(self):
-        username = getUsername(self.proxy.getFilename(), logger=self.logger)
+        username = getUsername(self.proxyfilename, logger=self.logger)
         self.logger.info("Username is: %s", username)
         return username
 

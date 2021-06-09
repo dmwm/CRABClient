@@ -12,7 +12,6 @@ class createmyproxy(SubCommand):
     """
 
     name = 'createmyproxy'
-    RENEW_MYPROXY_THRESHOLD = 15
 
     def __init__(self, logger, cmdargs=None):
         SubCommand.__init__(self, logger, cmdargs, disable_interspersed_args=True)
@@ -22,28 +21,23 @@ class createmyproxy(SubCommand):
 
     def __call__(self):
 
-        proxy = CredentialInteractions('', '', '', '', self.logger)
+        credentialHandler = CredentialInteractions(self.logger)
         days = self.options.days
-        proxy.setMyProxyValidity(int(days) * 24 * 60)  # minutes
-        timeLeftThreshold = int(days) * 24 * 60 * 60 # seconds
+        credentialHandler.setMyProxyValidity(int(days) * 24 * 60)  # minutes
+        # give a bit of slack to the threshold, avoid that repeating the c
+        timeLeftThreshold = int(days-1) * 24 * 60 * 60  # seconds
 
         self.logger.info("Checking credentials")
 
         # need an X509 proxy in order to talk with CRABServer to get list of myproxy authorized retrievers
-        proxy.proxyInfo = proxy.createNewVomsProxy(timeLeftThreshold=720)
+        credentialHandler.createNewVomsProxy(timeLeftThreshold=720)
         alldns = server_info(crabserver=self.crabserver, subresource='delegatedn')
-        for serverdn in alldns['services']:
-            proxy.defaultDelegation['serverDN'] = serverdn
-            proxy.defaultDelegation['myProxySvr'] = 'myproxy.cern.ch'
-
-            self.logger.info("Registering user credentials for server %s" % serverdn)
-            (credentialName, myproxyTimeleft) = proxy.createNewMyProxy(timeleftthreshold=timeLeftThreshold, nokey=True)
+        for authorizedDNs in alldns['services']:
+            credentialHandler.setRetrievers(authorizedDNs)
+            self.logger.info("Registering user credentials in myproxy")
+            (credentialName, myproxyTimeleft) = credentialHandler.createNewMyProxy(timeleftthreshold=timeLeftThreshold)
             self.logger.info("Credential exists on myproxy: username: %s  - validity: %s", credentialName,
                              str(timedelta(seconds=myproxyTimeleft)))
-            (credentialName, myproxyTimeleft) = proxy.createNewMyProxy2(timeleftthreshold=timeLeftThreshold, nokey=True)
-            self.logger.info("Credential exists on myproxy: username: %s  - validity: %s", credentialName,
-                             str(timedelta(seconds=myproxyTimeleft)))
-
         return
 
 
