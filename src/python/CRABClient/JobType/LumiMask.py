@@ -1,8 +1,11 @@
 """
 Module to handle lumiMask.json file
 """
-
-import urlparse
+import sys
+if sys.version_info >= (3, 0):
+    from urllib.parse import urlparse
+if sys.version_info < (3, 0):
+    from urlparse import urlparse
 import urllib2
 
 from WMCore.Lexicon import jobrange

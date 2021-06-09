@@ -5,7 +5,7 @@ import json
 import subprocess
 import logging
 import tarfile
-from httplib import HTTPException
+from http.client import HTTPException
 from ast import literal_eval
 
 import pycurl
@@ -63,7 +63,7 @@ class report(SubCommand):
 
         def _getNumFiles(jobs, fileType):
             files = set()
-            for _, reports in jobs.iteritems():
+            for _, reports in jobs.items():
                 for rep in reports:
                     if rep['type'] == fileType:
                         # the split is done to remove the jobnumber at the end of the input file lfn
@@ -72,7 +72,7 @@ class report(SubCommand):
 
         def _getNumEvents(jobs, fileType):
             numEvents = 0
-            for _, reports in jobs.iteritems():
+            for _, reports in jobs.items():
                 for rep in reports:
                     if rep['type'] == fileType:
                         numEvents += rep['events']
@@ -80,7 +80,7 @@ class report(SubCommand):
 
         ## Extract the reports of the input files.
         poolInOnlyRes = {}
-        for jobid, reports in reportData['runsAndLumis'].iteritems():
+        for jobid, reports in reportData['runsAndLumis'].items():
             poolInOnlyRes[jobid] = [rep for rep in reports if rep['type'] == 'POOLIN']
 
         ## Calculate how many input files have been processed.
@@ -108,7 +108,7 @@ class report(SubCommand):
         lumisToProcessPerJob = reportData['lumisToProcess']
         lumisToProcess = {}
         for jobid in lumisToProcessPerJob.keys():
-            for run, lumiRanges in lumisToProcessPerJob[jobid].iteritems():
+            for run, lumiRanges in lumisToProcessPerJob[jobid].items():
                 if run not in lumisToProcess:
                     lumisToProcess[run] = []
                 for lumiRange in lumiRanges:
@@ -148,14 +148,14 @@ class report(SubCommand):
         ## produced by job X should be the (set made out of the) union of the run-lumi
         ## information of the input files to job X.
         outputFilesLumis = {}
-        for jobid, reports in poolInOnlyRes.iteritems():
+        for jobid, reports in poolInOnlyRes.items():
             if jobid.startswith('0-'):  # skip probe-jobs
                 continue
             lumiDict = {}
             for rep in reports:
-                for run, lumis in literal_eval(rep['runlumi']).iteritems():
+                for run, lumis in literal_eval(rep['runlumi']).items():
                     lumiDict.setdefault(str(run), []).extend(map(int, lumis))
-            for run, lumis in lumiDict.iteritems():
+            for run, lumis in lumiDict.items():
                 outputFilesLumis.setdefault(run, []).extend(list(set(lumis)))
         outputFilesDuplicateLumis = BasicJobType.getDuplicateLumis(outputFilesLumis)
         returndict['outputFilesDuplicateLumis'] = outputFilesDuplicateLumis
@@ -190,7 +190,7 @@ class report(SubCommand):
         elif self.options.recovery == 'failed':
             for jobid, status in reportData['jobList']:
                 if status in ['failed']:
-                    for run, lumiRanges in lumisToProcessPerJob[jobid].iteritems():
+                    for run, lumiRanges in lumisToProcessPerJob[jobid].items():
                         if run not in notProcessedLumis:
                             notProcessedLumis[run] = []
                         for lumiRange in lumiRanges:
@@ -246,7 +246,7 @@ class report(SubCommand):
             self.logger.info("Summary from output datasets in DBS:")
             if outputDatasetsNumEvents:
                 msg = "  Number of events:"
-                for dataset, numEvents in outputDatasetsNumEvents.iteritems():
+                for dataset, numEvents in outputDatasetsNumEvents.items():
                     msg += "\n    %s: %d" % (dataset, numEvents)
                 self.logger.info(msg)
             if outputDatasetsLumis:
@@ -503,8 +503,8 @@ class report(SubCommand):
             to an aggregated result.
         """
         lumilist = {}
-        for _, info in datasetInfo.iteritems():
-            for run, lumis in info['Lumis'].iteritems():
+        for _, info in datasetInfo.items():
+            for run, lumis in info['Lumis'].items():
                 lumilist.setdefault(str(run), []).extend(lumis)
         return lumilist
 

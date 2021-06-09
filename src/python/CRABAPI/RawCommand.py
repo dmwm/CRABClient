@@ -16,7 +16,7 @@ def crabCommand(command, *args, **kwargs):
     """
     #Converting all arguments to a list. Adding '--' and '='
     arguments = []
-    for key, val in kwargs.iteritems():
+    for key, val in kwargs.items():
         if isinstance(val, bool):
             if val:
                 arguments.append('--'+str(key))

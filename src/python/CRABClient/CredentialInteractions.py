@@ -17,6 +17,7 @@ class CredentialInteractions(object):
     Takes care of wrapping Proxy interaction and defining common behaviour
     for all the client commands.
     '''
+
     def __init__(self, logger=None):
         '''
         Constructor
@@ -55,7 +56,6 @@ class CredentialInteractions(object):
 
     def setRetrievers(self, retrievers):
         self.defaultDelegation['retrievers'] = retrievers
-
 
     def setMyProxyServer(self, server):
         self.defaultDelegation['myProxyServer'] = server

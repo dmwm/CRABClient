@@ -1,7 +1,7 @@
 from __future__ import print_function
 from __future__ import division
 
-from httplib import HTTPException
+from http.client import HTTPException
 
 from CRABClient.ClientUtilities import colors, validateJobids, getColumn
 from CRABClient.UserUtilities import getFileFromURL
@@ -9,7 +9,6 @@ from CRABClient.Commands.getcommand import getcommand
 from CRABClient.ClientExceptions import RESTCommunicationException, MissingOptionException
 
 from ServerUtilities import getProxiedWebDir
-
 
 class getlog(getcommand):
     """

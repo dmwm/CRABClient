@@ -141,9 +141,11 @@ class ConfigCommand:
             msg = "Invalid CRAB configuration: Section 'Site' is missing."
             return False, msg
 
-        # Some parameters may have been renamed. Check here if the configuration file has an old
-        # parameter defined, and in that case tell the user what is the new parameter name.
-        for old_param, new_param in renamedParams.iteritems():
+        return True, "Valid configuration"
+
+        ## Some parameters may have been renamed. Check here if the configuration file has an old
+        ## parameter defined, and in that case tell the user what is the new parameter name.
+        for old_param, new_param in renamedParams.items():
             if len(old_param.split('.')) != 2 or len(new_param['newParam'].split('.')) != 2:
                 continue
             old_param_section, old_param_name = old_param.split('.')
@@ -166,11 +168,11 @@ class ConfigCommand:
                         msg += " Maybe you mean %s?" % (SpellChecker.correct(param))
                     return False, msg
 
-        # Check that each parameter specified in the configuration file is of the
-        # type specified in the configuration map.
-        # Check that, if a parameter is a required one and it has no default value,
-        # then it must be specified in the configuration file.
-        for paramName, paramInfo in configParametersInfo.iteritems():
+        ## Check that each parameter specified in the configuration file is of the
+        ## type specified in the configuration map.
+        ## Check that, if a parameter is a required one and it has no default value,
+        ## then it must be specified in the configuration file.
+        for paramName, paramInfo in configParametersInfo.items():
             requiredTypeName = paramInfo['type']
             try:
                 requiredType = getattr(types, requiredTypeName)
@@ -226,13 +228,13 @@ class SubCommand(ConfigCommand):
         self.logger = logger
         self.logfile = self.logger.logfile
 
-        localSystem = subprocess.check_output(['uname', '-a']).strip('\n')
+        localSystem = str(subprocess.check_output(['uname', '-a'])).strip('\n')
         try:
-            localOS = subprocess.check_output(['grep', 'PRETTY_NAME', '/etc/os-release'], stderr=subprocess.STDOUT).strip('\n')
+            localOS = str(subprocess.check_output(['grep', 'PRETTY_NAME', '/etc/os-release'], stderr=subprocess.STDOUT)).strip('\n')
             localOS = localOS.split('=')[1].strip('"')
         except Exception as ex:  # pylint: disable=unused-variable
             try:
-                localOS = subprocess.check_output(['lsb_release', '-d']).strip('\n')
+                localOS = str(subprocess.check_output(['lsb_release', '-d'])).strip('\n')
                 localOS = localOS.split(':')[1].strip()
             except Exception as ex:  # pylint: disable=unused-variable
                 localOS = "Unknown Operating System"
@@ -406,7 +408,7 @@ class SubCommand(ConfigCommand):
             msg += 'valid values are %s ' % SERVICE_INSTANCES.keys()
             raise ConfigurationException(msg)
 
-        if instance is not 'other':
+        if instance != 'other':
             self.restHost = SERVICE_INSTANCES[instance]['restHost']
             self.dbInstance = SERVICE_INSTANCES[instance]['dbInstance']
         else:

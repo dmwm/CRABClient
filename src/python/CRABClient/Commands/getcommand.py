@@ -73,7 +73,7 @@ class getcommand(SubCommand):
         #Retrieving output files location from the server
         self.logger.debug('Retrieving locations for task %s' % self.cachedinfo['RequestName'])
         inputlist = [('workflow', self.cachedinfo['RequestName'])]
-        inputlist.extend(list(argv.iteritems()))
+        inputlist.extend(list(argv.items()))
         if getattr(self.options, 'quantity', None):
             self.logger.debug('Retrieving %s file locations' % self.options.quantity)
             inputlist.append(('limit', self.options.quantity))

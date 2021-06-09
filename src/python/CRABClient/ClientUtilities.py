@@ -13,10 +13,13 @@ import time
 from time import gmtime
 import pkgutil
 import sys
-import cPickle
+import pickle
 import subprocess
 import traceback
-from urlparse import urlparse
+if sys.version_info >= (3, 0):
+    from urllib.parse import urlparse
+if sys.version_info < (3, 0):
+    from urlparse import urlparse
 from optparse import OptionValueError
 
 ## CRAB dependencies
@@ -80,7 +83,7 @@ class logfilter(logging.Filter):
         def removecolor(text):
             if not text:
                 return text
-            for dummyColor, colorval in colors.colordict.iteritems():
+            for dummyColor, colorval in colors.colordict.items():
                 if colorval in text:
                     text = text.replace(colorval, '')
             return text
@@ -421,7 +424,7 @@ def createCache(requestarea, host, port, uniquerequestname, voRole, voGroup, ins
         "instance" : instance,
         "OriginalConfig" : originalConfig
     }
-    cPickle.dump(neededhandlers, touchfile)
+    pickle.dump(neededhandlers, touchfile)
     touchfile.close()
 
 
@@ -451,7 +454,7 @@ def loadCache(mydir, logger):
         msg = "Cannot find .requestcache file in CRAB project directory %s" % (requestarea)
         raise CachefileNotFoundException(msg)
     logfile = changeFileLogger(logger, workingpath=requestarea)
-    return cPickle.load(loadfile), logfile
+    return pickle.load(loadfile), logfile
 
 
 def getUserProxy():

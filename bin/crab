@@ -22,7 +22,7 @@ if not 'OpenSSL' in pycurl.version:
 import logging
 import logging.handlers
 
-from httplib import HTTPException
+from http.client import HTTPException
 
 from ServerUtilities import FEEDBACKMAIL
 
