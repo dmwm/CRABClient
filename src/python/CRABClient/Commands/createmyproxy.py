@@ -21,21 +21,21 @@ class createmyproxy(SubCommand):
 
     def __call__(self):
 
-        proxy = CredentialInteractions(self.logger)
+        credentialHandler = CredentialInteractions(self.logger)
         days = self.options.days
-        proxy.setMyProxyValidity(int(days) * 24 * 60)  # minutes
+        credentialHandler.setMyProxyValidity(int(days) * 24 * 60)  # minutes
         # give a bit of slack to the threshold, avoid that repeating the c
         timeLeftThreshold = int(days-1) * 24 * 60 * 60  # seconds
 
         self.logger.info("Checking credentials")
 
         # need an X509 proxy in order to talk with CRABServer to get list of myproxy authorized retrievers
-        proxy.proxyInfo = proxy.createNewVomsProxy(timeLeftThreshold=720)
+        credentialHandler.createNewVomsProxy(timeLeftThreshold=720)
         alldns = server_info(crabserver=self.crabserver, subresource='delegatedn')
         for authorizedDNs in alldns['services']:
-            proxy.setRetrievers(authorizedDNs)
+            credentialHandler.setRetrievers(authorizedDNs)
             self.logger.info("Registering user credentials in myproxy")
-            (credentialName, myproxyTimeleft) = proxy.createNewMyProxy(timeleftthreshold=timeLeftThreshold)
+            (credentialName, myproxyTimeleft) = credentialHandler.createNewMyProxy(timeleftthreshold=timeLeftThreshold)
             self.logger.info("Credential exists on myproxy: username: %s  - validity: %s", credentialName,
                              str(timedelta(seconds=myproxyTimeleft)))
         return
