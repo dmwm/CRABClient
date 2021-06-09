@@ -21,7 +21,7 @@ class createmyproxy(SubCommand):
 
     def __call__(self):
 
-        proxy = CredentialInteractions('', '', '', '', self.logger)
+        proxy = CredentialInteractions(self.logger)
         days = self.options.days
         proxy.setMyProxyValidity(int(days) * 24 * 60)  # minutes
         # give a bit of slack to the threshold, avoid that repeating the c
@@ -35,7 +35,7 @@ class createmyproxy(SubCommand):
         for authorizedDNs in alldns['services']:
             proxy.setRetrievers(authorizedDNs)
             self.logger.info("Registering user credentials in myproxy")
-            (credentialName, myproxyTimeleft) = proxy.createNewMyProxy(timeleftthreshold=timeLeftThreshold, nokey=True)
+            (credentialName, myproxyTimeleft) = proxy.createNewMyProxy(timeleftthreshold=timeLeftThreshold)
             self.logger.info("Credential exists on myproxy: username: %s  - validity: %s", credentialName,
                              str(timedelta(seconds=myproxyTimeleft)))
         return

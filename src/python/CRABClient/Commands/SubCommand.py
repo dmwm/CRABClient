@@ -296,7 +296,7 @@ class SubCommand(ConfigCommand):
         # And this happens in handleProxy(), which is called after we load the
         # configuration file and retrieve the final values for those parameters.
         # handleProxy() takes care of passing those parameters to self.proxy.
-        self.proxy = CredentialInteractions('', '', self.voRole, self.voGroup, self.logger)
+        self.proxy = CredentialInteractions(self.logger)
 
         # If the user didn't use the --proxy command line option, and if there isn't a
         # valid proxy already, we will create a new one with the current VO role and group
@@ -450,9 +450,7 @@ class SubCommand(ConfigCommand):
             self.logger.debug('Skipping proxy creation')
             return
         if self.cmdconf['initializeProxy']:  # actually atm all commands require a proxy, see ClientMapping.py
-            self.proxy.setVOGroupVORole(self.voGroup, self.voRole)
             self.proxy.proxyInfo = self.proxy.createNewVomsProxy(timeLeftThreshold=720, \
-                                                               doProxyGroupRoleCheck=self.cmdconf['doProxyGroupRoleCheck'], \
                                                                proxyCreatedByCRAB=self.proxyCreated, \
                                                                proxyOptsSetPlace=proxyOptsSetPlace)
             self.proxyfilename = self.proxy.proxyInfo['filename']
@@ -475,7 +473,8 @@ class SubCommand(ConfigCommand):
                 self.proxy.setRetrievers(authorizedDNs)
                 self.logger.debug("Registering user credentials on myproxy for %s" % authorizedDNs)
                 try:
-                    (credentialName, myproxyTimeleft) = self.proxy.createNewMyProxy(timeleftthreshold=60 * 60 * 24 * RENEW_MYPROXY_THRESHOLD, nokey=True)
+                    (credentialName, myproxyTimeleft) = \
+                        self.proxy.createNewMyProxy(timeleftthreshold=60 * 60 * 24 * RENEW_MYPROXY_THRESHOLD)
                     p1 = True
                     msg1 = "Credential exists on myproxy: username: %s  - validity: %s" %\
                            (credentialName, str(timedelta(seconds=myproxyTimeleft)))
