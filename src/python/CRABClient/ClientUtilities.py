@@ -181,7 +181,7 @@ def getColumn(dictresult, columnName):
     else:
         return value
 
-def uploadlogfile(logger, proxyfilename, taskname=None, logfilename=None, logpath=None, instance='prod', serverurl=None, username=None):
+def uploadlogfile(logger, proxyfilename, taskname=None, logfilename=None, logpath=None, instance=None, serverurl=None, username=None):
     ## WMCore dependencies. Moved here to minimize dependencies in the bootstrap script
     from WMCore.Services.UserFileCache.UserFileCache import UserFileCache
 
@@ -211,12 +211,6 @@ def uploadlogfile(logger, proxyfilename, taskname=None, logfilename=None, logpat
         else:
             logger.debug('%sError%s: Failed to find crab.log in current directory %s' % (colors.RED, colors.NORMAL, str(os.getcwd())))
 
-    if serverurl == None and instance in SERVICE_INSTANCES.keys():
-        serverurl = SERVICE_INSTANCES[instance]
-    elif not instance in SERVICE_INSTANCES.keys() and serverurl == None:
-        logger.debug('%sError%s: serverurl is None' % (colors.RED, colors.NORMAL))
-        doupload = False
-
     if proxyfilename == None:
         logger.debug('No proxy was given')
         doupload = False
@@ -228,6 +222,7 @@ def uploadlogfile(logger, proxyfilename, taskname=None, logfilename=None, logpat
         crabserver = restClass(hostname=serverurl, localcert=proxyfilename, localkey=proxyfilename,
                                retry=2, logger=logger, verbose=False, version=__version__,
                                userAgent='CRABClient')
+        crabserver.setDbInstance(instance)
         cacheurl = server_info(crabserver=crabserver, subresource='backendurls')
         # Encode in ascii because old pycurl present in old CMSSW versions
         # doesn't support unicode.
