@@ -20,7 +20,7 @@ def getLumiList(lumi_mask_name, logger = None):
     lumi-mask: either an http address or a json file on disk.
     """
     lumi_list = None
-    parts = urlparse.urlparse(lumi_mask_name)
+    parts = urlparse(lumi_mask_name)
     if parts[0] in ['http', 'https']:
         if logger:
             logger.debug('Downloading lumi-mask from %s' % lumi_mask_name)
