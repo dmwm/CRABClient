@@ -10,7 +10,6 @@ import shutil
 import urllib
 import tarfile
 import tempfile
-import subprocess
 
 import CRABClient.Emulator
 from CRABClient.ClientUtilities import DBSURLS
@@ -18,7 +17,7 @@ from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientMapping import parametersMapping, getParamDefaultValue
 from CRABClient.ClientExceptions import ClientException, RESTCommunicationException
 from CRABClient.ClientUtilities import getJobTypes, createCache, addPlugin, server_info, colors,\
-    setSubmitParserOptions, validateSubmitOptions, checkStatusLoop
+    setSubmitParserOptions, validateSubmitOptions, checkStatusLoop, execute_command
 
 from ServerUtilities import MAX_MEMORY_PER_CORE, MAX_MEMORY_SINGLE_CORE, downloadFromS3
 
@@ -385,7 +384,8 @@ class submit(SubCommand):
                 tf = tarfile.open(os.path.join(tmpDir, name))
                 tf.extractall(tmpDir)
                 tf.close()
-            env = os.environ.update({'CRAB3_RUNTIME_DEBUG': 'True', '_CONDOR_JOB_AD': 'Job.submit'})
+            #env = os.environ.update({'CRAB3_RUNTIME_DEBUG': 'True', '_CONDOR_JOB_AD': 'Job.submit'})
+            env = 'env CRAB3_RUNTIME_DEBUG=True _CONDOR_JOB_AD=Job.submit'
 
             with open('splitting-summary.json') as f:
                 splitting = json.load(f)
@@ -399,12 +399,15 @@ class submit(SubCommand):
             totalJobSeconds = 0
             maxSeconds = 25
             while totalJobSeconds < maxSeconds:
-                opts = getCMSRunAnalysisOpts('Job.submit', 'RunJobs.dag', job=1, events=events)
-
-                s = subprocess.Popen(['sh', 'CMSRunAnalysis.sh'] + opts, env=env, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-                out, err = s.communicate()
+                optsList = getCMSRunAnalysisOpts('Job.submit', 'RunJobs.dag', job=1, events=events)
+                # from a python list to a string which can be used as shell command argument
+                opts = ''
+                for opt in optsList:
+                    opts = opts + ' %s' % opt
+                command = env + 'sh CMSRunAnalysis.sh ' + opts
+                out, err, returncode = execute_command(command=command)
                 self.logger.debug(out)
-                if s.returncode != 0:
+                if returncode != 0:
                     raise ClientException('Dry run failed to execute local test run:\n StdOut: %s\n StdErr: %s' % (out, err))
 
                 #Once this https://github.com/dmwm/CRABServer/pull/4938 will get merged the job will be executed inside the CMSSW dir

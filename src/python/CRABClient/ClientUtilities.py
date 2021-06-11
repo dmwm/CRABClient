@@ -196,10 +196,8 @@ def uploadlogfile(logger, proxyfilename, taskname=None, logfilename=None, logpat
     logger.info('Fetching user enviroment to log file')
 
     try:
-        cmd = 'env'
         logger.debug('Running env command')
-        pipe = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        stdout, dummyStderr = pipe.communicate()
+        stdout, _, _ = execute_command(command='env')
         logger.debug('\n\n\nUSER ENVIROMENT\n%s' % stdout)
     except Exception as se:
         logger.debug('Failed to get the user env\nException message: %s' % (se))
@@ -469,9 +467,8 @@ def getUserProxy():
     #    raise ProxyException(msg)
     ## Retrieve DN from proxy.
     cmd = undoScram + "; voms-proxy-info -path"
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    stdout, stderr = process.communicate()
-    if process.returncode or not stdout:
+    stdout, stderr, returncode = execute_command(command=cmd)
+    if returncode or not stdout:
         msg = "Unable to find proxy file:"
         msg += "\nError executing command: %s" % (cmd)
         msg += "\n  Stdout:\n    %s" % (str(stdout).replace('\n', '\n    '))
