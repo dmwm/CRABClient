@@ -49,7 +49,7 @@ class submit(SubCommand):
 
         self.configreq = {'dryrun': 1 if self.options.dryrun else 0}
         for param in parametersMapping['on-server']:
-            mustbetype = getattr(types, parametersMapping['on-server'][param]['type'])
+            #mustbetype = getattr(types, parametersMapping['on-server'][param]['type'])
             default = parametersMapping['on-server'][param]['default']
             config_params = parametersMapping['on-server'][param]['config']
             for config_param in config_params:
@@ -71,8 +71,8 @@ class submit(SubCommand):
             ## Check that the requestname is of the right type.
             ## This is not checked in SubCommand.validateConfig().
             if param == 'workflow':
-                if isinstance(self.requestname, mustbetype):
-                    self.configreq['workflow'] = self.requestname
+                #if isinstance(self.requestname, mustbetype):
+                self.configreq['workflow'] = self.requestname
             ## Translate boolean flags into integers.
             elif param in ['savelogsflag', 'publication', 'publishgroupname', 'nonprodsw', 'useparent',\
                            'ignorelocality', 'saveoutput', 'oneEventMode', 'nonvaliddata', 'ignoreglobalblacklist']:
