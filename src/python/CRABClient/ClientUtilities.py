@@ -768,13 +768,13 @@ def execute_command(command=None, logger=None, timeout=None, redirect=True):
         logger.debug('Executing command :\n %s' % command)
     if redirect:
         proc = subprocess.Popen(
-            command, shell=True, cwd=os.environ['PWD'],
+            command, shell=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             stdin=subprocess.PIPE,
         )
     else:
-        proc = subprocess.Popen(command, shell=True, cwd=os.environ['PWD'])
+        proc = subprocess.Popen(command, shell=True)
 
     t_beginning = time.time()
     while True:
