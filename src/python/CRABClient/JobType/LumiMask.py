@@ -6,7 +6,6 @@ if sys.version_info >= (3, 0):
     from urllib.parse import urlparse
 if sys.version_info < (3, 0):
     from urlparse import urlparse
-import urllib2
 
 from WMCore.Lexicon import jobrange
 from WMCore.DataStructs.LumiList import LumiList
@@ -26,7 +25,7 @@ def getLumiList(lumi_mask_name, logger = None):
             logger.debug('Downloading lumi-mask from %s' % lumi_mask_name)
         try:
             lumi_list = LumiList(url = lumi_mask_name)
-        except urllib2.HTTPError as err:
+        except Exception as err:
             raise ConfigurationException("Problem downloading lumi-mask file; %s %s"
                     % (err.code, err.msg))
     else:
