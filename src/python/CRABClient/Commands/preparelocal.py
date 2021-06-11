@@ -7,7 +7,8 @@ import tempfile
 from ServerUtilities import getProxiedWebDir, getColumn
 
 import CRABClient.Emulator
-from CRABClient.UserUtilities import getFileFromURL, execute_command
+from CRABClient.UserUtilities import getFileFromURL
+from CRABClient.ClientUtilities import execute_command
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ClientException
 

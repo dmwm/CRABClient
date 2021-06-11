@@ -384,8 +384,7 @@ class submit(SubCommand):
                 tf = tarfile.open(os.path.join(tmpDir, name))
                 tf.extractall(tmpDir)
                 tf.close()
-            #env = os.environ.update({'CRAB3_RUNTIME_DEBUG': 'True', '_CONDOR_JOB_AD': 'Job.submit'})
-            env = 'env CRAB3_RUNTIME_DEBUG=True _CONDOR_JOB_AD=Job.submit'
+            env = os.environ.update({'CRAB3_RUNTIME_DEBUG': 'True', '_CONDOR_JOB_AD': 'Job.submit'})
 
             with open('splitting-summary.json') as f:
                 splitting = json.load(f)
