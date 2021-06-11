@@ -1,7 +1,11 @@
 from __future__ import print_function, division
 
 import re
-import urllib
+import sys
+if sys.version_info >= (3, 0):
+    from urllib.parse import quote
+if sys.version_info < (3, 0):
+    from urllib import quote
 
 ## CRAB dependencies.
 from CRABClient.Commands.SubCommand import SubCommand
@@ -90,7 +94,7 @@ class resubmit(SubCommand):
         listParams = [k for k in configreq.keys() if isinstance(configreq[k], list)]
         for lparam in listParams:
             if len(configreq[lparam]) > 0:
-                encodedLists += ("&%s=" % lparam) + ("&%s=" % lparam).join(map(urllib.quote, configreq[lparam]))
+                encodedLists += ("&%s=" % lparam) + ("&%s=" % lparam).join(map(quote, configreq[lparam]))
             elif len(configreq[lparam]) == 0:
                 encodedLists += ("&%s=empty" % lparam)
             del configreq[lparam]

@@ -2,14 +2,19 @@
 This is simply taking care of job submission
 """
 import os
+import sys
 import json
 import types
 import re
 import shlex
 import shutil
-import urllib
 import tarfile
 import tempfile
+if sys.version_info >= (3, 0):
+    from urllib.parse import urlencode, quote
+if sys.version_info < (3, 0):
+    from urllib import urlencode, quote
+
 
 import CRABClient.Emulator
 from CRABClient.ClientUtilities import DBSURLS
@@ -44,7 +49,7 @@ class submit(SubCommand):
 
         self.configreq = {'dryrun': 1 if self.options.dryrun else 0}
         for param in parametersMapping['on-server']:
-            mustbetype = getattr(types, parametersMapping['on-server'][param]['type'])
+            #mustbetype = getattr(types, parametersMapping['on-server'][param]['type'])
             default = parametersMapping['on-server'][param]['default']
             config_params = parametersMapping['on-server'][param]['config']
             for config_param in config_params:
@@ -66,8 +71,8 @@ class submit(SubCommand):
             ## Check that the requestname is of the right type.
             ## This is not checked in SubCommand.validateConfig().
             if param == 'workflow':
-                if isinstance(self.requestname, mustbetype):
-                    self.configreq['workflow'] = self.requestname
+                #if isinstance(self.requestname, mustbetype):
+                self.configreq['workflow'] = self.requestname
             ## Translate boolean flags into integers.
             elif param in ['savelogsflag', 'publication', 'publishgroupname', 'nonprodsw', 'useparent',\
                            'ignorelocality', 'saveoutput', 'oneEventMode', 'nonvaliddata', 'ignoreglobalblacklist']:
@@ -357,9 +362,9 @@ class submit(SubCommand):
         for lparam in listParams:
             if lparam in configreq:
                 if len(configreq[lparam]) > 0:
-                    encodedLists += ('&%s=' % lparam) + ('&%s=' % lparam).join(map(urllib.quote, configreq[lparam]))
+                    encodedLists += ('&%s=' % lparam) + ('&%s=' % lparam).join(map(quote, configreq[lparam]))
                 del configreq[lparam]
-        encoded = urllib.urlencode(configreq) + encodedLists
+        encoded = urlencode(configreq) + encodedLists
         return str(encoded)
 
 

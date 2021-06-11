@@ -110,7 +110,7 @@ class CMSSWConfig(object):
         pklFile.close()
 
         #create the auxiliary file
-        outFile = open(filename, "wb")
+        outFile = open(filename, "w")
         outFile.write("import FWCore.ParameterSet.Config as cms\n")
         outFile.write("import pickle\n")
         outFile.write("process = pickle.load(open('PSet.pkl', 'rb'))\n")# % os.path.split(pklFileName)[1])

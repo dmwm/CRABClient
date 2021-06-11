@@ -407,7 +407,7 @@ def createWorkArea(logger, workingArea='.', requestName=''):
 
 def createCache(requestarea, host, port, uniquerequestname, voRole, voGroup, instance, originalConfig=None):
     originalConfig = originalConfig or {}
-    touchfile = open(os.path.join(requestarea, '.requestcache'), 'w')
+    touchfile = open(os.path.join(requestarea, '.requestcache'), 'wb')
     neededhandlers = {
         "Server" : host,
         "Port" : port,
