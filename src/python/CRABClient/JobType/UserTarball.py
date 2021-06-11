@@ -101,7 +101,7 @@ def calculateChecksum(tarfile_, exclude=None):
         for tarmember in tar:
             if tarmember.name in excludeList:
                 continue
-            hasher.update(tarmember.name)
+            hasher.update(tarmember.name.encode('utf-8'))
             if tarmember.isfile() and tarmember.name.split('.')[-1] != 'pkl':
                 tar.extractall(path=tmpDir, members=[tarmember])
                 fn = os.path.join(tmpDir, tarmember.name)
