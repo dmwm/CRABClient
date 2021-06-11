@@ -156,8 +156,7 @@ class Analysis(BasicJobType):
             inputFiles = [re.sub(r'^file:', '', f) for f in getattr(self.config.JobType, 'inputFiles', [])]
             tb.addFiles(userFiles=inputFiles, cfgOutputName=cfgOutputName)
             try:
-                # convert from unicode to ascii to make it work with older pycurl versions
-                uploadResult = tb.upload(filecacheurl = filecacheurl.encode('ascii', 'ignore'))
+                uploadResult = tb.upload(filecacheurl = filecacheurl)
             except HTTPException as hte:
                 if 'X-Error-Info' in hte.headers:
                     reason = hte.headers['X-Error-Info']
