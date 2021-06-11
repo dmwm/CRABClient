@@ -147,7 +147,7 @@ class MyProxy(object):
             self.logger.error(stdout+'\n'+stderr)
         if rc > 0 or not stdout:  # if there's no credential myproxy-info returns rc=1
             return 0, ''
-        olines = stdout.rstrip().split(b'\n')
+        olines = stdout.rstrip().split('\n')
         trustedRetrievalPolicy = olines[-2]
         trustedRetrievers = trustedRetrievalPolicy.split(':')[1].strip()
         times = olines[-1].split(':')

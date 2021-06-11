@@ -136,7 +136,7 @@ class CredentialInteractions(object):
         proxy = VomsProxy(logger=self.defaultDelegation['logger'])
         userDNFromProxy = proxy.getSubject()
         # now use that to compute the credential name to pass in input to a new Proxy object
-        credentialName = sha1(userDNFromProxy).hexdigest()
+        credentialName = sha1(userDNFromProxy.encode('utf-8')).hexdigest()
         myproxy = MyProxy(logger=self.defaultDelegation['logger'])
         myproxyDesiredValidity = self.defaultDelegation['myproxyValidity']
 
