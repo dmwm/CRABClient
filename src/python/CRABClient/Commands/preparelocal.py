@@ -3,12 +3,12 @@ import json
 import shutil
 import tarfile
 import tempfile
-import subprocess
 
 from ServerUtilities import getProxiedWebDir, getColumn
 
 import CRABClient.Emulator
 from CRABClient.UserUtilities import getFileFromURL
+from CRABClient.ClientUtilities import execute_command
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ClientException
 
@@ -93,7 +93,7 @@ class preparelocal(SubCommand):
         """
         env = os.environ.update({'CRAB3_RUNTIME_DEBUG': 'True', '_CONDOR_JOB_AD': 'Job.submit'})
 
-        opts = [
+        optsList = [
             os.path.join(os.getcwd(), 'TweakPSet.py'),
             '-a %s' % inputArgs[jobnr-1]['CRAB_Archive'],
             '-o %s' % inputArgs[jobnr-1]['CRAB_AdditionalOutputFiles'],
@@ -116,12 +116,15 @@ class preparelocal(SubCommand):
             '--scriptExe=%s' % inputArgs[jobnr-1]['scriptExe'],
             '--scriptArgs=%s' % inputArgs[jobnr-1]['scriptArgs'],
         ]
-
-        s = subprocess.Popen(['sh', 'CMSRunAnalysis.sh'] + opts, env=env, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-        out, err = s.communicate()
+        # from a python list to a string which can be used as shell command argument
+        opts = ''
+        for opt in optsList:
+            opts = opts + ' %s'%opt
+        command = 'sh CMSRunAnalysis.sh ' + opts
+        out, err, returncode = execute_command(command=command)
         self.logger.debug(out)
         self.logger.debug(err)
-        if s.returncode != 0:
+        if returncode != 0:
             raise ClientException('Failed to execute local test run:\n StdOut: %s\n StdErr: %s' % (out, err))
 
     def prepareDir(self, inputArgs, targetDir):

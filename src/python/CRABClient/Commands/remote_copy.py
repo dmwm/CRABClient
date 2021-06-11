@@ -10,7 +10,7 @@ import logging
 from multiprocessing import Manager
 
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ClientUtilities import colors, cmd_exist, logfilter
+from CRABClient.ClientUtilities import colors, cmd_exist, logfilter, execute_command
 
 
 class remote_copy(SubCommand):
@@ -287,10 +287,8 @@ class remote_copy(SubCommand):
 
             logger.info("Retrieving %s " % fileid)
             logger.debug("Executing %s" % command)
-            pipe = subprocess.Popen(command, stdout = subprocess.PIPE,
-                                     stderr = subprocess.PIPE, shell = True)
             try:
-                stdout, stderr = pipe.communicate()
+                stdout, stderr, returncode = execute_command(command=command)
             except KeyboardInterrupt:
                 logger.info("Subprocess exit due to keyboard interrupt")
                 break
@@ -298,7 +296,7 @@ class remote_copy(SubCommand):
 
             logger.debug("Finish executing for file %s" % fileid)
 
-            if pipe.returncode != 0 or len(error) > 0:
+            if returncode != 0 or len(error) > 0:
                 logger.info("%sWarning%s: Failed retrieving %s" % (colors.RED, colors.NORMAL, fileid))
                 #logger.debug(colors.RED +"Stderr: %s " %stderr+ colors.NORMAL)
                 for x in error:

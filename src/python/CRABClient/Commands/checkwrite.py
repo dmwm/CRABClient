@@ -2,7 +2,6 @@ import os
 import re
 import time
 import datetime
-import subprocess
 
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientUtilities import execute_command, colors, cmd_exist
@@ -140,7 +139,7 @@ class checkwrite(SubCommand):
                 dbgcmd += ";which uberftp > /dev/null 2>&1 || echo ' uberftp eoscmsftp.cern.ch pwd'"
                 #self.logger.info('Executing command: %s' % cmd)
                 #self.logger.info('Please wait...')
-                output = subprocess.check_output(dbgcmd, shell=True)
+                output, _, _ = execute_command(command=dbgcmd)
                 dbgmsg += output
                 self.logger.info(dbgmsg)
         return returndict

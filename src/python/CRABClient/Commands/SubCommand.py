@@ -3,7 +3,6 @@ import re
 import imp 
 import json
 import types
-import subprocess
 from ast import literal_eval
 from datetime import timedelta
 
@@ -17,7 +16,7 @@ from CRABClient import __version__
 from CRABClient.ClientUtilities import colors
 from CRABClient.CRABOptParser import CRABCmdOptParser
 from CRABClient.CredentialInteractions import CredentialInteractions
-from CRABClient.ClientUtilities import loadCache, getWorkArea, server_info, createWorkArea
+from CRABClient.ClientUtilities import loadCache, getWorkArea, server_info, createWorkArea, execute_command
 from CRABClient.ClientExceptions import ConfigurationException, MissingOptionException, EnvironmentException, CachefileNotFoundException
 from CRABClient.ClientMapping import renamedParams, commandsConfiguration, configParametersInfo, getParamDefaultValue
 
@@ -228,14 +227,15 @@ class SubCommand(ConfigCommand):
         self.logger = logger
         self.logfile = self.logger.logfile
 
-        localSystem = str(subprocess.check_output(['uname', '-a'])).strip('\n')
+        stdout, _, _ = execute_command(command='uname -a')
+        localSystem = stdout.strip()
         try:
-            localOS = str(subprocess.check_output(['grep', 'PRETTY_NAME', '/etc/os-release'], stderr=subprocess.STDOUT)).strip('\n')
-            localOS = localOS.split('=')[1].strip('"')
+            localOS, _, _ = execute_command('grep PRETTY_NAME /etc/os-release')
+            localOS = localOS.strip().split('=')[1].strip('"')
         except Exception as ex:  # pylint: disable=unused-variable
             try:
-                localOS = str(subprocess.check_output(['lsb_release', '-d'])).strip('\n')
-                localOS = localOS.split(':')[1].strip()
+                localOS, _, _ = execute_command(command='lsb_release -d')
+                localOS = localOS.strip().split(':')[1].strip()
             except Exception as ex:  # pylint: disable=unused-variable
                 localOS = "Unknown Operating System"
         self.logger.debug("CRAB Client version: %s", __version__)

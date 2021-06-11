@@ -2,7 +2,6 @@ from __future__ import print_function, division
 
 import os
 import json
-import subprocess
 import logging
 import tarfile
 from http.client import HTTPException
@@ -12,7 +11,7 @@ import pycurl
 
 from WMCore.DataStructs.LumiList import LumiList
 
-from CRABClient.ClientUtilities import colors
+from CRABClient.ClientUtilities import colors, execute_command
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.JobType.BasicJobType import BasicJobType
 from CRABClient.UserUtilities import getMutedStatusInfo, getFileFromURL
@@ -416,10 +415,9 @@ class report(SubCommand):
             dasgo = "dasgoclient --query " + query + " --json"
 
             runlumilist = {}
-            subp = subprocess.Popen(dasgo, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdout, stderr = subp.communicate()
-            if subp.returncode or not stdout:
-                print('Failed running command %s. Exitcode is %s' % (dasgo, subp.returncode))
+            stdout, stderr, returncode = execute_command(command=dasgo)
+            if returncode or not stdout:
+                print('Failed running command %s. Exitcode is %s' % (dasgo, returncode))
                 if stdout:
                     print('  Stdout:\n    %s' % str(stdout).replace('\n', '\n    '))
                 if stderr:
@@ -438,10 +436,9 @@ class report(SubCommand):
             # get total events in dataset
             query = "'summary dataset=%s %s'" % (outputDataset, dbsInstance)
             dasgo = "dasgoclient --query " + query + " --json"
-            subp = subprocess.Popen(dasgo, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdout, stderr = subp.communicate()
-            if subp.returncode or not stdout:
-                print('Failed running command %s. Exitcode is %s' % (dasgo, subp.returncode))
+            stdout, stderr, returncode = execute_command(command=dasgo)
+            if returncode or not stdout:
+                print('Failed running command %s. Exitcode is %s' % (dasgo, returncode))
                 if stdout:
                     print('  Stdout:\n    %s' % str(stdout).replace('\n', '\n    '))
                 if stderr:

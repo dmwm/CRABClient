@@ -8,7 +8,7 @@ import logging
 import subprocess
 
 from CRABClient.ClientExceptions import EnvironmentException
-from CRABClient.ClientUtilities import BOOTSTRAP_ENVFILE, bootstrapDone
+from CRABClient.ClientUtilities import BOOTSTRAP_ENVFILE, bootstrapDone, execute_command
 
 class ScramEnvironment(dict):
 
@@ -57,16 +57,14 @@ class ScramEnvironment(dict):
     def initFromEnv(self):
         """ Init the class taking the required information from the environment
         """
-        self.command = 'scram'
+        #self.command = 'scram'  # SB I think this line is not needed
         self["SCRAM_ARCH"] = None
 
         if 'SCRAM_ARCH' in os.environ:
             self["SCRAM_ARCH"] = os.environ["SCRAM_ARCH"]
         else:
-            #I am not sure we should keep this fallback..
-            # subprocess.check_output([self.command, 'arch']).strip() # Python 2.7 and later
-            self["SCRAM_ARCH"] = subprocess.Popen([self.command, 'arch'], stdout=subprocess.PIPE)\
-                                 .communicate()[0].strip()
+            stdout, _, _ = execute_command(command='scram arch')
+            self["SCRAM_ARCH"] = stdout
 
         try:
             self["CMSSW_BASE"]        = os.environ["CMSSW_BASE"]

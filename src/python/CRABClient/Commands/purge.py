@@ -1,11 +1,11 @@
-import subprocess
+from __future__ import print_function
 
 from http.client import HTTPException
 
 from WMCore.Services.UserFileCache.UserFileCache  import UserFileCache
 
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ClientUtilities import colors, server_info
+from CRABClient.ClientUtilities import colors, server_info, execute_command
 from CRABClient.ClientExceptions import ConfigurationException, ConfigException
 
 from ServerUtilities import getColumn
@@ -79,10 +79,7 @@ class purge(SubCommand):
 
             gssishrm = 'gsissh -o ConnectTimeout=60 -o PasswordAuthentication=no ' + scheddaddress + ' rm -rf ' + self.cachedinfo['RequestName']
             self.logger.debug('gsissh command: %s' % gssishrm)
-
-            delprocess = subprocess.Popen(gssishrm, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-            stdout, stderr = delprocess.communicate()
-            exitcode = delprocess.returncode
+            stdout, stderr, exitcode = execute_command(command=gssishrm)
 
             if exitcode == 0:
                 self.logger.info('%sSuccess%s: Successfully removed task from schedd' % (colors.GREEN, colors.NORMAL))
