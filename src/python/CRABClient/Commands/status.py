@@ -1,14 +1,19 @@
 from __future__ import division # I want floating points
 from __future__ import print_function
 
+import sys
 import math
 import json
-import urllib
 import logging
 import time
 from ast import literal_eval
 from datetime import datetime
 from http.client import HTTPException
+
+if sys.version_info >= (3, 0):
+    from urllib.parse import quote
+if sys.version_info < (3, 0):
+    from urllib import quote
 
 from CRABClient.ClientUtilities import colors, validateJobids, compareJobids
 from CRABClient.UserUtilities import getDataFromURL, getColumn
@@ -361,7 +366,7 @@ class status(SubCommand):
         self.logger.info(msg)
 
         # Show server and dashboard URL for the task.
-        taskname = urllib.quote(self.cachedinfo['RequestName'])
+        taskname = quote(self.cachedinfo['RequestName'])
 
         # CRAB Server UI URL for this task is always useful
         #crabServerUIURL has a format like "https://cmsweb.cern.ch/crabserver/ui/task/" + taskname
@@ -924,7 +929,7 @@ class status(SubCommand):
             if includeDASURL:
                 for outputDataset in outputDatasets:
                     msg += "\nOutput dataset:\t\t\t%s" % (outputDataset)
-                    msg += "\nOutput dataset DAS URL:\t\thttps://cmsweb.cern.ch/das/request?input={0}&instance=prod%2Fphys03".format(urllib.quote(outputDataset, ''))
+                    msg += "\nOutput dataset DAS URL:\t\thttps://cmsweb.cern.ch/das/request?input={0}&instance=prod%2Fphys03".format(quote(outputDataset, ''))
             else:
                 extratab = "\t" if len(outputDatasets) == 1 else ""
                 msg += "\nOutput dataset%s:\t\t%s%s" % ("s" if len(outputDatasets) > 1 else "", extratab, outputDatasets[0])
