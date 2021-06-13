@@ -415,13 +415,13 @@ class report(SubCommand):
             dasgo = "dasgoclient --query " + query + " --json"
 
             runlumilist = {}
-            stdout, stderr, returncode = execute_command(command=dasgo)
+            stdout, stderr, returncode = execute_command(command=dasgo, logger=self.logger)
             if returncode or not stdout:
-                print('Failed running command %s. Exitcode is %s' % (dasgo, returncode))
+                self.logger.error('Failed running command %s. Exitcode is %s' % (dasgo, returncode))
                 if stdout:
-                    print('  Stdout:\n    %s' % str(stdout).replace('\n', '\n    '))
+                    self.logger.error('  Stdout:\n    %s' % str(stdout).replace('\n', '\n    '))
                 if stderr:
-                    print('  Stderr:\n    %s' % str(stderr).replace('\n', '\n    '))
+                    self.logger.error('  Stderr:\n    %s' % str(stderr).replace('\n', '\n    '))
             else:
                 result = json.loads(stdout)
                 for record in result:
@@ -436,13 +436,13 @@ class report(SubCommand):
             # get total events in dataset
             query = "'summary dataset=%s %s'" % (outputDataset, dbsInstance)
             dasgo = "dasgoclient --query " + query + " --json"
-            stdout, stderr, returncode = execute_command(command=dasgo)
+            stdout, stderr, returncode = execute_command(command=dasgo, logger=self.logger)
             if returncode or not stdout:
-                print('Failed running command %s. Exitcode is %s' % (dasgo, returncode))
+                self.logger.error('Failed running command %s. Exitcode is %s' % (dasgo, returncode))
                 if stdout:
-                    print('  Stdout:\n    %s' % str(stdout).replace('\n', '\n    '))
+                    self.logger.error('  Stdout:\n    %s' % str(stdout).replace('\n', '\n    '))
                 if stderr:
-                    print('  Stderr:\n    %s' % str(stderr).replace('\n', '\n    '))
+                    self.logger.error('  Stderr:\n    %s' % str(stderr).replace('\n', '\n    '))
                 total_events = 0
             else:
                 result = json.loads(stdout)
