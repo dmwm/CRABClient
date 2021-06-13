@@ -754,6 +754,9 @@ def checkStatusLoop(logger, server, api, uniquerequestname, targetstatus, cmdnam
 def execute_command(command=None, logger=None, timeout=None, redirect=True):
     """
     execute command with optional logging and timeout.
+    Returns a 3-ple: stdout, stderr, rc
+      rc=0 means success.
+      rc=124 (SIGTERM) means that command timed out
     Redirection of std* can be turned off if the command will need to interact with caller
     writing messages and/or asking for input, like if needs to get a passphrase to access
     usercert/key for (my)proxy creation as in
@@ -767,7 +770,8 @@ def execute_command(command=None, logger=None, timeout=None, redirect=True):
     if logger:
         logger.debug('Executing command :\n %s' % command)
     if timeout:
-        logger.debug('add timeout at %s seconds', timeout)
+        if logger:
+            logger.debug('add timeout at %s seconds', timeout)
         command = ('timeout %s ' % timeout ) + command
     if redirect:
         proc = subprocess.Popen(
@@ -781,8 +785,9 @@ def execute_command(command=None, logger=None, timeout=None, redirect=True):
 
     out, err = proc.communicate()
     rc = proc.returncode
-    if rc == 124:
-        logger.error('Timeout in %s execution.' % command)
+    if rc == 124 and timeout:
+        if logger:
+            logger.error('ERROR: Timeout after %s seconds in executing:\n %s' % (timeout,command))
     # for Py3 compatibility
     stdout = out.decode(encoding='UTF-8') if out else ''
     stderr = err.decode(encoding='UTF-8') if err else ''
