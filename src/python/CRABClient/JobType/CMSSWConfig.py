@@ -26,7 +26,7 @@ class CMSSWConfig(object):
     Class to handle CMSSW _cfg.py file
     """
     def __init__(self, config, userConfig=None, logger=None):
-        global configurationCache
+        global configurationCache  # pylint: disable=global-statement
         self.config = config
         self.logger = logger if logger else logging
 
@@ -219,7 +219,7 @@ class CMSSWConfig(object):
             for outputModule in outputModules:
                 try:
                     dataset = getattr(outputModule, 'dataset')
-                    filterName = getattr(dataset, 'filterName')
+                    getattr(dataset, 'filterName')
                 except AttributeError:
                     raise RuntimeError('\nYour output module %s does not have a "dataset" PSet ' % outputModule.label() +
                                        'or the PSet does not have a "filterName" member.')

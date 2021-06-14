@@ -17,14 +17,14 @@ import pickle
 import subprocess
 import traceback
 if sys.version_info >= (3, 0):
-    from urllib.parse import urlparse
+    from urllib.parse import urlparse  # pylint: disable=E0611
 if sys.version_info < (3, 0):
     from urlparse import urlparse
 from optparse import OptionValueError
 
 ## CRAB dependencies
 import CRABClient.Emulator
-from ServerUtilities import SERVICE_INSTANCES, uploadToS3, getDownloadUrlFromS3
+from ServerUtilities import uploadToS3, getDownloadUrlFromS3
 from CRABClient.ClientExceptions import ClientException, TaskNotFoundException, CachefileNotFoundException, ConfigurationException, ConfigException, UsernameException, ProxyException, RESTCommunicationException
 
 # pickle files need to be opeb in different mode in python2 or python3
