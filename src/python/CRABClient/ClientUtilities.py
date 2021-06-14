@@ -16,10 +16,7 @@ import sys
 import pickle
 import subprocess
 import traceback
-if sys.version_info >= (3, 0):
-    from urllib.parse import urlparse
-if sys.version_info < (3, 0):
-    from urlparse import urlparse
+from urlparse import urlparse
 from optparse import OptionValueError
 
 ## CRAB dependencies
@@ -27,6 +24,13 @@ import CRABClient.Emulator
 from ServerUtilities import SERVICE_INSTANCES, uploadToS3, getDownloadUrlFromS3
 from CRABClient.ClientExceptions import ClientException, TaskNotFoundException, CachefileNotFoundException, ConfigurationException, ConfigException, UsernameException, ProxyException, RESTCommunicationException
 
+# pickle files need to be opeb in different mode in python2 or python3
+if sys.version_info >= (3, 0):
+    PKL_W_MODE = 'wb'
+    PKL_R_MODE = 'rb'
+else:
+    PKL_W_MODE = 'w'
+    PKL_R_MODE = 'r'
 
 DBSURLS = {'reader': {'global': 'https://cmsweb.cern.ch/dbs/prod/global/DBSReader',
                       'phys01': 'https://cmsweb.cern.ch/dbs/prod/phys01/DBSReader',
@@ -75,7 +79,7 @@ LOGLEVEL_MUTE = logging.CRITICAL + 10
 
 ## Log format
 LOGFORMAT = {'logfmt': "%(levelname)s %(asctime)s.%(msecs)03d UTC: \t %(message)s", 'datefmt': "%Y-%m-%d %H:%M:%S"}
-LOGFORMATTER = logging.Formatter(LOGFORMAT['logfmt'], LOGFORMAT['datefmt'])
+LOGFORMATTER = logging.Formatter(LOGFORMAT['logfmt'],LOGFORMAT['datefmt'])
 LOGFORMATTER.converter = gmtime
 
 class logfilter(logging.Filter):
@@ -83,7 +87,7 @@ class logfilter(logging.Filter):
         def removecolor(text):
             if not text:
                 return text
-            for dummyColor, colorval in colors.colordict.items():
+            for dummyColor, colorval in colors.colordict.iteritems():
                 if colorval in text:
                     text = text.replace(colorval, '')
             return text
@@ -196,8 +200,10 @@ def uploadlogfile(logger, proxyfilename, taskname=None, logfilename=None, logpat
     logger.info('Fetching user enviroment to log file')
 
     try:
+        cmd = 'env'
         logger.debug('Running env command')
-        stdout, _, _ = execute_command(command='env')
+        pipe = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        stdout, dummyStderr = pipe.communicate()
         logger.debug('\n\n\nUSER ENVIROMENT\n%s' % stdout)
     except Exception as se:
         logger.debug('Failed to get the user env\nException message: %s' % (se))
@@ -241,8 +247,8 @@ def uploadlogfile(logger, proxyfilename, taskname=None, logfilename=None, logpat
             ufc.uploadLog(logpath, logfilename)
             logfileurl = cacheurl + '/logfile?name='+str(logfilename)
             if not username:
-                from CRABClient.UserUtilities import getUsername
-                username = getUsername(proxyFile=proxyfilename, logger=logger)
+              from CRABClient.UserUtilities import getUsername
+              username = getUsername(proxyFile=proxyfilename, logger=logger)            
             logfileurl += '&username='+str(username)
         logger.info("Log file URL: %s" % (logfileurl))
         logger.info("%sSuccess%s: Log file uploaded successfully." % (colors.GREEN, colors.NORMAL))
@@ -407,7 +413,7 @@ def createWorkArea(logger, workingArea='.', requestName=''):
 
 def createCache(requestarea, host, port, uniquerequestname, voRole, voGroup, instance, originalConfig=None):
     originalConfig = originalConfig or {}
-    touchfile = open(os.path.join(requestarea, '.requestcache'), 'wb')
+    touchfile = open(os.path.join(requestarea, '.requestcache'), PKL_W_MODE)
     neededhandlers = {
         "Server" : host,
         "Port" : port,
@@ -442,7 +448,7 @@ def loadCache(mydir, logger):
         raise TaskNotFoundException(msg)
     #If the .requestcache file exists open it!
     if os.path.isfile(cachename):
-        loadfile = open(cachename, 'r')
+        loadfile = open(cachename, PKL_R_MODE)
     else:
         msg = "Cannot find .requestcache file in CRAB project directory %s" % (requestarea)
         raise CachefileNotFoundException(msg)
@@ -467,8 +473,9 @@ def getUserProxy():
     #    raise ProxyException(msg)
     ## Retrieve DN from proxy.
     cmd = undoScram + "; voms-proxy-info -path"
-    stdout, stderr, returncode = execute_command(command=cmd)
-    if returncode or not stdout:
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    stdout, stderr = process.communicate()
+    if process.returncode or not stdout:
         msg = "Unable to find proxy file:"
         msg += "\nError executing command: %s" % (cmd)
         msg += "\n  Stdout:\n    %s" % (str(stdout).replace('\n', '\n    '))
@@ -750,49 +757,4 @@ def checkStatusLoop(logger, server, api, uniquerequestname, targetstatus, cmdnam
 
     logger.debug("Ended %s process." % ("resubmission" if cmdname == "resubmit" else "submission"))
 
-
-def execute_command(command=None, logger=None, timeout=None, redirect=True):
-    """
-    execute command with optional logging and timeout.
-    Returns a 3-ple: stdout, stderr, rc
-      rc=0 means success.
-      rc=124 (SIGTERM) means that command timed out
-    Redirection of std* can be turned off if the command will need to interact with caller
-    writing messages and/or asking for input, like if needs to get a passphrase to access
-    usercert/key for (my)proxy creation as in
-    https://github.com/dmwm/WMCore/blob/75c5abd83738a6a3534027369cd6e109667de74e/src/python/WMCore/Credential/Proxy.py#L383-L385
-    Should eventually go in ServerUtilities and be used everywhere.
-    Put temperarely in ClientUtilities to be able to test new client with current Server
-    Imported here from WMCore/Credential/Proxy.py
-    """
-
-    stdout, stderr, rc = None, None, 99999
-    if logger:
-        logger.debug('Executing command :\n %s' % command)
-    if timeout:
-        if logger:
-            logger.debug('add timeout at %s seconds', timeout)
-        command = ('timeout %s ' % timeout ) + command
-    if redirect:
-        proc = subprocess.Popen(
-            command, shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            stdin=subprocess.PIPE,
-        )
-    else:
-        proc = subprocess.Popen(command, shell=True)
-
-    out, err = proc.communicate()
-    rc = proc.returncode
-    if rc == 124 and timeout:
-        if logger:
-            logger.error('ERROR: Timeout after %s seconds in executing:\n %s' % (timeout,command))
-    # for Py3 compatibility
-    stdout = out.decode(encoding='UTF-8') if out else ''
-    stderr = err.decode(encoding='UTF-8') if err else ''
-    if logger:
-        logger.debug('output : %s\n error: %s\n retcode : %s' % (stdout, stderr, rc))
-
-    return stdout, stderr, rc
 
