@@ -453,6 +453,8 @@ def loadCache(mydir, logger):
     else:
         msg = "Cannot find .requestcache file in CRAB project directory %s" % (requestarea)
         raise CachefileNotFoundException(msg)
+    #TODO should catch ValueError: unsupported pickle protocol: 4 in following line and flag it
+    # as using python3 environment on a task created in python2 env.
     logfile = changeFileLogger(logger, workingpath=requestarea)
     return pickle.load(loadfile), logfile
 
