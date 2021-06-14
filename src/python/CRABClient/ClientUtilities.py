@@ -13,7 +13,7 @@ import time
 from time import gmtime
 import pkgutil
 import sys
-import cPickle
+import pickle
 import subprocess
 import traceback
 from urlparse import urlparse
@@ -24,6 +24,13 @@ import CRABClient.Emulator
 from ServerUtilities import SERVICE_INSTANCES, uploadToS3, getDownloadUrlFromS3
 from CRABClient.ClientExceptions import ClientException, TaskNotFoundException, CachefileNotFoundException, ConfigurationException, ConfigException, UsernameException, ProxyException, RESTCommunicationException
 
+# pickle files need to be opened in different mode in python2 or python3
+if sys.version_info >= (3, 0):
+    PKL_W_MODE = 'wb'
+    PKL_R_MODE = 'rb'
+else:
+    PKL_W_MODE = 'w'
+    PKL_R_MODE = 'r'
 
 DBSURLS = {'reader': {'global': 'https://cmsweb.cern.ch/dbs/prod/global/DBSReader',
                       'phys01': 'https://cmsweb.cern.ch/dbs/prod/phys01/DBSReader',
@@ -406,7 +413,7 @@ def createWorkArea(logger, workingArea='.', requestName=''):
 
 def createCache(requestarea, host, port, uniquerequestname, voRole, voGroup, instance, originalConfig=None):
     originalConfig = originalConfig or {}
-    touchfile = open(os.path.join(requestarea, '.requestcache'), 'w')
+    touchfile = open(os.path.join(requestarea, '.requestcache'), PKL_W_MODE)
     neededhandlers = {
         "Server" : host,
         "Port" : port,
@@ -416,7 +423,7 @@ def createCache(requestarea, host, port, uniquerequestname, voRole, voGroup, ins
         "instance" : instance,
         "OriginalConfig" : originalConfig
     }
-    cPickle.dump(neededhandlers, touchfile)
+    pickle.dump(neededhandlers, touchfile)
     touchfile.close()
 
 
@@ -441,12 +448,12 @@ def loadCache(mydir, logger):
         raise TaskNotFoundException(msg)
     #If the .requestcache file exists open it!
     if os.path.isfile(cachename):
-        loadfile = open(cachename, 'r')
+        loadfile = open(cachename, PKL_R_MODE)
     else:
         msg = "Cannot find .requestcache file in CRAB project directory %s" % (requestarea)
         raise CachefileNotFoundException(msg)
     logfile = changeFileLogger(logger, workingpath=requestarea)
-    return cPickle.load(loadfile), logfile
+    return pickle.load(loadfile), logfile
 
 
 def getUserProxy():
