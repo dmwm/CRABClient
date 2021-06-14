@@ -13,7 +13,8 @@ import logging
 from ServerUtilities import BOOTSTRAP_CFGFILE_DUMP
 
 from CRABClient.ClientExceptions import ConfigurationException, EnvironmentException
-from CRABClient.ClientUtilities import bootstrapDone, colors, BOOTSTRAP_CFGFILE_PKL, BOOTSTRAP_INFOFILE, LOGGERS
+from CRABClient.ClientUtilities import bootstrapDone, colors, BOOTSTRAP_CFGFILE_PKL,\
+    BOOTSTRAP_INFOFILE, LOGGERS, PKL_R_MODE, PKL_W_MODE
 
 # cache user configuration to speed up things in case this is called multiple times in same process
 # via CRAB command API. Note that CMSSW configuration can only be loaded once in memory !
@@ -105,7 +106,7 @@ class CMSSWConfig(object):
 
         #saving the process object as a pickle
         pklFileName = os.path.join(basedir, BOOTSTRAP_CFGFILE_PKL)
-        pklFile = open(pklFileName, "wb")
+        pklFile = open(pklFileName, PKL_W_MODE)
         pickle.dump(self.fullConfig.process, pklFile)
         pklFile.close()
 
@@ -113,7 +114,7 @@ class CMSSWConfig(object):
         outFile = open(filename, "w")
         outFile.write("import FWCore.ParameterSet.Config as cms\n")
         outFile.write("import pickle\n")
-        outFile.write("process = pickle.load(open('PSet.pkl', 'rb'))\n")# % os.path.split(pklFileName)[1])
+        outFile.write("process = pickle.load(open('PSet.pkl', \'%s\'))\n" % PKL_R_MODE)
         outFile.close()
 
         try:
