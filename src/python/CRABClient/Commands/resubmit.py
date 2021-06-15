@@ -3,7 +3,7 @@ from __future__ import print_function, division
 import re
 import sys
 if sys.version_info >= (3, 0):
-    from urllib.parse import quote
+    from urllib.parse import quote  # pylint: disable=E0611
 if sys.version_info < (3, 0):
     from urllib import quote
 

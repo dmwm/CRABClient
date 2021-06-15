@@ -3,7 +3,7 @@ Module to handle lumiMask.json file
 """
 import sys
 if sys.version_info >= (3, 0):
-    from urllib.parse import urlparse
+    from urllib.parse import urlparse  # pylint: disable=E0611
 if sys.version_info < (3, 0):
     from urlparse import urlparse
 
