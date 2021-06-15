@@ -8,10 +8,13 @@ import logging
 import time
 from ast import literal_eval
 from datetime import datetime
-from http.client import HTTPException
+try:
+    from http.client import HTTPException  # Python 3 and Python 2 in modern CMSSW
+except:  # pylint: disable=bare-except
+    from httplib import HTTPException  # old Python 2 version in CMSSW_7
 
 if sys.version_info >= (3, 0):
-    from urllib.parse import quote
+    from urllib.parse import quote  # pylint: disable=E0611
 if sys.version_info < (3, 0):
     from urllib import quote
 

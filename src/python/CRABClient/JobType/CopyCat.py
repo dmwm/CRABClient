@@ -14,8 +14,6 @@ import tempfile
 from functools import reduce
 from ast import literal_eval
 
-from http.client import HTTPException
-
 from WMCore.DataStructs.LumiList import LumiList
 
 from ServerUtilities import BOOTSTRAP_CFGFILE_DUMP, getProxiedWebDir, NEW_USER_SANDBOX_EXCLUSIONS
