@@ -14,7 +14,7 @@ except:  # pylint: disable=bare-except
     from httplib import HTTPException  # old Python 2 version in CMSSW_7
 
 if sys.version_info >= (3, 0):
-    from urllib.parse import quote
+    from urllib.parse import quote  # pylint: disable=E0611
 if sys.version_info < (3, 0):
     from urllib import quote
 
