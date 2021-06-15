@@ -3,9 +3,9 @@ from __future__ import print_function, division
 import re
 import sys
 if sys.version_info >= (3, 0):
-    from urllib.parse import quote
+    from urllib.parse import urlencode, quote  # pylint: disable=E0611
 if sys.version_info < (3, 0):
-    from urllib import quote
+    from urllib import urlencode, quote
 
 ## CRAB dependencies.
 from CRABClient.Commands.SubCommand import SubCommand
@@ -98,7 +98,7 @@ class resubmit(SubCommand):
             elif len(configreq[lparam]) == 0:
                 encodedLists += ("&%s=empty" % lparam)
             del configreq[lparam]
-        encoded = urllib.urlencode(configreq) + encodedLists
+        encoded = urlencode(configreq) + encodedLists
         return str(encoded)
 
     def processJobIds(self, jobList):

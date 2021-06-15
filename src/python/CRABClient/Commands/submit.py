@@ -4,14 +4,14 @@ This is simply taking care of job submission
 import os
 import sys
 import json
-import types
+#import types  # not py3 compatible, see https://github.com/dmwm/CRABClient/issues/5004
 import re
 import shlex
 import shutil
 import tarfile
 import tempfile
 if sys.version_info >= (3, 0):
-    from urllib.parse import urlencode, quote
+    from urllib.parse import urlencode, quote  # pylint: disable=E0611
 if sys.version_info < (3, 0):
     from urllib import urlencode, quote
 

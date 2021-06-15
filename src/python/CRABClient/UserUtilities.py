@@ -7,7 +7,7 @@ import logging
 import traceback
 import sys
 if sys.version_info >= (3, 0):
-    from urllib.parse import urlparse
+    from urllib.parse import urlparse  # pylint: disable=E0611
 if sys.version_info < (3, 0):
     from urlparse import urlparse
 
@@ -20,13 +20,13 @@ from WMCore.Services.pycurl_manager import RequestHandler
 from RESTInteractions import HTTPRequests
 from CRABClient.ClientUtilities import DBSURLS, LOGLEVEL_MUTE, colors
 from CRABClient.ClientUtilities import execute_command, getUserProxy
-from CRABClient.ClientExceptions import ClientException, UsernameException, ProxyException
+from CRABClient.ClientExceptions import ClientException, UsernameException
 
 def config():
     """
     Return a Configuration object containing all the sections that CRAB recognizes.
     """
-    config = Configuration()
+    config = Configuration()  # pylint: disable=redefined-outer-name
     config.section_("General")
     config.section_("JobType")
     config.section_("Data")
@@ -56,7 +56,7 @@ def getUsername(proxyFile=None, logger=None):
         proxyFile = '/tmp/x509up_u%d'%os.getuid() if 'X509_USER_PROXY' not in os.environ else os.environ['X509_USER_PROXY']
     username = getUsernameFromCRIC_wrapped(logger, proxyFile, quiet=True)
     if username:
-        logger.debug("username is %s" % username)
+        logger.debug("username is %s", username)
     else:
         msg = "%sERROR:%s CRIC could not resolve the DN in the user proxy into a user name" \
               % (colors.RED, colors.NORMAL)
