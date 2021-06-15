@@ -1,6 +1,9 @@
 from __future__ import print_function
 
-from http.client import HTTPException
+try:
+    from http.client import HTTPException  # Python 3 and Python 2 in modern CMSSW
+except:  # pylint: disable=bare-except
+    from httplib import HTTPException  # old Python 2 version in CMSSW_7
 
 from WMCore.Services.UserFileCache.UserFileCache  import UserFileCache
 

@@ -4,7 +4,10 @@ import os
 import json
 import logging
 import tarfile
-from http.client import HTTPException
+try:
+    from http.client import HTTPException  # Python 3 and Python 2 in modern CMSSW
+except:  # pylint: disable=bare-except
+    from httplib import HTTPException  # old Python 2 version in CMSSW_7from ast import literal_eval
 from ast import literal_eval
 
 import pycurl
