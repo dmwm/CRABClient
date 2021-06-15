@@ -4,7 +4,7 @@ This is simply taking care of job submission
 import os
 import sys
 import json
-import types
+#import types  # not py3 compatible, see https://github.com/dmwm/CRABClient/issues/5004
 import re
 import shlex
 import shutil
