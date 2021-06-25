@@ -1,5 +1,13 @@
+from __future__ import division
+from __future__ import print_function
 
-import urllib
+import sys
+
+if sys.version_info >= (3, 0):
+    from urllib.parse import urlencode # pylint: disable=E0611
+if sys.version_info < (3, 0):
+    from urllib import urlencode
+
 from base64 import b64encode
 
 from CRABClient.Commands.SubCommand import SubCommand
@@ -20,7 +28,7 @@ class kill(SubCommand):
         if self.options.killwarning:
             inputs.update({'killwarning' : b64encode(self.options.killwarning)})
 
-        dictresult, status, reason = server.delete(api=self.defaultApi, data=urllib.urlencode(inputs))
+        dictresult, status, reason = server.delete(api=self.defaultApi, data=urlencode(inputs))
         self.logger.debug("Result: %s" % dictresult)
 
         if status != 200:
