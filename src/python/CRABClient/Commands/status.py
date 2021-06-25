@@ -1,6 +1,7 @@
 from __future__ import division # I want floating points
 from __future__ import print_function
 
+import pickle
 import sys
 import math
 import json
@@ -112,46 +113,65 @@ class status(SubCommand):
         self.logger.debug("Proxied webdir is located at %s", proxiedWebDir)
 
         # Download status_cache file
-        url = proxiedWebDir + "/status_cache"
+        gotPickle = False
+        # first: try pickle version
+        url = proxiedWebDir + "/status_cache.pkl"
         self.logger.debug("Retrieving 'status_cache' file from %s", url)
-
-        statusCacheInfo = None
         try:
             statusCacheData = getDataFromURL(url, self.proxyfilename)
-        except HTTPException as ce:
-            self.logger.info("Waiting for the Grid scheduler to report back the status of your task")
-            failureMsg = "Cannot retrieve the status_cache file. Maybe the task process has not run yet?"
-            failureMsg += " Got:\n%s" % ce
-            self.logger.error(failureMsg)
-            logging.getLogger("CRAB3").exception(ce)
-            combinedStatus = "UNKNOWN"
-            return self.makeStatusReturnDict(crabDBInfo, combinedStatus, statusFailureMsg=failureMsg)
-            
-        # Normally the first two lines of the file contain the checkpoint locations
-        # for the job_log / fjr_parse_results files and are used by the status caching script.
-        # Load the job_report summary
-        statusCacheInfo = literal_eval(statusCacheData.split('\n')[2])
-        self.logger.debug("Got information from status cache file: %s", statusCacheInfo)
+            gotPickle = True
+            gotPickle = True
+        except Exception as e:  # pylint: disable=unused-variable
+            self.logger.debug("%s not found. Try old format file", url)
+            url = proxiedWebDir + "/status_cache"
+            self.logger.debug("Retrieving 'status_cache' file from %s", url)
+            try:
+                statusCacheData = getDataFromURL(url, self.proxyfilename)
+            except HTTPException as ce:
+                self.logger.info("Waiting for the Grid scheduler to report back the status of your task")
+                failureMsg = "Cannot retrieve the status_cache file. Maybe the task process has not run yet?"
+                failureMsg += " Got:\n%s" % ce
+                self.logger.error(failureMsg)
+                logging.getLogger("CRAB3").exception(ce)
+                combinedStatus = "UNKNOWN"
+                return self.makeStatusReturnDict(crabDBInfo, combinedStatus, statusFailureMsg=failureMsg)
 
-        automaticSplitt = splitting == 'Automatic'
+        # should find one of these two in the status_cache file !
+        statusCacheInfo = None
+        bootstrapMsg = None
 
-        # If the task is already on the grid, show the dagman status
-        combinedStatus = dagStatus = self.printDAGStatus(dbStatus, statusCacheInfo)
-
-        # If the job has just bootstrapped the first lines of the file are:
-        #  line1: a readable message  line2: bootstrap time in seconds from Epoch
-        #  Example:
-        #   # Task bootstrapped at 2021-03-22 16:23:54 UTC
-        #   1616430956
-        # and a dummy, empty, status record follows
-        if statusCacheData.split('\n')[0].startswith('#'):
-            bootstrapTime = statusCacheData.split('\n')[1]
-            bootstrapMsg = statusCacheData.split('\n')[0].lstrip('#').lstrip()
-            if bootstrapTime:
-                bootingTime = int(time.time()) - literal_eval(bootstrapTime)
+        if gotPickle:
+            statusCache = pickle.loads(statusCacheData)
+            if 'bootstrapTime' in statusCache :
+                bootstrapMsg = "Task bootstrapped at %s" % statusCache['bootstrapTime']['date']
+                bootstrapTime = statusCache['bootstrapTime']['fromEpoch']
+                bootingTime = int(time.time()) - bootstrapTime
+                bootstrapMsg += ". %d seconds ago" % bootingTime
             else:
-                bootingTime = 199
-            bootstrapMsg += ". %d seconds ago" % bootingTime
+                statusCacheInfo = statusCache['nodes']
+        else:
+            # pickle failed, must be old format
+            # Normally the first two lines of the file contain the checkpoint locations
+            # for the job_log / fjr_parse_results files and are used by the status caching script.
+            # But if the job has just bootstrapped the first lines of the file are:
+            #  line1: a readable message  line2: bootstrap time in seconds from Epoch
+            #  Example:
+            #   # Task bootstrapped at 2021-03-22 16:23:54 UTC
+            #   1616430956
+            # and a dummy, empty, status record follows
+            if statusCacheData.split('\n')[0].startswith('#'):
+                bootstrapTime = statusCacheData.split('\n')[1]
+                bootstrapMsg = statusCacheData.split('\n')[0].lstrip('#').lstrip()
+                if bootstrapTime:
+                    bootingTime = int(time.time()) - literal_eval(bootstrapTime)
+                else:
+                    bootingTime = 199
+                bootstrapMsg += ". %d seconds ago" % bootingTime
+            else:
+                # Load the job_report summary
+                statusCacheInfo = literal_eval(statusCacheData.split('\n')[2])
+
+        if bootstrapMsg:
             self.logger.info(bootstrapMsg)
             if bootingTime  <= 300:
                 self.logger.info("Status information will be available within a few minutes")
@@ -159,6 +179,17 @@ class status(SubCommand):
                 msg = "Task bootstrapped on schedd more than %d minutes ago\n" % (bootingTime//60)
                 msg += "But no status info is available yet. If this persists report it to %s " % FEEDBACKMAIL
                 self.logger.error(msg)
+            combinedStatus = "SUBMITTED"
+            statusDict = self.makeStatusReturnDict(crabDBInfo, combinedStatus)
+            return statusDict
+        if not statusCacheInfo:
+            self.logger.error('Format error in status_cache. Empty file ?')
+        self.logger.debug("Got information from status cache file: %s", statusCacheInfo)
+
+        automaticSplitt = splitting == 'Automatic'
+
+        # If the task is already on the grid, show the dagman status
+        combinedStatus = dagStatus = self.printDAGStatus(dbStatus, statusCacheInfo)
 
         shortResult = self.printOverview(statusCacheInfo, automaticSplitt, proxiedWebDir)
         pubStatus = self.printPublication(publicationEnabled, shortResult['jobsPerStatus'], shortResult['numProbes'],
