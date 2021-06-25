@@ -1,6 +1,8 @@
 from __future__ import division
 from __future__ import print_function
 
+import sys
+
 if sys.version_info >= (3, 0):
     from urllib.parse import urlencode # pylint: disable=E0611
 if sys.version_info < (3, 0):
