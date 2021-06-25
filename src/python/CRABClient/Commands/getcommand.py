@@ -1,7 +1,14 @@
+from __future__ import division
+from __future__ import print_function
+
+if sys.version_info >= (3, 0):
+    from urllib.parse import urlencode # pylint: disable=E0611
+if sys.version_info < (3, 0):
+    from urllib import urlencode
+
 import os
 import re
 import copy
-import urllib
 
 from CRABClient.Commands.remote_copy import remote_copy
 from CRABClient.Commands.SubCommand import SubCommand
@@ -83,7 +90,7 @@ class getcommand(SubCommand):
         if getattr(self.options, 'jobids', None):
             self.logger.debug('Retrieving jobs %s' % self.options.jobids)
             inputlist.extend(self.options.jobids)
-        dictresult, status, reason = server.get(api=self.defaultApi, data=urllib.urlencode(inputlist))
+        dictresult, status, reason = server.get(api=self.defaultApi, data=urlencode(inputlist))
         self.logger.debug('Server result: %s' % dictresult)
 
         if status != 200:

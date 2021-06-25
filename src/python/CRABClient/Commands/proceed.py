@@ -1,4 +1,10 @@
-import urllib
+from __future__ import division
+from __future__ import print_function
+
+if sys.version_info >= (3, 0):
+    from urllib.parse import urlencode # pylint: disable=E0611
+if sys.version_info < (3, 0):
+    from urllib import urlencode
 
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import RESTCommunicationException
@@ -21,7 +27,7 @@ class proceed(SubCommand):
 
         self.logger.info("Sending the request to the server")
         self.logger.debug("Submitting %s " % str(request))
-        result, status, reason = server.post(api=self.defaultApi, data=urllib.urlencode(request))
+        result, status, reason = server.post(api=self.defaultApi, data=urlencode(request))
         self.logger.debug("Result: %s" % (result))
         if status != 200:
             msg = "Problem continuing task submission:\ninput:%s\noutput:%s\nreason:%s" \
