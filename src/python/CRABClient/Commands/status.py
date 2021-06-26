@@ -122,6 +122,7 @@ class status(SubCommand):
             statusCacheData = getDataFromURL(url, self.proxyfilename)
             statusCache = pickle.loads(statusCacheData)
             if 'bootstrapTime' in statusCache :
+                statusCacheInfo_PKL = None
                 bootstrapMsg_PKL = "Task bootstrapped at %s" % statusCache['bootstrapTime']['date']
                 bootstrapTime = statusCache['bootstrapTime']['fromEpoch']
                 bootingTime = int(time.time()) - bootstrapTime
@@ -147,6 +148,7 @@ class status(SubCommand):
                 #   1616430956
                 # and a dummy, empty, status record follows
                 if statusCacheData.split('\n')[0].startswith('#'):
+                    statusCacheInfo_TXT = None
                     bootstrapTime = statusCacheData.split('\n')[1]
                     bootstrapMsg_TXT = statusCacheData.split('\n')[0].lstrip('#').lstrip()
                     if bootstrapTime:
