@@ -113,8 +113,9 @@ class status(SubCommand):
         self.logger.debug("Proxied webdir is located at %s", proxiedWebDir)
 
         # Download status_cache file
-        # first: try pickle version
         gotPickle = False
+        gotTxt = False
+        # first: try pickle version
         url = proxiedWebDir + "/status_cache.pkl"
         self.logger.debug("Retrieving 'status_cache' file from %s", url)
         try:
@@ -133,7 +134,6 @@ class status(SubCommand):
             self.logger.debug("%s not found or corrupted. Will use old format file only", url)
         # if not running in python3, try also old format
         if sys.version_info < (3, 0):
-            gotTxt = False
             url = proxiedWebDir + "/status_cache"
             self.logger.debug("Retrieving 'status_cache' file from %s", url)
             try:
