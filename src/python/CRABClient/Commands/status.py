@@ -113,21 +113,55 @@ class status(SubCommand):
         self.logger.debug("Proxied webdir is located at %s", proxiedWebDir)
 
         # Download status_cache file
-        gotPickle = False
         # first: try pickle version
+        gotPickle = False
         url = proxiedWebDir + "/status_cache.pkl"
         self.logger.debug("Retrieving 'status_cache' file from %s", url)
         try:
             statusCacheData = getDataFromURL(url, self.proxyfilename)
-            gotPickle = True
+            statusCache = pickle.loads(statusCacheData)
+            if 'bootstrapTime' in statusCache :
+                bootstrapMsg_PKL = "Task bootstrapped at %s" % statusCache['bootstrapTime']['date']
+                bootstrapTime = statusCache['bootstrapTime']['fromEpoch']
+                bootingTime = int(time.time()) - bootstrapTime
+                bootstrapMsg_PKL += ". %d seconds ago" % bootingTime
+            else:
+                bootstrapMsg_PKL = None
+                statusCacheInfo_PKL = statusCache['nodes']
             gotPickle = True
         except Exception as e:  # pylint: disable=unused-variable
-            self.logger.debug("%s not found. Try old format file", url)
+            self.logger.debug("%s not found or corrupted. Will use old format file only", url)
+        # if not running in python3, try also old format
+        if sys.version_info < (3, 0):
+            gotTxt = False
             url = proxiedWebDir + "/status_cache"
             self.logger.debug("Retrieving 'status_cache' file from %s", url)
             try:
                 statusCacheData = getDataFromURL(url, self.proxyfilename)
+                # Normally the first two lines of the file contain the checkpoint locations
+                # for the job_log / fjr_parse_results files and are used by the status caching script.
+                # But if the job has just bootstrapped the first lines of the file are:
+                #  line1: a readable message  line2: bootstrap time in seconds from Epoch
+                #  Example:
+                #   # Task bootstrapped at 2021-03-22 16:23:54 UTC
+                #   1616430956
+                # and a dummy, empty, status record follows
+                if statusCacheData.split('\n')[0].startswith('#'):
+                    bootstrapTime = statusCacheData.split('\n')[1]
+                    bootstrapMsg_TXT = statusCacheData.split('\n')[0].lstrip('#').lstrip()
+                    if bootstrapTime:
+                        bootingTime = int(time.time()) - literal_eval(bootstrapTime)
+                    else:
+                        bootingTime = 199
+                    bootstrapMsg_TXT += ". %d seconds ago" % bootingTime
+                else:
+                    bootstrapMsg_TXT = None
+                    # Load the job_report summary
+                    statusCacheInfo_TXT = literal_eval(statusCacheData.split('\n')[2])
+                gotTxt = True
             except HTTPException as ce:
+                self.logger.debug("%s not found or corrupted.", url)
+            if not gotTxt and not gotPickle:
                 self.logger.info("Waiting for the Grid scheduler to report back the status of your task")
                 failureMsg = "Cannot retrieve the status_cache file. Maybe the task process has not run yet?"
                 failureMsg += " Got:\n%s" % ce
@@ -140,37 +174,20 @@ class status(SubCommand):
         statusCacheInfo = None
         bootstrapMsg = None
 
-        if gotPickle:
-            statusCache = pickle.loads(statusCacheData)
-            if 'bootstrapTime' in statusCache :
-                bootstrapMsg = "Task bootstrapped at %s" % statusCache['bootstrapTime']['date']
-                bootstrapTime = statusCache['bootstrapTime']['fromEpoch']
-                bootingTime = int(time.time()) - bootstrapTime
-                bootstrapMsg += ". %d seconds ago" % bootingTime
-            else:
-                statusCacheInfo = statusCache['nodes']
-        else:
-            # pickle failed, must be old format
-            # Normally the first two lines of the file contain the checkpoint locations
-            # for the job_log / fjr_parse_results files and are used by the status caching script.
-            # But if the job has just bootstrapped the first lines of the file are:
-            #  line1: a readable message  line2: bootstrap time in seconds from Epoch
-            #  Example:
-            #   # Task bootstrapped at 2021-03-22 16:23:54 UTC
-            #   1616430956
-            # and a dummy, empty, status record follows
-            if statusCacheData.split('\n')[0].startswith('#'):
-                bootstrapTime = statusCacheData.split('\n')[1]
-                bootstrapMsg = statusCacheData.split('\n')[0].lstrip('#').lstrip()
-                if bootstrapTime:
-                    bootingTime = int(time.time()) - literal_eval(bootstrapTime)
-                else:
-                    bootingTime = 199
-                bootstrapMsg += ". %d seconds ago" % bootingTime
-            else:
-                # Load the job_report summary
-                statusCacheInfo = literal_eval(statusCacheData.split('\n')[2])
-
+        if gotPickle and gotTxt:
+            # compare
+            if bootstrapMsg_PKL != bootstrapMsg_TXT:
+                self.logger.error('bootstrapMsg mismatch PKL vs TXT. Please report this to %s', FEEDBACKMAIL)
+            if statusCacheInfo_PKL != statusCacheInfo_TXT:
+                self.logger.error('statusCacheInfo mismatch PKL vs TXT Please report this to %s', FEEDBACKMAIL)
+        # use old one for py2, pickle for py3
+        if sys.version_info >= (3, 0):
+            statusCacheInfo = statusCacheInfo_PKL
+            bootstrapMsg = bootstrapMsg_PKL
+        if sys.version_info < (3, 0):
+            statusCacheInfo = statusCacheInfo_TXT
+            bootstrapMsg = bootstrapMsg_TXT
+        # now code is common again
         if bootstrapMsg:
             self.logger.info(bootstrapMsg)
             if bootingTime  <= 300:
