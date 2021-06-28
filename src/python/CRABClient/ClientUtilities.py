@@ -231,10 +231,7 @@ def uploadlogfile(logger, proxyfilename, taskname=None, logfilename=None, logpat
                                retry=2, logger=logger, verbose=False, version=__version__,
                                userAgent='CRABClient')
         crabserver.setDbInstance(instance)
-        cacheurl = server_info(crabserver=crabserver, subresource='backendurls')
-        # Encode in ascii because old pycurl present in old CMSSW versions
-        # doesn't support unicode.
-        cacheurl = cacheurl['cacheSSL'].encode('ascii')
+        cacheurl = server_info(crabserver=crabserver, subresource='backendurls')['cacheSSL']
 
         logger.info("Uploading log file...")
         if 'S3' in cacheurl.upper():
