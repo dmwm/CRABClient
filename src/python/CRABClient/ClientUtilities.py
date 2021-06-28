@@ -561,6 +561,8 @@ def validURL(serverurl, attrtohave=None, attrtonothave=None):
 def compareJobids(a, b):
     """ Compare two job IDs.  Probe jobs (0-*) come first, then processing
         jobs (>1), then tail jobs (>1-*).
+        Return value as expected from python2 cmp() builtin:
+        cmp(x,y)  return value is negative if x < y, zero if x == y and strictly positive if x > y
     """
     aa = [int(x) for x in a.split('-')]
     bb = [int(x) for x in b.split('-')]
@@ -573,8 +575,11 @@ def compareJobids(a, b):
             return -1
         return 1
     elif aa[0] == bb[0]:
-        return cmp(aa[1], bb[1])
-    return cmp(aa[0], bb[0])
+        if aa[1] == bb[1]:
+            return 0
+        else:
+            return 1 if aa[1] > bb[1] else -1
+    return 1 if aa[0] > bb[0] else -1
 
 
 def validateJobids(jobids, allowLists=True):
