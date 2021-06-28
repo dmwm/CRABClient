@@ -9,6 +9,7 @@ import logging
 import time
 from ast import literal_eval
 from datetime import datetime
+from functools import cmp_to_key
 try:
     from http.client import HTTPException  # Python 3 and Python 2 in modern CMSSW
 except:  # pylint: disable=bare-except
@@ -497,7 +498,7 @@ class status(SubCommand):
 
         # Chose between the jobids passed by the user or all jobids that are in the task
         jobidsToUse = jobids if jobids else dictresult.keys()
-        for jobid in sorted(jobidsToUse, cmp=compareJobids):
+        for jobid in sorted(jobidsToUse, key=cmp_to_key(compareJobids)):
             info = dictresult[str(jobid)]
             state = translateJobStatus(jobid)
             jobForMetrics = False
@@ -788,7 +789,7 @@ class status(SubCommand):
             # of job ids, and that each job id is a string.
             for ec in ec_jobids.keys():
                 for i in range(len(ec_jobids[ec])):
-                    ec_jobids[ec][i] = [str(y) for y in sorted([x for x in ec_jobids[ec][i]], cmp=compareJobids)]
+                    ec_jobids[ec][i] = [str(y) for y in sorted([x for x in ec_jobids[ec][i]], key=cmp_to_key(compareJobids))]
             # Error summary header.
             msg = "\nError Summary:"
             if not self.options.verboseErrors:
@@ -940,7 +941,7 @@ class status(SubCommand):
                     esignvalue = 'Unknown'
                 else:
                     esignvalue = str(value)
-                jobids = sorted(valuedict[value], cmp=compareJobids)
+                jobids = sorted(valuedict[value], key=cmp_to_key(compareJobids))
                 msg += "\n%-20s %-s" % (esignvalue, ", ".join(jobids))
             self.logger.info(msg)
         elif sortby in ['state', 'site']:
