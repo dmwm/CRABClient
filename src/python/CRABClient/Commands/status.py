@@ -134,6 +134,8 @@ class status(SubCommand):
             gotPickle = True
         except Exception as e:  # pylint: disable=unused-variable
             self.logger.debug("%s not found or corrupted. Will use old format file only", url)
+            bootstrapMsg_PKL = None
+            statusCacheInfo_PKL = None
         # if not running in python3, try also old format
         if sys.version_info < (3, 0):
             url = proxiedWebDir + "/status_cache"
@@ -164,6 +166,8 @@ class status(SubCommand):
                 gotTxt = True
             except HTTPException as ce:
                 self.logger.debug("%s not found or corrupted.", url)
+                statusCacheInfo_TXT = None
+                bootstrapMsg_TXT = None
             if not gotTxt and not gotPickle:
                 self.logger.info("Waiting for the Grid scheduler to report back the status of your task")
                 failureMsg = "Cannot retrieve the status_cache file. Maybe the task process has not run yet?"
