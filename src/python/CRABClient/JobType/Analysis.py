@@ -184,8 +184,7 @@ class Analysis(BasicJobType):
                          crabserver=self.crabserver, s3tester=self.s3tester) as dtb:
             dtb.addMonFiles()
             try:
-                # convert from unicode to ascii to make it work with older pycurl versions
-                debugFilesUploadResult = dtb.upload(filecacheurl = filecacheurl.encode('ascii', 'ignore'))
+                debugFilesUploadResult = dtb.upload(filecacheurl = filecacheurl)
             except Exception as e:
                 msg = ("Problem uploading debug_files.tar.gz.\nError message: %s.\n"
                        "More details can be found in %s" % (e, self.logger.logfile))
