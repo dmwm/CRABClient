@@ -107,7 +107,7 @@ class CMSSWConfig(object):
         #saving the process object as a pickle
         pklFileName = os.path.join(basedir, BOOTSTRAP_CFGFILE_PKL)
         pklFile = open(pklFileName, PKL_W_MODE)
-        pickle.dump(self.fullConfig.process, pklFile)
+        pickle.dump(self.fullConfig.process, pklFile, protocol=2)
         pklFile.close()
 
         #create the auxiliary file

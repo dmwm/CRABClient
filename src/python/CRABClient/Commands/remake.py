@@ -32,7 +32,8 @@ class remake(SubCommand):
                 self.logger.info("%sWarning%s: Failed to make a request area." % (colors.RED, colors.NORMAL))
             self.logger.info("Remaking .requestcache file.")
             dumpfile = open(cachepath , PKL_W_MODE)
-            pickle.dump({'voGroup': '', 'Server': self.serverurl , 'instance': self.instance, 'RequestName': taskname, 'voRole': '', 'Port': ''}, dumpfile)
+            pickle.dump({'voGroup': '', 'Server': self.serverurl , 'instance': self.instance,
+                         'RequestName': taskname, 'voRole': '', 'Port': ''}, dumpfile, protocol=2)
             dumpfile.close()
             self.logger.info("%sSuccess%s: Finished remaking project directory %s" % (colors.GREEN, colors.NORMAL, requestarea))
             return requestarea
