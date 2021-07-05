@@ -124,9 +124,9 @@ class status(SubCommand):
         url = proxiedWebDir + "/status_cache.pkl"
         self.logger.debug("Retrieving 'status_cache' file from %s", url)
         try:
-            statusCacheData = curlGetFileFromURL(url, local_status_cache_pkl,
+            httpCode = curlGetFileFromURL(url, local_status_cache_pkl,
                                                  self.proxyfilename, logger=self.logger)
-            with open(statusCacheData, PKL_R_MODE) as fp:
+            with open(local_status_cache_pkl, PKL_R_MODE) as fp:
                 statusCache = pickle.load(fp)
             if 'bootstrapTime' in statusCache :
                 statusCacheInfo_PKL = None
