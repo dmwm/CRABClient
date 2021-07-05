@@ -5,6 +5,7 @@ This module contains the utility methods available for users.
 import os
 import logging
 import traceback
+import subprocess
 import sys
 if sys.version_info >= (3, 0):
     from urllib.parse import urlparse  # pylint: disable=E0611
@@ -110,6 +111,30 @@ def getUsernameFromCRIC(proxyFileName=None):
         raise UsernameException(msg)
     return username
 
+def curlGetFileFromURL(url, filename = None, proxyfilename = None, logger=None):
+    """
+    Read the content of a URL into a file via curl
+
+    url: the link you would like to retrieve
+    filename: the local filename where the url is saved to. Defaults to the filename in the url
+    proxyfilename: the x509 proxy certificate to be used in case auth is required
+    returns: the exit code of the command if cammand failed, otherwise the HTTTP code of the call
+             note that curl exits with status 0 if the HTTP calls fail,
+    """
+
+    # send curl output to file and http_code to stdout
+    downloadCommand = 'curl -sS --cert %s --key %s -o %s -w %%"{http_code}"' % (proxyfilename, proxyfilename, filename)
+    downloadCommand += ' "%s"' % url
+    if logger:
+        logger.debug("Will execute:\n%s", downloadCommand)
+    stdout, stderr, rc = execute_command(downloadCommand, logger=logger)
+    if logger:
+        logger.debug('exitcode: %s\nstdout: %s\nstderr: %s', rc, stdout, stderr)
+    httpCode = int(stdout)
+    retValue = rc if rc != 0 else httpCode
+    return retValue
+
+
 
 def getFileFromURL(url, filename = None, proxyfilename = None):
     """
@@ -119,6 +144,7 @@ def getFileFromURL(url, filename = None, proxyfilename = None):
     filename: the local filename where the url is saved to. Defaults to the filename in the url
     proxyfilename: the x509 proxy certificate to be used in case auth is required
     """
+
     parsedUrl = urlparse(url)
     if filename == None:
         path = parsedUrl.path
