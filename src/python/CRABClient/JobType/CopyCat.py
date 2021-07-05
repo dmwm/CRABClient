@@ -64,7 +64,7 @@ class CopyCat(BasicJobType):
         jobsw = getColumn(taskDict, 'tm_job_sw')
 
         sandboxFilename = os.path.join(self.workdir, 'sandbox.tar.gz')
-        getFileFromURL(webdir + '/sandbox.tar.gz', sandboxFilename, self.proxyfilename)
+        curlGetFileFromURL(webdir + '/sandbox.tar.gz', sandboxFilename, self.proxyfilename)
 
         configArguments = {'addoutputfiles' : addoutputfiles,
                            'tfileoutfiles' : tfileoutfiles,
