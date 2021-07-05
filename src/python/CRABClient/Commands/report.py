@@ -2,15 +2,7 @@ from __future__ import print_function, division
 
 import os
 import json
-import logging
 import tarfile
-try:
-    from http.client import HTTPException  # Python 3 and Python 2 in modern CMSSW
-except:  # pylint: disable=bare-except
-    from httplib import HTTPException  # old Python 2 version in CMSSW_7from ast import literal_eval
-from ast import literal_eval
-
-import pycurl
 
 from WMCore.DataStructs.LumiList import LumiList
 
@@ -505,6 +497,7 @@ class report(SubCommand):
         return lumilist
 
     def prepareCurl(self):
+        import pycurl
         curl = pycurl.Curl()
         curl.setopt(pycurl.NOSIGNAL, 0)
         curl.setopt(pycurl.TIMEOUT, 30)

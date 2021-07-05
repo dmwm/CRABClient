@@ -11,10 +11,6 @@ import tempfile
 from ast import literal_eval
 from datetime import datetime
 from functools import cmp_to_key
-try:
-    from http.client import HTTPException  # Python 3 and Python 2 in modern CMSSW
-except:  # pylint: disable=bare-except
-    from httplib import HTTPException  # old Python 2 version in CMSSW_7
 
 if sys.version_info >= (3, 0):
     from urllib.parse import quote  # pylint: disable=E0611
@@ -126,6 +122,8 @@ class status(SubCommand):
         try:
             httpCode = curlGetFileFromURL(url, local_status_cache_pkl,
                                                  self.proxyfilename, logger=self.logger)
+            if httpCode != 200:
+                raise Exception("failed to retrieve %s", url)
             with open(local_status_cache_pkl, PKL_R_MODE) as fp:
                 statusCache = pickle.load(fp)
             if 'bootstrapTime' in statusCache :
@@ -149,6 +147,8 @@ class status(SubCommand):
             try:
                 httpCode = curlGetFileFromURL(url, local_status_cache_txt,
                                                      self.proxyfilename, logger=self.logger)
+                if httpCode != 200:
+                    raise Exception("failed to retrieve %s", url)
                 with open(local_status_cache_txt, 'r') as fp:
                     statusCacheData = fp.read()
                 # Normally the first two lines of the file contain the checkpoint locations
