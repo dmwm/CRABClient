@@ -21,7 +21,7 @@ from ServerUtilities import SERVICE_INSTANCES
 
 import CRABClient.Emulator
 from CRABClient import __version__
-from CRABClient.UserUtilities import getFileFromURL
+from CRABClient.UserUtilities import curlGetFileFromURL
 from CRABClient.ClientUtilities import colors, LOGGERS, getColumn
 from CRABClient.JobType.UserTarball import UserTarball
 from CRABClient.JobType.CMSSWConfig import CMSSWConfig
