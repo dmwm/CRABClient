@@ -21,7 +21,8 @@ if sys.version_info < (3, 0):
     from urllib import quote
 
 from CRABClient.ClientUtilities import colors, validateJobids, compareJobids
-from CRABClient.UserUtilities import getDataFromURL, getColumn
+from CRABClient.ClientUtilities import PKL_R_MODE
+from CRABClient.UserUtilities import curlGetFileFromURL, getColumn
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ConfigurationException
 from CRABClient.ClientMapping import parametersMapping
@@ -114,14 +115,18 @@ class status(SubCommand):
         self.logger.debug("Proxied webdir is located at %s", proxiedWebDir)
 
         # Download status_cache file
+        local_status_cache_txt = tempfile.mkstemp(dir='/tmp', prefix='status-cache-', suffix='.txt')
+        local_status_cache_pkl = tempfile.mkstemp(dir='/tmp', prefix='status-cache-', suffix='.pkl')
         gotPickle = False
         gotTxt = False
         # first: try pickle version
         url = proxiedWebDir + "/status_cache.pkl"
         self.logger.debug("Retrieving 'status_cache' file from %s", url)
         try:
-            statusCacheData = getDataFromURL(url, self.proxyfilename)
-            statusCache = pickle.loads(statusCacheData)
+            statusCacheData = curlGetFileFromURL(url, local_status_cache_pkl,
+                                                 self.proxyfilename, logger=self.logger)
+            with open(statusCacheData, PKL_R_MODE) as fp:
+                statusCache = pickle.load(fp)
             if 'bootstrapTime' in statusCache :
                 statusCacheInfo_PKL = None
                 bootstrapMsg_PKL = "Task bootstrapped at %s" % statusCache['bootstrapTime']['date']
@@ -141,7 +146,10 @@ class status(SubCommand):
             url = proxiedWebDir + "/status_cache"
             self.logger.debug("Retrieving 'status_cache' file from %s", url)
             try:
-                statusCacheData = getDataFromURL(url, self.proxyfilename)
+                httpCode = curlGetFileFromURL(url, local_status_cache_txt,
+                                                     self.proxyfilename, logger=self.logger)
+                with open(local_status_cache_txt, 'r') as fp:
+                statusCacheData = fp.read()
                 # Normally the first two lines of the file contain the checkpoint locations
                 # for the job_log / fjr_parse_results files and are used by the status caching script.
                 # But if the job has just bootstrapped the first lines of the file are:
@@ -164,7 +172,7 @@ class status(SubCommand):
                     # Load the job_report summary
                     statusCacheInfo_TXT = literal_eval(statusCacheData.split('\n')[2])
                 gotTxt = True
-            except HTTPException as ce:
+            except Exception as ce:
                 self.logger.debug("%s not found or corrupted.", url)
                 statusCacheInfo_TXT = None
                 bootstrapMsg_TXT = None
