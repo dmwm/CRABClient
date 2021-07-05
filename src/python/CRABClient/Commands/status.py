@@ -149,7 +149,7 @@ class status(SubCommand):
                 httpCode = curlGetFileFromURL(url, local_status_cache_txt,
                                                      self.proxyfilename, logger=self.logger)
                 with open(local_status_cache_txt, 'r') as fp:
-                statusCacheData = fp.read()
+                    statusCacheData = fp.read()
                 # Normally the first two lines of the file contain the checkpoint locations
                 # for the job_log / fjr_parse_results files and are used by the status caching script.
                 # But if the job has just bootstrapped the first lines of the file are:
