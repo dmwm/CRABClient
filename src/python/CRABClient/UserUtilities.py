@@ -5,19 +5,12 @@ This module contains the utility methods available for users.
 import os
 import logging
 import traceback
-import sys
-if sys.version_info >= (3, 0):
-    from urllib.parse import urlparse  # pylint: disable=E0611
-if sys.version_info < (3, 0):
-    from urlparse import urlparse
 
 ## WMCore dependencies
 from WMCore.Configuration import Configuration
 from WMCore.DataStructs.LumiList import LumiList
-from WMCore.Services.pycurl_manager import RequestHandler
 
 ## CRAB dependencies
-from RESTInteractions import HTTPRequests
 from CRABClient.ClientUtilities import DBSURLS, LOGLEVEL_MUTE, colors
 from CRABClient.ClientUtilities import execute_command, getUserProxy
 from CRABClient.ClientExceptions import ClientException, UsernameException
@@ -132,62 +125,6 @@ def curlGetFileFromURL(url, filename = None, proxyfilename = None, logger=None):
     httpCode = int(stdout)
     retValue = rc if rc != 0 else httpCode
     return retValue
-
-
-
-def getFileFromURL(url, filename = None, proxyfilename = None):
-    """
-    Read the content of a URL and copy it into a file.
-
-    url: the link you would like to retrieve
-    filename: the local filename where the url is saved to. Defaults to the filename in the url
-    proxyfilename: the x509 proxy certificate to be used in case auth is required
-    """
-
-    parsedUrl = urlparse(url)
-    if filename == None:
-        path = parsedUrl.path
-        filename = os.path.basename(path)
-
-    data = getDataFromURL(url, proxyfilename)
-
-    if data:
-        try:
-            with open(filename, 'a') as f:
-                f.seek(0)
-                f.truncate()
-                f.write(data)
-        except IOError as ex:
-            logger = logging.getLogger('CRAB3')
-            logger.exception(ex)
-            msg = "Error while writing %s. Got:\n%s" \
-                    % (filename, ex)
-            raise ClientException(msg)
-
-    return filename
-
-
-def getDataFromURL(url, proxyfilename = None):
-    """
-    Read the content of a URL and return it as a string.
-    Type of content should not matter, it can be a json file or a tarball for example.
-
-    url: the link you would like to retrieve
-    proxyfilename: the x509 proxy certificate to be used in case auth is required
-
-    Returns binary data encoded as a string, which can be later processed
-    according to what kind of content it represents.
-    """
-
-    # Get rid of unicode which may cause problems in pycurl
-    stringUrl = url.encode('ascii')
-
-    reqHandler = RequestHandler()
-    _, data = reqHandler.request(url=stringUrl, params={}, ckey=proxyfilename,
-                                 cert=proxyfilename,
-                                 capath=HTTPRequests.getCACertPath())
-
-    return data
 
 
 def getLumiListInValidFiles(dataset, dbsurl = 'phys03'):
