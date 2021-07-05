@@ -7,7 +7,7 @@ import tempfile
 from ServerUtilities import getProxiedWebDir, getColumn
 
 import CRABClient.Emulator
-from CRABClient.UserUtilities import getFileFromURL
+from CRABClient.UserUtilities import curlGetFileFromURL
 from CRABClient.ClientUtilities import execute_command
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ClientException
@@ -80,7 +80,10 @@ class preparelocal(SubCommand):
             if not webdir:
                 webdir = getColumn(crabDBInfo, 'tm_user_webdir')
             self.logger.debug("Downloading 'InputFiles.tar.gz' from %s" % webdir)
-            getFileFromURL(webdir + '/InputFiles.tar.gz', inputsFilename, self.proxyfilename)
+            httpCode = curlGetFileFromURL(webdir + '/InputFiles.tar.gz', inputsFilename, self.proxyfilename,
+                                          logger=self.logger)
+            if httpCode != 200:
+                sel.logger.errror("Failed to download 'InputFiles.tar.gz' from %s", webdir)
         else:
             raise ClientException('Can only execute jobs from tasks in status SUBMITTED or UPLOADED. Current status is %s' % status)
 
