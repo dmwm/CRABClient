@@ -110,7 +110,7 @@ def curlGetFileFromURL(url, filename = None, proxyfilename = None, logger=None):
     url: the link you would like to retrieve
     filename: the local filename where the url is saved to. Defaults to the filename in the url
     proxyfilename: the x509 proxy certificate to be used in case auth is required
-    returns: the exit code of the command if cammand failed, otherwise the HTTTP code of the call
+    returns: the exit code of the command if command failed, otherwise the HTTP code of the call
              note that curl exits with status 0 if the HTTP calls fail,
     """
 
