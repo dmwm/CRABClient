@@ -3,6 +3,7 @@ from __future__ import print_function, division
 import os
 import json
 import tarfile
+from ast import literal_eval
 
 from WMCore.DataStructs.LumiList import LumiList
 
@@ -507,6 +508,7 @@ class report(SubCommand):
         return curl
 
     def myPerform(self, curl, url):
+        import pycurl
         try:
             curl.perform()
         except pycurl.error as e:
