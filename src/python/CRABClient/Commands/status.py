@@ -123,7 +123,7 @@ class status(SubCommand):
             httpCode = curlGetFileFromURL(url, local_status_cache_pkl,
                                                  self.proxyfilename, logger=self.logger)
             if httpCode != 200:
-                raise Exception("failed to retrieve %s", url)
+                raise Exception("failed to retrieve %s" % url)
             with open(local_status_cache_pkl, PKL_R_MODE) as fp:
                 statusCache = pickle.load(fp)
             if 'bootstrapTime' in statusCache :
@@ -148,7 +148,7 @@ class status(SubCommand):
                 httpCode = curlGetFileFromURL(url, local_status_cache_txt,
                                                      self.proxyfilename, logger=self.logger)
                 if httpCode != 200:
-                    raise Exception("failed to retrieve %s", url)
+                    raise Exception("failed to retrieve %s" % url)
                 with open(local_status_cache_txt, 'r') as fp:
                     statusCacheData = fp.read()
                 # Normally the first two lines of the file contain the checkpoint locations
