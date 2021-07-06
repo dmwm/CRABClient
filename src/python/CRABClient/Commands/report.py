@@ -2,22 +2,15 @@ from __future__ import print_function, division
 
 import os
 import json
-import logging
 import tarfile
-try:
-    from http.client import HTTPException  # Python 3 and Python 2 in modern CMSSW
-except:  # pylint: disable=bare-except
-    from httplib import HTTPException  # old Python 2 version in CMSSW_7from ast import literal_eval
 from ast import literal_eval
-
-import pycurl
 
 from WMCore.DataStructs.LumiList import LumiList
 
 from CRABClient.ClientUtilities import colors, execute_command
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.JobType.BasicJobType import BasicJobType
-from CRABClient.UserUtilities import getMutedStatusInfo, getFileFromURL
+from CRABClient.UserUtilities import getMutedStatusInfo, curlGetFileFromURL
 from CRABClient.ClientExceptions import ConfigurationException, \
     UnknownOptionException, ClientException
 
@@ -343,9 +336,8 @@ class report(SubCommand):
         if userWebDirURL:
             url = userWebDirURL + "/run_and_lumis.tar.gz"
             tarFilename = os.path.join(self.requestarea, 'results/run_and_lumis.tar.gz')
-            try:
-                getFileFromURL(url, tarFilename, self.proxyfilename)
-
+            httpCode = curlGetFileFromURL(url, tarFilename, self.proxyfilename, logger=self.logger)
+            if httpCode == 200:
                 # Not using 'with tarfile.open(..) as t:' syntax because
                 # the tarfile module only received context manager protocol support
                 # in python 2.7, whereas CMSSW_5_* uses python 2.6 and breaks here.
@@ -363,9 +355,8 @@ class report(SubCommand):
                         finally:
                             fd.close()
                 tarball.close()
-            except HTTPException as hte:
+            else:
                 self.logger.error("Failed to retrieve input dataset duplicate lumis.")
-                logging.getLogger('CRAB3').exception(hte)
 
         return res
 
@@ -382,25 +373,23 @@ class report(SubCommand):
         if inputDataset and userWebDirURL:
             url = userWebDirURL + "/input_dataset_lumis.json"
             filename = os.path.join(self.requestarea, 'results/input_dataset_lumis.json')
-            try:
-                ## Retrieve the lumis in the input dataset.
-                getFileFromURL(url, filename, self.proxyfilename)
+            ## Retrieve the lumis in the input dataset.
+            httpCode = curlGetFileFromURL(url, filename, self.proxyfilename, logger=self.logger)
+            if httpCode == 200:
                 with open(filename) as fd:
                     res['inputDataset']['lumis'] = json.load(fd)
-            except HTTPException as hte:
+            else:
                 self.logger.error("Failed to retrieve input dataset lumis.")
-                logging.getLogger('CRAB3').exception(hte)
 
             url = userWebDirURL + "/input_dataset_duplicate_lumis.json"
             filename = os.path.join(self.requestarea, 'results/input_dataset_duplicate_lumis.json')
-            try:
-                ## Retrieve the lumis split across files in the input dataset.
-                getFileFromURL(url, filename, self.proxyfilename)
+            ## Retrieve the lumis split across files in the input dataset.
+            httpCode = curlGetFileFromURL(url, filename, self.proxyfilename, logger=self.logger)
+            if httpCode == 200:
                 with open(filename) as fd:
                     res['inputDataset']['duplicateLumis'] = json.load(fd)
-            except HTTPException as hte:
+            else:
                 self.logger.error("Failed to retrieve input dataset duplicate lumis.")
-                logging.getLogger('CRAB3').exception(hte)
 
         return res
 
@@ -509,6 +498,7 @@ class report(SubCommand):
         return lumilist
 
     def prepareCurl(self):
+        import pycurl
         curl = pycurl.Curl()
         curl.setopt(pycurl.NOSIGNAL, 0)
         curl.setopt(pycurl.TIMEOUT, 30)
@@ -518,6 +508,7 @@ class report(SubCommand):
         return curl
 
     def myPerform(self, curl, url):
+        import pycurl
         try:
             curl.perform()
         except pycurl.error as e:

@@ -21,7 +21,7 @@ from ServerUtilities import SERVICE_INSTANCES
 
 import CRABClient.Emulator
 from CRABClient import __version__
-from CRABClient.UserUtilities import getFileFromURL
+from CRABClient.UserUtilities import curlGetFileFromURL
 from CRABClient.ClientUtilities import colors, LOGGERS, getColumn
 from CRABClient.JobType.UserTarball import UserTarball
 from CRABClient.JobType.CMSSWConfig import CMSSWConfig
@@ -64,7 +64,7 @@ class CopyCat(BasicJobType):
         jobsw = getColumn(taskDict, 'tm_job_sw')
 
         sandboxFilename = os.path.join(self.workdir, 'sandbox.tar.gz')
-        getFileFromURL(webdir + '/sandbox.tar.gz', sandboxFilename, self.proxyfilename)
+        curlGetFileFromURL(webdir + '/sandbox.tar.gz', sandboxFilename, self.proxyfilename)
 
         configArguments = {'addoutputfiles' : addoutputfiles,
                            'tfileoutfiles' : tfileoutfiles,

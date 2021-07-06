@@ -1,13 +1,8 @@
 from __future__ import print_function
 from __future__ import division
 
-try:
-    from http.client import HTTPException  # Python 3 and Python 2 in modern CMSSW
-except:  # pylint: disable=bare-except
-    from httplib import HTTPException  # old Python 2 version in CMSSW_7
-
 from CRABClient.ClientUtilities import colors, validateJobids, getColumn
-from CRABClient.UserUtilities import getFileFromURL
+from CRABClient.UserUtilities import curlGetFileFromURL
 from CRABClient.Commands.getcommand import getcommand
 from CRABClient.ClientExceptions import RESTCommunicationException, MissingOptionException
 
@@ -106,19 +101,20 @@ class getlog(getcommand):
             while succeded:
                 filename = 'job_out.%s.%s.txt' % (jobid, retry)
                 url = webdir + '/' + filename
-                try:
-                    getFileFromURL(url, self.dest + '/' + filename, proxyfilename)
+                httpCode = curlGetFileFromURL(url, self.dest + '/' + filename, proxyfilename, logger=self.logger)
+                if httpCode == 200:
                     self.logger.info('Retrieved %s' % (filename))
                     success.append(filename)
-                    retry += 1 #To retrieve retried job log, if there is any.
-                except HTTPException as hte:
+                    retry += 1  # To retrieve retried job log, if there is any.
+                elif httpCode == 404:
                     succeded = False
                     # Ignore the exception if the HTTP status code is 404. Status 404 means file
                     # not found (see http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html). File
                     # not found error is expected, since we try all the job retries.
-                    if hasattr(hte.args[0], 'status') and hte.args[0].status != 404:
-                        self.logger.debug(str(hte))
-                        failed.append(filename)
+                else:
+                    # something went wront in trying to retrieve a file which was expected to be there
+                    succeded = False
+                    failed.append(filename)
 
         return failed, success
 
