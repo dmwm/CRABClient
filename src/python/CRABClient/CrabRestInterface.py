@@ -2,6 +2,9 @@
 Handles client interactions with remote REST interface
 """
 
+from __future__ import division
+from __future__ import print_function
+
 import os
 import time
 import random
@@ -25,6 +28,25 @@ except:  # pylint: disable=bare-except
         __version__ = '0.0.0'
 
 EnvironmentException = Exception
+
+def retriableError(http_code, exitcode):
+    """ Return True if the error can be retried
+    """
+    retry = False
+    
+    #429 Too Many Requests. When client hits the throttling limit
+    #500 Internal sever error. For some errors retries it helps
+    #502 CMSWEB frontend answers with this when the CMSWEB backends are overloaded
+    #503 Usually that's the DatabaseUnavailable error
+
+    #28 is 'Operation timed out...'
+    #35,is 'Unknown SSL protocol error', see https://github.com/dmwm/CRABServer/issues/5102
+
+    if http_code in [429, 500, 502, 503] or exitcode in [28, 35]:
+        retry=True
+
+    return retry
+
 
 class HTTPRequests(dict):
     """
@@ -93,7 +115,7 @@ class HTTPRequests(dict):
     def makeRequest(self, uri=None, data=None, verb='GET'):
         """
         Make a request to the remote database for a given URI. The type of
-        request will determine the action take by the server (be careful with
+        request will determine the action taken by the server (be careful with
         DELETE!).
 
         Returns a tuple of the data from the server, decoded using the
@@ -134,20 +156,21 @@ class HTTPRequests(dict):
         # retries are counted AFTER 1st try, so call is made up to nRetries+1 times !
         nRetries = max(2, self['retry'])
         for i in range(nRetries +1):
+            stdout, stderr, exitcode = ' ,99999', None, 99999
+	    #variable is not used by the client code, however it is kept to main old behaviour
+	    http_reason = ''
+
             self.logger.debug("Will execute command: %s" % command)
             process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
             stdout, stderr = process.communicate()
             exitcode = process.returncode
+	    self.logger.debug('exitcode: %s\nstdout: %s\nstderr: %s', exitcode, stdout, stderr)
             #split the output returned into actual result and HTTP code
             result, http_code = stdout.rsplit(',', 1)
             http_code = int(http_code)
 
-            if http_code != 200:
-                #429 Too Many Requests. When client hits the throttling limit
-                #500 Internal sever error. For some errors retries it helps
-                #502 CMSWEB frontend answers with this when the CMSWEB backends are overloaded
-                #503 Usually that's the DatabaseUnavailable error
-                if (i < 2) or (http_code in [429, 500, 502, 503] and (i < self['retry'])):
+	    if exitcode != 0 or http_code != 200:
+                if (i < 2) or (retriableError(http_code, exitcode) and (i < self['retry'])):
                     sleeptime = 20 * (i + 1) + random.randint(-10, 10)
                     msg = "Sleeping %s seconds after HTTP error.\nError:\n:%s" % (sleeptime, stderr)
                     self.logger.debug(msg)
@@ -159,11 +182,12 @@ class HTTPRequests(dict):
                 try:
                     curlResult = json.loads(result)
                 except Exception as ex:
-                    msg = "Fatal error reading data from %s using %s" % (url, data)
+                    msg = "Fatal error reading data from %s using %s: \n%s" % (url, data, ex)
                     raise Exception(msg)
                 else:
                     break
-        return curlResult, http_code, 'dummyReason'
+
+        return curlResult, http_code, http_reason
 
 
     @staticmethod
