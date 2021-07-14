@@ -6,7 +6,6 @@ from __future__ import division
 from __future__ import print_function
 
 import os
-import time
 import random
 import subprocess
 from ServerUtilities import encodeRequest
@@ -29,11 +28,16 @@ except:  # pylint: disable=bare-except
 
 EnvironmentException = Exception
 
-def retriableError(http_code, exitcode):
-    """ Return True if the error can be retried
+
+def retriableError(http_code, curlExitCode):
+    """
+        checks if the error can be retried
+        :param http_code: int : HTTP code form the HTTP call if it was possible to do the call and obtain it
+        :param curlExitCode: int : exit code of the curl command that was forked to execute the HTTP call
+        :return: True of False indicating if the error can be retried
     """
     retry = False
-    
+
     #429 Too Many Requests. When client hits the throttling limit
     #500 Internal sever error. For some errors retries it helps
     #502 CMSWEB frontend answers with this when the CMSWEB backends are overloaded
@@ -42,23 +46,16 @@ def retriableError(http_code, exitcode):
     #28 is 'Operation timed out...'
     #35,is 'Unknown SSL protocol error', see https://github.com/dmwm/CRABServer/issues/5102
 
-    if http_code in [429, 500, 502, 503] or exitcode in [28, 35]:
-        retry=True
+    if http_code in [429, 500, 502, 503] or curlExitCode in [28, 35]:
+        retry = True
 
     return retry
 
 
 class HTTPRequests(dict):
     """
-    This code is a simplified version of WMCore.Services.Requests - we don't
-    need all the bells and whistles here since data is always sent via json we
-    also move the encoding of data out of the makeRequest.
-
-    HTTPRequests does no logging or exception handling, these are managed by the
-    Client class that instantiates it.
-
-    NOTE: This class should be replaced by the WMCore.Services.JSONRequests if WMCore
-    is used more in the client.
+    This code forks a subprocess which executes curl to communicate
+    with CRAB REST.
     """
 
     def __init__(self, hostname='localhost', localcert=None, localkey=None, version=__version__,
@@ -67,7 +64,7 @@ class HTTPRequests(dict):
         Initialise an HTTP handler
         """
         dict.__init__(self)
-        #set up defaults
+        # set up defaults
         self.setdefault("host", hostname)
         # setup port 8443 for cmsweb services (leave them alone things like personal private VM's)
         if self['host'].startswith("https://cmsweb") or self['host'].startswith("cmsweb"):
@@ -129,12 +126,12 @@ class HTTPRequests(dict):
 
         data = data or {}
 
-        #Quoting the uri since it can contain the request name, and therefore spaces (see #2557)
+        # Quoting the uri since it can contain the request name, and therefore spaces (see #2557)
         uri = urllibQuote(uri)
         caCertPath = self.getCACertPath()
         url = 'https://' + self['host'] + uri
 
-        #if it is a dictionary, we need to encode it to string
+        # if it is a dictionary, we need to encode it to string
         if isinstance(data, dict):
             data = encodeRequest(data)
 
@@ -142,7 +139,7 @@ class HTTPRequests(dict):
             url = url + '?' + data
 
         command = ''
-        #command below will return 2 values separated by comma: 1) curl result and 2) HTTP code
+        # command below will return 2 values separated by comma: 1) curl result and 2) HTTP code
         command += 'curl -sS -w ",%{{http_code}}\\n" -f -X {0}'.format(verb)
         command += ' -H "User-Agent: %s/%s"' % (self['userAgent'], self['version'])
         command += ' -H "Accept: */*"'
@@ -155,27 +152,27 @@ class HTTPRequests(dict):
         # retries this up at least 3 times, or up to self['retry'] times for range of exit codes
         # retries are counted AFTER 1st try, so call is made up to nRetries+1 times !
         nRetries = max(2, self['retry'])
-        for i in range(nRetries +1):
-            stdout, stderr, exitcode = ' ,99999', None, 99999
-	    #variable is not used by the client code, however it is kept to main old behaviour
-	    http_reason = ''
+        for i in range(nRetries + 1):
+            stdout, stderr, curlExitCode = ' ,99999', None, 99999
+            # variable is not used by the client code, however it is kept to mimic old behaviour
+            http_reason = ''
 
             self.logger.debug("Will execute command: %s" % command)
             process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
             stdout, stderr = process.communicate()
-            exitcode = process.returncode
-	    self.logger.debug('exitcode: %s\nstdout: %s\nstderr: %s', exitcode, stdout, stderr)
-            #split the output returned into actual result and HTTP code
+            curlExitCode = process.returncode
+            self.logger.debug('curlExitCode: %s\nstdout: %s\nstderr: %s', curlExitCode, stdout, stderr)
+            # split the output returned into actual result and HTTP code
             result, http_code = stdout.rsplit(',', 1)
             http_code = int(http_code)
 
-	    if exitcode != 0 or http_code != 200:
-                if (i < 2) or (retriableError(http_code, exitcode) and (i < self['retry'])):
+            if curlExitCode != 0 or http_code != 200:
+                if (i < 2) or (retriableError(http_code, curlExitCode) and (i < self['retry'])):
                     sleeptime = 20 * (i + 1) + random.randint(-10, 10)
                     msg = "Sleeping %s seconds after HTTP error.\nError:\n:%s" % (sleeptime, stderr)
                     self.logger.debug(msg)
                 else:
-                    #this was the last retry
+                    # this was the last retry
                     msg = "Fatal error trying to connect to %s using %s. Error details: \n%s " % (url, data, stderr)
                     raise Exception(msg)
             else:
@@ -189,7 +186,6 @@ class HTTPRequests(dict):
 
         return curlResult, http_code, http_reason
 
-
     @staticmethod
     def getCACertPath():
         """ Get the CA certificate path. It looks for it in the X509_CERT_DIR variable if present
@@ -201,8 +197,10 @@ class HTTPRequests(dict):
             return os.environ["X509_CERT_DIR"]
         if os.path.isdir(caDefault):
             return caDefault
-        raise EnvironmentException("The X509_CERT_DIR variable is not set and the %s directory cannot be found.\n" % caDefault +
-                                   "Cannot find the CA certificate path to authenticate the server.")
+        raise EnvironmentException(
+            "The X509_CERT_DIR variable is not set and the %s directory cannot be found.\n" % caDefault +
+            "Cannot find the CA certificate path to authenticate the server.")
+
 
 class CRABRest:
     """
@@ -213,6 +211,7 @@ class CRABRest:
 
     Add two methods to set and get the DB instance
     """
+
     def __init__(self, hostname='localhost', localcert=None, localkey=None, version=__version__,
                  retry=0, logger=None, verbose=False, userAgent='CRAB?'):
         self.server = HTTPRequests(hostname, localcert, localkey, version,
