@@ -31,10 +31,10 @@ EnvironmentException = Exception
 
 def retriableError(http_code, curlExitCode):
     """
-        checks if the error can be retried
+        checks if error is worth retrying
         :param http_code: int : HTTP code form the HTTP call if it was possible to do the call and obtain it
         :param curlExitCode: int : exit code of the curl command that was forked to execute the HTTP call
-        :return: True of False indicating if the error can be retried
+        :return: True of False indicating if the error is worth retrying
     """
     retry = False
 
