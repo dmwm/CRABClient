@@ -24,7 +24,7 @@ def setEmulator(name, value):
     overrideDict[name] = value
 
 def getDefaults():
-    import RESTInteractions
+    import CRABClient.CrabRestInterface
     from WMCore.Services.UserFileCache.UserFileCache import UserFileCache
-    return {'rest' : RESTInteractions.CRABRest,
+    return {'rest' : CRABClient.CrabRestInterface.CRABRest,
             'ufc' : UserFileCache}
