@@ -389,7 +389,7 @@ class submit(SubCommand):
                 tf = tarfile.open(os.path.join(tmpDir, name))
                 tf.extractall(tmpDir)
                 tf.close()
-            env = os.environ.update({'CRAB3_RUNTIME_DEBUG': 'True', '_CONDOR_JOB_AD': 'Job.submit'})
+            os.environ.update({'CRAB3_RUNTIME_DEBUG': 'True', '_CONDOR_JOB_AD': 'Job.submit'})
 
             with open('splitting-summary.json') as f:
                 splitting = json.load(f)
@@ -408,7 +408,7 @@ class submit(SubCommand):
                 opts = ''
                 for opt in optsList:
                     opts = opts + ' %s' % opt
-                command = env + 'sh CMSRunAnalysis.sh ' + opts
+                command = 'sh CMSRunAnalysis.sh ' + opts
                 out, err, returncode = execute_command(command=command)
                 self.logger.debug(out)
                 if returncode != 0:
