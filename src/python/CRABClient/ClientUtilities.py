@@ -677,7 +677,7 @@ def cmd_exist(cmd):
     except OSError:
         return False
 
-def checkStatusLoop(logger, server, api, uniquerequestname, targetstatus, cmdname):
+def checkStatusLoop(logger, server, api, taskname, targetstatus, cmdname):
     logger.info("Waiting for task to be processed")
 
     maxwaittime = 900 #in second, changed to 15 minute max wait time, the original 1 hour is too long
@@ -690,7 +690,7 @@ def checkStatusLoop(logger, server, api, uniquerequestname, targetstatus, cmdnam
     logger.debug("Start time:%s" % (startimestring))
     logger.debug("Max wait time: %s s until : %s" % (maxwaittime, endtimestring))
 
-    #logger.debug('Looking up detailed status of task %s' % uniquerequestname)
+    #logger.debug('Looking up detailed status of task %s' % taskname)
 
     continuecheck = True
     tmpresult = None
@@ -700,38 +700,38 @@ def checkStatusLoop(logger, server, api, uniquerequestname, targetstatus, cmdnam
         currenttime = time.time()
         querytimestring = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(currenttime))
 
-        logger.debug("Looking up detailed status of task %s" % (uniquerequestname))
-
-        dictresult, status, reason = server.get(api=api, data={'workflow' : uniquerequestname})
-        dictresult = dictresult['result'][0]
+        logger.debug("Looking up status of task %s" % (taskname))
+        # use same call as in Commands/status.py
+        crabDBInfo, status, reason = server.get(api='task', data={'subresource':'search', 'workflow':taskname})
 
         if status != 200:
             msg = "Error when trying to check the task status."
             msg += " Please check the task status later using 'crab status'."
             logger.error(msg)
-            msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(uniquerequestname), str(dictresult), str(reason))
+            msg = "Problem retrieving status:\ninput:%s\noutput:%s\nreason:%s" % (str(taskname), str(crabDBInfo), str(reason))
             raise RESTCommunicationException(msg)
 
-        logger.debug("Query Time: %s Task status: %s" % (querytimestring, dictresult['status']))
-
-        logger.info("Task status: %s" % (dictresult['status']))
-        if dictresult['status'] != tmpresult:
-            tmpresult = dictresult['status']
-            if dictresult['status'] in ['SUBMITFAILED', 'RESUBMITFAILED']:
+        taskStatus = getColumn(crabDBInfo, 'tm_task_status')
+        logger.debug("Query Time: %s Task status: %s" % (querytimestring, taskStatus))
+        logger.info("Task status: %s" % (taskStatus))
+        if taskStatus != tmpresult:
+            tmpresult = taskStatus
+            if taskStatus in ['SUBMITFAILED', 'RESUBMITFAILED']:
                 continuecheck = False
                 msg = "%sError%s:" % (colors.RED, colors.NORMAL)
                 msg += " The %s of your task has failed." % ("resubmission" if cmdname == "resubmit" else "submission")
                 logger.error(msg)
-                if dictresult['taskFailureMsg']:
+                taskFailureMsg = getColumn(crabDBInfo, 'tm_task_failure')
+                if taskFailureMsg:
                     msg = "%sFailure message%s:" % (colors.RED, colors.NORMAL)
-                    msg += "\t%s" % (dictresult['taskFailureMsg'].replace('\n', '\n\t\t\t'))
+                    msg += "\t%s" % (taskFailureMsg.replace('\n', '\n\t\t\t'))
                     logger.error(msg)
-            elif dictresult['status'] in ['SUBMITTED', 'UPLOADED', 'UNKNOWN']: #until the node_state file is available status is unknown
+            elif taskStatus in ['SUBMITTED', 'UPLOADED']:
                 continuecheck = False
             else:
                 logger.info("Please wait...")
                 time.sleep(30)
-        elif dictresult['status'] in ['NEW', 'HOLDING', 'QUEUED', 'RESUBMIT']:
+        elif taskStatus in ['NEW', 'HOLDING', 'QUEUED', 'RESUBMIT']:
             logger.info("Please wait...")
             time.sleep(30)
         else:
