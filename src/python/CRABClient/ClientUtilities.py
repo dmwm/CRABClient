@@ -421,7 +421,7 @@ def createCache(requestarea, host, port, uniquerequestname, voRole, voGroup, ins
         "instance" : instance,
         "OriginalConfig" : originalConfig
     }
-    pickle.dump(neededhandlers, touchfile, protocol=2)
+    pickle.dump(neededhandlers, touchfile, protocol=0)
     touchfile.close()
 
 
