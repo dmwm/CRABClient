@@ -33,7 +33,7 @@ class remake(SubCommand):
             self.logger.info("Remaking .requestcache file.")
             dumpfile = open(cachepath , PKL_W_MODE)
             pickle.dump({'voGroup': '', 'Server': self.serverurl , 'instance': self.instance,
-                         'RequestName': taskname, 'voRole': '', 'Port': ''}, dumpfile, protocol=2)
+                         'RequestName': taskname, 'voRole': '', 'Port': ''}, dumpfile, protocol=0)
             dumpfile.close()
             self.logger.info("%sSuccess%s: Finished remaking project directory %s" % (colors.GREEN, colors.NORMAL, requestarea))
             return requestarea
