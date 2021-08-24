@@ -12,7 +12,7 @@ from ServerUtilities import encodeRequest
 import json
 import re
 
-from CRABClient.ClientExceptions import RestDataProcessingException
+from CRABClient.ClientExceptions import RESTInterfaceException
 
 try:
     from urllib import quote as urllibQuote  # Python 2.X
@@ -178,7 +178,7 @@ class HTTPRequests(dict):
                     # this was the last retry
                     msg = "Fatal error trying to connect to %s using %s." % (url, data)
                     self.logger.info(msg)
-                    raise RestDataProcessingException(stderr)
+                    raise RESTInterfaceException(stderr)
             else:
                 try:
                     curlResult = json.loads(stdout)

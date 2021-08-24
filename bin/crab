@@ -33,7 +33,7 @@ from ServerUtilities import FEEDBACKMAIL
 from CRABClient.CRABOptParser import CRABOptParser
 from CRABClient import __version__ as client_version
 from CRABClient.ClientMapping import parametersMapping
-from CRABClient.ClientExceptions import ClientException, RestDataProcessingException
+from CRABClient.ClientExceptions import ClientException, RESTInterfaceException
 from CRABClient.ClientUtilities import getAvailCommands, initLoggers, setConsoleLogLevelVar, StopExecution, flushMemoryLogger, LOGFORMATTER
 
 
@@ -154,7 +154,7 @@ if __name__ == "__main__":
     try:
         client()
         exitcode = 0 #no exceptions no errors
-    except RestDataProcessingException as err:
+    except RESTInterfaceException as err:
         client.logger.info("The server answered with an error.")
         client.logger.debug("")
         err = err.message
