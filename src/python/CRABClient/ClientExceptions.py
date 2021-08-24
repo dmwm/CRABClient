@@ -95,3 +95,8 @@ class PanDaException(ClientException):
     """
     exitcode = 3100
 
+class RESTInterfaceException(ClientException):
+    """
+    Errors coming from interaction with REST interface
+    """
+    exitcode = 3016

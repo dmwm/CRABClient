@@ -10,6 +10,9 @@ import random
 import subprocess
 from ServerUtilities import encodeRequest
 import json
+import re
+
+from CRABClient.ClientExceptions import RESTInterfaceException
 
 try:
     from urllib import quote as urllibQuote  # Python 2.X
@@ -26,8 +29,8 @@ except:  # pylint: disable=bare-except
     except:  # pylint: disable=bare-except
         __version__ = '0.0.0'
 
-EnvironmentException = Exception
 
+EnvironmentException = Exception
 
 def retriableError(http_code, curlExitCode):
     """
@@ -140,32 +143,32 @@ class HTTPRequests(dict):
 
         command = ''
         # command below will return 2 values separated by comma: 1) curl result and 2) HTTP code
-        command += 'curl -sS -w ",%{{http_code}}\\n" -f -X {0}'.format(verb)
+        command += 'curl -v -X {0}'.format(verb)
         command += ' -H "User-Agent: %s/%s"' % (self['userAgent'], self['version'])
         command += ' -H "Accept: */*"'
         command += ' --data "%s"' % data
         command += ' --cert "%s"' % self['cert']
         command += ' --key "%s"' % self['key']
         command += ' --capath "%s"' % caCertPath
-        command += ' "%s"' % url
+        command += ' "%s" | tee /dev/stderr ' % url
 
         # retries this up at least 3 times, or up to self['retry'] times for range of exit codes
         # retries are counted AFTER 1st try, so call is made up to nRetries+1 times !
         nRetries = max(2, self['retry'])
         for i in range(nRetries + 1):
-            stdout, stderr, curlExitCode = ' ,99999', None, 99999
-            # variable is not used by the client code, however it is kept to mimic old behaviour
-            http_reason = ''
+            stdout, stderr, curlExitCode = None, None, 99999
 
             self.logger.debug("Will execute command: %s" % command)
             process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
             stdout, stderr = process.communicate()
             curlExitCode = process.returncode
-            self.logger.debug('curlExitCode: %s\nstdout: %s\nstderr: %s', curlExitCode, stdout, stderr)
-            # split the output returned into actual result and HTTP code
-            result, http_code = stdout.rsplit(',', 1)
-            http_code = int(http_code)
+            self.logger.debug('curlExitCode: %s\nstdout: %s\nstderr: %s' % (curlExitCode, stdout, stderr))
 
+            http_code, http_reason = 99999, ''
+            http_response = re.search(r'(?<=\<\sHTTP/1.1\s)[^\n]*',stderr)
+            if http_response is not None:
+                http_code, http_reason = http_response.group(0).split(" ", 1)
+                http_code = int(http_code)
             if curlExitCode != 0 or http_code != 200:
                 if (i < 2) or (retriableError(http_code, curlExitCode) and (i < self['retry'])):
                     sleeptime = 20 * (i + 1) + random.randint(-10, 10)
@@ -173,11 +176,12 @@ class HTTPRequests(dict):
                     self.logger.debug(msg)
                 else:
                     # this was the last retry
-                    msg = "Fatal error trying to connect to %s using %s. Error details: \n%s " % (url, data, stderr)
-                    raise Exception(msg)
+                    msg = "Fatal error trying to connect to %s using %s." % (url, data)
+                    self.logger.info(msg)
+                    raise RESTInterfaceException(stderr)
             else:
                 try:
-                    curlResult = json.loads(result)
+                    curlResult = json.loads(stdout)
                 except Exception as ex:
                     msg = "Fatal error reading data from %s using %s: \n%s" % (url, data, ex)
                     raise Exception(msg)
