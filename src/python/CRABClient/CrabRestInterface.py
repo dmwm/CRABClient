@@ -8,6 +8,7 @@ from __future__ import print_function
 import os
 import random
 import subprocess
+from CRABClient.ClientUtilities import execute_command
 from ServerUtilities import encodeRequest
 import json
 import re
@@ -156,13 +157,7 @@ class HTTPRequests(dict):
         # retries are counted AFTER 1st try, so call is made up to nRetries+1 times !
         nRetries = max(2, self['retry'])
         for i in range(nRetries + 1):
-            stdout, stderr, curlExitCode = None, None, 99999
-
-            self.logger.debug("Will execute command: %s" % command)
-            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-            stdout, stderr = process.communicate()
-            curlExitCode = process.returncode
-            self.logger.debug('curlExitCode: %s\nstdout: %s\nstderr: %s' % (curlExitCode, stdout, stderr))
+            stdout, stderr, curlExitCode = execute_command(command=command, logger=self.logger)
 
             http_code, http_reason = 99999, ''
             http_response = re.search(r'(?<=\<\sHTTP/1.1\s)[^\n]*',stderr)
