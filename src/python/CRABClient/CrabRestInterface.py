@@ -7,7 +7,6 @@ from __future__ import print_function
 
 import os
 import random
-import subprocess
 from CRABClient.ClientUtilities import execute_command
 from ServerUtilities import encodeRequest
 import json
