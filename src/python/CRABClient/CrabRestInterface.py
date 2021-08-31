@@ -159,9 +159,9 @@ class HTTPRequests(dict):
             stdout, stderr, curlExitCode = execute_command(command=command, logger=self.logger)
 
             http_code, http_reason = 99999, ''
-            http_response = re.search(r'(?<=\<\sHTTP/1.1\s)[^\n]*',stderr)
-            if http_response is not None:
-                http_code, http_reason = http_response.group(0).split(" ", 1)
+            http_response = re.findall(r'(?<=\<\sHTTP/1.1\s)[^\n]*',stderr)
+            if http_response:
+                http_code, http_reason = http_response[-1].split(" ", 1)
                 http_code = int(http_code)
             if curlExitCode != 0 or http_code != 200:
                 if (i < 2) or (retriableError(http_code, curlExitCode) and (i < self['retry'])):

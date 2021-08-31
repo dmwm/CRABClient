@@ -153,7 +153,7 @@ if __name__ == "__main__":
         client.logger.info("The server answered with an error.")
         client.logger.debug("")
         err = err.message
-        exitcode = int(re.search(r'(?<=\<\sHTTP/1.1\s)[^\n\s]*', err).group(0))
+        exitcode = int(re.findall(r'(?<=\<\sHTTP/1.1\s)[^\n\s]*', err)[-1])
         if exitcode==503 and ("CMSWEB Error: Service unavailable") in err:
             client.logger.info(schedInterv)
         if 'X-Error-Detail' in err:
@@ -169,7 +169,7 @@ if __name__ == "__main__":
         if 'X-Error-Id' in err:
             errorId = re.search(r'(?<=X-Error-Id:\s)[^\n]*', err).group(0)
             client.logger.info('Error Id: %s', errorId)
-        logging.getLogger('CRAB3').exception('Caught RestDataProcessingException exception')
+        logging.getLogger('CRAB3').exception('Caught RESTInterfaceException exception')
     except pycurl.error as pe:
         client.logger.error(pe)
         logging.getLogger('CRAB3').exception('Caught pycurl.error exception')
