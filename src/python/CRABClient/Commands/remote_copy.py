@@ -186,7 +186,7 @@ class remote_copy(SubCommand):
         inputq  = multiprocessing.Queue()
         subprocessarray = []
 
-        for i in xrange(nsubprocess):
+        for i in range(nsubprocess):
             p = multiprocessing.Process(target = childprocess, args = (inputq, successfiles, failedfiles))
             subprocessarray.append(p)
             subprocessarray[i].start()
