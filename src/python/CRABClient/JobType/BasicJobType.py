@@ -28,7 +28,7 @@ class BasicJobType(object):
         if config:
             valid, msg = self.validateConfig(config)
             if valid:
-                self.config  = config
+                self.config = config
                 self.workdir = workingdir
             else:
                 msg += "\nThe documentation about the CRAB configuration file can be found in"
@@ -68,7 +68,7 @@ class BasicJobType(object):
                     if isinstance(run, bytes):
                         run = run.decode(encoding='UTF-8')
                     for lumi in lumis:
-                        mergedLumis.add((run,int(lumi))) #lumi is str, but need int
+                        mergedLumis.add((run, int(lumi))) #lumi is str, but need int
         mergedLumis = LumiList(lumis=mergedLumis)
         return mergedLumis.getCompactList()
 
