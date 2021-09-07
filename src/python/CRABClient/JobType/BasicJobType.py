@@ -65,6 +65,8 @@ class BasicJobType(object):
         for reports in inputdata.values():
             for report in reports:
                 for run, lumis in literal_eval(report['runlumi']).items():
+                    if isinstance(run, bytes):
+                        run = run.decode(encoding='UTF-8')
                     for lumi in lumis:
                         mergedLumis.add((run,int(lumi))) #lumi is str, but need int
         mergedLumis = LumiList(lumis=mergedLumis)
