@@ -120,11 +120,21 @@ def curlGetFileFromURL(url, filename = None, proxyfilename = None, logger=None):
     if logger:
         logger.debug("Will execute:\n%s", downloadCommand)
     stdout, stderr, rc = execute_command(downloadCommand, logger=logger)
+    errorDetails = ''
+
+    if rc != 0:
+        os.unlink(filename)
+        httpCode = 503
+    else:
+        httpCode = int(stdout)
+        if httpCode != 200:
+            with open(filename) as f:
+                errorDetails = f.read()
+            os.unlink(filename)
     if logger:
-        logger.debug('exitcode: %s\nstdout: %s\nstderr: %s', rc, stdout, stderr)
-    httpCode = int(stdout)
-    retValue = rc if rc != 0 else httpCode
-    return retValue
+        logger.debug('exitcode: %s\nstdout: %s\nstderr: %s\nerror details: %s', rc, stdout, stderr, errorDetails)
+	
+    return httpCode
 
 
 def getLumiListInValidFiles(dataset, dbsurl = 'phys03'):
