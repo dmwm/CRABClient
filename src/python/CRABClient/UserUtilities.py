@@ -77,7 +77,8 @@ def getUsernameFromCRIC(proxyFileName=None):
         msg = "Can't find user proxy file"
         raise UsernameException(msg)
     ## Retrieve user info from CRIC. Note the curl must be executed in same env. (i.e. CMSSW) as crab
-    queryCmd = "curl -sS --capath %s --cert %s --key %s 'https://cms-cric.cern.ch/api/accounts/user/query/?json&preset=whoami'" % (capath, proxyFileName, proxyFileName)
+    queryCmd = "curl -sS --capath %s --cert %s --key %s 'https://cms-cric.cern.ch/api/accounts/user/query/?json&preset=whoami'" %\
+               (capath, proxyFileName, proxyFileName)
     stdout, stderr, rc = execute_command(queryCmd)
     if rc or not stdout:
         msg  = "Error contacting CRIC."
@@ -114,8 +115,12 @@ def curlGetFileFromURL(url, filename = None, proxyfilename = None, logger=None):
              note that curl exits with status 0 if the HTTP calls fail,
     """
 
+    ## Path to certificates.
+    capath = os.environ['X509_CERT_DIR'] if 'X509_CERT_DIR' in os.environ else "/etc/grid-security/certificates"
+
     # send curl output to file and http_code to stdout
-    downloadCommand = 'curl -sS --cert %s --key %s -o %s -w %%"{http_code}"' % (proxyfilename, proxyfilename, filename)
+    downloadCommand = 'curl -sS --capath %s --cert %s --key %s -o %s -w %%"{http_code}"' %\
+                      (capath, proxyfilename, proxyfilename, filename)
     downloadCommand += ' "%s"' % url
     if logger:
         logger.debug("Will execute:\n%s", downloadCommand)
