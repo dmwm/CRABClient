@@ -64,7 +64,7 @@ parametersMapping = {
                   'ignoreglobalblacklist':{'default': False, 'config': ['Site.ignoreGlobalBlacklist'],      'type': 'BooleanType', 'required': False},
                  },
     'other-config-params': [         {'default': None,       'config': ['General.workArea'],                'type': 'StringType',  'required': False},
-                                     {'default': 'preprod',  'config': ['General.instance'],                'type': 'StringType',  'required': True },
+                                     {'default': 'prod',     'config': ['General.instance'],                'type': 'StringType',  'required': True },
                                      {'default': None,       'config': ['General.restHost'],                'type': 'StringType',  'required': False },
                                      {'default': None,       'config': ['General.dbInstance'],              'type': 'StringType',  'required': False },
                                      {'default': None,       'config': ['General.restHost'],                'type': 'StringType',  'required': False },
