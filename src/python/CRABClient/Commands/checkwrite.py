@@ -173,14 +173,16 @@ from rucio.client import Client
 client = Client()
 rse = "{site}"
 lfn = ["user.{username}:{lfn}"]
-try:
-    out = client.lfns2pfns(rse, lfn, operation='write')
-except Exception as ex:
+for operation in ['third_party_copy', 'write', 'read']:
     try:
-        out = client.lfns2pfns(rse, lfn, operation='read')
+        #print('Try Rucio lfn2pn with operation %s', operation)
+        out = client.lfns2pfns(rse, lfn, operation=operation)
+        break
     except Exception as ex:
         print("Failed to resolve LNF to PFN via Rucio. Error is:\\n %s" % str(ex))
-        exit(1)
+if not out:
+    print("Failed to resolve LNF to PFN via Rucio.")
+    exit(1)
 print(out[lfn[0]])
 exit(0)
 """
