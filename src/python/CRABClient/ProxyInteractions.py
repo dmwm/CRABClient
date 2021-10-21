@@ -48,7 +48,8 @@ class VomsProxy(object):
         stdout, stderr, rc = execute_command(cmd, logger=self.logger, redirect=False)
         if rc != 0:
             self.logger.error(stdout+'\n'+stderr)
-            raise ProxyCreationException("Problems creating proxy.")
+            msg = "\n".join(['Error executing %s:' % cmd, stdout, stderr])
+            raise ProxyCreationException(msg)
 
     def setVOGroupVORole(self, group, role):
         self.group = group
@@ -62,7 +63,8 @@ class VomsProxy(object):
         stdout, stderr, rc = execute_command(cmd, logger=self.logger)
         if rc != 0:
             self.logger.error(stdout+'\n'+stderr)
-            raise ProxyCreationException("Problems getting voms proxy info.")
+            msg = "\n".join(['Error executing %s:' % cmd, stdout, stderr])
+            raise ProxyCreationException(msg)
 
         # pick the shorter between actimeleft and timeleft
         times = stdout.split('\n')
@@ -74,7 +76,8 @@ class VomsProxy(object):
         stdout, stderr, rc = execute_command(cmd, logger=self.logger)
         if rc != 0:
             self.logger.error(stdout+'\n'+stderr)
-            raise ProxyCreationException("Problems getting voms proxy info.")
+            msg = "\n".join(['Error executing %s:' % cmd, stdout, stderr])
+            raise ProxyCreationException(msg)
         fqans = str(stdout)
         primaryFqan = fqans.split('\n')[0]
         attributes = primaryFqan.split('/')
@@ -91,7 +94,8 @@ class VomsProxy(object):
         stdout, stderr, rc = execute_command(cmd, logger=self.logger)
         if rc != 0:
             self.logger.error(stdout+'\n'+stderr)
-            raise ProxyCreationException("Problems getting voms proxy info.")
+            msg = "\n".join(['Error executing %s:' % cmd, stdout, stderr])
+            raise ProxyCreationException(msg)
         return stdout.rstrip()
 
 
@@ -134,7 +138,8 @@ class MyProxy(object):
         stdout, stderr, rc = execute_command(cmd, logger=self.logger)
         if rc != 0:
             self.logger.error(stdout+'\n'+stderr)
-            raise ProxyCreationException("Problems creating myproxy.")
+            msg = "\n".join(['Error executing %s:' % cmd, stdout, stderr])
+            raise ProxyCreationException(msg)
 
     def getInfo(self, username=None):
         """
@@ -165,7 +170,8 @@ class MyProxy(object):
         stdout, stderr, rc = execute_command(cmd, logger=self.logger)
         if rc != 0:
             self.logger.error(stdout+'\n'+stderr)
-            raise ProxyCreationException("Problems getting certificate validity info.")
+            msg = "\n".join(['Error executing %s:' % cmd, stdout, stderr])
+            raise ProxyCreationException(msg)
         out = stdout.rstrip().split('notAfter=')[1]
 
         possibleFormats = ['%b  %d  %H:%M:%S %Y %Z',
