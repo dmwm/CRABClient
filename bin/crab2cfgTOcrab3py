@@ -15,7 +15,7 @@ import os
 from ConfigParser import RawConfigParser
 from optparse import OptionParser
 
-from WMCore.Configuration import Configuration, saveConfigurationFile
+from CRABClient.Configuration import Configuration, saveConfigurationFile
 
 DEFAULT_UNITS_PER_JOB = 50
 

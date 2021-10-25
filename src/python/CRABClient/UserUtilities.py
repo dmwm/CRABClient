@@ -7,7 +7,7 @@ import logging
 import traceback
 
 ## WMCore dependencies
-from WMCore.Configuration import Configuration
+from CRABClient.Configuration import Configuration
 from WMCore.DataStructs.LumiList import LumiList
 
 ## CRAB dependencies
