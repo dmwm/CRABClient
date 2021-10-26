@@ -6,7 +6,7 @@ import types
 from ast import literal_eval
 from datetime import timedelta
 
-from WMCore.Configuration import loadConfigurationFile, Configuration
+from CRABClient.Configuration import loadConfigurationFile, Configuration
 
 from ServerUtilities import SERVICE_INSTANCES
 

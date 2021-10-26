@@ -28,7 +28,7 @@ from CRABClient.ClientExceptions import ClientException, ConfigurationException
 from CRABClient.ClientUtilities import BOOTSTRAP_ENVFILE, BOOTSTRAP_INFOFILE, BOOTSTRAP_CFGFILE, LOGLEVEL_MUTE
 from CRABClient.ClientUtilities import setSubmitParserOptions, validateSubmitOptions, initLoggers, setConsoleLogLevelVar, flushMemoryLogger
 
-from WMCore.Configuration import loadConfigurationFile
+from CRABClient.Configuration import loadConfigurationFile
 
 
 def saveScramEnv(destFile, logger):

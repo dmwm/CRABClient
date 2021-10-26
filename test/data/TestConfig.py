@@ -2,7 +2,7 @@
 This is a test example of configuration file for CRAB-3 client
 """
 
-from WMCore.Configuration import Configuration
+from CRABClient.Configuration import Configuration
 import os
 
 config = Configuration()

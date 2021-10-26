@@ -2,7 +2,7 @@
 This is an example of a minimal CRAB3 configuration file.
 """
 
-from WMCore.Configuration import Configuration
+from CRABClient.Configuration import Configuration
 import os
 
 config = Configuration()
