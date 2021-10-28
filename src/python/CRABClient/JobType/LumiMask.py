@@ -46,10 +46,6 @@ def getRunList(myrange):
     myrange = myrange.replace(' ','')
     if not myrange:
         return []
-    try:
-        jobrange(myrange)
-    except AssertionError:
-        raise ConfigurationException("Invalid runRange: %s" % myrange)
 
     myrange = myrange.split(',')
     result = []
