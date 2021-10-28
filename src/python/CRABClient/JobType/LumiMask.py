@@ -7,7 +7,6 @@ if sys.version_info >= (3, 0):
 if sys.version_info < (3, 0):
     from urlparse import urlparse
 
-from WMCore.Lexicon import jobrange
 from WMCore.DataStructs.LumiList import LumiList
 
 from CRABClient.ClientExceptions import ConfigurationException
