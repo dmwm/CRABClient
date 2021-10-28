@@ -7,7 +7,6 @@ if sys.version_info >= (3, 0):
 if sys.version_info < (3, 0):
     from urlparse import urlparse
 
-from WMCore.Lexicon import jobrange
 from WMCore.DataStructs.LumiList import LumiList
 
 from CRABClient.ClientExceptions import ConfigurationException
@@ -46,10 +45,6 @@ def getRunList(myrange):
     myrange = myrange.replace(' ','')
     if not myrange:
         return []
-    try:
-        jobrange(myrange)
-    except AssertionError:
-        raise ConfigurationException("Invalid runRange: %s" % myrange)
 
     myrange = myrange.split(',')
     result = []
