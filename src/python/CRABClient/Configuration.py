@@ -336,13 +336,3 @@ def loadConfigurationFile(filename):
     msg += "%s\n" % filename
     raise RuntimeError(msg)
 
-def saveConfigurationFile(configInstance, filename):
-    """
-    _saveConfigurationFile_
-    Save the configuration as a python module
-    """
-
-    with open(filename, 'w') as handle:
-        handle.write(str(configInstance))
-
-    return
