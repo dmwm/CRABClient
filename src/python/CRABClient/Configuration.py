@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # pylint: disable=C0321,C0103,W0622
 # W0622: redefined-builtin
+
+# Original code is taken from WMCore: https://github.com/dmwm/WMCore/blob/4ec90a8d7f2e1902e37003f9391252cab43f08bc/src/python/WMCore/Configuration.py
+# Code parts that are not used by CRAB were removed
+
 """
 _Configuration_
 
