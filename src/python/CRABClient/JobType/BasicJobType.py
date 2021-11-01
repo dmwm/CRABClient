@@ -6,7 +6,7 @@ Conventions:
 """
 from ast import literal_eval
 
-from WMCore.DataStructs.LumiList import LumiList
+from FWCore.PythonUtilities.LumiList import LumiList
 
 from CRABClient.ClientExceptions import ConfigurationException
 

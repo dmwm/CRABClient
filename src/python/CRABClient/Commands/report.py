@@ -5,7 +5,7 @@ import json
 import tarfile
 from ast import literal_eval
 
-from WMCore.DataStructs.LumiList import LumiList
+from FWCore.PythonUtilities.LumiList import LumiList
 
 from CRABClient.ClientUtilities import colors, execute_command
 from CRABClient.Commands.SubCommand import SubCommand

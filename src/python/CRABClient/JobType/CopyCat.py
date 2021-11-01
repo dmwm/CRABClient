@@ -14,7 +14,7 @@ import tempfile
 from functools import reduce
 from ast import literal_eval
 
-from WMCore.DataStructs.LumiList import LumiList
+from FWCore.PythonUtilities.LumiList import LumiList
 
 from ServerUtilities import BOOTSTRAP_CFGFILE_DUMP, getProxiedWebDir, NEW_USER_SANDBOX_EXCLUSIONS
 from ServerUtilities import SERVICE_INSTANCES
