@@ -23,13 +23,13 @@ _UseCrab ()
         "")
             case "$cur" in
             "")
-                COMPREPLY=( $(compgen -W '--version --help -h --quiet --debug status tasks proceed checkwrite getlog checkusername submit purge getoutput resubmit kill uploadlog remake report preparelocal createmyproxy' -- $cur) )
+                COMPREPLY=( $(compgen -W '--version --help -h --quiet --debug status tasks proceed checkwrite getlog checkusername submit getoutput resubmit kill uploadlog remake report preparelocal createmyproxy' -- $cur) )
                 ;;
             -*)
                 COMPREPLY=( $(compgen -W '--version --help -h --quiet --debug' -- $cur) )
                 ;;
             *)
-                COMPREPLY=( $(compgen -W 'status tasks proceed checkwrite getlog checkusername submit purge getoutput resubmit kill uploadlog remake report preparelocal createmyproxy' -- $cur) )
+                COMPREPLY=( $(compgen -W 'status tasks proceed checkwrite getlog checkusername submit getoutput resubmit kill uploadlog remake report preparelocal createmyproxy' -- $cur) )
                 ;;
             esac
             ;;
@@ -234,16 +234,6 @@ _UseCrab ()
             esac
             ;;
 
-        "purge")
-            case "$cur" in
-                -*)
-                    COMPREPLY=( $(compgen -W '--help -h --schedd --cache --proxy --dir -d --instance' -- $cur) )
-                    ;;
-                *)
-                    COMPREPLY=( $(compgen -f $cur) )
-            esac
-            ;;
-
         "remake")
             case "$cur" in
                 -*)
@@ -286,7 +276,7 @@ _UseCrab ()
 
 
         *)
-            COMPREPLY=( $(compgen -W 'status tasks proceed checkwrite getlog checkusername submit purge getoutput resubmit kill uploadlog remake report preparelocal' -- $cur) )
+            COMPREPLY=( $(compgen -W 'status tasks proceed checkwrite getlog checkusername submit getoutput resubmit kill uploadlog remake report preparelocal' -- $cur) )
             ;;
     esac
 
