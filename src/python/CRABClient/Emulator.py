@@ -25,6 +25,5 @@ def setEmulator(name, value):
 
 def getDefaults():
     import CRABClient.CrabRestInterface
-    from WMCore.Services.UserFileCache.UserFileCache import UserFileCache
     return {'rest' : CRABClient.CrabRestInterface.CRABRest,
-            'ufc' : UserFileCache}
+            'ufc' : 'dummy_ufc'}
