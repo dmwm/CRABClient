@@ -25,7 +25,7 @@ def getLumiList(lumi_mask_name, logger = None):
         try:
             lumi_list = LumiList(url = lumi_mask_name)
         except Exception as err:
-            raise ConfigurationException("CMSSW failed to get lumimask from URL. Please download lumimask yourself and point to it in crabConfig;\n%s" % str(err))
+            raise ConfigurationException("CMSSW failed to get lumimask from URL. Please try to download the lumimask yourself and point to it in crabConfig;\n%s" % str(err))
     else:
         if logger:
             logger.debug('Reading lumi-mask from %s' % lumi_mask_name)
