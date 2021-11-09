@@ -11,6 +11,7 @@ from CRABClient.ClientUtilities import execute_command
 from ServerUtilities import encodeRequest
 import json
 import re
+import tempfile
 
 from CRABClient.ClientExceptions import RESTInterfaceException
 
@@ -137,16 +138,20 @@ class HTTPRequests(dict):
         # if it is a dictionary, we need to encode it to string
         if isinstance(data, dict):
             data = encodeRequest(data)
+        self.logger.debug("Encoded data for curl request: %s" %data)
+
+        fh, path = tempfile.mkstemp(dir='/tmp', prefix='curlData')
+        with open(path, 'w') as f:
+            f.write(data)
 
         if verb in ['GET', 'HEAD']:
             url = url + '?' + data
 
         command = ''
-        # command below will return 2 values separated by comma: 1) curl result and 2) HTTP code
         command += 'curl -v -X {0}'.format(verb)
         command += ' -H "User-Agent: %s/%s"' % (self['userAgent'], self['version'])
         command += ' -H "Accept: */*"'
-        command += ' --data "%s"' % data
+        command += ' --data @%s' % path
         command += ' --cert "%s"' % self['cert']
         command += ' --key "%s"' % self['key']
         command += ' --capath "%s"' % caCertPath
