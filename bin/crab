@@ -1,7 +1,6 @@
 #!/bin/bash
 
-this_script=`realpath $0`
-script_dir=`dirname ${this_script}`
+script_dir=`dirname $0`
 python_cmd="python"
 
 [ $(echo $CMSSW_VERSION | cut -d_ -f2) -gt 11 ] && python_cmd="python3"
