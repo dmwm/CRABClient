@@ -149,11 +149,11 @@ if __name__ == "__main__":
         client()
         exitcode = 0 #no exceptions no errors
     except RESTInterfaceException as err:
+        exitcode=err.exitcode
         client.logger.info("The server answered with an error.")
         client.logger.debug("")
         err = str(err)
-        exitcode = int(re.findall(r'(?<=\<\sHTTP/1.1\s)[^\n\s]*', err)[-1])
-        if exitcode==503 and ("CMSWEB Error: Service unavailable") in err:
+        if ("CMSWEB Error: Service unavailable") in err:
             client.logger.info(schedInterv)
         if 'X-Error-Detail' in err:
             errorDetail = re.search(r'(?<=X-Error-Detail:\s)[^\n]*', err).group(0)
