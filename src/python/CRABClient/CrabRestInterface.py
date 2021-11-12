@@ -55,6 +55,32 @@ def retriableError(http_code, curlExitCode):
     return retry
 
 
+def parseResponseHeader(response):
+    """
+    Parse response header and return HTTP code with reason
+    Example taken from WMCore pycurl_manager
+    """
+    startRegex = r"HTTP\/\d.\d\s\d{3}[^\n]*"
+    continueRegex = r"HTTP\/\d.\d\s100[^\n]*"  # Continue: client should continue its request
+    replaceRegex = r"HTTP\/\d.\d"
+
+    reason = ''
+    code = 9999
+    for row in response.split('\r'):
+        row = row.replace('\n', '')
+        if not row:
+            continue
+        response = re.search(startRegex, row)
+        if response:
+            if re.search(continueRegex, row):
+                continue
+            res = re.sub(replaceRegex, "", response.group(0)).strip()
+            code, reason = res.split(' ', 1)
+            code = int(code)
+
+    return code, reason
+
+
 class HTTPRequests(dict):
     """
     This code forks a subprocess which executes curl to communicate
@@ -157,12 +183,8 @@ class HTTPRequests(dict):
         nRetries = max(2, self['retry'])
         for i in range(nRetries + 1):
             stdout, stderr, curlExitCode = execute_command(command=command, logger=self.logger)
+            http_code, http_reason = parseResponseHeader(stderr)
 
-            http_code, http_reason = 99999, ''
-            http_response = re.findall(r'(?<=\<\sHTTP/1.1\s)[^\n]*',stderr)
-            if http_response:
-                http_code, http_reason = http_response[-1].split(" ", 1)
-                http_code = int(http_code)
             if curlExitCode != 0 or http_code != 200:
                 if (i < 2) or (retriableError(http_code, curlExitCode) and (i < self['retry'])):
                     sleeptime = 20 * (i + 1) + random.randint(-10, 10)
