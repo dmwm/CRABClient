@@ -6,7 +6,6 @@ import tempfile
 
 from ServerUtilities import getProxiedWebDir, getColumn
 
-import CRABClient.Emulator
 from CRABClient.UserUtilities import curlGetFileFromURL
 from CRABClient.ClientUtilities import execute_command
 from CRABClient.Commands.SubCommand import SubCommand
