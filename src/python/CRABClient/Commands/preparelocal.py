@@ -6,7 +6,6 @@ import tempfile
 
 from ServerUtilities import getProxiedWebDir, getColumn
 
-import CRABClient.Emulator
 from CRABClient.UserUtilities import curlGetFileFromURL
 from CRABClient.ClientUtilities import execute_command
 from CRABClient.Commands.SubCommand import SubCommand
@@ -68,12 +67,7 @@ class preparelocal(SubCommand):
 
         inputsFilename = os.path.join(os.getcwd(), 'InputFiles.tar.gz')
         if status == 'UPLOADED':
-            filecacheurl = getColumn(crabDBInfo, 'tm_cache_url')
-            ufc = CRABClient.Emulator.getEmulator('ufc')({'endpoint' : filecacheurl, "pycurl": True})
-            self.logger.debug("Downloading and extracting 'dry-run-sandbox.tar.gz' from %s" % filecacheurl)
-            ufc.downloadLog('dry-run-sandbox.tar.gz', output=os.path.join(os.getcwd(), 'dry-run-sandbox.tar.gz'))
-            with tarfile.open('dry-run-sandbox.tar.gz') as tf:
-                tf.extractall()
+            raise ClientException('Currently crab upload only works for tasks successfully submitted')
         elif status == 'SUBMITTED':
             webdir = getProxiedWebDir(crabserver=self.crabserver, task=taskname,
                                       logFunction=self.logger.debug)

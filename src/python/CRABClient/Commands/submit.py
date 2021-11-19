@@ -15,8 +15,6 @@ if sys.version_info >= (3, 0):
 if sys.version_info < (3, 0):
     from urllib import urlencode, quote
 
-
-import CRABClient.Emulator
 from CRABClient.ClientUtilities import DBSURLS
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientMapping import parametersMapping, getParamDefaultValue
@@ -379,12 +377,8 @@ class submit(SubCommand):
             tmpDir = tempfile.mkdtemp()
             self.logger.info('Created temporary directory for dry run sandbox in %s' % tmpDir)
             os.chdir(tmpDir)
-            if 'S3' in filecacheurl.upper():
-                downloadFromS3(crabserver=self.crabserver, filepath=os.path.join(tmpDir, 'dry-run-sandbox.tar.gz'),
-                               objecttype='runtimefiles', taskname=uniquerequestname, logger=self.logger)
-            else:
-                ufc = CRABClient.Emulator.getEmulator('ufc')({'endpoint' : filecacheurl, "pycurl": True})
-                ufc.downloadLog('dry-run-sandbox.tar.gz', output=os.path.join(tmpDir, 'dry-run-sandbox.tar.gz'))
+            downloadFromS3(crabserver=self.crabserver, filepath=os.path.join(tmpDir, 'dry-run-sandbox.tar.gz'),
+                           objecttype='runtimefiles', taskname=uniquerequestname, logger=self.logger)
             for name in ['dry-run-sandbox.tar.gz', 'InputFiles.tar.gz', 'CMSRunAnalysis.tar.gz', 'sandbox.tar.gz']:
                 tf = tarfile.open(os.path.join(tmpDir, name))
                 tf.extractall(tmpDir)

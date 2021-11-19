@@ -18,7 +18,6 @@ import shutil
 import hashlib
 import uuid
 
-import CRABClient.Emulator
 from CRABClient.ClientMapping import configParametersInfo
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
 from CRABClient.ClientUtilities import colors, BOOTSTRAP_CFGFILE, BOOTSTRAP_CFGFILE_PKL
@@ -279,42 +278,15 @@ class UserTarball(object):
                (archiveName, archiveSize, filecacheurl))
         self.logger.debug(msg)
 
-        if 'S3' in filecacheurl.upper():
-            # use S3
-            # generate a 32char hash like UserFileCache used to do
-            hashkey = calculateChecksum(archiveName, exclude=NEW_USER_SANDBOX_EXCLUSIONS)
-            # the ".tar.gz" suffix here is forced by other places in the client which add it when
-            # storing tarball name in task table. Not very elegant to need to hardcode in several places.
-            cachename = "%s.tar.gz" % hashkey
-            # current code requires a taskname to extract username. Any dummy one will do
-            # next version of RESTCache will get username from cmsweb FE headers
-            uploadToS3(crabserver=self.crabserver, objecttype='sandbox', filepath=archiveName,
-                       tarballname=cachename, logger=self.logger)
-        else:
-            # old way using UFC
-            ufc = CRABClient.Emulator.getEmulator('ufc')({'endpoint' : filecacheurl, "pycurl": True})
-            t1 = time.time()
-            result = ufc.upload(archiveName, excludeList=NEW_USER_SANDBOX_EXCLUSIONS)
-            ufcSeconds = int(time.time()-t1)
-            if 'hashkey' not in result:
-                self.logger.error("Failed to upload archive: %s" % str(result))
-                raise CachefileNotFoundException
-            hashkey = str(result['hashkey'])
-            # upload a copy to S3 dev as well, just to stress it a bit, this never raises
-            s3report = testS3upload(self.s3tester, archiveName, hashkey, self.logger)
-            # report also how long it took uploading to UFC (which surely worked if we are here)
-            s3report['ufcseconds'] = ufcSeconds
-            # upload S3 test report to crabcache
-            reportFile = '/tmp/crabs3report.' + uuid.uuid4().hex
-            with open(reportFile, 'w') as fp:
-                json.dump(s3report, fp)
-            reportName = 'S3-' + s3report['timestamp'] + ':s3report.json'
-            try:
-                ufc.uploadLog(reportFile, reportName)
-                self.logger.debug('Report of S3 upload stored on CrabCache as %s', reportName)
-            except Exception as e:
-                self.logger.debug(str(e))
-            os.remove(reportFile)
+        # generate a 32char hash like old UserFileCache used to do
+        hashkey = calculateChecksum(archiveName, exclude=NEW_USER_SANDBOX_EXCLUSIONS)
+        # the ".tar.gz" suffix here is forced by other places in the client which add it when
+        # storing tarball name in task table. Not very elegant to need to hardcode in several places.
+        cachename = "%s.tar.gz" % hashkey
+        # current code requires a taskname to extract username. Any dummy one will do
+        # next version of RESTCache will get username from cmsweb FE headers
+        uploadToS3(crabserver=self.crabserver, objecttype='sandbox', filepath=archiveName,
+                   tarballname=cachename, logger=self.logger)
         return hashkey
 
 
