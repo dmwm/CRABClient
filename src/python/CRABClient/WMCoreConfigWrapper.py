@@ -7,9 +7,9 @@ instead of :
 from CRABClient.Configuration import Configuration
 
 File is meant to be renamed and moved by the CRABClient build procedure  
-(crab-build.file in cmsdist)or an ad hoc setup script in case a developer wants
+(crab-build.file in cmsdist) or an ad hoc setup script in case a developer wants
 to run using source from GH, so that python discovers it as
-WMCore.Configuration. When executed, the code oi here prints a simple warning
+WMCore.Configuration. When executed, the code here prints a simple warning
 asking the user to update the configuration and calls
 CRABClient.Configuration. In CRABClient.Configuration we have
 a modified (and frozen) version of WMCore.Configuration which
@@ -28,7 +28,7 @@ class Configuration(Config):
         msg = ''
         msg += '%sWarning: CRABClient does not depend on WMCore anymore.\n' % (colors.RED)
         msg += 'Please update your config file to use configuration from CRABClient instead.\n'
-        msg += 'Change inside that file it from "from WMCore.Configuration import Configuration"\n'
+        msg += 'Change inside that file from "from WMCore.Configuration import Configuration"\n'
         msg += 'to "from CRABClient.Configuration import Configuration%s\n"' % (colors.NORMAL)
         msg += 'Support for old style "from WMCore.Configuration import ..." will be remove in future versions of CRAB'
         logger.info(msg)
