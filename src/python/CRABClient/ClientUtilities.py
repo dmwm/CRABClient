@@ -192,8 +192,6 @@ def getColumn(dictresult, columnName):
         return value
 
 def uploadlogfile(logger, proxyfilename, taskname=None, logfilename=None, logpath=None, instance=None, serverurl=None, username=None):
-    ## WMCore dependencies. Moved here to minimize dependencies in the bootstrap script
-    from WMCore.Services.UserFileCache.UserFileCache import UserFileCache
 
     doupload = True
 
