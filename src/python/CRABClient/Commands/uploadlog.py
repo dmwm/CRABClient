@@ -1,5 +1,4 @@
 import os
-import time
 
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientUtilities import colors, uploadlogfile
@@ -30,20 +29,20 @@ class uploadlog(SubCommand):
             try:
                 taskname = self.cachedinfo['RequestName']
                 logfilename = str(taskname)+".log"
-            except:
-                self.logger.info("Couldn't get information from .requestcache (file likely not created due to submission failure),\n"
-                        "Please local crab.log yourself and copy/paste into the mail to support if needed")
-                return
+            except Exception:
+                self.logger.info("Couldn't get information from .requestcache (file likely not created due to submission failure),\n" +
+                                 "Please local crab.log yourself and copy/paste into the mail to support if needed")
+                return {}
         else:
             msg = "%sError%s: Could not locate log file." % (colors.RED, colors.NORMAL)
             self.logger.info(msg)
             raise ConfigurationException
 
         self.logger.info("Will upload file %s." % (self.logfile))
-        logfileurl = uploadlogfile(self.logger, self.proxyfilename, taskname = taskname, logfilename = logfilename, \
-                                   logpath = str(self.logfile), instance = self.instance, \
-                                   serverurl = self.serverurl)
-        return {'result' : {'status' : 'SUCCESS' , 'logurl' : logfileurl}}
+        logfileurl = uploadlogfile(self.logger, self.proxyfilename, taskname=taskname, logfilename=logfilename,
+                                   logpath=str(self.logfile), instance=self.instance,
+                                   serverurl=self.serverurl)
+        return {'result': {'status': 'SUCCESS', 'logurl': logfileurl}}
 
 
     def setOptions(self):
@@ -61,9 +60,8 @@ class uploadlog(SubCommand):
             SubCommand.validateOptions(self)
         except MissingOptionException as ex:
             if ex.missingOption == "task":
-                msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
+                msg = "%sError%s:" % (colors.RED, colors.NORMAL)
                 msg += " Please provide a path to a CRAB project directory (use the -d/--dir option)."
                 ex = MissingOptionException(msg)
                 ex.missingOption = "task"
             raise ex
-
