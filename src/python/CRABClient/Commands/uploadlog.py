@@ -12,13 +12,11 @@ class uploadlog(SubCommand):
     The main purpose of this command is to make log files available to experts for
     debugging. The command accepts a path to a CRAB project directory via the
     -d/--dir option, in which case it will search for the crab.log file inside the
-    directory, or a path to a "log" file via the --logpath option, particularly
-    needed to upload a crab.log file from the current working directory when a
-    CRAB project directory was not created. (If both options are specified, the
-    --logpath option takes precedence.)
+    directory. The log will be uplaoded in S3 in the task directory, if a task name
+    is not available (crab submit fails in early stage) user will have to send the
+    log in the mail. It will be a short log in that case.
     Usage:
       * crab uploadlog --dir=<path-to-a-CRAB-project-directory>
-      * crab uploadlog --logpath=<path-to-a-log-file>
     """
     name = 'uploadlog'
     shortnames = ['uplog']
@@ -27,17 +25,14 @@ class uploadlog(SubCommand):
         self.logger.debug("uploadlog started")
         taskname = None
         #veryfing the log file exist
-        if self.options.logpath is not None:
-            logfilename = str(time.strftime("%Y-%m-%d_%H%M%S"))+'_crab.log'
-            self.logfile = self.options.logpath
-        elif os.path.isfile(self.logfile):
+        if os.path.isfile(self.logfile):
             self.logger.debug("crab.log exists")
             try:
                 taskname = self.cachedinfo['RequestName']
                 logfilename = str(taskname)+".log"
             except:
-                self.logger.info("Couldn't get information from .requestcache (file likely not created due to submission failure), try\n"
-                        "'crab uploadlog --logpath=<path-to-log-file-in-project-dir>'")
+                self.logger.info("Couldn't get information from .requestcache (file likely not created due to submission failure),\n"
+                        "Please local crab.log yourself and copy/paste into the mail to support if needed")
                 return
         else:
             msg = "%sError%s: Could not locate log file." % (colors.RED, colors.NORMAL)
@@ -57,21 +52,7 @@ class uploadlog(SubCommand):
 
         This allows to set specific command options
         """
-        self.parser.add_option("--logpath",
-                               dest = "logpath",
-                               default = None,
-                               help = "Path to the log file to be uploaded.")
-
-
-    def validateLogpathOption(self):
-        ## Check if the --logpath option was used. If it was, don't require the task
-        ## option.
-        if self.options.logpath is not None:
-            if not os.path.isfile(self.options.logpath):
-                msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
-                msg += " Could not find the log file %s." % (self.options.logpath)
-                raise ConfigurationException(msg)
-            self.cmdconf['requiresDirOption'] = False
+        return
 
 
     def validateOptions(self):
@@ -81,8 +62,7 @@ class uploadlog(SubCommand):
         except MissingOptionException as ex:
             if ex.missingOption == "task":
                 msg  = "%sError%s:" % (colors.RED, colors.NORMAL)
-                msg += " Please provide a path to a CRAB project directory (use the -d/--dir option)"
-                msg += " or to a log file (use the --logpath option)."
+                msg += " Please provide a path to a CRAB project directory (use the -d/--dir option)."
                 ex = MissingOptionException(msg)
                 ex.missingOption = "task"
             raise ex

@@ -265,7 +265,6 @@ class SubCommand(ConfigCommand):
         self.transferringIds = None
         self.dest = None
 
-        self.validateLogpathOption()
         # Validate first the SubCommand options
         SubCommand.validateOptions(self)
         # then the config option for the submit command
@@ -649,10 +648,6 @@ class SubCommand(ConfigCommand):
             msg += " Ignoring arguments %s." % (self.args)
             self.logger.warning(msg)
             self.args = []
-
-
-    def validateLogpathOption(self):
-        pass
 
     def validateConfigOption(self):
         pass
