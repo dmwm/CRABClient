@@ -105,10 +105,7 @@ renamedParams = {
 Parameter Name          |  Parameter Meaning
 ---------------------------------------------------------------------------------------------------------------
 requiresDirOption       -  Whether the command requires the -d/--dir option or not (in the end, if the command
-                           requiresa CRAB project directory as input). For the uploadlog command, we set this
-                           to True even if the command accepts a path to a log file via the --logpath option
-                           (in which case a CRAB project directory is not needed) and if the --logpath option
-                           was given we set requiresDirOption to False on the fly.
+                           requiresa CRAB project directory as input).
 useCache                -  Whether to use the CRAB cache file (~/.crab3).
                            Currently only used to get the CRAB project directory in case the command requires
                            it but no directory was given in the -d/--dir option.
