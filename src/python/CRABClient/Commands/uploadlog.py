@@ -31,7 +31,7 @@ class uploadlog(SubCommand):
                 logfilename = str(taskname)+".log"
             except Exception:
                 self.logger.info("Couldn't get information from .requestcache (file likely not created due to submission failure),\n" +
-                                 "Please local crab.log yourself and copy/paste into the mail to support if needed")
+                                 "Please locate crab.log yourself and copy/paste into the mail to support if needed")
                 return {}
         else:
             msg = "%sError%s: Could not locate log file." % (colors.RED, colors.NORMAL)
