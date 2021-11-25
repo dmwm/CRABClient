@@ -2,7 +2,7 @@
 from __future__ import print_function
 import CRABAPI.TopLevel
 import CRABClient.Commands.submit
-from CRABClient.Configuration import Configuration
+from WMCore.Configuration import Configuration
 class Task(object):
     """
         Task - Wraps methods and attributes for a single analysis task

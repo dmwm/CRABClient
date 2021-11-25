@@ -13,7 +13,7 @@ import tarfile
 import unittest
 
 from CRABClient.JobType.UserTarball import UserTarball
-from CRABClient.Configuration import Configuration
+from WMCore.Configuration import Configuration
 from CRABClient.ClientExceptions import InputFileNotFoundException
 
 testWMConfig = Configuration()

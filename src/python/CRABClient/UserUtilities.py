@@ -12,7 +12,7 @@ from FWCore.PythonUtilities.LumiList import LumiList
 from CRABClient.ClientUtilities import DBSURLS, LOGLEVEL_MUTE, colors
 from CRABClient.ClientUtilities import execute_command, getUserProxy
 from CRABClient.ClientExceptions import ClientException, UsernameException
-from CRABClient.Configuration import Configuration
+from WMCore.Configuration import Configuration
 
 def config():
     """
