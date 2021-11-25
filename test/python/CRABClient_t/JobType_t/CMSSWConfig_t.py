@@ -12,7 +12,7 @@ import unittest
 
 from CRABClient.JobType.CMSSWConfig import CMSSWConfig
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
-from CRABClient.Configuration import Configuration
+from WMCore.Configuration import Configuration
 
 #### Test WMCore.Configuration
 

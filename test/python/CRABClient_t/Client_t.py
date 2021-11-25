@@ -4,7 +4,7 @@
 Client_t.py
 """
 
-from CRABClient.Configuration import Configuration
+from WMCore.Configuration import Configuration
 import os
 import unittest
 import logging

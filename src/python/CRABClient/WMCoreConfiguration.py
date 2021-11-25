@@ -285,7 +285,7 @@ class Configuration(object):
         document = options.get('document', False)
         comment = options.get('comment', False)
 
-        result = "from CRABClient.Configuration import Configuration\n"
+        result = "from WMCore.Configuration import Configuration\n"
         result += "config = Configuration()\n"
         for sectionName in self._internal_sections:
             result += "config.section_(\'%s\')\n" % sectionName

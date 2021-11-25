@@ -128,7 +128,7 @@ If another required CRAB3 parameter is not specified in the CRAB2 config file yo
 
 And opening the config file you will see which parameters you need to modify::
 
-    from CRABClient.Configuration import Configuration
+    from WMCore.Configuration import Configuration
     config = Configuration()
     config.section_('General')
     config.General.requestName = 'crab3taskname'

@@ -3,7 +3,7 @@ This is an example configuration file for CRAB3 client, covering
 most of the available configuration options.
 """
 
-from CRABClient.Configuration import Configuration
+from WMCore.Configuration import Configuration
 import os
 
 config = Configuration()
