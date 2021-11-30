@@ -402,7 +402,11 @@ class submit(SubCommand):
                 opts = ''
                 for opt in optsList:
                     opts = opts + ' %s' % opt
-                command = 'sh CMSRunAnalysis.sh ' + opts
+                # job wrapper needs to be executed in a clean shell, like it happens in the WN, not
+                # inside the environemnt where CRABClient runs (i.e. some CMSSW env. which may conflict
+                # with the WMCore code used in the wrapper
+                undoScram = "eval `scram unsetenv -sh`; "
+                command = undoScram + 'sh CMSRunAnalysis.sh ' + opts
                 out, err, returncode = execute_command(command=command)
                 self.logger.debug(out)
                 if returncode != 0:
