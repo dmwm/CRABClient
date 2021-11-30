@@ -174,14 +174,27 @@ class HTTPRequests(dict):
             url = url + '?' + data
 
         command = ''
-        command += 'curl -v -X {0}'.format(verb)
-        command += ' -H "User-Agent: %s/%s"' % (self['userAgent'], self['version'])
-        command += ' -H "Accept: */*"'
-        command += ' --data @%s' % path
-        command += ' --cert "%s"' % self['cert']
-        command += ' --key "%s"' % self['key']
-        command += ' --capath "%s"' % caCertPath
-        command += ' "%s" | tee /dev/stderr ' % url
+
+        # CRAB_useGoCurl env. variable is used to define how request should be executed
+        # If variable is set, then goCurl is used for command execution: https://github.com/vkuznet/gocurl
+        if os.getenv('CRAB_useGoCurl'):
+            command += '/cvmfs/cms.cern.ch/cmsmon/gocurl -verbose 2 -method {0}'.format(verb)
+            command += ' -header "User-Agent: %s/%s"' % (self['userAgent'], self['version'])
+            command += ' -header "Accept: */*"'
+            command += ' -data "%s"' % data
+            command += ' -cert "%s"' % self['cert']
+            command += ' -key "%s"' % self['key']
+            command += ' -capath "%s"' % caCertPath
+            command += ' -url "%s" | tee /dev/stderr ' % url
+        else:
+            command += 'curl -v -X {0}'.format(verb)
+            command += ' -H "User-Agent: %s/%s"' % (self['userAgent'], self['version'])
+            command += ' -H "Accept: */*"'
+            command += ' --data @%s' % path
+            command += ' --cert "%s"' % self['cert']
+            command += ' --key "%s"' % self['key']
+            command += ' --capath "%s"' % caCertPath
+            command += ' "%s" | tee /dev/stderr ' % url
 
         # retries this up at least 3 times, or up to self['retry'] times for range of exit codes
         # retries are counted AFTER 1st try, so call is made up to nRetries+1 times !
