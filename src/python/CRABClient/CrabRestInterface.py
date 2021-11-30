@@ -177,6 +177,7 @@ class HTTPRequests(dict):
 
         # CRAB_useGoCurl env. variable is used to define how request should be executed
         # If variable is set, then goCurl is used for command execution: https://github.com/vkuznet/gocurl
+        # Same variable is also used inside CRABServer, we should keep name changes (if any) synchronized
         if os.getenv('CRAB_useGoCurl'):
             command += '/cvmfs/cms.cern.ch/cmsmon/gocurl -verbose 2 -method {0}'.format(verb)
             command += ' -header "User-Agent: %s/%s"' % (self['userAgent'], self['version'])
