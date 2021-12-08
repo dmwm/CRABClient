@@ -46,7 +46,7 @@ class preparelocal(SubCommand):
             else:
                 self.logger.info("Copying an preparing files for local execution in %s" % self.options.destdir)
                 self.prepareDir(inputArgs, self.options.destdir)
-                self.logger.info("Use 'sh run_job.sh NUMJOB' to execute the job")
+                self.logger.info("go to that directory IN A CLEAN SHELL and use  'sh run_job.sh NUMJOB' to execute the job")
         finally:
             os.chdir(cwd)
             shutil.rmtree(tmpDir)
