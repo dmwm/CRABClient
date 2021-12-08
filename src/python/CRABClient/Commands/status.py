@@ -1,6 +1,7 @@
 from __future__ import division # I want floating points
 from __future__ import print_function
 
+import os
 import pickle
 import sys
 import math
@@ -126,6 +127,8 @@ class status(SubCommand):
                 raise Exception("failed to retrieve %s" % url)
             with open(local_status_cache_pkl, PKL_R_MODE) as fp:
                 statusCache = pickle.load(fp)
+                fp.close()
+                os.remove(local_status_cache_pkl)
             if 'bootstrapTime' in statusCache :
                 statusCacheInfo_PKL = None
                 bootstrapMsg_PKL = "Task bootstrapped at %s" % statusCache['bootstrapTime']['date']
@@ -151,6 +154,8 @@ class status(SubCommand):
                     raise Exception("failed to retrieve %s" % url)
                 with open(local_status_cache_txt, 'r') as fp:
                     statusCacheData = fp.read()
+                    fp.close()
+                    os.remove(local_status_cache_txt)
                 # Normally the first two lines of the file contain the checkpoint locations
                 # for the job_log / fjr_parse_results files and are used by the status caching script.
                 # But if the job has just bootstrapped the first lines of the file are:
