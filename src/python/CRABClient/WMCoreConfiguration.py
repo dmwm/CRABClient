@@ -11,6 +11,7 @@ _Configuration_
 Module dealing with Configuration file in python format
 """
 
+from __future__ import division
 import imp
 import os
 import sys
