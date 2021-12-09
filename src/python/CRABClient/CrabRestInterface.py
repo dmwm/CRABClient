@@ -166,7 +166,7 @@ class HTTPRequests(dict):
             data = encodeRequest(data)
         self.logger.debug("Encoded data for curl request: %s" %data)
 
-        fh, path = tempfile.mkstemp(dir='/tmp', prefix='curlData')
+        fh, path = tempfile.mkstemp(dir='/tmp', prefix='crab_curlData')
         with open(path, 'w') as f:
             f.write(data)
 
@@ -199,15 +199,17 @@ class HTTPRequests(dict):
                     # this was the last retry
                     msg = "Fatal error trying to connect to %s using %s." % (url, data)
                     self.logger.info(msg)
+                    os.remove(path)
                     raise RESTInterfaceException(stderr)
             else:
                 try:
                     curlResult = json.loads(stdout)
+                    break
                 except Exception as ex:
                     msg = "Fatal error reading data from %s using %s: \n%s" % (url, data, ex)
                     raise Exception(msg)
-                else:
-                    break
+                finally:
+                    os.remove(path)
 
         return curlResult, http_code, http_reason
 
