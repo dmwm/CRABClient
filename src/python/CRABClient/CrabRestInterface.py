@@ -7,20 +7,19 @@ from __future__ import print_function
 
 import os
 import random
-from CRABClient.ClientUtilities import execute_command
-from ServerUtilities import encodeRequest
 import json
 import re
 import tempfile
-
-from CRABClient.ClientExceptions import RESTInterfaceException
+import logging
 
 try:
     from urllib import quote as urllibQuote  # Python 2.X
 except ImportError:
     from urllib.parse import quote as urllibQuote  # Python 3+
 
-import logging
+from CRABClient.ClientUtilities import execute_command
+from ServerUtilities import encodeRequest
+from CRABClient.ClientExceptions import RESTInterfaceException
 
 try:
     from TaskWorker import __version__
@@ -164,9 +163,9 @@ class HTTPRequests(dict):
         # if it is a dictionary, we need to encode it to string
         if isinstance(data, dict):
             data = encodeRequest(data)
-        self.logger.debug("Encoded data for curl request: %s" %data)
+        self.logger.debug("Encoded data for curl request: %s", data)
 
-        fh, path = tempfile.mkstemp(dir='/tmp', prefix='curlData')
+        fh, path = tempfile.mkstemp(dir='/tmp', prefix='crab_curlData')
         with open(path, 'w') as f:
             f.write(data)
 
@@ -199,15 +198,17 @@ class HTTPRequests(dict):
                     # this was the last retry
                     msg = "Fatal error trying to connect to %s using %s." % (url, data)
                     self.logger.info(msg)
+                    os.remove(path)
                     raise RESTInterfaceException(stderr)
             else:
                 try:
                     curlResult = json.loads(stdout)
+                    break
                 except Exception as ex:
                     msg = "Fatal error reading data from %s using %s: \n%s" % (url, data, ex)
                     raise Exception(msg)
-                else:
-                    break
+                finally:
+                    os.remove(path)
 
         return curlResult, http_code, http_reason
 
@@ -265,4 +266,3 @@ class CRABRest:
     def delete(self, api=None, data=None):
         uri = self.uriNoApi + api
         return self.server.delete(uri, data)
-
