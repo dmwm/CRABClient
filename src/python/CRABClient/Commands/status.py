@@ -113,8 +113,8 @@ class status(SubCommand):
         self.logger.debug("Proxied webdir is located at %s", proxiedWebDir)
 
         # Download status_cache file
-        _, local_status_cache_txt = tempfile.mkstemp(dir='/tmp', prefix='status-cache-', suffix='.txt')
-        _, local_status_cache_pkl = tempfile.mkstemp(dir='/tmp', prefix='status-cache-', suffix='.pkl')
+        _, local_status_cache_txt = tempfile.mkstemp(dir='/tmp', prefix='crab_status-cache-', suffix='.txt')
+        _, local_status_cache_pkl = tempfile.mkstemp(dir='/tmp', prefix='crab_status-cache-', suffix='.pkl')
         gotPickle = False
         gotTxt = False
         # first: try pickle version

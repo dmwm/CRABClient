@@ -188,7 +188,7 @@ exit(0)
 """
         rucioScript = template.format(site=site, username=username, lfn=lfn)
         import tempfile
-        (_, scriptName) = tempfile.mkstemp(dir='/tmp', prefix='lfn2pfn-', suffix='.py')
+        (_, scriptName) = tempfile.mkstemp(dir='/tmp', prefix='crab_lfn2pfn-', suffix='.py')
         with open(scriptName, 'w') as ofile:
             ofile.write(rucioScript)
         cmd = 'eval `scram unsetenv -sh`; '
