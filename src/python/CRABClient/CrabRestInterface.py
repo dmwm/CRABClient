@@ -7,20 +7,19 @@ from __future__ import print_function
 
 import os
 import random
-from CRABClient.ClientUtilities import execute_command
-from ServerUtilities import encodeRequest
 import json
 import re
 import tempfile
-
-from CRABClient.ClientExceptions import RESTInterfaceException
+import logging
 
 try:
     from urllib import quote as urllibQuote  # Python 2.X
 except ImportError:
     from urllib.parse import quote as urllibQuote  # Python 3+
 
-import logging
+from CRABClient.ClientUtilities import execute_command
+from ServerUtilities import encodeRequest
+from CRABClient.ClientExceptions import RESTInterfaceException
 
 try:
     from TaskWorker import __version__
@@ -164,7 +163,7 @@ class HTTPRequests(dict):
         # if it is a dictionary, we need to encode it to string
         if isinstance(data, dict):
             data = encodeRequest(data)
-        self.logger.debug("Encoded data for curl request: %s" %data)
+        self.logger.debug("Encoded data for curl request: %s", data)
 
         fh, path = tempfile.mkstemp(dir='/tmp', prefix='crab_curlData')
         with open(path, 'w') as f:
@@ -267,4 +266,3 @@ class CRABRest:
     def delete(self, api=None, data=None):
         uri = self.uriNoApi + api
         return self.server.delete(uri, data)
-
