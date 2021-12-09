@@ -87,6 +87,8 @@ class CredentialInteractions(object):
             proxyTimeLeft = 0
         else:
             self.logger.debug("Found proxy file %s" % (proxyFileName))
+            self.logger.debug("Making sure it has proper VOMS extension")
+            proxy.validateVO()
             self.logger.debug("Getting proxy life time left")
             proxyTimeLeft = proxy.getTimeLeft()
             hours, minutes, seconds = int(proxyTimeLeft/3600), int((proxyTimeLeft%3600)/60), int((proxyTimeLeft%3600)%60)
