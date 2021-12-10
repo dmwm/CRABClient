@@ -140,6 +140,12 @@ class ConfigCommand:
             msg = "Invalid CRAB configuration: Section 'Site' is missing."
             return False, msg
 
+        # the validation code below does not run in python3 and porting proved not
+        # straightforward (see https://github.com/dmwm/CRABClient/issues/5004  and
+        # in particulr https://github.com/dmwm/CRABClient/issues/5004#issuecomment-990073439 ).
+        # Moreover, experience indicates that syntax errors in crabConfig.py are easily
+        # spotted anyhow. Therefore current approach is to skip validation and
+        # let it to python to report erros as exceptions.
         return True, "Valid configuration"
 
         ## Some parameters may have been renamed. Check here if the configuration file has an old
