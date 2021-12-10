@@ -9,6 +9,7 @@ it simply:
 from __future__ import print_function
 from __future__ import division
 import sys
+import os
 if sys.version_info < (2, 6):
     print('\nError: using a version of python < 2.6. Exiting...\n')
     sys.exit()
@@ -18,6 +19,12 @@ if not 'OpenSSL' in pycurl.version:
     print('\nError: missing SSL support in pycurl. Make sure you do cmsenv first. Exiting...')
     print('pycurl version is: %s\n' % pycurl.version)
     sys.exit()
+
+if 'crab-dev' in __file__:
+    print('BEWARE: this is development version of CRAB Client.\nBe sure to have a good reason for using it\n')
+    # following is temporary, to be removed in January/February 2022
+    if os.getenv('CMSSW_VERSION').split('_')[1] == '12':
+        print('NOTE: THERE IS NO NEED ANYMORE TO USE crab-dev FOR CMSSW_12. GO BACK TO PLAIN crab\n')
 
 import logging
 import logging.handlers
