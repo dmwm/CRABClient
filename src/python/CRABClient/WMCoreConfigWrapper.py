@@ -17,6 +17,7 @@ runs in both python2 and python3 without requiring external
 dependencies which are not available in CMSSW_8 or earlier, e.g. "future"
 """
 
+from __future__ import division
 from CRABClient.Configuration import Configuration as Config
 from CRABClient.ClientUtilities import colors
 

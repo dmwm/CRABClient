@@ -58,6 +58,19 @@ class VomsProxy(object):
     def getFilename(self):
         return self.proxyFile
 
+    def validateVO(self):
+        # make sure that proxy has a VOMS extension for CMS VirtualOrganization
+        cmd = 'voms-proxy-info --vo --file %s' % self.proxyFile
+        stdout, stderr, rc = execute_command(cmd, logger=self.logger)
+        if rc != 0 or 'cms' not in stdout:
+            msg = "\n".join(['Error executing %s:' % cmd, stdout, stderr])
+            self.logger.error(msg)
+            msg = 'proxy %s is not a valid proxy file or has no valid VOMS extension.\n' % self.proxyFile
+            stdout, stderr, rc = execute_command('voms-proxy-info -all', logger=self.logger)
+            msg += 'output of voms-proxy-info -all is\n%s' % (stdout+'\n'+stderr)
+            msg += '\n**** Make sure you do voms-proxy-init -voms cms ****\n'
+            raise ProxyCreationException(msg)
+
     def getTimeLeft(self):
         cmd = 'voms-proxy-info --actimeleft --timeleft --file %s' % self.proxyFile
         stdout, stderr, rc = execute_command(cmd, logger=self.logger)
