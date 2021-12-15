@@ -182,7 +182,7 @@ class HTTPRequests(dict):
             command += '/cvmfs/cms.cern.ch/cmsmon/gocurl -verbose 2 -method {0}'.format(verb)
             command += ' -header "User-Agent: %s/%s"' % (self['userAgent'], self['version'])
             command += ' -header "Accept: */*"'
-            command += ' -data "%s"' % data
+            command += ' -data "@%s"' % path
             command += ' -cert "%s"' % self['cert']
             command += ' -key "%s"' % self['key']
             command += ' -capath "%s"' % caCertPath
