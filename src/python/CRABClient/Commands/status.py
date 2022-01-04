@@ -60,8 +60,6 @@ class status(SubCommand):
         user = getColumn(crabDBInfo, 'tm_username')
         webdir = getColumn(crabDBInfo, 'tm_user_webdir')
         rootDagId = getColumn(crabDBInfo, 'clusterid') #that's the condor id from the TW
-        asourl = getColumn(crabDBInfo, 'tm_asourl')
-        asodb = getColumn(crabDBInfo, 'tm_asodb')
         publicationEnabled = True if getColumn(crabDBInfo, 'tm_publication') == 'T' else False
         maxMemory = int(getColumn(crabDBInfo, 'tm_maxmemory'))
         maxJobRuntime = int(getColumn(crabDBInfo, 'tm_maxjobruntime'))
@@ -229,7 +227,7 @@ class status(SubCommand):
 
         shortResult = self.printOverview(statusCacheInfo, automaticSplitt, proxiedWebDir)
         pubStatus = self.printPublication(publicationEnabled, shortResult['jobsPerStatus'], shortResult['numProbes'],
-                                          shortResult['numUnpublishable'], asourl, asodb, taskname, user, crabDBInfo)
+                                          shortResult['numUnpublishable'], taskname, user, crabDBInfo)
         self.printErrors(statusCacheInfo, automaticSplitt)
 
         if not self.options.long and not self.options.sort:  # already printed for these options
@@ -283,7 +281,6 @@ class status(SubCommand):
         statusDict['outdatasets'] = getColumn(crabDBInfo, 'tm_output_dataset')
         statusDict['schedd'] = getColumn(crabDBInfo, 'tm_schedd')
         statusDict['collector'] = getColumn(crabDBInfo, 'tm_collector')
-        statusDict['ASOURL'] = getColumn(crabDBInfo, 'tm_asourl')
         statusDict['command'] = getColumn(crabDBInfo, 'tm_task_command')
         statusDict['publicationEnabled'] = True if getColumn(crabDBInfo, 'tm_publication') == 'T' else False
         statusDict['userWebDirURL'] = getColumn(crabDBInfo, 'tm_user_webdir')
@@ -323,14 +320,14 @@ class status(SubCommand):
         else:
             return colors.NORMAL
 
-    def publicationStatus(self, workflow, asourl, asodb, user):
+    def publicationStatus(self, workflow, user):
         """Gets some information about the state of publication of jobs from the server.
         """
         api = 'workflow'
         server = self.crabserver
 
         pubInfo, _, _ = server.get(api, data={'subresource':'publicationstatus', 'workflow':workflow,
-                                              'asourl':asourl, 'asodb':asodb, 'username':user})
+                                              'username':user})
 
         # Dictionary received from the server should have a structure like this:
         # {"result": [
@@ -1007,15 +1004,13 @@ class status(SubCommand):
                     msg += "\n\t\t\t\t%s%s" % (extratab, outputDataset)
             self.logger.info(msg)
 
-    def printPublication(self, publicationEnabled, jobsPerStatus, numProbes, numUnpublishable, asourl, asodb, taskname, user, crabDBInfo):
+    def printPublication(self, publicationEnabled, jobsPerStatus, numProbes, numUnpublishable, taskname, user, crabDBInfo):
         """Print information about the publication of the output files in DBS.
         """
         # Collecting publication information
         pubStatus = {}
         if (publicationEnabled and 'finished' in jobsPerStatus and jobsPerStatus['finished'] > numProbes):
-            #let's default asodb to asynctransfer, for old task this is empty!
-            asodb = asodb or 'asynctransfer'
-            pubStatus = self.publicationStatus(taskname, asourl, asodb, user)
+            pubStatus = self.publicationStatus(taskname, user)
         elif not publicationEnabled:
             pubStatus['status'] = {'disabled': []}
         pubInfo = {}
