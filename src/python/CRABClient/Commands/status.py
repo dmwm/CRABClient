@@ -111,8 +111,10 @@ class status(SubCommand):
         self.logger.debug("Proxied webdir is located at %s", proxiedWebDir)
 
         # Download status_cache file
-        _, local_status_cache_txt = tempfile.mkstemp(dir='/tmp', prefix='crab_status-cache-', suffix='.txt')
-        _, local_status_cache_pkl = tempfile.mkstemp(dir='/tmp', prefix='crab_status-cache-', suffix='.pkl')
+        fh, local_status_cache_txt = tempfile.mkstemp(dir='/tmp', prefix='crab_status-cache-', suffix='.txt')
+        os.close(fh)  # no need for a hanlde, curl will write using file name
+        fh, local_status_cache_pkl = tempfile.mkstemp(dir='/tmp', prefix='crab_status-cache-', suffix='.pkl')
+        os.close(fh)  # no need for a handle, curl will write using file name
         gotPickle = False
         gotTxt = False
         # first: try pickle version

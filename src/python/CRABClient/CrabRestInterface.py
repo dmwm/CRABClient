@@ -166,6 +166,7 @@ class HTTPRequests(dict):
         self.logger.debug("Encoded data for curl request: %s", data)
 
         fh, path = tempfile.mkstemp(dir='/tmp', prefix='crab_curlData')
+        os.close(fh)  # fh handle is for binary write and inconvenient to use
         with open(path, 'w') as f:
             f.write(data)
 
