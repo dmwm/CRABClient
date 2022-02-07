@@ -10,6 +10,11 @@ from __future__ import print_function
 from __future__ import division
 import sys
 import os
+
+if not os.environ.get('CMSSW_VERSION',None):
+    print('\nError: $CMSSW_VERSION is not defined. Make sure you do cmsenv first. Exiting...')
+    sys.exit()
+
 if sys.version_info < (2, 6):
     print('\nError: using a version of python < 2.6. Exiting...\n')
     sys.exit()
