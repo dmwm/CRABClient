@@ -52,6 +52,12 @@ class checkwrite(SubCommand):
         else:
             self.logger.info("LFN %s is valid.", self.lfnPrefix)
 
+        # we need Rucio to check LFN to PFN, but it does not exist in CC6 singularity image
+        # where there is no python3. And in any case Rucio will not support python2 in the future
+        if not cmd_exist("python3"):
+            self.logger.info("No python3. Not possible to use Rucio in this environment")
+            return {'status': 'FAILED'}
+
         cp_cmd = ""
         if cmd_exist("gfal-copy") and cmd_exist("gfal-rm") and self.command in [None, "GFAL"]:
             self.logger.info("Will use `gfal-copy`, `gfal-rm` commands for checking write permissions")
@@ -192,8 +198,9 @@ exit(0)
         with open(scriptName, 'w') as ofile:
             ofile.write(rucioScript)
         cmd = 'eval `scram unsetenv -sh`; '
-        cmd += 'source /cvmfs/cms.cern.ch/rucio/setup.sh 2>/dev/null; export RUCIO_ACCOUNT=%s; ' % username
-        cmd += 'python %s; ' % scriptName
+        cmd += 'source /cvmfs/cms.cern.ch/rucio/setup-py3.sh 2>/dev/null; '
+        cmd += 'export RUCIO_ACCOUNT=%s; ' % username
+        cmd += 'python3 %s; ' % scriptName
         rucioOut, rucioErr, exitcode = execute_command(cmd)
         os.unlink(scriptName)
         if exitcode:
