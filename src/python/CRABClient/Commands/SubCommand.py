@@ -82,7 +82,7 @@ class ConfigCommand:
             valid, configmsg = self.validateConfig() # Subclasses of SubCommand overwrite this method if needed.
         except RuntimeError as runErr:
             configmsg = "Error while loading CRAB configuration:\n%s" % (self._extractReason(configname, runErr))
-            configmsg += "\nPlease refer to https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3CommonErrors#Syntax_error_in_CRAB_configurati"
+            configmsg += "\nPlease refer to https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3FAQ"
             configmsg += "\nSee the ./crab.log file for more details."
             configmsg += "\nThe documentation about the CRAB configuration file can be found in"
             configmsg += " https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3ConfigurationFile"
