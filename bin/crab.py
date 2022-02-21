@@ -27,9 +27,6 @@ if not 'OpenSSL' in pycurl.version:
 
 if 'crab-dev' in __file__:
     print('BEWARE: this is the development version of CRAB Client.\nBe sure to have a good reason for using it\n')
-    # following is temporary, to be removed in January/February 2022
-    if os.getenv('CMSSW_VERSION').split('_')[1] == '12':
-        print('NOTE: THERE IS NO NEED ANYMORE TO USE crab-dev FOR CMSSW_12. GO BACK TO PLAIN crab\n')
 
 import logging
 import logging.handlers
