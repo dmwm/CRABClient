@@ -22,7 +22,7 @@ from CRABClient.ClientExceptions import ClientException, RESTCommunicationExcept
 from CRABClient.ClientUtilities import getJobTypes, createCache, addPlugin, server_info, colors,\
     setSubmitParserOptions, validateSubmitOptions, checkStatusLoop, execute_command
 
-from ServerUtilities import MAX_MEMORY_PER_CORE, MAX_MEMORY_SINGLE_CORE, downloadFromS3
+from ServerUtilities import MAX_MEMORY_PER_CORE, MAX_MEMORY_SINGLE_CORE, downloadFromS3, FEEDBACKMAIL
 
 class submit(SubCommand):
     """
@@ -335,7 +335,7 @@ class submit(SubCommand):
 
         if hasattr(self.configuration.General, 'failureLimit'):
             msg = "You have specified deprecated parameter 'failureLimit' which will be removed in the near future."
-            msg += "\nIf you really need it write a mail to hn-cms-computingTools explaining your use case."
+            msg += "\nIf you really need it write a mail to %s explaining your use case." % FEEDBACKMAIL
             self.logger.warning("%sWARNING%s: %s" % (colors.RED, colors.NORMAL, msg))
 
         return True, "Valid configuration"
