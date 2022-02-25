@@ -198,7 +198,7 @@ exit(0)
         with open(scriptName, 'w') as ofile:
             ofile.write(rucioScript)
         cmd = 'eval `scram unsetenv -sh`; '
-        cmd += 'source /cvmfs/cms.cern.ch/rucio/setup-py3.sh 2>/dev/null; '
+        cmd += 'source /cvmfs/cms.cern.ch/rucio/setup-py3.sh >/dev/null; '
         cmd += 'export RUCIO_ACCOUNT=%s; ' % username
         cmd += 'python3 %s; ' % scriptName
         rucioOut, rucioErr, exitcode = execute_command(cmd)
