@@ -8,8 +8,6 @@ if sys.version_info >= (3, 0):
 if sys.version_info < (3, 0):
     from urllib import urlencode
 
-from base64 import b64encode
-
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import RESTCommunicationException
 
@@ -26,7 +24,7 @@ class kill(SubCommand):
         self.logger.debug("Killing task %s" % self.cachedinfo['RequestName'])
         inputs = {'workflow' : self.cachedinfo['RequestName']}
         if self.options.killwarning:
-            inputs.update({'killwarning' : b64encode(self.options.killwarning.encode('utf-8'))})
+            inputs.update({'killwarning' : self.options.killwarning})
 
         dictresult, status, reason = server.delete(api=self.defaultApi, data=urlencode(inputs))
         self.logger.debug("Result: %s" % dictresult)
