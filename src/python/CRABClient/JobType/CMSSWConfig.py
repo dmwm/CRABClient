@@ -206,6 +206,13 @@ class CMSSWConfig(object):
                 for n in m.moduleNames():
                     modulesOnEndPaths.add(n)
 
+        # add modules in FinalPaths if available
+        if hasattr(process, "finalpaths_"):
+            for m in process.finalpaths_().itervalues():
+                if len(pathsToRun)==0 or m.label() in pathsToRun:
+                    for n in m.moduleNames():
+                        modulesOnEndPaths.add(n)
+
         outputModules = set()
         for n,o in process.outputModules_().items():
             if n in modulesOnEndPaths and hasattr(o, 'fileName'):
