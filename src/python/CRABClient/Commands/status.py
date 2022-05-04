@@ -84,7 +84,7 @@ class status(SubCommand):
                 # If we didn't find a webdir in the DB and the DAG is held,
                 # the task bootstrapping failed before or during the webdir
                 # upload and the reason should be printed.
-                failureMsg = "The task failed to bootstrap on the Grid scheduler."
+                failureMsg = "The task failed to bootstrap on the Grid scheduler. Crab resubmit will not work."
                 failureMsg += " Please send an e-mail to %s." % (FEEDBACKMAIL)
                 failureMsg += "\nHold reason: %s" % (res['DagmanHoldReason'])
                 self.logger.info(failureMsg)
