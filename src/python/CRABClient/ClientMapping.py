@@ -13,6 +13,9 @@ If that is the case, then the meaning is that any of the parameters in the CRAB 
 file is used to set the same server parameter.
 """
 
+# FIXME adding a wrong line on purpose to test pylint
+except
+
 ## In this dictionary, the definitions of 'type', 'required' and 'default'
 ## refer to the parameters in the CRAB configuration file.
 parametersMapping = {
