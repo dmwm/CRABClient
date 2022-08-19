@@ -179,7 +179,7 @@ from rucio.client import Client
 client = Client()
 rse = "{site}"
 lfn = ["user.{username}:{lfn}"]
-for operation in ['third_party_copy', 'write', 'read']:
+for operation in ['write', 'read']:
     try:
         #print('Try Rucio lfn2pn with operation %s', operation)
         out = client.lfns2pfns(rse, lfn, operation=operation)
