@@ -384,7 +384,7 @@ class submit(SubCommand):
                 tf = tarfile.open(os.path.join(tmpDir, name))
                 tf.extractall(tmpDir)
                 tf.close()
-            os.environ.update({'CRAB3_RUNTIME_DEBUG': 'True', '_CONDOR_JOB_AD': 'Job.submit'})
+            os.environ.update({'_CONDOR_JOB_AD': 'Job.submit'})
 
             with open('splitting-summary.json') as f:
                 splitting = json.load(f)
@@ -407,7 +407,8 @@ class submit(SubCommand):
                 # inside the environemnt where CRABClient runs (i.e. some CMSSW env. which may conflict
                 # with the WMCore code used in the wrapper
                 undoScram = "eval `scram unsetenv -sh`; "
-                command = undoScram + 'sh CMSRunAnalysis.sh ' + opts
+                setEnv = "echo $PWD && ls -lrth && . ./submit_env.sh && save_env && setup_local_env; "
+                command = undoScram + setEnv + 'sh CMSRunAnalysis.sh ' + opts
                 out, err, returncode = execute_command(command=command)
                 self.logger.debug(out)
                 if returncode != 0:

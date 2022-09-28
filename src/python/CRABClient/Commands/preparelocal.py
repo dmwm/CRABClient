@@ -130,7 +130,7 @@ class preparelocal(SubCommand):
 
         self.logger.debug("Creating InputArgs.txt file")
         inputArgsStr = "-a %(CRAB_Archive)s --sourceURL=%(CRAB_ISB)s --jobNumber=%(CRAB_Id)s --cmsswVersion=%(CRAB_JobSW)s --scramArch=%(CRAB_JobArch)s --inputFile=%(inputFiles)s --runAndLumis=%(runAndLumiMask)s --lheInputFiles=%(lheInputFiles)s --firstEvent=%(firstEvent)s --firstLumi=%(firstLumi)s --lastEvent=%(lastEvent)s --firstRun=%(firstRun)s --seeding=%(seeding)s --scriptExe=%(scriptExe)s --eventsPerLumi=%(eventsPerLumi)s --maxRuntime=%(maxRuntime)s --scriptArgs=%(scriptArgs)s -o %(CRAB_AdditionalOutputFiles)s\n"
-        for f in ["gWMS-CMSRunAnalysis.sh", "CMSRunAnalysis.sh", "cmscp.py", "CMSRunAnalysis.tar.gz",
+        for f in ["gWMS-CMSRunAnalysis.sh", "submit_env.sh", "CMSRunAnalysis.sh", "cmscp.py", "CMSRunAnalysis.tar.gz",
                   "sandbox.tar.gz", "run_and_lumis.tar.gz", "input_files.tar.gz", "Job.submit"]:
             shutil.copy2(f, targetDir)
         with open(os.path.join(targetDir, "InputArgs.txt"), "w") as fd:
@@ -144,8 +144,9 @@ class preparelocal(SubCommand):
         #We check the X509_USER_PROXY variable is set  otherwise stageout fails
         #The "tar xzmf CMSRunAnalysis.tar.gz" is needed because in CRAB3_RUNTIME_DEBUG mode the file is not unpacked (why?)
         #Job.submit is also modified to set some things that are condor macro expanded during submission (needed by cmscp)
-        bashWrapper = """export SCRAM_ARCH=slc6_amd64_gcc481; export CRAB_RUNTIME_TARBALL=local; export CRAB_TASKMANAGER_TARBALL=local; export _CONDOR_JOB_AD=Job.${1}.submit
-export CRAB3_RUNTIME_DEBUG=True
+        bashWrapper = """#!/bin/bash
+. submit_env.sh && save_env && setup_local_env
+export _CONDOR_JOB_AD=Job.${1}.submit
 tar xzmf CMSRunAnalysis.tar.gz
 cp Job.submit Job.${1}.submit
 """
