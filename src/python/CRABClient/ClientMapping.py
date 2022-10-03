@@ -37,7 +37,6 @@ parametersMapping = {
                   'publishdbsurl'  : {'default': 'phys03',   'config': ['Data.publishDBS'],                 'type': 'StringType',  'required': False},
                   #the 2 here to the publishname was added because of https://github.com/dmwm/CRABServer/issues/4947
                   'publishname2'   : {'default': '',         'config': ['Data.outputDatasetTag'],           'type': 'StringType',  'required': False},
-                  'publishgroupname' : {'default': False,    'config': ['Data.publishWithGroupName'],       'type': 'BooleanType', 'required': False},
                   'jobtype'        : {'default': 'Analysis', 'config': ['JobType.pluginName',
                                                                         'JobType.externalPluginFile'],      'type': 'StringType',  'required': False},
                   'generator'      : {'default': 'pythia',   'config': ['JobType.generator'],               'type': 'StringType',  'required': False},
