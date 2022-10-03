@@ -72,7 +72,7 @@ class submit(SubCommand):
                 #if isinstance(self.requestname, mustbetype):
                 self.configreq['workflow'] = self.requestname
             ## Translate boolean flags into integers.
-            elif param in ['savelogsflag', 'publication', 'publishgroupname', 'nonprodsw', 'useparent',\
+            elif param in ['savelogsflag', 'publication', 'nonprodsw', 'useparent',\
                            'ignorelocality', 'saveoutput', 'oneEventMode', 'nonvaliddata', 'ignoreglobalblacklist',\
                            'partialdataset']:
                 self.configreq[param] = 1 if temp else 0
