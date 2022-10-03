@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-# following line allows to use nice align with extra spacees, which here is very helpful
-#pylint: disable=C0326
+# following line allows to use nice align with extra spaces, which here is very helpful
+#pylint: disable=bad-whitespace
 """
 _ClientMapping_
 
