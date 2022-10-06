@@ -53,7 +53,7 @@ parametersMapping = {
                   'asyncdest'      : {'default': None,       'config': ['Site.storageSite'],                'type': 'StringType',  'required': False},
                   'sitewhitelist'  : {'default': None,       'config': ['Site.whitelist'],                  'type': 'ListType',    'required': False},
                   'siteblacklist'  : {'default': None,       'config': ['Site.blacklist'],                  'type': 'ListType',    'required': False},
-                  'requireaccelerator' : {'default': False,      'config': ['Site.requireAccelerator'],         'type': 'BooleanType', 'required': False},
+                  'requireaccelerator' : {'default': False,  'config': ['Site.requireAccelerator'],         'type': 'BooleanType', 'required': False},
                   'vorole'         : {'default': None,       'config': ['User.voRole'],                     'type': 'StringType',  'required': False},
                   'vogroup'        : {'default': None,       'config': ['User.voGroup'],                    'type': 'StringType',  'required': False},
                   'oneEventMode'   : {'default': False,      'config': ['Debug.oneEventMode'],              'type': 'BooleanType', 'required': False},
