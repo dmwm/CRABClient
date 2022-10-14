@@ -74,7 +74,7 @@ class submit(SubCommand):
             ## Translate boolean flags into integers.
             elif param in ['savelogsflag', 'publication', 'nonprodsw', 'useparent',\
                            'ignorelocality', 'saveoutput', 'oneEventMode', 'nonvaliddata', 'ignoreglobalblacklist',\
-                           'partialdataset']:
+                           'partialdataset', 'requireaccelerator']:
                 self.configreq[param] = 1 if temp else 0
             ## Translate DBS URL aliases into DBS URLs.
             elif param in ['dbsurl', 'publishdbsurl']:
