@@ -65,6 +65,12 @@ class status(SubCommand):
         maxJobRuntime = int(getColumn(crabDBInfo, 'tm_maxjobruntime'))
         numCores = int(getColumn(crabDBInfo, 'tm_numcores'))
         splitting = getColumn(crabDBInfo, 'tm_split_algo')
+        outputLfn = getColumn(crabDBInfo, 'tm_output_lfn')
+        if getColumn(crabDBInfo, 'tm_output_dataset'):
+            outputDatasetList = literal_eval(getColumn(crabDBInfo, 'tm_output_dataset'))
+        else:
+            outputDatasetList = None
+        outDataset = outputDatasetList[0] if outputDatasetList else None # we do not support multiple output datasets anymore
 
         #Print information from the database
         self.printTaskInfo(crabDBInfo, user)
@@ -227,7 +233,13 @@ class status(SubCommand):
         # If the task is already on the grid, show the dagman status
         combinedStatus = dagStatus = self.printDAGStatus(dbStatus, statusCacheInfo)
 
-        shortResult = self.printOverview(statusCacheInfo, automaticSplitt, proxiedWebDir)
+        usingRucio = outputLfn.startswith('/store/user/rucio')
+        if usingRucio:
+            container = 'user.%s:%s' % (user, outDataset)  # add scope to get a Rucio DID
+        else:
+            container = None
+
+        shortResult = self.printOverview(statusCacheInfo, automaticSplitt, proxiedWebDir, container)
         pubStatus = self.printPublication(publicationEnabled, shortResult['jobsPerStatus'], shortResult['numProbes'],
                                           shortResult['numUnpublishable'], taskname, user, crabDBInfo)
         self.printErrors(statusCacheInfo, automaticSplitt)
@@ -617,7 +629,7 @@ class status(SubCommand):
 
         return sortdict
 
-    def printOverview(self, statusCacheInfo, automaticSplitt, proxiedWebDir):
+    def printOverview(self, statusCacheInfo, automaticSplitt, proxiedWebDir, container):
         """ Give a summary of the job statuses, keeping in mind that:
                 - If there is a job with id 0 then this is the probe job for the estimation
                   This is the so called 'Automatic' splitting
@@ -699,6 +711,7 @@ class status(SubCommand):
                 self.logger.info("\n{0:32}{1}{2}{3}".format(jobtype + ' status:', self._printState(state_list[0], 13), self.indentation, self._percentageString(state_list[0], currStates[state_list[0]], total)))
                 for jobStatus in state_list[1:]:
                     self.logger.info("\t\t\t\t{0}{1}{2}".format(self._printState(jobStatus, 13), self.indentation, self._percentageString(jobStatus, currStates[jobStatus], total)))
+        self.printRucioInfo(container)
         return result
 
     def printErrors(self, dictresult, automaticSplitt):
@@ -988,6 +1001,14 @@ class status(SubCommand):
             self.logger.info(msg)
 
         self.logger.info('')
+
+    def printRucioInfo(self, container):
+        if not container:
+            return
+        msg=""
+        msg += "\nRucio Container:  %s" % (container)
+        msg += "\nTips on how to check on Rucio StageOut at https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3FAQ#Stageout_with_Rucio "
+        self.logger.info(msg)
 
     def printOutputDatasets(self, outputDatasets, includeDASURL=False):
         """
