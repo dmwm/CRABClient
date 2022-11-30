@@ -130,9 +130,27 @@ class preparelocal(SubCommand):
 
         self.logger.debug("Creating InputArgs.txt file")
         inputArgsStr = "-a %(CRAB_Archive)s --sourceURL=%(CRAB_ISB)s --jobNumber=%(CRAB_Id)s --cmsswVersion=%(CRAB_JobSW)s --scramArch=%(CRAB_JobArch)s --inputFile=%(inputFiles)s --runAndLumis=%(runAndLumiMask)s --lheInputFiles=%(lheInputFiles)s --firstEvent=%(firstEvent)s --firstLumi=%(firstLumi)s --lastEvent=%(lastEvent)s --firstRun=%(firstRun)s --seeding=%(seeding)s --scriptExe=%(scriptExe)s --eventsPerLumi=%(eventsPerLumi)s --maxRuntime=%(maxRuntime)s --scriptArgs=%(scriptArgs)s -o %(CRAB_AdditionalOutputFiles)s\n"
-        for f in ["gWMS-CMSRunAnalysis.sh", "submit_env.sh", "CMSRunAnalysis.sh", "cmscp.py", "CMSRunAnalysis.tar.gz",
-                  "sandbox.tar.gz", "run_and_lumis.tar.gz", "input_files.tar.gz", "Job.submit"]:
+        for f in ["gWMS-CMSRunAnalysis.sh", "CMSRunAnalysis.sh", "cmscp.py", "CMSRunAnalysis.tar.gz",
+                  "sandbox.tar.gz", "run_and_lumis.tar.gz", "input_files.tar.gz", "Job.submit",
+                  # "submit_env.sh" ## uncomment this line after the new TW with the new jobwrapper is deployed.
+                  ]:
             shutil.copy2(f, targetDir)
+        try:
+            # (dario, 202212)
+            # this try/except has been introduced only for backwards compatibility
+            # of the crab client with the old TW with the old jobwrapper.
+            # once the new jobwrapper is deployed, we can move submit_env.sh
+            # into the list a few lines above.
+            shutil.copy2("submit_env.sh", targetDir)
+        except Exception as e:
+            self.logger.info("""
+              > It's all right: submit_env.sh not found. 
+              > It means that you are using a new crab client with an old TaskWorker.
+              > CRAB operators will cleanup soon.
+              > %s"""
+              , e)
+
+
         with open(os.path.join(targetDir, "InputArgs.txt"), "w") as fd:
             for ia in inputArgs:
                 fd.write(inputArgsStr % ia)
@@ -145,7 +163,21 @@ class preparelocal(SubCommand):
         #The "tar xzmf CMSRunAnalysis.tar.gz" is needed because in CRAB3_RUNTIME_DEBUG mode the file is not unpacked (why?)
         #Job.submit is also modified to set some things that are condor macro expanded during submission (needed by cmscp)
         bashWrapper = """#!/bin/bash
-. submit_env.sh && save_env && setup_local_env
+if [ -f ./submit_env.sh ]; then
+    # (dario, 202212)
+    # this if/else has been introduced only for backwards compatibility of the crab client
+    # with the old TW with the old jobwrapper.
+    # once the new TW with the new jobwrapper is deployed, we can remove this
+    # if/else and keep only the code inside the "if" clause.
+    . ./submit_env.sh && save_env && setup_local_env
+else
+    # this code in the "else" clause can be discarded after we merge the new
+    # TW with the new jobwrapper.
+    export SCRAM_ARCH=slc6_amd64_gcc481
+    export CRAB_RUNTIME_TARBALL=local
+    export CRAB_TASKMANAGER_TARBALL=local
+    export CRAB3_RUNTIME_DEBUG=True
+fi
 export _CONDOR_JOB_AD=Job.${1}.submit
 tar xzmf CMSRunAnalysis.tar.gz
 cp Job.submit Job.${1}.submit

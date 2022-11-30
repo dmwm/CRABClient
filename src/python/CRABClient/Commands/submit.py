@@ -407,7 +407,24 @@ class submit(SubCommand):
                 # inside the environemnt where CRABClient runs (i.e. some CMSSW env. which may conflict
                 # with the WMCore code used in the wrapper
                 undoScram = "eval `scram unsetenv -sh`; "
-                setEnv = "echo $PWD && ls -lrth && . ./submit_env.sh && save_env && setup_local_env; "
+                setEnv = """
+echo $PWD && ls -lrth 
+if [ -f ./submit_env.sh ]; then
+    # (dario, 202212)
+    # this if/else has been introduced only for backwards compatibility of the crab client
+    # with the old TW with the old jobwrapper.
+    # once the new TW with the new jobwrapper is deployed, we can remove this
+    # if/else and keep only the code inside the "if" clause.
+    . ./submit_env.sh && save_env && setup_local_env; 
+else
+    # this code in the "else" clause can be discarded after we merge the new
+    # TW with the new jobwrapper.
+    export SCRAM_ARCH=slc6_amd64_gcc481
+    export CRAB_RUNTIME_TARBALL=local
+    export CRAB_TASKMANAGER_TARBALL=local
+    export CRAB3_RUNTIME_DEBUG=True
+fi
+"""
                 command = undoScram + setEnv + 'sh CMSRunAnalysis.sh ' + opts
                 out, err, returncode = execute_command(command=command)
                 self.logger.debug(out)
