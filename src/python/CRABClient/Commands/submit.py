@@ -90,7 +90,7 @@ class submit(SubCommand):
                     self.configreq[param] = self.configreq[param].rstrip('/')
             elif param == 'scriptexe' and 'scriptexe' in self.configreq:
                 self.configreq[param] = os.path.basename(self.configreq[param])
-            elif param in ['acceleratorparams']:
+            elif param in ['acceleratorparams'] and param in self.configreq:
                 self.configreq[param] = json.dumps(self.configreq[param])
 
         jobconfig = {}
