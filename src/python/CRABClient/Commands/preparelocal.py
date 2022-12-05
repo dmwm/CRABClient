@@ -143,12 +143,8 @@ class preparelocal(SubCommand):
             # into the list a few lines above.
             shutil.copy2("submit_env.sh", targetDir)
         except Exception as e:
-            self.logger.info("""
-              > It's all right: submit_env.sh not found. 
-              > It means that you are using a new crab client with an old TaskWorker.
-              > CRAB operators will cleanup soon.
-              > %s"""
-              , e)
+            # it is allright that submit.env is not found, just means new client with old TW
+            pass
 
 
         with open(os.path.join(targetDir, "InputArgs.txt"), "w") as fd:
