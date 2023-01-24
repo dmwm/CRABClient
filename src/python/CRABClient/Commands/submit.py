@@ -400,6 +400,8 @@ class submit(SubCommand):
             totalJobSeconds = 0
             maxSeconds = 25
             while totalJobSeconds < maxSeconds:
+                if totalJobSeconds != 0:
+                    self.logger.info("Last trial took only %.1f seconds. We are trying now with %.0f events", totalJobSeconds, events)
                 optsList = getCMSRunAnalysisOpts('Job.submit', 'RunJobs.dag', job=1, events=events)
                 # from a python list to a string which can be used as shell command argument
                 opts = ''
