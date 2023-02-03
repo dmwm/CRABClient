@@ -62,6 +62,7 @@ parametersMapping = {
                   'collector'      : {'default': None,       'config': ['Debug.collector'],                 'type': 'StringType',  'required': False},
                   'ignoreglobalblacklist':{'default': False, 'config': ['Site.ignoreGlobalBlacklist'],      'type': 'BooleanType', 'required': False},
                   'partialdataset' : {'default': False,      'config': ['Data.partialDataset'],             'type': 'BooleanType', 'required': False},
+                  'inputblocks'    : {'default': [],         'config': ['Data.inputBlocks'],                'type': 'ListType',    'required': False},
                  },
     'other-config-params': [         {'default': None,       'config': ['General.workArea'],                'type': 'StringType',  'required': False},
                                      {'default': 'prod',     'config': ['General.instance'],                'type': 'StringType',  'required': True },
