@@ -247,6 +247,19 @@ class Analysis(BasicJobType):
 
         configArguments['jobtype'] = 'Analysis'
 
+        # append dataset name to block uuid for users
+        if getattr(self.config.Data, 'inputBlocks'):
+            inputBlocks = getattr(self.config.Data, 'inputBlocks')
+            inputDataset = getattr(self.config.Data, 'inputDataset')
+            uuid_regex = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
+            all_blocks = []
+            for block in inputBlocks:
+                if uuid_regex.match(block):
+                    all_blocks.append(inputDataset+'#'+block)
+                else:
+                    all_blocks.append(block)
+            configArguments['inputblocks'] = all_blocks
+
         return tarFilename, configArguments
 
     def checkAutomaticAvail(self, allowedSplitAlgos):
