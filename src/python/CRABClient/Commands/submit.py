@@ -126,7 +126,8 @@ class submit(SubCommand):
         self.logger.debug("Submitting %s " % str(self.configreq))
         ## TODO: this shouldn't be hard-coded.
         listParams = ['addoutputfiles', 'sitewhitelist', 'siteblacklist', 'blockwhitelist', 'blockblacklist', \
-                      'tfileoutfiles', 'edmoutfiles', 'runs', 'lumis', 'userfiles', 'scriptargs', 'extrajdl']
+                      'tfileoutfiles', 'edmoutfiles', 'runs', 'lumis', 'userfiles', 'scriptargs', 'extrajdl', \
+                      'inputblocks']
         self.configreq_encoded = self._encodeRequest(self.configreq, listParams)
         self.logger.debug('Encoded submit request: %s' % (self.configreq_encoded))
 
@@ -412,14 +413,14 @@ class submit(SubCommand):
                 # with the WMCore code used in the wrapper
                 undoScram = "eval `scram unsetenv -sh`; "
                 setEnv = """
-echo $PWD && ls -lrth 
+echo $PWD && ls -lrth
 if [ -f ./submit_env.sh ]; then
     # (dario, 202212)
     # this if/else has been introduced only for backwards compatibility of the crab client
     # with the old TW with the old jobwrapper.
     # once the new TW with the new jobwrapper is deployed, we can remove this
     # if/else and keep only the code inside the "if" clause.
-    . ./submit_env.sh && save_env && setup_local_env; 
+    . ./submit_env.sh && save_env && setup_local_env;
 else
     # this code in the "else" clause can be discarded after we merge the new
     # TW with the new jobwrapper.
