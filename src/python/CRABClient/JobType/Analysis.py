@@ -248,7 +248,7 @@ class Analysis(BasicJobType):
         configArguments['jobtype'] = 'Analysis'
 
         # append dataset name to block uuid for users
-        if getattr(self.config.Data, 'inputBlocks'):
+        if getattr(self.config.Data, 'inputBlocks', None):
             inputBlocks = getattr(self.config.Data, 'inputBlocks')
             inputDataset = getattr(self.config.Data, 'inputDataset')
             uuid_regex = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
