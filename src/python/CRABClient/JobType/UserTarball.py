@@ -160,7 +160,7 @@ class UserTarball(object):
         # Note that dataDirs are only looked-for and added under the src/ folder.
         # /data/ subdirs contain data files needed by the code
         # /interface/ subdirs contain C++ header files needed e.g. by ROOT6
-        dataDirs = ['data', 'interface']
+        dataDirs = ['data', 'interface', 'python']
         userFiles = userFiles or []
 
         # Tar up whole directories
