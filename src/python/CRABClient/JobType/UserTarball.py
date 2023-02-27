@@ -145,6 +145,8 @@ class UserTarball(object):
         """
         Add the necessary files to the tarball
         """
+
+        # Tar up whole directories in $CMSSW_BASE/
         directories = ['lib', 'biglib', 'module']
         if getattr(self.config.JobType, 'sendPythonFolder', configParametersInfo['JobType.sendPythonFolder']['default']):
             directories.append('python')
@@ -157,13 +159,6 @@ class UserTarball(object):
                 self.logger.info("The config.JobType.sendExternalFolder parameter is set to True but the external directory "\
                                   "doesn't exist or is empty, not adding to tarball. Path: %s" % externalDirPath)
 
-        # Note that dataDirs are only looked-for and added under the src/ folder.
-        # /data/ subdirs contain data files needed by the code
-        # /interface/ subdirs contain C++ header files needed e.g. by ROOT6
-        dataDirs = ['data', 'interface']
-        userFiles = userFiles or []
-
-        # Tar up whole directories
         for directory in directories:
             fullPath = os.path.join(self.scram.getCmsswBase(), directory)
             self.logger.debug("Checking directory %s" % fullPath)
@@ -172,16 +167,28 @@ class UserTarball(object):
                 self.checkdirectory(fullPath)
                 self.tarfile.add(fullPath, directory, recursive=True)
 
-        # Search for and tar up "data" directories in src/
+        # Recursively search for and add to tar some directories in $CMSSW_BASE/src/
+        # Note that recursiveDirs are **only** looked-for under the $CMSSW_BASE/src/ folder!
+        # /data/      subdirs contain data files needed by the code
+        # /interface/ subdirs contain C++ header files needed e.g. by ROOT6
+        #             Shahzad suggested adding to the sandbox only src/*/*/interface, but
+        #             we currently add all the src/**/interface, see:
+        #             https://cms-talk.web.cern.ch/t/missing-symbolic-links-in-cmssw-base-python/20403/35
+        #             Since we have not found a problem yet, Dario will not change it.
+        # /python/    subdirs contain user python code, see https://github.com/dmwm/CRABClient/issues/5187
+        #             Shahzad asked that we add to the tar only src/*/*/python, but we tar all the src/**/python
+        #             this is because Dario preferred to re-use existing code for /data/ and /interface/
+        recursiveDirs = ['data', 'interface', 'python']
         srcPath = os.path.join(self.scram.getCmsswBase(), 'src')
         for root, _, _ in os.walk(srcPath):
-            if os.path.basename(root) in dataDirs:
+            if os.path.basename(root) in recursiveDirs:
                 directory = root.replace(srcPath, 'src')
                 self.logger.debug("Adding data directory %s to tarball" % root)
                 self.checkdirectory(root)
                 self.tarfile.add(root, directory, recursive=True)
 
         # Tar up extra files the user needs
+        userFiles = userFiles or []
         for globName in userFiles:
             fileNames = glob.glob(globName)
             if not fileNames:
