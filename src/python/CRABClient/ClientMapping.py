@@ -130,6 +130,7 @@ commandsConfiguration = {
     'createmyproxy' : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'requiresLocalCache': False},
     'checkusername' : {'acceptsArguments': False, 'requiresREST': False, 'initializeProxy': True,  'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'requiresLocalCache': False},
     'checkwrite'    : {'acceptsArguments': False, 'requiresREST': False, 'initializeProxy': True,  'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': True,  'requiresLocalCache': False},
+    'checkdataset'  : {'acceptsArguments': False, 'requiresREST': False, 'initializeProxy': True,  'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': True,  'requiresLocalCache': False},
     'getlog'        : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': True,  'requiresLocalCache': True },
     'getoutput'     : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': True,  'requiresLocalCache': True },
     'kill'          : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': False, 'requiresProxyVOOptions': False, 'requiresLocalCache': True },

@@ -752,7 +752,7 @@ def checkStatusLoop(logger, server, api, taskname, targetstatus, cmdname):
 
 def execute_command(command=None, logger=None, timeout=None, redirect=True):
     """
-    execute command with optional logging and timeout.
+    execute command with optional logging and timeout (in seconds).
     Returns a 3-ple: stdout, stderr, rc
       rc=0 means success.
       rc=124 (SIGTERM) means that command timed out
