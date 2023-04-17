@@ -10,6 +10,8 @@ import json
 import pickle
 import logging
 
+from FWCore.ParameterSet.Types import uint32
+
 from ServerUtilities import BOOTSTRAP_CFGFILE_DUMP
 
 from CRABClient.ClientExceptions import ConfigurationException, EnvironmentException
@@ -271,6 +273,10 @@ class CMSSWConfig(object):
         #Assumes a default of 1 if the parameter is not specified
         cfgNumCores = getattr(self.config.JobType, 'numCores', None)
         numPSetCores = getattr(getattr(self.fullConfig.process, 'options', object), 'numberOfThreads', None)
+        if numPSetCores and not isinstance(numPSetCores, uint32):
+            msg = "The only accepted type for process.options.numberOfThreads is uint32. Please, change its type in the PSet."
+            msg += "See https://github.com/cms-sw/cmssw/issues/32070 for details"
+            return False, msg
         if (cfgNumCores or 1) != (numPSetCores or 1):
             if cfgNumCores == None:
                 msg = "You did not set config.JobType.numCores in the crab configuration file "
