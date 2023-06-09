@@ -147,7 +147,7 @@ class UserTarball(object):
         """
 
         # Tar up whole directories in $CMSSW_BASE/
-        directories = ['lib', 'biglib', 'module']
+        directories = ['lib', 'biglib', 'module', 'config/SCRAM/hooks']
         if getattr(self.config.JobType, 'sendPythonFolder', configParametersInfo['JobType.sendPythonFolder']['default']):
             directories.append('python')
             directories.append('cfipython')
