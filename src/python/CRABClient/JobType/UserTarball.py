@@ -22,6 +22,7 @@ from CRABClient.ClientMapping import configParametersInfo
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
 from CRABClient.ClientUtilities import colors, BOOTSTRAP_CFGFILE, BOOTSTRAP_CFGFILE_PKL
 from CRABClient.ClientExceptions import EnvironmentException, InputFileNotFoundException, CachefileNotFoundException, SandboxTooBigException
+from CRABClient.ClientUtilities import execute_command
 
 from ServerUtilities import NEW_USER_SANDBOX_EXCLUSIONS, BOOTSTRAP_CFGFILE_DUMP
 from ServerUtilities import FILE_SIZE_LIMIT
@@ -147,7 +148,7 @@ class UserTarball(object):
         """
 
         # Tar up whole directories in $CMSSW_BASE/
-        directories = ['lib', 'biglib', 'module']
+        directories = ['lib', 'biglib', 'module', 'config/SCRAM/hooks']
         if getattr(self.config.JobType, 'sendPythonFolder', configParametersInfo['JobType.sendPythonFolder']['default']):
             directories.append('python')
             directories.append('cfipython')
@@ -210,6 +211,33 @@ class UserTarball(object):
             self.tarfile.add(os.path.join(basedir, BOOTSTRAP_CFGFILE_PKL), arcname=BOOTSTRAP_CFGFILE_PKL)
             self.tarfile.add(os.path.join(basedir, BOOTSTRAP_CFGFILE_DUMP), arcname=BOOTSTRAP_CFGFILE_DUMP)
 
+
+    def addVenvDirectory(self, tarFile='sandbox.tgz'):
+        # adds CMSSW_BASE/venv directory to the (closed, compressed) sandbox
+        # venv directory is special because symbolic links have to be kept as such (no dereference)
+        # this requires tarfile to be closed and opened with a different dereference flag,
+        # but appending can only work on non-compressed tar files !
+
+        venv = os.path.join(self.scram.getCmsswBase(), 'venv')
+        # have to do some file renaming because bzip2 needs its onw extention
+        # this will be cleaner once we rename upstream sandbox.tgz to sandbox.tbz !)
+
+        # prepare names:
+        tarFileName = os.path.splitext(tarFile)[0]  # remove .tgz
+        uncompressed = tarFileName + '.tar'  # sandbox.tar
+        bzipped= uncompressed + '.bz2'  # sandbox.tar.bz2
+        # now do the work
+        cmd = 'mv %s %s' % (tarFile, bzipped)  # rename to what bunzip2 likes
+        cmd += '; bunzip2 ' + bzipped  # uncompress, creates sandbox.tar
+        execute_command(cmd, logger=self.logger)
+        # use python tarfile to append, so can rename file inside the archive
+        tar = tarfile.open(name=uncompressed, mode='a', dereference=False)
+        tar.add(name=venv, arcname='venv')
+        tar.close()
+        cmd = 'bzip2 ' + uncompressed  # compress, creates sandbox.tar.bz2
+        cmd += "; mv %s %s" % (bzipped, tarFile)  # rename to sandbox.tgz
+        execute_command(cmd, logger=self.logger)
+
     def addMonFiles(self):
         """
         Add monitoring files the debug tarball.
@@ -264,6 +292,12 @@ class UserTarball(object):
 
         self.close()
         archiveName = self.tarfile.name
+
+        # #CMSSW_BASE/venv is special, needs to be done here
+        # after all sing and dance is over and the tar is closed !
+        if getattr(self.config.JobType, 'sendVenvFolder', configParametersInfo['JobType.sendVenvFolder']['default']):
+            self.addVenvDirectory(tarFile=archiveName)
+
         archiveSizeBytes = os.path.getsize(archiveName)
 
 	# in python3 and python2 with __future__ division, double / means integer division
