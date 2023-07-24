@@ -1,0 +1,560 @@
+import re
+import os
+import tarfile
+import datetime
+
+from CRABClient.Commands.SubCommand import SubCommand
+
+# step: remake
+from CRABClient.Commands.remake import remake
+from CRABClient.ClientUtilities import colors
+from CRABClient.ClientExceptions import MissingOptionException,ConfigurationException
+
+# step kill
+from CRABClient.Commands.kill import kill
+from CRABClient.UserUtilities import getUsername
+
+# step report
+from CRABClient.Commands.report import report
+
+# step status
+from CRABClient.Commands.status import status
+from CRABClient.ClientUtilities import LOGLEVEL_MUTE
+
+# step getsandbox
+from CRABClient.Commands.getsandbox import getsandbox
+
+# step submit
+from CRABClient.Commands.submit import submit
+from CRABClient.UserUtilities import getColumn
+
+SPLITTING_RECOVER_LUMIBASED = set(("LumiBased", "Automatic", "EventAwareLumiBased"))
+SPLITTING_RECOVER_FILEBASED = set(("FileBased"))
+
+class recover(SubCommand):
+    """
+    given a taskname, create a new task that process only what the original task
+    did not process yet
+    """
+
+    name = "recover"
+    shortnames = ["rec"]
+
+    def __call__(self):
+
+        retval = self.stepInit()
+
+        retval = self.stepRemakeAndValidate()
+
+        retval = self.stepStatus()
+
+        retval = self.stepKill()
+        retval = self.stepCheckKill()
+
+        retval = self.stepGetsandbox()
+        self.stepExtractSandbox(retval["sandbox_paths"])
+
+        if self.failingTaskInfo["splitalgo"] in SPLITTING_RECOVER_LUMIBASED:
+            retval = self.stepReport()
+
+            if "recoverLumimaskPath" not in retval:
+                return retval
+
+            retval = self.stepSubmitLumiBased(retval["recoverLumimaskPath"])
+
+        elif self.failingTaskInfo["splitalgo"] in SPLITTING_RECOVER_FILEBASED:
+            retval = self.stepSubmitFileBased()
+
+        # no need for "else" here, the splitting algo should already be checked in
+        # stepRemakeAndValidate
+
+        self.logger.info("DM DEBUG - retval - %s", retval)
+        return retval
+
+
+    def stepInit(self):
+        """
+        whatever need to be done before starting with the actual recover process
+
+        - [x] (debug) log the value of some internal variables
+
+        side effects: none
+        """
+        # self.options and self.args are automatically filled by the __init__()
+        # that recover inherits from SubCommand. 
+
+        self.logger.info("DM DEBUG - start, self.cmdargs %s", self.cmdargs)
+        self.logger.info("DM DEBUG - start, self.options %s", self.options)
+        self.logger.info("DM DEBUG - start, self.args %s",    self.args)
+
+        self.failingTaskStatus = None
+        self.failingTaskInfo = {}
+        self.failedJobs = []
+
+        return {"commandStatus": "SUCCESS", "init": None }
+
+    def stepRemakeAndValidate(self):
+        """
+        run crab remake then download the info from task DB.
+        Use it to perform basic validation of the task that the user wants to recover.
+        we support:
+        - analysis tasks, not PrivateMC
+        - tasks that have been submitted less than 30d ago
+            - because crab report needs info from the schedd
+        - splitting algorithms based on lumisections and files.
+
+        side effects:
+        - if needed, create a new directory locally with requestcache for the 
+          original failing task
+        """
+        # step1: remake
+        cmdargs = []
+        cmdargs.append("--task")
+        cmdargs.append(self.options.cmptask)
+        if "instance" in self.options.__dict__.keys():
+            cmdargs.append("--instance")
+            cmdargs.append(self.options.__dict__["instance"])
+        if "proxy" in self.options.__dict__.keys():
+            cmdargs.append("--proxy")
+            cmdargs.append(self.options.__dict__["proxy"])
+        self.logger.info("DM DEBUG - remake, cmdargs: %s", cmdargs)
+        remakeCmd = remake(logger=self.logger, cmdargs=cmdargs)
+        retval = remakeCmd.remakecache(self.options.cmptask)
+        self.logger.info("DB DEBUG - remake, retval: %s", retval)
+        self.logger.info("DM DEBUG - remake, after, self.configuration: %s", self.configuration)
+
+        ## validate
+        ## - we can not recover a task that is older than 30d, because we need
+        ##   files from the schedd about the status of each job
+        ## - we want to recover only "analysis" tasks
+        self.failingCrabDBInfo, _, _ = self.crabserver.get(api='task', data={'subresource':'search', 'workflow':self.options.cmptask})
+        self.logger.info("DM DEBUG - Got information from server oracle database: %s", self.failingCrabDBInfo)
+        startTimeDb = getColumn(self.failingCrabDBInfo, 'tm_start_time')
+        # 2023-10-24 10:56:26.573303
+        # datetime.fromisoformat is not available on py3, we need to use strptime
+        # startTime = datetime.datetime.fromisoformat(startTimeDb)
+        # https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes
+        startTime = datetime.datetime.strptime(startTimeDb, "%Y-%m-%d %H:%M:%S.%f")
+        self.logger.debug("Failing task start time %s %s %s", startTimeDb, startTime, type(startTime))
+        assert startTime >= (datetime.datetime.now() - datetime.timedelta(days=30)), \
+            "The failing task was submitted more than 30d ago. We can not recover it."
+        failingJobType = getColumn(self.failingCrabDBInfo, 'tm_job_type')
+        assert failingJobType == "Analysis", \
+            'crab recover supports only tasks with JobType.pluginName=="Analysis", you  have {}'.format(failingJobType)
+        splitalgo = getColumn(self.failingCrabDBInfo, 'tm_split_algo')
+        assert splitalgo in SPLITTING_RECOVER_LUMIBASED.union(SPLITTING_RECOVER_FILEBASED) , \
+            'crab recover supports only tasks with LumiBased and FileBased splitting, you have {}'.format(splitalgo)
+        self.failingTaskInfo["splitalgo"] = splitalgo
+        self.failingTaskInfo["publication"] = True if getColumn(self.failingCrabDBInfo, 'tm_publication') == "T" else False
+        self.failingTaskInfo["username"] = getColumn(self.failingCrabDBInfo, 'tm_username')
+
+        self.logger.info("DM DEBUG - failingtaskinfo - %s", self.failingTaskInfo)
+
+        self.crabProjDir = retval["workDir"]
+
+        return retval
+
+    def stepStatus(self):
+        """
+        designed for:
+
+        - [x] filebased splitting
+        - [x] step check kill
+
+        side effects: none
+        """
+
+        cmdargs = []
+        cmdargs.append("-d")
+        cmdargs.append(str(self.crabProjDir))
+        if "instance" in self.options.__dict__.keys():
+            cmdargs.append("--instance")
+            cmdargs.append(self.options.__dict__["instance"])
+        if "proxy" in self.options.__dict__.keys():
+            cmdargs.append("--proxy")
+            cmdargs.append(self.options.__dict__["proxy"])
+        self.logger.info("DM DEBUG - status, cmdargs: %s", cmdargs)
+        statusCmd = status(logger=self.logger, cmdargs=cmdargs)
+        self.logger.info("DB DEBUG - handlers %s", self.logger.handlers)
+        handlerLevels = []
+        for h in self.logger.handlers:
+            handlerLevels.append(h.level)
+            h.setLevel(LOGLEVEL_MUTE)
+        retval = statusCmd()
+        self.failingTaskStatus = retval
+        for idx, h in enumerate(self.logger.handlers):
+            h.setLevel(handlerLevels[idx])
+        self.logger.info("DB DEBUG - handlers %s", self.logger.handlers)
+        self.logger.info("DB DEBUG - handlers %s", handlerLevels)
+
+        self.logger.info("DM DEBUG - status, retval: %s", retval)
+
+        ## useful for filebased splitting
+        # convert
+        # 'jobList': [['failed', '1'], ['failed', '2'], ['finished', '3'], ['failed', '4'], ['finished', '5']]
+        # to
+        # [1, 2, 4]
+        self.failedJobs = [job[1] for job in retval["jobList"] if job[0] == "failed"]
+        self.logger.info("DM DEBUG - status, failedJobs: %s", self.failedJobs)
+
+        return retval
+
+    def stepKill(self):
+        """
+        side effects:
+        - kills the original failing task
+        """
+        ## step2: kill
+
+        # if the task is already killed or about to be killed, do not kill again
+        if self.failingTaskStatus["dbStatus"] == "KILLED" or \
+            (self.failingTaskStatus["dbStatus"] in ("NEW", "QUEUED") and self.failingTaskStatus["command"] == "KILL"):
+            returnDict = {'kill' : 'already killed', 'commandStatus': 'SUCCESS'}
+            self.logger.info("DM DEBUG - kill - task already killed")
+            return returnDict
+
+        # avoid that crab operators kill users tasks by mistake.
+        # if the user who is running crab recover differs from the one who submitted the original task,
+        # then kill the task only if the option "--forcekill" is used.
+        username = getUsername(self.proxyfilename, logger=self.logger)
+        if self.failingTaskInfo["username"] != username and not self.options.__dict__["forceKill"]:
+            returnDict = {'kill' : 'do not kill task submitted by another user', 'commandStatus': 'FAILED'}
+            self.logger.info("DM DEBUG - kill - task submitted by another user should not be killed")
+            return returnDict
+
+        cmdargs = []
+        cmdargs.append("-d")
+        cmdargs.append(str(self.crabProjDir))
+        cmdargs.append("--killwarning")
+        cmdargs.append("Task killed by crab recover on '{}', by '{}'".format(datetime.datetime.now(), username))
+        if "instance" in self.options.__dict__.keys():
+            cmdargs.append("--instance")
+            cmdargs.append(self.options.__dict__["instance"])
+        if "proxy" in self.options.__dict__.keys():
+            cmdargs.append("--proxy")
+            cmdargs.append(self.options.__dict__["proxy"])
+        self.logger.info("DM DEBUG - kill, cmdargs: %s", cmdargs)
+        killCmd = kill(logger=self.logger, cmdargs=cmdargs)
+        retval = killCmd()
+
+        self.logger.info("DB DEBUG - kill, retval: %s", retval)
+        self.logger.info("DM DEBUG - kill, after, self.configuration: %s", self.configuration)
+
+        return retval
+
+    def stepCheckKill(self):
+        """
+        make sure that no more files will be produced in the original failing task
+
+        - make sure that the failing task is killed, or about to be killed
+            - "about to be killed" means "(new|queued) on command kill"
+        - make sure that all jobs are either finished or failed
+            - job status comes from status_cache. job+stageout
+            - no info about publication
+        - TODO make sure that we can identify this also in the case of an autosplitting task
+
+        side effects: none
+
+        ---
+
+        jobsPerStatus can be
+
+        - final: finished
+        - final: failed
+        - final: killed
+        - transient: idle
+        - transient: running
+        - transient: transferring
+        - transient: cooloff
+        - transient: held TODO 
+          jobs should not go into held unless for systemPeriodicHold
+          we are not sure if this will ever happen. In order to be safe and cautious,
+          we consider this status as transiend and refuse task recovery.
+          The user will encounter a problem and contact us
+
+        ## These are all possible statuses of a task in the TaskDB.
+        TASKDBSTATUSES_TMP = ['NEW', 'HOLDING', 'QUEUED', 'TAPERECALL', 'KILLRECALL']
+        TASKDBSTATUSES_FAILURES = ['SUBMITFAILED', 'KILLFAILED', 'RESUBMITFAILED', 'FAILED']
+        TASKDBSTATUSES_FINAL = ['UPLOADED', 'SUBMITTED', 'KILLED'] + TASKDBSTATUSES_FAILURES
+        TASKDBSTATUSES = TASKDBSTATUSES_TMP + TASKDBSTATUSES_FINAL
+        ## These are all possible statuses of a task as returned by the `status' API.
+        TASKSTATUSES = TASKDBSTATUSES + ['COMPLETED', 'UNKNOWN', 'InTransition']
+
+        transfer states:
+        TRANSFERDB_STATES = {0: "NEW",
+                             1: "ACQUIRED",
+                             2: "FAILED",
+                             3: "DONE",
+                             4: "RETRY",
+                             5: "SUBMITTED",
+                             6: "KILL",
+                             7: "KILLED"}
+        publication states (verified):
+        PUBLICATIONDB_STATES = {0: "NEW",
+                                1: "ACQUIRED",
+                                2: "FAILED",
+                                3: "DONE",
+                                4: "RETRY",
+                                5: "NOT_REQUIRED"}
+        TODO: are these deprecated?
+        PUBLICATION_STATES = {
+            'not_published':       'idle',
+            'publication_failed': 'failed',
+            'published':          'finished',
+            'publishing':         'running',
+        }
+
+
+        """
+
+        # make sure the the "task status" is a "static" one
+        self.logger.info("DM DEBUG - checkkill - status %s", self.failingTaskStatus["status"])
+        self.logger.info("DM DEBUG - checkkill - command %s", self.failingTaskStatus["command"])
+        self.logger.info("DM DEBUG - checkkill - dagStatus %s", self.failingTaskStatus["dagStatus"])
+        self.logger.info("DM DEBUG - checkkill - dbStatus %s", self.failingTaskStatus["dbStatus"])
+
+        # check the task status. 
+        # it does not make sense to recover a task in COMPLETED
+        assert self.failingTaskStatus["status"] in ("SUBMITTED", "FAILED", "FAILED (KILLED)"), \
+            "In order to recover a task, the combined status of the task needs can not be {}".format(self.failingTaskStatus["status"])
+
+        # the status on the db should be submitted or killed. or about to be killed
+        if self.failingTaskStatus["dbStatus"] in ("NEW", "QUEUED"):
+            assert self.failingTaskStatus["command"] in ("KILL"), \
+                "In order to recover a task, when the status of the task in the oracle DB is {}, the task command can not be {}"\
+                    .format(self.failingTaskStatus["dbStatus"], self.failingTaskStatus["command"])
+        else:
+            assert self.failingTaskStatus["dbStatus"] in ("SUBMITTED", "KILLED"), \
+                "In order to recover a task, the status of the task in the oracle DB can not be {}"\
+                    .format(self.failingTaskStatus["dbStatus"])
+
+        # make sure that the jobs ad publications are in a final state.
+        # - [x] make sure that there are no ongoing transfers
+        #       transfers are accounted in the job status
+        # considering as transient: "idle", "running", "transferring", "cooloff", "held"
+        terminalStates = set(("finished", "failed", "killed"))
+        # python2: need to convert .keys() into a set
+        assert set(self.failingTaskStatus["jobsPerStatus"].keys()).issubset(terminalStates), \
+            "In order to recover a task, all the jobs need to be in a terminal state ({}). You have {}"\
+                .format(terminalStates, self.failingTaskStatus["jobsPerStatus"].keys())
+
+        # - [x] make sure that there are no ongoing publications
+        self.logger.info("DM DEBUG - checkkill - publication %s", self.failingTaskStatus["publication"] )
+        terminalStatesPub = set(("failed", "done", "not_required"))
+        assert set(self.failingTaskStatus["publication"].keys()).issubset(terminalStatesPub), \
+            "In order to recover a task, publication for all the jobs need to be in a terminal state ({}). You have {}"\
+                .format(terminalStatesPub, self.failingTaskStatus["publication"].keys())
+
+        # - [x] if all jobs failed, then exit. it is better to submit again the task than using crab recover :)
+        #       check that "failed" is the only key of the jobsPerStatus dictionary
+        assert not set(self.failingTaskStatus["jobsPerStatus"].keys()) == set(("failed",)), \
+            "All the jobs of the original task failed. better submitting it again from scratch than recovering it."
+
+        return {"commandStatus": "SUCCESS", "checkkill": "task can be killed"}
+
+    def stepReport(self):
+        """
+        used to compute which lumisections have not been processed by the original task.
+        requires TW to have processed lumisection information for submitting the original task.
+        it does not support filebased splitting.
+
+        side effects:
+        - populates the directory "result" inside the workdir of the original failing task
+          with the output of crab report
+        """
+        cmdargs = []
+        cmdargs.append("-d")
+        cmdargs.append(str(self.crabProjDir))
+        # if "strategy" in self.options.__dict__.keys():
+        cmdargs.append("--recovery")
+        cmdargs.append(self.options.__dict__["strategy"])
+        if "instance" in self.options.__dict__.keys():
+            cmdargs.append("--instance")
+            cmdargs.append(self.options.__dict__["instance"])
+        if "proxy" in self.options.__dict__.keys():
+            cmdargs.append("--proxy")
+            cmdargs.append(self.options.__dict__["proxy"])
+        self.logger.info("DM DEBUG - report, cmdargs: %s", cmdargs)
+        reportCmd = report(logger=self.logger, cmdargs=cmdargs)
+        retval = reportCmd()
+        self.logger.info("DM DEBUG - report, retval: %s", retval)
+        self.logger.info("DM DEBUG - report, after, self.configuration: %s", self.configuration)
+
+        recoverLumimaskPath = ""
+        failingTaskPublish = getColumn(self.failingCrabDBInfo, 'tm_publication')
+        self.logger.info("DM DEBUG - tm_publication: %s %s", type(failingTaskPublish), failingTaskPublish)
+        # - if the user specified --strategy=notPublished but the original failing task
+        #   disabled publishing, then `crab report` fails and raises and exception.
+        # - assuming "strategy" is always in self.options.__dict__.keys():
+        if failingTaskPublish == "T" and self.options.__dict__["strategy"] == "notPublished":
+            recoverLumimaskPath = os.path.join(self.crabProjDir, "results", "notPublishedLumis.json")
+        else:
+            # the only other option should be self.options.__dict__["strategy"] == "notFinished":
+            recoverLumimaskPath = os.path.join(self.crabProjDir, "results", "notFinishedLumis.json")
+        self.logger.info("DM DEBUG - recovery task will process lumis contained in file %s", recoverLumimaskPath)
+
+        if os.path.exists(recoverLumimaskPath):
+            returnDict = {'commandStatus' : 'SUCCESS', 'recoverLumimaskPath': recoverLumimaskPath}
+        else:
+            returnDict = {'commandStatus' : 'FAILED',}
+
+        return returnDict
+
+    def stepGetsandbox(self):
+        """
+        side effects:
+        - download the user_ and debug_sandbox from s3 or from the schedd
+        """
+
+        cmdargs = []
+        cmdargs.append("-d")
+        cmdargs.append(str(self.crabProjDir))
+        if "instance" in self.options.__dict__.keys():
+            cmdargs.append("--instance")
+            cmdargs.append(self.options.__dict__["instance"])
+        if "proxy" in self.options.__dict__.keys():
+            cmdargs.append("--proxy")
+            cmdargs.append(self.options.__dict__["proxy"])
+        self.logger.info("DM DEBUG - getsandbox, cmdargs: %s", cmdargs)
+        getsandboxCmd = getsandbox(logger=self.logger, cmdargs=cmdargs)
+        retval = getsandboxCmd()
+        self.logger.info("DM DEBUG - getsandbox, retval: %s", retval)
+        return retval
+
+    def stepExtractSandbox(self, sandbox_paths):
+        """
+        This step prepares all the information needed for the submit step
+
+        side effects:
+        - extracts the user_ and debug_sandbox, so that the files that they contain
+          can be used by crab submit at a later step
+        """
+        debug_sandbox = tarfile.open(sandbox_paths[0])
+        debug_sandbox.extractall(path=os.path.join(self.crabProjDir, "user_sandbox"))
+        debug_sandbox.close()
+
+        debug_sandbox = tarfile.open(sandbox_paths[1])
+        debug_sandbox.extractall(path=os.path.join(self.crabProjDir, "debug_sandbox"))
+        debug_sandbox.close()
+
+        self.recoverconfig = os.path.join(self.crabProjDir, "debug_sandbox", 
+                                          "debug" , "crabConfig.py")
+
+        return None
+
+    def stepSubmitLumiBased(self, notFinishedJsonPath):
+        """
+        Submit a recovery task in the case that the original failing task
+        - is of type Analysis
+        - used LumiBased splitting algorithm 
+
+        side effect:
+        - submits a new task
+        """
+
+        cmdargs = []
+        cmdargs.append("-c")
+        cmdargs.append(self.recoverconfig)
+        if "proxy" in self.options.__dict__.keys():
+            cmdargs.append("--proxy")
+            cmdargs.append(self.options.__dict__["proxy"])
+        if "destinstance" in self.options.__dict__.keys():
+            cmdargs.append("--instance")
+            cmdargs.append(self.options.__dict__["destinstance"])
+
+        # override config arguments with
+        # https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3ConfigurationFile#Passing_CRAB_configuration_param
+        cmdargs.append("General.requestName=None")
+        cmdargs.append("General.workArea=.")
+        cmdargs.append("Data.lumiMask={}".format(notFinishedJsonPath))
+        cmdargs.append("JobType.pluginName=Recover")
+        cmdargs.append("JobType.copyCatTaskname={}".format(self.options.cmptask))
+        cmdargs.append("JobType.copyCatWorkdir={}".format(self.crabProjDir))
+        destinstance = ""
+        if "instance" in self.options.__dict__.keys():
+            destinstance = self.options.__dict__["instance"]
+        if not destinstance:
+            destinstance = "prod"
+        cmdargs.append("JobType.copyCatInstance={}".format(destinstance))
+        scriptexe = getColumn(self.failingCrabDBInfo, 'tm_scriptexe')
+        if scriptexe:
+            cmdargs.append("JobType.scriptExe={}".format(os.path.join(self.crabProjDir, "debug_sandbox" , scriptexe)))
+        cmdargs.append("JobType.psetName={}".format(os.path.join(self.crabProjDir, "debug_sandbox" , "debug", "originalPSet.py")))
+
+        # when the user running crab recover does not match the user who originally submited the task,
+        # then it is likely to be a crab operator, and we should not send filen in the same
+        # base dir as the original failing task.
+        # we should use default tm_output_lfn when recovering task submitted by another user
+        username = getUsername(self.proxyfilename, logger=self.logger)
+        if self.failingTaskInfo["username"] != username:
+            cmdargs.append("Data.outLFNDirBase=/store/user/{}".format(username))
+
+        self.logger.warning("crab recover will change the config.Data.lumiMask to: %s", notFinishedJsonPath)
+        self.logger.info("DM DEBUG - submit, cmdargs %s", cmdargs)
+        submitCmd = submit(logger=self.logger, cmdargs=cmdargs)
+
+        retval = submitCmd()
+        self.logger.info("DM DEBUG - submit, retval %s", retval)
+        return retval
+
+    def stepSubmitFileBased(self):
+        """
+        Submit a recovery task in the case that the original failing task
+        - is of type Analysis
+        - used FileBased splitting algorithm 
+
+        what's missing?
+        - [ ] if the input is from DBS, then write info to runs_and_lumis.tar.gz
+        """
+
+        # TODO
+        # I will need to implement this!
+        return {'commandStatus': 'FAILED', 'error': 'not implemented yet'}
+
+    def setOptions(self):
+        """
+        __setOptions__
+
+        """
+        # step: remake
+        self.parser.add_option("--task",
+                               dest = "cmptask",
+                               default = None,
+                               help = "The complete task name. Can be taken from 'crab status' output, or from dashboard.")
+
+        # step: recovery
+        self.parser.add_option("--strategy",
+                               dest = "strategy",
+                               default="notFinished",
+                               help = "When using lumibased splitting, sets crab report --recovery=$option")
+
+        self.parser.add_option("--destinstance",
+                               dest = "destinstance",
+                               default = None,
+                               help = "(Experimental) The CRABServer instance where you want to submit the recovery task to. Should be used by crab operators only")
+        # if the user sets this option, then it gets tricky to setup a link between the original
+        # failing task and the recovery task.
+        # this option is to be considered experimental and useful for developers only
+
+        # step: kill
+        self.parser.add_option("--forcekill",
+                        action="store_true", dest="forceKill", default=False,
+                        help="Allows to kill failing task submitted by another user. Effective only for crab operators")
+
+    def validateOptions(self):
+        """
+        __validateOptions__
+
+        """
+        # step: remake
+        if self.options.cmptask is None:
+            msg  = "%sError%s: Please specify the task name for which to remake a CRAB project directory." % (colors.RED, colors.NORMAL)
+            msg += " Use the --task option."
+            ex = MissingOptionException(msg)
+            ex.missingOption = "cmptask"
+            raise ex
+        else:
+            regex = "^\d{6}_\d{6}_?([^\:]*)\:[a-zA-Z0-9-]+_(crab_)?.+"
+            if not re.match(regex, self.options.cmptask):
+                msg = "%sError%s: Task name does not match the regular expression '%s'." % (colors.RED, colors.NORMAL, regex)
+                raise ConfigurationException(msg)

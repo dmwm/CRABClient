@@ -356,7 +356,7 @@ def getRequestName(requestName=None):
     prefix = 'crab_'
     postfix = str(datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
 
-    if requestName is None or not isinstance(requestName, str) or len(requestName) == 0:
+    if requestName is None or requestName == "None" or not isinstance(requestName, str) or len(requestName) == 0:
         return prefix + postfix
     elif '/' in requestName:
         msg = "%sError%s: The '/' character is not accepted in the requestName parameter." % (colors.RED, colors.NORMAL)

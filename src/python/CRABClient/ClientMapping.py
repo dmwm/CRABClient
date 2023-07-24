@@ -79,6 +79,7 @@ parametersMapping = {
                                      {'default': False,      'config': ['JobType.disableAutomaticOutputCollection'],'type': 'BooleanType', 'required': False},
                                      {'default': None,       'config': ['JobType.copyCatTaskname'],         'type': 'StringType',  'required': False},
                                      {'default': 'prod',     'config': ['JobType.copyCatInstance'],         'type': 'StringType',  'required': False},
+                                     {'default': None,       'config': ['JobType.copyCatWorkdir'],          'type': 'StringType',  'required': False},
                                      {'default': [],         'config': ['JobType.inputFiles'],              'type': 'ListType',    'required': False}
                            ]
 }
@@ -152,6 +153,8 @@ commandsConfiguration = {
     'tasks'         : {'acceptsArguments': False, 'requiresREST': True,  'requiresRucio': False, 'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'requiresLocalCache': False},
     'uploadlog'     : {'acceptsArguments': False, 'requiresREST': True,  'requiresRucio': False, 'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'requiresLocalCache': False},
     'preparelocal'  : {'acceptsArguments': False, 'requiresREST': True,  'requiresRucio': False, 'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'requiresLocalCache': True},
+    'recover'       : {'acceptsArguments': False, 'requiresREST': True,  'requiresRucio': False, 'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'requiresLocalCache': False},
+    'getsandbox'    : {'acceptsArguments': False, 'requiresREST': True,  'requiresRucio': False,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'requiresLocalCache': True },
 }
 
 

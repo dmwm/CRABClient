@@ -292,7 +292,7 @@ class report(SubCommand):
         self.logger.debug("Result: %s" % dictresult)
         self.logger.info("Running crab status first to fetch necessary information.")
         # Get job statuses
-        statusDict = getMutedStatusInfo(self.logger)
+        statusDict = getMutedStatusInfo(logger=self.logger, proxy=self.proxyfilename)
 
         if not statusDict['jobList']:
             # No point in continuing if the job list is empty.
@@ -362,6 +362,7 @@ class report(SubCommand):
                             fd.close()
                 tarball.close()
             else:
+                # FIXME, dario, is this error message a copy-paste error?
                 self.logger.error("Failed to retrieve input dataset duplicate lumis.")
 
         return res

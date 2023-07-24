@@ -119,7 +119,12 @@ class submit(SubCommand):
                       % (colors.RED, colors.NORMAL, non_edm_files)
                 self.logger.warning(msg)
 
+        self.logger.info("DM DEBUG - self.configuration {}".format(str(self.configuration)))
+        self.logger.info("DM DEBUG - self.configreq {}".format(self.configreq))
+        self.logger.info("DM DEBUG - jobconfig {}".format(jobconfig))
         self.configreq.update(jobconfig)
+        # import pdb; pdb.set_trace()
+
         server = self.crabserver
 
         self.logger.info("Sending the request to the server at %s" % self.serverurl)
@@ -245,10 +250,11 @@ class submit(SubCommand):
         ## Load the external plugin or check that the crab plugin is valid.
         external_plugin_name = getattr(self.configuration.JobType, 'externalPluginFile', None)
         crab_plugin_name = getattr(self.configuration.JobType, 'pluginName', None)
-        crab_job_types = {'ANALYSIS': None, 'PRIVATEMC': None, 'COPYCAT': None} #getJobTypes()
+        crab_job_types = {'ANALYSIS': None, 'PRIVATEMC': None, 'COPYCAT': None, 'RECOVER': None} #getJobTypes()
         if external_plugin_name:
             addPlugin(external_plugin_name) # Do we need to do this here?
         if crab_plugin_name:
+            # FIXME we do not have only analysis or MC
             if crab_plugin_name.upper() not in crab_job_types:
                 msg = "Invalid CRAB configuration: Parameter JobType.pluginName has an invalid value ('%s')." % (crab_plugin_name)
                 msg += "\nAllowed values are: %s." % (", ".join(['%s' % job_type for job_type in crab_job_types.keys()]))
