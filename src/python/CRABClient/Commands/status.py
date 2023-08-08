@@ -236,15 +236,18 @@ class status(SubCommand):
         usingRucio = outputLfn.startswith('/store/user/rucio')
         if usingRucio:
             ruleID = None
-            data = {'subresource':'getTransferStatus', 'taskname':taskname, 'username': user}
+            data = {'subresource': 'getTransferStatus', 'taskname': taskname, 'username': user}
             filetransferinfo, _, _ = server.get(api='fileusertransfers', data=data)
             index = filetransferinfo['desc']['columns'].index('tm_fts_id')
             for xfer in filetransferinfo['result']:
-                if xfer[index] != 'NA':
+                # Skip tm_fts_id contains null or 'NA'.
+                if xfer[index] == 'NA' or not xfer[index]:
+                    continue
+                else:
                     ruleID = xfer[index]
                     break
             if ruleID:
-                container = { 'ruleID': ruleID }
+                container = {'ruleID': ruleID}
             else:
                 container = None
         else:
@@ -1017,7 +1020,7 @@ class status(SubCommand):
         if not container:
             return
         msg=""
-        msg += "\nRucio transfer container's rule: https://cms-rucio-webui.cern.ch/rule?rule_id=%s" % (container['ruleID'])
+        msg += "\nTransfer container's rule: https://cms-rucio-webui.cern.ch/rule?rule_id=%s" % (container['ruleID'])
         msg += "\nTips on how to check on Rucio StageOut at https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3FAQ#Stageout_with_Rucio "
         self.logger.info(msg)
 
