@@ -6,7 +6,6 @@
 
 from  __future__ import division   # make division work like in python3
 
-import json
 import os
 import glob
 import math
@@ -16,17 +15,17 @@ import tarfile
 import tempfile
 import shutil
 import hashlib
-import uuid
-
-from CRABClient.ClientMapping import configParametersInfo
-from CRABClient.JobType.ScramEnvironment import ScramEnvironment
-from CRABClient.ClientUtilities import colors, BOOTSTRAP_CFGFILE, BOOTSTRAP_CFGFILE_PKL
-from CRABClient.ClientExceptions import EnvironmentException, InputFileNotFoundException, CachefileNotFoundException, SandboxTooBigException
-from CRABClient.ClientUtilities import execute_command
 
 from ServerUtilities import NEW_USER_SANDBOX_EXCLUSIONS, BOOTSTRAP_CFGFILE_DUMP
 from ServerUtilities import FILE_SIZE_LIMIT
 from ServerUtilities import uploadToS3, tempSetLogLevel
+
+from CRABClient.ClientMapping import configParametersInfo
+from CRABClient.JobType.ScramEnvironment import ScramEnvironment
+from CRABClient.ClientUtilities import colors, BOOTSTRAP_CFGFILE, BOOTSTRAP_CFGFILE_PKL
+from CRABClient.ClientExceptions import EnvironmentException, InputFileNotFoundException, SandboxTooBigException
+from CRABClient.ClientUtilities import execute_command
+
 
 def testS3upload(s3tester, archiveName, hashkey, logger):
     cachename = "%s.tgz" % hashkey
@@ -120,6 +119,16 @@ def calculateChecksum(tarfile_, exclude=None):
     return checksum
 
 
+def excludeGit(tarinfo):
+    """
+    exclude .git subdirectory when creating archives
+    https://github.com/dmwm/CRABClient/issues/5202
+    """
+    if '.git' in tarinfo.name:
+        return None
+    return tarinfo
+
+
 class UserTarball(object):
     """
         _UserTarball_
@@ -166,7 +175,7 @@ class UserTarball(object):
             if os.path.exists(fullPath):
                 self.logger.debug("Adding directory %s to tarball" % fullPath)
                 self.checkdirectory(fullPath)
-                self.tarfile.add(fullPath, directory, recursive=True)
+                self.tarfile.add(fullPath, directory, recursive=True, filter=excludeGit)
 
         # Recursively search for and add to tar some directories in $CMSSW_BASE/src/
         # Note that recursiveDirs are **only** looked-for under the $CMSSW_BASE/src/ folder!
@@ -184,9 +193,9 @@ class UserTarball(object):
         for root, _, _ in os.walk(srcPath):
             if os.path.basename(root) in recursiveDirs:
                 directory = root.replace(srcPath, 'src')
-                self.logger.debug("Adding data directory %s to tarball" % root)
+                self.logger.debug("Adding directory %s to tarball" % root)
                 self.checkdirectory(root)
-                self.tarfile.add(root, directory, recursive=True)
+                self.tarfile.add(root, directory, recursive=True, filter=excludeGit)
 
         # Tar up extra files the user needs
         userFiles = userFiles or []
@@ -197,8 +206,7 @@ class UserTarball(object):
             for filename in fileNames:
                 self.logger.debug("Adding file %s to tarball" % filename)
                 self.checkdirectory(filename)
-                self.tarfile.add(filename, os.path.basename(filename), recursive=True)
-
+                self.tarfile.add(filename, os.path.basename(filename), recursive=True, filter=excludeGit)
 
         scriptExe = getattr(self.config.JobType, 'scriptExe', None)
         if scriptExe:
@@ -210,7 +218,6 @@ class UserTarball(object):
             self.tarfile.add(cfgOutputName, arcname=BOOTSTRAP_CFGFILE)
             self.tarfile.add(os.path.join(basedir, BOOTSTRAP_CFGFILE_PKL), arcname=BOOTSTRAP_CFGFILE_PKL)
             self.tarfile.add(os.path.join(basedir, BOOTSTRAP_CFGFILE_DUMP), arcname=BOOTSTRAP_CFGFILE_DUMP)
-
 
     def addVenvDirectory(self, tarFile='sandbox.tgz'):
         # adds CMSSW_BASE/venv directory to the (closed, compressed) sandbox
@@ -262,7 +269,6 @@ class UserTarball(object):
     def writeContent(self):
         """Save the content of the tarball"""
         self.content = [(int(x.size), x.name) for x in self.tarfile.getmembers()]
-
 
     def close(self):
         """
@@ -342,7 +348,6 @@ class UserTarball(object):
                     (colors.RED, colors.NORMAL, dir_, msg)
             raise EnvironmentException(err)
 
-
     def __getattr__(self, *args):
         """
         Pass any unknown functions or attribute requests on to the TarFile object
@@ -350,13 +355,11 @@ class UserTarball(object):
         self.logger.debug("Passing getattr %s on to TarFile" % args)
         return self.tarfile.__getattribute__(*args)
 
-
     def __enter__(self):
         """
         Allow use as context manager
         """
         return self
-
 
     def __exit__(self, excType, excValue, excTrace):
         """
