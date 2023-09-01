@@ -9,8 +9,6 @@ from  __future__ import division   # make division work like in python3
 import os
 import glob
 import math
-import time
-import socket
 import tarfile
 import tempfile
 import shutil
@@ -18,7 +16,7 @@ import hashlib
 
 from ServerUtilities import NEW_USER_SANDBOX_EXCLUSIONS, BOOTSTRAP_CFGFILE_DUMP
 from ServerUtilities import FILE_SIZE_LIMIT
-from ServerUtilities import uploadToS3, tempSetLogLevel
+from ServerUtilities import uploadToS3
 
 from CRABClient.ClientMapping import configParametersInfo
 from CRABClient.JobType.ScramEnvironment import ScramEnvironment
@@ -26,36 +24,6 @@ from CRABClient.ClientUtilities import colors, BOOTSTRAP_CFGFILE, BOOTSTRAP_CFGF
 from CRABClient.ClientExceptions import EnvironmentException, InputFileNotFoundException, SandboxTooBigException
 from CRABClient.ClientUtilities import execute_command
 
-
-def testS3upload(s3tester, archiveName, hashkey, logger):
-    cachename = "%s.tgz" % hashkey
-    try:
-        t1 = time.time()
-        timestamp = time.strftime('%y%m%d_%H%M%S', time.gmtime())
-        msecs = int((t1 - int(t1)) * 1000)
-        timestamp += '.%03d' % msecs
-        with tempSetLogLevel(logger=logger, level=1000):  # disable all logging for this call
-            uploadToS3(crabserver=s3tester, objecttype='sandbox', filepath=archiveName,
-                       tarballname=cachename, logger=logger)
-        status = 'OK'
-        logger.debug('Successfully uploaded tarball to S3 as well')
-    except Exception as e:
-        logger.debug('Tarball upload to S3 failed:\n%s', str(e))
-        status = 'FAIL'
-        reason = str(e)
-    t2 = time.time()
-    s3report = {'status':status}
-    if status == 'FAIL':
-        s3report['reason'] = reason
-    thisSite = socket.gethostname()
-    thisIP = socket.gethostbyname(thisSite)
-    tarballKB = os.stat(archiveName).st_size // 1024
-    s3report['timestamp'] = timestamp
-    s3report['clienthost'] = thisSite
-    s3report['clientip'] = thisIP
-    s3report['KBytes'] = tarballKB
-    s3report['seconds'] = int(t2-t1)
-    return s3report
 
 def calculateChecksum(tarfile_, exclude=None):
     """
