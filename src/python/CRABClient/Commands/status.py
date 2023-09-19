@@ -233,19 +233,9 @@ class status(SubCommand):
         # If the task is already on the grid, show the dagman status
         combinedStatus = dagStatus = self.printDAGStatus(dbStatus, statusCacheInfo)
 
-        usingRucio = outputLfn.startswith('/store/user/rucio')
+        usingRucio = outputLfn.startswith('/store/user/rucio') or outputLfn.startswith('/store/group/rucio')
         if usingRucio:
-            ruleID = None
-            data = {'subresource': 'getTransferStatus', 'taskname': taskname, 'username': user}
-            filetransferinfo, _, _ = server.get(api='fileusertransfers', data=data)
-            index = filetransferinfo['desc']['columns'].index('tm_fts_id')
-            for xfer in filetransferinfo['result']:
-                # Skip tm_fts_id contains null or 'NA'.
-                if xfer[index] == 'NA' or not xfer[index]:
-                    continue
-                else:
-                    ruleID = xfer[index]
-                    break
+            ruleID = getColumn(crabDBInfo, 'tm_transfer_rule')
             if ruleID:
                 container = {'ruleID': ruleID}
             else:
