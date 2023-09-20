@@ -233,29 +233,20 @@ class status(SubCommand):
         # If the task is already on the grid, show the dagman status
         combinedStatus = dagStatus = self.printDAGStatus(dbStatus, statusCacheInfo)
 
-        usingRucio = outputLfn.startswith('/store/user/rucio')
+        usingRucio = outputLfn.startswith('/store/user/rucio') or outputLfn.startswith('/store/group/rucio')
+        container = None
         if usingRucio:
-            ruleID = None
-            data = {'subresource': 'getTransferStatus', 'taskname': taskname, 'username': user}
-            filetransferinfo, _, _ = server.get(api='fileusertransfers', data=data)
-            index = filetransferinfo['desc']['columns'].index('tm_fts_id')
-            for xfer in filetransferinfo['result']:
-                # Skip tm_fts_id contains null or 'NA'.
-                if xfer[index] == 'NA' or not xfer[index]:
-                    continue
-                else:
-                    ruleID = xfer[index]
-                    break
-            if ruleID:
-                container = {'ruleID': ruleID}
-            else:
-                container = None
-        else:
-            container = None
+            containerInfo = {
+                'transferContainerName': getColumn(crabDBInfo, 'tm_transfer_container'),
+                'transferRuleID': getColumn(crabDBInfo, 'tm_transfer_rule'),
+                'publishRuleID': getColumn(crabDBInfo, 'tm_publish_rule'),
+            }
+            if containerInfo['transferRuleID']:
+                container = containerInfo
 
         shortResult = self.printOverview(statusCacheInfo, automaticSplitt, proxiedWebDir, container)
         pubStatus = self.printPublication(publicationEnabled, shortResult['jobsPerStatus'], shortResult['numProbes'],
-                                          shortResult['numUnpublishable'], taskname, user, crabDBInfo)
+                                          shortResult['numUnpublishable'], taskname, user, crabDBInfo, container=container)
         self.printErrors(statusCacheInfo, automaticSplitt)
 
         if not self.options.long and not self.options.sort:  # already printed for these options
@@ -1020,11 +1011,13 @@ class status(SubCommand):
         if not container:
             return
         msg=""
-        msg += "\nTransfer container's rule: https://cms-rucio-webui.cern.ch/rule?rule_id=%s" % (container['ruleID'])
+        msg += "\nTransfer container's name:\t%s" % (container['transferContainerName'])
+        msg += "\nTransfer container's rule:\thttps://cms-rucio-webui.cern.ch/rule?rule_id=%s" % (container['transferRuleID'])
+        msg += "\n"
         msg += "\nTips on how to check on Rucio StageOut at https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3FAQ#Stageout_with_Rucio "
         self.logger.info(msg)
 
-    def printOutputDatasets(self, outputDatasets, includeDASURL=False):
+    def printOutputDatasets(self, outputDatasets, includeDASURL=False, container=None):
         """
         Function to print the list of output datasets (with or without the DAS URL).
         """
@@ -1039,9 +1032,12 @@ class status(SubCommand):
                 msg += "\nOutput dataset%s:\t\t%s%s" % ("s" if len(outputDatasets) > 1 else "", extratab, outputDatasets[0])
                 for outputDataset in outputDatasets[1:]:
                     msg += "\n\t\t\t\t%s%s" % (extratab, outputDataset)
+            if container:
+                msg += "\nPublish container's rule:\thttps://cms-rucio-webui.cern.ch/rule?rule_id=%s" % (container['publishRuleID'])
+
             self.logger.info(msg)
 
-    def printPublication(self, publicationEnabled, jobsPerStatus, numProbes, numUnpublishable, taskname, user, crabDBInfo):
+    def printPublication(self, publicationEnabled, jobsPerStatus, numProbes, numUnpublishable, taskname, user, crabDBInfo, container=None):
         """Print information about the publication of the output files in DBS.
         """
         # Collecting publication information
@@ -1087,7 +1083,7 @@ class status(SubCommand):
             msg += pubSource
             self.logger.info(msg)
             # Print the output datasets with the corresponding DAS URL.
-            self.printOutputDatasets(outputDatasets, includeDASURL=True)
+            self.printOutputDatasets(outputDatasets, includeDASURL=True, container=container)
             return pubStatus
         if pubInfo['publication'] and outputDatasets:
             states = pubInfo['publication']
@@ -1127,7 +1123,7 @@ class status(SubCommand):
                         msg += ("\n\n\t%" + str(ndigits) + "s files failed to publish with following error message:\n\n\t\t%s") % (numFailedFiles, failureReason)
                 self.logger.info(msg)
             # Print the output datasets with the corresponding DAS URL.
-            self.printOutputDatasets(outputDatasets, includeDASURL=True)
+            self.printOutputDatasets(outputDatasets, includeDASURL=True, container=container)
 
         return pubStatus
 
