@@ -240,7 +240,6 @@ class status(SubCommand):
                 'transferContainerName': getColumn(crabDBInfo, 'tm_transfer_container'),
                 'transferRuleID': getColumn(crabDBInfo, 'tm_transfer_rule'),
                 'publishRuleID': getColumn(crabDBInfo, 'tm_publish_rule'),
-                'publishContainerName': outDataset,
             }
             if containerInfo['transferRuleID']:
                 container = containerInfo
@@ -1014,6 +1013,7 @@ class status(SubCommand):
         msg=""
         msg += "\nTransfer container's name:\t%s" % (container['transferContainerName'])
         msg += "\nTransfer container's rule:\thttps://cms-rucio-webui.cern.ch/rule?rule_id=%s" % (container['transferRuleID'])
+        msg += "\n"
         msg += "\nTips on how to check on Rucio StageOut at https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3FAQ#Stageout_with_Rucio "
         self.logger.info(msg)
 
