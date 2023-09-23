@@ -5,6 +5,7 @@ This module contains the utility methods available for users.
 import os
 import logging
 import traceback
+import json
 
 from FWCore.PythonUtilities.LumiList import LumiList
 
@@ -141,9 +142,9 @@ def curlGetFileFromURL(url, filename = None, proxyfilename = None, logger=None):
     return httpCode
 
 
-def getLumiListInValidFiles(dataset, dbsurl = 'phys03'):
+def getLumiListInValidFiles(dataset, dbsurl='phys03'):
     """
-    Get the runs/lumis in the valid files of a given dataset.
+    Get the runs/lumis in the valid files of a given dataset via dasgoclient
 
     dataset: the dataset name as published in DBS
     dbsurl: the DBS URL or DBS prod instance
@@ -151,30 +152,63 @@ def getLumiListInValidFiles(dataset, dbsurl = 'phys03'):
     Returns a LumiList object.
     """
 
-    from dbs.apis.dbsClient import DbsApi
+    def complain(cmd, stdout, stderr, returncode):
+        """ factor out a bit or distracting code """
+        msg = 'Failed executing %s. Exitcode is %s' % (cmd, returncode)
+        if stdout:
+            msg += '\n  Stdout:\n    %s' % str(stdout).replace('\n', '\n    ')
+        if stderr:
+            msg += '\n  Stderr:\n    %s' % str(stderr).replace('\n', '\n    ')
+        raise ClientException(msg)
 
-    dbsurl = DBSURLS['reader'].get(dbsurl, dbsurl)
-    dbs3api = DbsApi(url=dbsurl)
-    try:
-        files = dbs3api.listFileArray(dataset=dataset, validFileOnly=0, detail=True)
-    except Exception as ex:
-        msg  = "Got DBS client error requesting details of dataset '%s' on DBS URL '%s': %s" % (dataset, dbsurl, ex)
-        msg += "\n%s" % (traceback.format_exc())
-        raise ClientException(msg)
-    if not files:
-        msg = "Dataset '%s' not found in DBS URL '%s'." % (dataset, dbsurl)
-        raise ClientException(msg)
-    validFiles = [f['logical_file_name'] for f in files if f['is_file_valid']]
-    blocks = set([f['block_name'] for f in files])
+    # prepare a dasgoclient command line where only the query is missing
+    instance = "prod/" + dbsurl
+    dasCmd = "dasgoclient --query " + " '%s instance=" + instance + "' --json"
+
+    # note that dasgpoclient offern the handy query "file,run,lumi dataset=... status=valid"
+    # but the output has one entry per file (ok) and that has one list of run numbers and one
+    # uncorrelated list of lumis. We need to stick to the query "lumi file=..." to get
+    # one entry per lumi with lumi number and corresponding run number. Sigh
+
+    # get the list of valid files
+    validFiles = []
+    query = 'file dataset=%s' % dataset
+    cmd = dasCmd % query
+    stdout, stderr, returncode = execute_command(command=cmd)
+    if returncode or not stdout:
+        complain(cmd, stdout, stderr, returncode)
+    else:
+        result = json.loads(stdout)
+        # returns a list of dictionaries, one per file
+        # each dictionary has the keys 'das', 'qhash' and 'file'.
+        # value of 'file' key is a list of dictionaries with only 1 element and
+        # the usual DBS fields for a file
+        for record in result:
+            file = record['file'][0]
+            if file['is_file_valid']:
+                validFiles.append(file['name'])
+
+    # get (run,lumi) pair list from each valid file
     runLumiPairs = []
-    for blockName in blocks:
-        fileLumis = dbs3api.listFileLumis(block_name=blockName)
-        for f in fileLumis:
-            if f['logical_file_name'] in validFiles:
-                run = f['run_num']
-                lumis = f['lumi_section_num']
-                for lumi in lumis:
-                    runLumiPairs.append((run,lumi))
+    for file in validFiles:
+        query = "lumi file=%s" % file
+        cmd = dasCmd % query
+        stdout, stderr, returncode = execute_command(command=cmd)
+        if returncode or not stdout:
+            complain(cmd, stdout, stderr, returncode)
+        else:
+            result = json.loads(stdout)
+            # returns a list of dictionaries, one per lumi, with keys 'das', 'qhash' and 'lumi'
+            # valud of 'lumi' is a list of dictionaries with only 1 element and
+            # keys: 'event_count', 'file', 'lumi_section_num', 'nevents', 'number', 'run.run_number', 'run_number'
+            # upon inspection run.run_number is always 0
+            for lumiInfo in result:
+                lumiDict = lumiInfo['lumi'][0]
+                run = lumiDict['run_number']
+                lumi = lumiDict['lumi_section_num']
+                runLumiPairs.append((run, lumi))
+
+    # transform into a LumiList object
     lumiList = LumiList(lumis=runLumiPairs)
 
     return lumiList
