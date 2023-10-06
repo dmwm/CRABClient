@@ -55,7 +55,7 @@ class MyNullHandler(logging.Handler):
         """
         TODO: Python 2.7 supplies a null handler that will replace this.
         """
-        pass
+        pass  # pylint: disable=unnecessary-pass
 
 
 class CRABClient(object):
