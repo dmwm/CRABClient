@@ -25,6 +25,12 @@ if not 'OpenSSL' in pycurl.version:
     print('pycurl version is: %s\n' % pycurl.version)
     sys.exit()
 
+if os.environ.get('RUCIO_HOME', None):
+    from rucio.client import Client
+    rucio = Client()
+else:
+    rucio = None
+
 if 'crab-dev' in __file__:
     print('BEWARE: this is the development version of CRAB Client.\nBe sure to have a good reason for using it\n')
 
@@ -49,7 +55,7 @@ class MyNullHandler(logging.Handler):
         """
         TODO: Python 2.7 supplies a null handler that will replace this.
         """
-        pass
+        pass  # pylint: disable=unnecessary-pass
 
 
 class CRABClient(object):
@@ -65,6 +71,7 @@ class CRABClient(object):
         self.logger = None
         self.memhandler = None
         self.cmd = None
+        self.rucio = rucio
 
 
     def __call__(self):
