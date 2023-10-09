@@ -170,7 +170,9 @@ class Analysis(BasicJobType):
                         ISBSizeLimit = int(re_match.group(2))
                         reason  = "%sError%s:" % (colors.RED, colors.NORMAL)
                         reason += " Input sandbox size is ~%sMB. This is bigger than the maximum allowed size of %sMB." % (ISBSize/1024/1024, ISBSizeLimit/1024/1024)
-                        reason += tb.printSortedContent()
+                        reason += tb.printSortedContent(maxLines=5)
+                        reason += "see crab.log for full list of sandbox content"
+                        self.logger.debug(tb.printSortedContent())
                         raise ClientException(reason)
                 raise hte
             except Exception as e:
