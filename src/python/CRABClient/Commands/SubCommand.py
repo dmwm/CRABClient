@@ -11,14 +11,15 @@ from WMCore.Configuration import loadConfigurationFile, Configuration
 from ServerUtilities import SERVICE_INSTANCES
 
 import CRABClient.Emulator
-from CRABClient import SpellChecker
 from CRABClient import __version__
 from CRABClient.ClientUtilities import colors
 from CRABClient.CRABOptParser import CRABCmdOptParser
 from CRABClient.CredentialInteractions import CredentialInteractions
 from CRABClient.ClientUtilities import loadCache, getWorkArea, server_info, createWorkArea, execute_command
-from CRABClient.ClientExceptions import ConfigurationException, MissingOptionException, EnvironmentException, CachefileNotFoundException
-from CRABClient.ClientMapping import renamedParams, commandsConfiguration, configParametersInfo, getParamDefaultValue
+from CRABClient.ClientExceptions import (ConfigurationException, MissingOptionException,
+                                         EnvironmentException, CachefileNotFoundException)
+from CRABClient.ClientMapping import (renamedParams, commandsConfiguration, configParametersInfo,
+                                      getParamDefaultValue, deprecatedParams)
 
 #if certificates in myproxy expires in less than RENEW_MYPROXY_THRESHOLD days renew them
 RENEW_MYPROXY_THRESHOLD = 15
@@ -140,14 +141,6 @@ class ConfigCommand:
             msg = "Invalid CRAB configuration: Section 'Site' is missing."
             return False, msg
 
-        # the validation code below does not run in python3 and porting proved not
-        # straightforward (see https://github.com/dmwm/CRABClient/issues/5004  and
-        # in particulr https://github.com/dmwm/CRABClient/issues/5004#issuecomment-990073439 ).
-        # Moreover, experience indicates that syntax errors in crabConfig.py are easily
-        # spotted anyhow. Therefore current approach is to skip validation and
-        # let it to python to report erros as exceptions.
-        return True, "Valid configuration"
-
         ## Some parameters may have been renamed. Check here if the configuration file has an old
         ## parameter defined, and in that case tell the user what is the new parameter name.
         for old_param, new_param in renamedParams.items():
@@ -161,17 +154,26 @@ class ConfigCommand:
                 msg += "; please change your configuration file accordingly."
                 return False, msg
 
-        # Check if there are unknown parameters (and try to suggest the correct parameter name).
+        # Check if there are unknown or deprecated parameters
+        # the old "try to suggest" is broken in python3 and we can surely live without it
         all_config_params = configParametersInfo.keys()
-        SpellChecker.DICTIONARY = SpellChecker.train(all_config_params)
         for section in self.configuration.listSections_():
             for attr in getattr(self.configuration, section).listSections_():
                 param = (section + '.' + attr)
-                if not SpellChecker.is_correct(param):
-                    msg = "Invalid CRAB configuration: Parameter %s is not known." % param
-                    if SpellChecker.correct(param) != param:
-                        msg += " Maybe you mean %s?" % (SpellChecker.correct(param))
+                if param in deprecatedParams:
+                    msg = "Invalid CRAB confgituation: Parameter %s has been deprecated. Please remove it" % param
                     return False, msg
+                if not param in all_config_params:
+                    msg = "Invalid CRAB configuration: Parameter %s is not known." % param
+                    return False, msg
+
+        # the validation code below does not run in python3 and porting proved not
+        # straightforward (see https://github.com/dmwm/CRABClient/issues/5004  and
+        # in particulr https://github.com/dmwm/CRABClient/issues/5004#issuecomment-990073439 ).
+        # Moreover, experience indicates that syntax errors in crabConfig.py are easily
+        # spotted anyhow. Therefore current approach is to skip validation and
+        # let it to python to report erros as exceptions.
+        return True, "Valid configuration"
 
         ## Check that each parameter specified in the configuration file is of the
         ## type specified in the configuration map.

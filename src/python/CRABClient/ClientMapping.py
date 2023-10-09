@@ -73,7 +73,6 @@ parametersMapping = {
                                      {'default': None,       'config': ['Data.lumiMask'],                   'type': 'StringType',  'required': False},
                                      {'default': None,       'config': ['Data.runRange'],                   'type': 'StringType',  'required': False},
                                      {'default': None,       'config': ['JobType.psetName'],                'type': 'StringType',  'required': False},
-                                     {'default': False,      'config': ['JobType.sendPythonFolder'],        'type': 'BooleanType', 'required': False},
                                      {'default': False,      'config': ['JobType.sendVenvFolder'],          'type': 'BooleanType', 'required': False},
                                      {'default': False,      'config': ['JobType.sendExternalFolder'],      'type': 'BooleanType', 'required': False},
                                      {'default': None,       'config': ['JobType.pyCfgParams'],             'type': 'ListType',    'required': False},
@@ -99,6 +98,10 @@ renamedParams = {
     'Data.secondaryDataset'           : {'newParam' : 'Data.secondaryInputDataset',      'version' : 'v3.3.1511'},
     'Data.primaryDataset'             : {'newParam' : 'Data.outputPrimaryDataset',       'version' : 'v3.3.1511'},
     'Data.publishDataName'            : {'newParam' : 'Data.outputDatasetTag',           'version' : 'v3.3.1511'},
+}
+
+deprecatedParams = {
+    'JobType.sendPythonFolder'
 }
 
 
