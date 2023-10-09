@@ -203,7 +203,7 @@ class HTTPRequests(dict):
         # retries are counted AFTER 1st try, so call is made up to nRetries+1 times !
         nRetries = max(2, self['retry'])
         for i in range(nRetries + 1):
-            stdout, stderr, curlExitCode = execute_command(command=command, logger=self.logger)
+            stdout, stderr, curlExitCode = execute_command(command=command, logger=None)
             http_code, http_reason = parseResponseHeader(stderr)
 
             if curlExitCode != 0 or http_code != 200:
@@ -214,6 +214,9 @@ class HTTPRequests(dict):
                 else:
                     # this was the last retry
                     msg = "Fatal error trying to connect to %s using %s." % (url, data)
+                    msg += "\nexit code from curl = %s" % curlExitCode
+                    msg += "\nHTTP code/reason = %s/%s ." % (http_code, http_reason)
+                    msg += "  stdout:\n%s" % stdout
                     self.logger.info(msg)
                     os.remove(path)
                     raise RESTInterfaceException(stderr)

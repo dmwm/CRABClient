@@ -129,7 +129,6 @@ class submit(SubCommand):
                       'tfileoutfiles', 'edmoutfiles', 'runs', 'lumis', 'userfiles', 'scriptargs', 'extrajdl', \
                       'inputblocks']
         self.configreq_encoded = self._encodeRequest(self.configreq, listParams)
-        self.logger.debug('Encoded submit request: %s' % (self.configreq_encoded))
 
         dictresult, status, reason = server.put(api=self.defaultApi, data=self.configreq_encoded)
         self.logger.debug("Result: %s" % dictresult)
