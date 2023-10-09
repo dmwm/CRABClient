@@ -2,13 +2,29 @@
 # pylint: disable=C0321,C0103,W0622
 # W0622: redefined-builtin
 
-# Original code is taken from WMCore: https://github.com/dmwm/WMCore/blob/4ec90a8d7f2e1902e37003f9391252cab43f08bc/src/python/WMCore/Configuration.py
-# Code parts that are not used by CRAB were removed
-
 """
-_Configuration_
-
 Module dealing with Configuration file in python format
+
+Original code is taken from WMCore: https://github.com/dmwm/WMCore/blob/4ec90a8d7f2e1902e37003f9391252cab43f08bc/src/python/WMCore/Configuration.py
+Code parts that are not used by CRAB were removed
+
+This is a frozen version of WMCore.Configuration which
+runs in both python2 and python3 without requiring external
+dependencies which are not available in CMSSW_8 or earlier, e.g. "future"
+
+This file allows to transitioning to a CRABClient which has no dependency on WMCore
+while not breaking the old (and log suggested) format for crabConfig.py to start with
+    from WMCore.Configuration import Configuration
+    config = Configuration()
+Althought we currently recommend
+    from CRABClient.UserUtils import config
+                                                     
+This file will renamed and moved by the CRABClient build procedure  
+(crab-build.file in cmsdist) or an ad hoc setup script in case a developer wants
+to run using source from GH, so that python discovers it as
+WMCore.Configuration. Ref:
+https://github.com/cms-sw/cmsdist/blob/a3a1ae367973de9b5c57de3b52d8d4df27611b91/crab-build.file#L42-L45
+
 """
 
 from __future__ import division
