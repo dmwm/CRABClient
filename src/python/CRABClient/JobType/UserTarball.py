@@ -242,18 +242,23 @@ class UserTarball(object):
         self.writeContent()
         return self.tarfile.close()
 
-    def printSortedContent(self):
+    def printSortedContent(self, maxLines=None):
         """
 	To be used for diagnostic printouts
         returns a string containing tarball content as a list of files sorted by size
         already formatted for use in a print statement
+        if Max is specified, only the largest max files are listed
         """
         sortedContent = sorted(self.content, reverse=True)
         biggestFileSize = sortedContent[0][0]
         ndigits = int(math.ceil(math.log(biggestFileSize+1, 10)))
         contentList = "\nsandbox content sorted by size[Bytes]:"
+        n = 0
         for (size, name) in sortedContent:
             contentList += ("\n%" + str(ndigits) + "s\t%s") % (size, name)
+            n += 1
+            if maxLines and n == maxLines:
+                break
         return contentList
 
     def upload(self, filecacheurl=None):
@@ -283,7 +288,11 @@ class UserTarball(object):
         if archiveSizeBytes > FILE_SIZE_LIMIT:
             msg = ("%sError%s: input tarball size %s exceeds maximum allowed limit of %d MB" %
                    (colors.RED, colors.NORMAL, archiveSize, FILE_SIZE_LIMIT//1024//1024))
-            msg += self.printSortedContent()
+            msg += "\nlargest 5 files are:"
+            msg += self.printSortedContent(maxLines=5)
+            msg += "\nsee crab.log file for full list of tarball contetnt"
+            fullList = self.printSortedContent()
+            self.logger.debug(fullList)
             raise SandboxTooBigException(msg)
 
         msg = ("Uploading archive %s (%s) to the CRAB cache. Using URI %s" %
