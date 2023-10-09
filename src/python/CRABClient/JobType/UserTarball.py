@@ -125,10 +125,7 @@ class UserTarball(object):
         """
 
         # Tar up whole directories in $CMSSW_BASE/
-        directories = ['lib', 'biglib', 'module', 'config/SCRAM/hooks']
-        if getattr(self.config.JobType, 'sendPythonFolder', configParametersInfo['JobType.sendPythonFolder']['default']):
-            directories.append('python')
-            directories.append('cfipython')
+        directories = ['bin', 'python', 'cfipython', 'lib', 'biglib', 'module', 'config/SCRAM/hooks']
         if getattr(self.config.JobType, 'sendExternalFolder', configParametersInfo['JobType.sendExternalFolder']['default']):
             externalDirPath = os.path.join(self.scram.getCmsswBase(), 'external')
             if os.path.exists(externalDirPath) and os.listdir(externalDirPath) != []:
