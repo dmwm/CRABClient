@@ -68,7 +68,6 @@ class resubmit(SubCommand):
         self.logger.info("Sending resubmit request to the server.")
         self.logger.debug("Submitting %s " % str(configreq))
         configreq_encoded = self._encodeRequest(configreq)
-        self.logger.debug("Encoded resubmit request: %s" % (configreq_encoded))
 
         dictresult, _, _ = self.crabserver.post(api=self.defaultApi, data=configreq_encoded)
         self.logger.debug("Result: %s" % (dictresult))
