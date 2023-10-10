@@ -21,8 +21,17 @@ if [ $python_cmd = "python3" ] ; then
   # alter PYTHONPATH here to keep flexibility to add or append as we find better
   export PYTHONPATH=$RUCIO_PYTHONPATH:$PYTHONPATH
 fi
-
+## SBSBSB
 echo $RUCIO_HOME
 cat $RUCIO_HOME/etc/rucio.cfg
+echo $PROXY
+echo $X509_USER_PROXY
+source /cvmfs/cms.cern.ch/rucio/setup-py3.sh
+rucio --version
+rucio whoami
+export X509_USER_PROXY=$PROXY
+rucio whoami
+
 echo "now launching crab.py"
+## SBSBSB
 exec ${python_cmd} ${script_dir}/crab.py ${1+"$@"}
