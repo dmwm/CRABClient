@@ -27,7 +27,10 @@ if not 'OpenSSL' in pycurl.version:
 
 if os.environ.get('RUCIO_HOME', None):
     from rucio.client import Client
-    #SBSB rucio = Client()
+    #SBSB
+    #rucio = Client()
+    rucio = None
+    #SBSB
 else:
     rucio = None
 
