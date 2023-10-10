@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 
 script_dir=`dirname $0`
 python_cmd="python"
@@ -21,4 +22,7 @@ if [ $python_cmd = "python3" ] ; then
   export PYTHONPATH=$RUCIO_PYTHONPATH:$PYTHONPATH
 fi
 
+echo $RUCIO_HOME
+cat $RUCIO_HOME/etc/rucio.cfg
+echo "now launching crab.py"
 exec ${python_cmd} ${script_dir}/crab.py ${1+"$@"}
