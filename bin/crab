@@ -26,7 +26,7 @@ echo $RUCIO_HOME
 cat $RUCIO_HOME/etc/rucio.cfg
 echo $PROXY
 echo $X509_USER_PROXY
-source /cvmfs/cms.cern.ch/rucio/setup-py3.sh
+source /cvmfs/cms.cern.ch/rucio/setup-py3.sh current
 rucio --version
 rucio whoami
 export X509_USER_PROXY=$PROXY
