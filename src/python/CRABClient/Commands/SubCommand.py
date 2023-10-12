@@ -20,6 +20,7 @@ from CRABClient.ClientExceptions import (ConfigurationException, MissingOptionEx
                                          EnvironmentException, CachefileNotFoundException)
 from CRABClient.ClientMapping import (renamedParams, commandsConfiguration, configParametersInfo,
                                       getParamDefaultValue, deprecatedParams)
+from CRABClient.UserUtilities import getUsername
 
 #if certificates in myproxy expires in less than RENEW_MYPROXY_THRESHOLD days renew them
 RENEW_MYPROXY_THRESHOLD = 15
@@ -376,6 +377,17 @@ class SubCommand(ConfigCommand):
             self.s3tester.setDbInstance('preprod')
             self.handleMyProxy()
 
+        if self.cmdconf['requiresRucio']:
+            if os.environ.get('RUCIO_HOME', None):
+                username = getUsername(self.proxyfilename, logger=self.logger)
+                from rucio.client import Client
+                os.environ['RUCIO_ACCOUNT'] = username
+                self.rucio = Client()
+                me = self.rucio.whoami()
+                self.logger.info('Rucio client intialized for account %s' % me['account'])
+            else:
+                self.rucio = None
+
         # Validate the command options
         self.validateOptions()
         self.validateOptions()
@@ -445,6 +457,7 @@ class SubCommand(ConfigCommand):
     def handleVomsProxy(self, proxyOptsSetPlace):
         """
         Make sure that there is a valid VOMS proxy
+        All CRABClient commands require a proxy as of Oct 2023.
         :param proxyOptsSetPlace: a complicated dictionary to keep track of VOMS group/roles in options/proxyfile/requestcache
                                   used by  CredentialInteractions/createNewVomsProxy()
         :return: nothing
@@ -456,12 +469,11 @@ class SubCommand(ConfigCommand):
             os.environ['X509_USER_PROXY'] = self.options.proxy
             self.logger.debug('Skipping proxy creation')
             return
-        if self.cmdconf['initializeProxy']:  # actually atm all commands require a proxy, see ClientMapping.py
-            self.credentialHandler.setVOGroupVORole(self.voGroup, self.voRole)
-            proxyInfo = self.credentialHandler.createNewVomsProxy(timeLeftThreshold=720, \
-                                                               proxyCreatedByCRAB=self.proxyCreated, \
-                                                               proxyOptsSetPlace=proxyOptsSetPlace)
-            self.proxyfilename = proxyInfo['filename']
+        self.credentialHandler.setVOGroupVORole(self.voGroup, self.voRole)
+        proxyInfo = self.credentialHandler.createNewVomsProxy(timeLeftThreshold=720, \
+                                                           proxyCreatedByCRAB=self.proxyCreated, \
+                                                           proxyOptsSetPlace=proxyOptsSetPlace)
+        self.proxyfilename = proxyInfo['filename']
         return
 
     def handleMyProxy(self):
