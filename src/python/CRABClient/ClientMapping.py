@@ -119,7 +119,7 @@ acceptsArguments        -  Whether the command accepts arguments. (To not confus
                            For commands requiring the task option, which can be actually given as an argument,
                            do not count it here as an argument. Same thing for the 'submit' command which can
                            take the CRAB configuration file name from the arguments.
-initializeProxy         -  Whether the command needs to create a proxy if there is not a (valid) one already.
+requiresRucio           -  Whether the command needs access to Rucio client
 requiresProxyVOOptions  -  Whether the command requires the --voGroup and --voRole options or not.
 doProxyGroupRoleCheck   -  Whether to check if the VO group and VO role in the proxy are the same as what has
                            been specified either in the CRAB configuration file or in the command options
@@ -131,24 +131,23 @@ WARNING: Don't set at the same time acceptsArguments = True and requiresDirOptio
 ---------------------------------------------------------------------------------------------------------------
 """
 commandsConfiguration = {
-    'createmyproxy' : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'requiresLocalCache': False},
-    'checkusername' : {'acceptsArguments': False, 'requiresREST': False, 'initializeProxy': True,  'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'requiresLocalCache': False},
-    'checkwrite'    : {'acceptsArguments': False, 'requiresREST': False, 'initializeProxy': True,  'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': True,  'requiresLocalCache': False},
-    'checkdataset'  : {'acceptsArguments': False, 'requiresREST': False, 'initializeProxy': True,  'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'requiresLocalCache': False},
-    'getlog'        : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': True,  'requiresLocalCache': True },
-    'getoutput'     : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': True,  'requiresLocalCache': True },
-    'kill'          : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': False, 'requiresProxyVOOptions': False, 'requiresLocalCache': True },
-    'proceed'       : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'requiresLocalCache': True },
-    'remake'        : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'requiresLocalCache': False},
-    'remote_copy'   : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': False, 'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'requiresLocalCache': True },
-    'report'        : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'requiresLocalCache': True },
-    'request_type'  : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'requiresLocalCache': True },
-    'resubmit'      : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'requiresLocalCache': True },
-    'status'        : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'requiresLocalCache': True },
-    'submit'        : {'acceptsArguments': True,  'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'requiresLocalCache': False},
-    'tasks'         : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'requiresLocalCache': False},
-    'uploadlog'     : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'requiresLocalCache': False},
-    'preparelocal'    : {'acceptsArguments': False, 'requiresREST': True,  'initializeProxy': True,  'requiresDirOption': True, 'useCache': True, 'requiresProxyVOOptions': False, 'requiresLocalCache': True},
+    'createmyproxy' : {'acceptsArguments': False, 'requiresREST': True,  'requiresRucio': False, 'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'requiresLocalCache': False},
+    'checkusername' : {'acceptsArguments': False, 'requiresREST': False, 'requiresRucio': False, 'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'requiresLocalCache': False},
+    'checkwrite'    : {'acceptsArguments': False, 'requiresREST': False, 'requiresRucio': True,  'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': True,  'requiresLocalCache': False},
+    'checkdataset'  : {'acceptsArguments': False, 'requiresREST': False, 'requiresRucio': True,  'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'requiresLocalCache': False},
+    'getlog'        : {'acceptsArguments': False, 'requiresREST': True,  'requiresRucio': False, 'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': True,  'requiresLocalCache': True },
+    'getoutput'     : {'acceptsArguments': False, 'requiresREST': True,  'requiresRucio': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': True,  'requiresLocalCache': True },
+    'kill'          : {'acceptsArguments': False, 'requiresREST': True,  'requiresRucio': False, 'requiresDirOption': True,  'useCache': False, 'requiresProxyVOOptions': False, 'requiresLocalCache': True },
+    'proceed'       : {'acceptsArguments': False, 'requiresREST': True,  'requiresRucio': False, 'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'requiresLocalCache': True },
+    'remake'        : {'acceptsArguments': False, 'requiresREST': True,  'requiresRucio': False, 'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'requiresLocalCache': False},
+    'remote_copy'   : {'acceptsArguments': False, 'requiresREST': True,  'requiresRucio': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'requiresLocalCache': True },
+    'report'        : {'acceptsArguments': False, 'requiresREST': True,  'requiresRucio': False, 'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'requiresLocalCache': True },
+    'resubmit'      : {'acceptsArguments': False, 'requiresREST': True,  'requiresRucio': False, 'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'requiresLocalCache': True },
+    'status'        : {'acceptsArguments': False, 'requiresREST': True,  'requiresRucio': True,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'requiresLocalCache': True },
+    'submit'        : {'acceptsArguments': True,  'requiresREST': True,  'requiresRucio': False, 'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'requiresLocalCache': False},
+    'tasks'         : {'acceptsArguments': False, 'requiresREST': True,  'requiresRucio': False, 'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'requiresLocalCache': False},
+    'uploadlog'     : {'acceptsArguments': False, 'requiresREST': True,  'requiresRucio': False, 'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'requiresLocalCache': False},
+    'preparelocal'  : {'acceptsArguments': False, 'requiresREST': True,  'requiresRucio': False, 'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'requiresLocalCache': True},
 }
 
 
