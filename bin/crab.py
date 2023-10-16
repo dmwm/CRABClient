@@ -142,7 +142,7 @@ class CRABClient(object):
             sys.exit(-1)
         self.cmd = sub_cmd(self.logger, args[1:])
 
-        self.cmd()
+        result = self.cmd()
 
 
 if __name__ == "__main__":
