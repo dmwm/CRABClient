@@ -83,10 +83,7 @@ class checkwrite(SubCommand):
         self.subdir = 'crab3checkwrite_' + timestamp
         lfn = self.lfnPrefix + '/' + self.subdir + '/' + self.filename
         site = self.options.sitename
-        try:
-            pfn = self.getPFN(site=site, lfn=lfn, username=username)
-        except Exception:
-            return {'status': 'FAILED'}
+        pfn = self.getPFN(site=site, lfn=lfn, username=username)
         self.createFile()
         self.logger.info("Will use PFN: %s", pfn)
         dirpfn = pfn[:len(pfn)-len(self.filename)]
