@@ -316,6 +316,7 @@ class status(SubCommand):
         statusDict['publication'] = pubStatus.get('status', {})
         statusDict['publicationFailures'] = pubStatus.get('failure_reasons', {})
         statusDict['jobs'] = statusCacheInfo
+        statusDict['commandStatus'] = 'SUCCESS'
         return statusDict
 
     def _percentageString(self, state, value, total):

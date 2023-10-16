@@ -48,7 +48,7 @@ class checkwrite(SubCommand):
 
         if not checkOutLFN(self.lfnPrefix, username):
             self.logger.info(errMsg)
-            return {'status': 'FAILED'}
+            return {'commandStatus':'FAILED'}
         else:
             self.logger.info("LFN %s is valid.", self.lfnPrefix)
 
@@ -56,7 +56,7 @@ class checkwrite(SubCommand):
         # where there is no python3. And in any case Rucio will not support python2 in the future
         if not cmd_exist("python3"):
             self.logger.info("No python3. Not possible to use Rucio in this environment")
-            return {'status': 'FAILED'}
+            return {'commandStatus':'FAILED'}
 
         cp_cmd = ""
         if cmd_exist("gfal-copy") and cmd_exist("gfal-rm") and self.command in [None, "GFAL"]:
@@ -75,7 +75,7 @@ class checkwrite(SubCommand):
                 cp_cmd += "--checksum-type %s " % self.checksum
         else:
             self.logger.info("Neither gfal nor lcg command was found")
-            return {'status': 'FAILED'}
+            return {'commandStatus':'FAILED'}
 
         self.logger.info('Will check write permission in %s on site %s', self.lfnPrefix, self.options.sitename)
         timestamp = str(time.strftime("%Y%m%d_%H%M%S"))
@@ -86,7 +86,7 @@ class checkwrite(SubCommand):
         try:
             pfn = self.getPFN(site=site, lfn=lfn, username=username)
         except Exception:
-            return {'status': 'FAILED'}
+            return {'commandStatus':'FAILED'}
         self.createFile()
         self.logger.info("Will use PFN: %s", pfn)
         dirpfn = pfn[:len(pfn)-len(self.filename)]
@@ -100,7 +100,7 @@ class checkwrite(SubCommand):
                 self.logger.info('\nFailed to delete file %s' % (pfn))
                 finalmsg  = '%sError%s: CRAB3 is able to copy but unable to delete file in %s on site %s. Asynchronous Stage Out with CRAB3 will fail.' % (colors.RED, colors.NORMAL, self.lfnPrefix, self.options.sitename)
                 finalmsg += '\n       You may want to contact the site administrators sending them the \'crab checkwrite\' output as printed above.'
-                returndict = {'status': 'FAILED'}
+                returndict = {'commandStatus':'FAILED'}
             else:
                 self.logger.info('\nSuccessfully deleted file %s' % (pfn))
                 self.logger.info('\nAttempting to delete directory %s\n' % (dirpfn))
@@ -109,30 +109,30 @@ class checkwrite(SubCommand):
                     self.logger.info('\nFailed to delete directory %s' % (dirpfn))
                     finalmsg  = '%sError%s: CRAB3 is able to copy but unable to delete directory in %s on site %s. Asynchronous Stage Out with CRAB3 will fail.' % (colors.RED, colors.NORMAL, self.lfnPrefix, self.options.sitename)
                     finalmsg += '\n       You may want to contact the site administrators sending them the \'crab checkwrite\' output as printed above.'
-                    returndict = {'status': 'FAILED'}
+                    returndict = {'commandStatus':'FAILED'}
                 else:
                     self.logger.info('\nSuccessfully deleted directory %s' % (dirpfn))
                     finalmsg = '%sSuccess%s: Able to write in %s on site %s' % (colors.GREEN, colors.NORMAL, self.lfnPrefix, self.options.sitename)
-                    returndict = {'status': 'SUCCESS'}
+                    returndict = {'commandStatus':'SUCCESS'}
         else:
             if 'Permission denied' in cperr or 'mkdir: cannot create directory' in cperr:
                 finalmsg  = '%sError%s: Unable to write in %s on site %s' % (colors.RED, colors.NORMAL, self.lfnPrefix, self.options.sitename)
                 finalmsg += '\n       You may want to contact the site administrators sending them the \'crab checkwrite\' output as printed above.'
-                returndict = {'status': 'FAILED'}
+                returndict = {'commandStatus':'FAILED'}
             elif 'timeout' in cpout or 'timeout' in cperr:
                 self.logger.info('Connection time out.')
                 finalmsg  = '\nUnable to check write permission in %s on site %s' % (self.lfnPrefix, self.options.sitename)
                 finalmsg += '\nPlease try again later or contact the site administrators sending them the \'crab checkwrite\' output as printed above.'
-                returndict = {'status': 'FAILED'}
+                returndict = {'commandStatus':'FAILED'}
             else:
                 finalmsg  = 'Unable to check write permission in %s on site %s' % (self.lfnPrefix, self.options.sitename)
                 finalmsg += '\nPlease try again later or contact the site administrators sending them the \'crab checkwrite\' output as printed above.'
-                returndict = {'status' : 'FAILED'}
+                returndict = {'commandStatus':'FAILED'}
         self.removeFile()
 
         self.logger.info('\nCheckwrite Result:')
         self.logger.info(finalmsg)
-        if returndict['status'] == 'FAILED':
+        if returndict['commandStatus'] == 'FAILED':
             self.logger.info('%sNote%s: You cannot write to a site if you did not ask permission.' % (colors.BOLD, colors.NORMAL))
             if 'CH_CERN' in self.options.sitename:
                 dbgmsg = '%sAdditional diagnostic info for CERN EOS%s\n' % (colors.RED, colors.NORMAL)

@@ -40,6 +40,7 @@ class kill(SubCommand):
             self.logger.info(dictresult['result'][0]['result'])
         else:
             resultdict = {'status' : 'SUCCESS'}
+        resultdict['commandStatus'] = resultdict['status']  # add, do not override status key, in case someone was using it
 
         return resultdict
 

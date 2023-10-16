@@ -162,7 +162,11 @@ class submit(SubCommand):
 
         self.logger.debug("About to return")
 
-        return {'requestname':self.requestname, 'uniquerequestname':uniquerequestname}
+        returnDict = {'requestname':self.requestname, 'uniquerequestname':uniquerequestname}
+        # all methods called before raise if something goes wrong. Getting here means success
+        returnDict['commandStatus'] = 'SUCCESS'
+
+        return returnDict
 
 
     def setOptions(self):

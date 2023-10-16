@@ -51,6 +51,8 @@ class getlog(getcommand):
                 msg = "You can use the --short option to retrieve a short version of the log files from the Grid scheduler."
                 self.logger.info(msg)
 
+        # if something failed, getcommand raises exceptions, so if we got here it means OK
+        returndict['commandStatus'] = 'SUCCESS'
         return returndict
 
 

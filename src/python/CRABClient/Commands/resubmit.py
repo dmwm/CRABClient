@@ -81,6 +81,7 @@ class resubmit(SubCommand):
             msg += "\nNotice it may take a couple of minutes for the resubmission to get fully processed."
             self.logger.info(msg)
             returndict = {'status': 'SUCCESS'}
+        returndict['commandStatus'] = returndict['status']  # add, do not override status key, in case someone was using it
 
         return returndict
 

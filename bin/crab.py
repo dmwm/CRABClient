@@ -142,7 +142,9 @@ class CRABClient(object):
             sys.exit(-1)
         self.cmd = sub_cmd(self.logger, args[1:])
 
-        self.cmd()
+        returnDict = self.cmd()
+        if returnDict['commandStatus'] != 'SUCCESS':
+            sys.exit(1)
 
 
 if __name__ == "__main__":
