@@ -12,9 +12,9 @@ class checkusername(SubCommand):
         username = getUsername(self.proxyfilename, logger=self.logger)
         self.logger.info("Username is: %s", username)
         if username:
-            result = {'status': 'SUCCESS'}
+            result = {'commandStatus': 'SUCCESS'}
         else:
-            result = {'status': 'FAILED'}
+            result = {'commandStatus': 'FAILED'}
         return result
 
     def terminate(self, exitcode):
