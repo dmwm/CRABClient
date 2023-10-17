@@ -36,7 +36,8 @@ task status does not progress beyond SUBMITTED unless the task is KILLED
             if self.options.status:
                 msg += " with status %s" % (self.options.status)
             self.logger.info(msg)
-            return result
+            returnDict = {'commandStatus': 'SUCCESS', 'taskList': []}
+            return returnDict
 
         msg = "\nList of tasks from %s until %s" % (self.date, today)
         if self.options.status:
