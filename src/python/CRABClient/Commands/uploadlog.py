@@ -32,7 +32,7 @@ class uploadlog(SubCommand):
             except Exception:
                 self.logger.info("Couldn't get information from .requestcache (file likely not created due to submission failure),\n" +
                                  "Please locate crab.log yourself and copy/paste into the mail to support if needed")
-                return {}
+                return {'commandStatus': 'FAILED'}
         else:
             msg = "%sError%s: Could not locate log file." % (colors.RED, colors.NORMAL)
             self.logger.info(msg)
@@ -42,7 +42,8 @@ class uploadlog(SubCommand):
         logfileurl = uploadlogfile(self.logger, self.proxyfilename, taskname=taskname, logfilename=logfilename,
                                    logpath=str(self.logfile), instance=self.instance,
                                    serverurl=self.serverurl)
-        return {'result': {'status': 'SUCCESS', 'logurl': logfileurl}}
+        return {'commandStatus': 'SUCCESS',
+                'result': {'status': 'SUCCESS', 'logurl': logfileurl}}
 
 
     def setOptions(self):

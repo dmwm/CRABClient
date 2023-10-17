@@ -40,7 +40,7 @@ class checkdataset(SubCommand):
                 self.logger.info('  Stdout:\n    %s' % str(out).replace('\n', '\n    '))
             if err:
                 self.logger.info('  Stderr:\n    %s' % str(err).replace('\n', '\n    '))
-            return {'status': 'FAILED'}
+            return {'commandStatus': 'FAILED'}
 
         # execute it in the Rucio environment
         cmd = 'eval `scram unsetenv -sh`; '
@@ -55,12 +55,12 @@ class checkdataset(SubCommand):
                 self.logger.info('  Stdout:\n    %s' % str(out).replace('\n', '\n    '))
             if err:
                 self.logger.info('  Stderr:\n    %s' % str(err).replace('\n', '\n    '))
-            return {'status': 'FAILED'}
+            return {'commandStatus': 'FAILED'}
         else:
             self.logger.info(out)
         os.unlink(os.path.join(tmpDir, scriptName))
         os.rmdir(tmpDir)
-        return {'status': 'SUCCESS'}
+        return {'commandStatus': 'SUCCESS'}
 
 
     def setOptions(self):

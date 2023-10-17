@@ -39,7 +39,7 @@ class createmyproxy(SubCommand):
             (credentialName, myproxyTimeleft) = credentialHandler.createNewMyProxy(timeleftthreshold=timeLeftThreshold)
             self.logger.info("Credential exists on myproxy: username: %s  - validity: %s", credentialName,
                              str(timedelta(seconds=myproxyTimeleft)))
-        return
+        return {'commandStatus': 'SUCCESS'}
 
 
     def setOptions(self):

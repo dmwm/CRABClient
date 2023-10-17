@@ -14,6 +14,8 @@ class getoutput(getcommand):
     def __call__(self):
         returndict = getcommand.__call__(self, subresource = 'data2')
 
+        # if something failed, getcommand raises exceptions, so if we got here it means OK
+        returndict['commandStatus'] = 'SUCCESS'
         return returndict
 
     def setOptions(self):

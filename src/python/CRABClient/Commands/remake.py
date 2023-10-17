@@ -1,6 +1,7 @@
 import re
 import pickle
 import os
+import sys
 
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientUtilities import colors, PKL_W_MODE
@@ -36,8 +37,15 @@ class remake(SubCommand):
                          'RequestName': taskname, 'voRole': '', 'Port': ''}, dumpfile, protocol=0)
             dumpfile.close()
             self.logger.info("%sSuccess%s: Finished remaking project directory %s" % (colors.GREEN, colors.NORMAL, requestarea))
-            return requestarea
 
+            caller = sys._getframe(1)
+            if not 'crab.py' in caller.f_code.co_filename:
+                msg = "ATTENTION return value for 'remake' has been changed to a dictionary"
+                msg += "\n format is {'commandStatus': 'SUCCESS' or 'FAILED',"
+                msg += "\n            'workDir': name of the work directory created}"
+                self.logger.warning(msg)
+            returnDict = {'commandStatus': 'SUCCESS', 'workDir': requestarea}
+            return returnDict
 
     def setOptions(self):
         """

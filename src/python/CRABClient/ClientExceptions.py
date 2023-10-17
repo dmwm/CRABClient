@@ -89,9 +89,10 @@ class SandboxTooBigException(ClientException):
     exitcode = 3015
 
 
-class PanDaException(ClientException):
+class CommandFailedException(ClientException):
     """
-    Specific errors coming from interaction with PanDa
+    Command completed, but encountered a failure (e.g. a check failed, or
+    some information could not be retrieved
     """
     exitcode = 3100
 

@@ -268,6 +268,8 @@ class report(SubCommand):
                 jsonFile.write("\n")
                 self.logger.info("  Lumis to process written to lumisToProcess.json")
 
+        # all methods called before raise if something goes wrong. Getting here means success
+        returndict['commandStatus'] = 'SUCCESS'
         return returndict
 
     def collectReportData(self):

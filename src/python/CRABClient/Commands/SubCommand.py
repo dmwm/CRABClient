@@ -599,6 +599,15 @@ class SubCommand(ConfigCommand):
 
 
     def __call__(self):
+        """
+        this needs to be implemented by each command class which subclassed SubCommand
+        call signature is always __call__(self)
+        the command must either raise an exception for the caller to catch or
+        return a dictionary of the format
+        {'commandStatus': status, key: val, key: val ....}
+        where status can have the values 'SUCCESS' or 'FAILED'
+        and the other keys and values are command dependent !
+        """
         self.logger.info("This is a 'nothing to do' command")
         raise NotImplementedError
 

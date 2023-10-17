@@ -13,7 +13,7 @@ from CRABClient.ClientExceptions import ClientException
 
 
 class preparelocal(SubCommand):
-    """ The commands prepare a direcotry and the relative scripts to execute the jobs locally.
+    """ The commands prepares a directory and the relative scripts to execute the jobs locally.
         It can also execute a specific job if the jobid option is passed
     """
 
@@ -51,7 +51,8 @@ class preparelocal(SubCommand):
             os.chdir(cwd)
             shutil.rmtree(tmpDir)
 
-        return {}
+        # all methods called before raise if something goes wrong. Getting here means success
+        return {'commandStatus': 'SUCCESS'}
 
     def getInputFiles(self):
         """ Get the InputFiles.tar.gz and extract the necessary files
