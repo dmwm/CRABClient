@@ -10,6 +10,16 @@ from __future__ import print_function
 from __future__ import division
 import sys
 import os
+import logging
+import logging.handlers
+import re
+
+from ServerUtilities import FEEDBACKMAIL
+from CRABClient.CRABOptParser import CRABOptParser
+from CRABClient import __version__ as client_version
+from CRABClient.ClientMapping import parametersMapping
+from CRABClient.ClientExceptions import ClientException, RESTInterfaceException, CommandFailedException
+from CRABClient.ClientUtilities import getAvailCommands, initLoggers, setConsoleLogLevelVar, StopExecution, flushMemoryLogger, LOGFORMATTER
 
 if not os.environ.get('CMSSW_VERSION',None):
     print('\nError: $CMSSW_VERSION is not defined. Make sure you do cmsenv first. Exiting...')
@@ -27,18 +37,6 @@ if not 'OpenSSL' in pycurl.version:
 
 if 'crab-dev' in __file__:
     print('BEWARE: this is the development version of CRAB Client.\nBe sure to have a good reason for using it\n')
-
-import logging
-import logging.handlers
-import re
-
-from ServerUtilities import FEEDBACKMAIL
-
-from CRABClient.CRABOptParser import CRABOptParser
-from CRABClient import __version__ as client_version
-from CRABClient.ClientMapping import parametersMapping
-from CRABClient.ClientExceptions import ClientException, RESTInterfaceException
-from CRABClient.ClientUtilities import getAvailCommands, initLoggers, setConsoleLogLevelVar, StopExecution, flushMemoryLogger, LOGFORMATTER
 
 
 class MyNullHandler(logging.Handler):
@@ -144,7 +142,7 @@ class CRABClient(object):
 
         returnDict = self.cmd()
         if returnDict['commandStatus'] != 'SUCCESS':
-            sys.exit(1)
+            raise CommandFailedException("Command %s failed" % str(args[0]))
 
 
 if __name__ == "__main__":
@@ -184,14 +182,20 @@ if __name__ == "__main__":
         client.logger.error(pe)
         logging.getLogger('CRAB3').exception('Caught pycurl.error exception')
         exitcode = pe.args[0]
+        # SB following line is wrong, the exception (pe) is not a list. Anyhow we want to remove pycurl
         if pe[1].find('(DNS server returned answer with no data)'):
             client.logger.info(schedInterv)
     except ClientException as ce:
         client.logger.error(ce)
         logging.getLogger('CRAB3').exception('Caught ClientException exception')
         exitcode = ce.exitcode
+    except CommandFailedException as ce:
+        client.logger.warning(ce)
+        logging.getLogger('CRAB3').exception('Caught CommandFailedException exception')
+        exitcode = 1
     except KeyboardInterrupt:
         client.logger.error('Keyboard Interrupted')
+        exitcode = 1
     except StopExecution:
         exitcode = 0
     finally:
@@ -206,4 +210,3 @@ if __name__ == "__main__":
         client.logger.info('Log file is %s', client.logger.logfile)
 
     sys.exit( exitcode )
-
