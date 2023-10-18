@@ -46,6 +46,10 @@ BOOTSTRAP_INFOFILE = 'crab3info.json'
 BOOTSTRAP_CFGFILE = 'PSet.py'
 BOOTSTRAP_CFGFILE_PKL = 'PSet.pkl'
 
+# next two shoul move to CRABServer/ServerUtilities since will be needed in TW and scheduler as well
+RUCIO_QUOTA_WARNING_GB = 10  # when available Rucio quota is less than this, warn users
+RUCIO_QUOTA_MINIMUM_GB = 1  # when available Rucio quota is less thatn this, refuse submission
+
 class colors:  # pylint: disable=no-init
     colordict = {
                 'RED':'\033[91m',

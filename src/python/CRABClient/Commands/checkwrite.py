@@ -5,6 +5,7 @@ import datetime
 
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientUtilities import execute_command, colors, cmd_exist
+from CRABClient.ClientUtilities import RUCIO_QUOTA_WARNING_GB, RUCIO_QUOTA_MINIMUM_GB
 from CRABClient.UserUtilities import getUsername
 from CRABClient.ClientExceptions import MissingOptionException, ConfigurationException, CommandFailedException
 from ServerUtilities import checkOutLFN
@@ -26,6 +27,7 @@ class checkwrite(SubCommand):
     def __call__(self):
 
         username = getUsername(self.proxyfilename, logger=self.logger)
+        site = self.options.sitename
         if hasattr(self.options, 'userlfn') and self.options.userlfn != None:
             self.lfnPrefix = self.options.userlfn
         else:
@@ -58,6 +60,11 @@ class checkwrite(SubCommand):
             self.logger.info("No python3. Not possible to use Rucio in this environment")
             return {'commandStatus':'FAILED'}
 
+        # if user asked to to use Rucio for ASO we simply check quota, since user can't directly write there
+        if self.lfnPrefix.startswith('/store/user/rucio/') or self.lfnPrefix.startswith('/store/group/rucio/') :
+            status = self.checkRucioQuota(username, site)
+            return {'commandStatus': status}
+
         cp_cmd = ""
         if cmd_exist("gfal-copy") and cmd_exist("gfal-rm") and self.command in [None, "GFAL"]:
             self.logger.info("Will use `gfal-copy`, `gfal-rm` commands for checking write permissions")
@@ -82,7 +89,6 @@ class checkwrite(SubCommand):
         self.filename = 'crab3checkwrite_' + timestamp  + '.tmp'
         self.subdir = 'crab3checkwrite_' + timestamp
         lfn = self.lfnPrefix + '/' + self.subdir + '/' + self.filename
-        site = self.options.sitename
         try:
             if self.rucio:
                 pfn = self.getPFNviaRucio(site=site, lfn=lfn, username=username)
@@ -231,6 +237,41 @@ exit(0)
         pfn = rucioOut.rstrip()
         return pfn
 
+    def checkRucioQuota(self, username, site):
+            if not self.rucio:
+                self.logger.warning("Rucio client not available with this CMSSW version. Can not check")
+                return {'commandStatus':'FAILED'}
+            quota = list(self.rucio.get_local_account_usage(username, site))
+            if not quota:
+                msg = "You do not have any Rucio quota at site %s" % site
+                self.logger.error(msg)
+                status ='FAILED'
+            else:
+                freeGB = quota[0]['bytes_remaining']/1024/1024/1024
+                msg = "you have %d GB available as Rucio quota at site %s" % (freeGB, site)
+                self.logger.info(msg)
+                if freeGB > RUCIO_QUOTA_MINIMUM_GB:
+                    status = 'SUCCESS'
+                    if freeGB <= RUCIO_QUOTA_WARNING_GB:
+                        msg = 'This is very little and although CRAB will submit, stageout may fail. Please cleanup'
+                        self.logger.warning(msg)
+                    else:
+                        self.logger.info("You can use this site for Rucio-based ASO")
+                else:
+                    msg = "your available space is not enough to allow CRAB to submit jobs. Cleanup !!"
+                    status = 'FAILED'
+
+            msg = "FYI this is your Rucio quota situation (rounded to GBytes = 10^9 Bytes)"
+            quotaRecords = self.rucio.get_local_account_usage(username)
+            msg += "\n%20s%10s%10s%10s" % ('Site', 'Quota', 'Used', 'Free')
+            for record in quotaRecords:
+                site = record['rse']
+                totalGB = record['bytes_limit'] / 1000 / 1000 / 1000
+                usedGB = record['bytes'] / 1000 / 1000 / 1000
+                freeGB = record['bytes_remaining'] / 1000 / 1000 / 1000
+                msg += "\n%20s%10d%10d%10d" % (site, totalGB, usedGB, freeGB)
+            self.logger.info(msg)
+            return status
 
     def cp(self, pfn, command):
 
