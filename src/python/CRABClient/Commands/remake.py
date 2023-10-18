@@ -16,6 +16,12 @@ class remake(SubCommand):
     shortnames = ['rmk']
 
     def __call__(self):
+        caller = sys._getframe(1)
+        if not 'crab.py' in caller.f_code.co_filename:
+            msg = "ATTENTION return value for 'remake' has been changed to a dictionary"
+            msg += "\n format is {'commandStatus': 'SUCCESS' or 'FAILED',"
+            msg += "\n            'workDir': name of the work directory created}"
+            self.logger.warning(msg)
         return self.remakecache(''.join(self.options.cmptask.split()))
 
     def remakecache(self,taskname):
@@ -38,14 +44,8 @@ class remake(SubCommand):
             dumpfile.close()
             self.logger.info("%sSuccess%s: Finished remaking project directory %s" % (colors.GREEN, colors.NORMAL, requestarea))
 
-            caller = sys._getframe(1)
-            if not 'crab.py' in caller.f_code.co_filename:
-                msg = "ATTENTION return value for 'remake' has been changed to a dictionary"
-                msg += "\n format is {'commandStatus': 'SUCCESS' or 'FAILED',"
-                msg += "\n            'workDir': name of the work directory created}"
-                self.logger.warning(msg)
-            returnDict = {'commandStatus': 'SUCCESS', 'workDir': requestarea}
-            return returnDict
+        returnDict = {'commandStatus': 'SUCCESS', 'workDir': requestarea}
+        return returnDict
 
     def setOptions(self):
         """

@@ -12,7 +12,7 @@ from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.JobType.BasicJobType import BasicJobType
 from CRABClient.UserUtilities import getMutedStatusInfo, curlGetFileFromURL
 from CRABClient.ClientExceptions import ConfigurationException, \
-    UnknownOptionException, ClientException
+    UnknownOptionException, ClientException, CommandFailedException
 
 from ServerUtilities import FEEDBACKMAIL
 
@@ -36,7 +36,7 @@ class report(SubCommand):
             msg += " Status information is unavailable, will not proceed with the report."
             msg += " Try again a few minutes later if the task has just been submitted."
             self.logger.info(msg)
-            return None
+            raise CommandFailedException(msg)
 
         returndict = {}
         if self.options.recovery == 'notPublished' and not reportData['publication']:
@@ -49,11 +49,11 @@ class report(SubCommand):
         onlyDBSSummary = False
         if not reportData['lumisToProcess'] or not reportData['runsAndLumis']:
             msg = "%sError%s:" % (colors.RED, colors.NORMAL)
-            msg += " Cannot get all the needed information for the report."
-            msg += " Notice, if your task has been submitted more than 30 days ago, then everything has been cleaned."
+            msg += " Cannot get all the needed information for the report. Maybe no job has completed yet ?"
+            msg += "\n Notice, if your task has been submitted more than 30 days ago, then everything has been cleaned."
             self.logger.info(msg)
             if not reportData['publication']:
-                return returndict
+                raise CommandFailedException(msg)
             onlyDBSSummary = True
 
         def _getNumFiles(jobs, fileType):
