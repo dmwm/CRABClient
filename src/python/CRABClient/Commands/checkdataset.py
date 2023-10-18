@@ -19,7 +19,6 @@ class checkdataset(SubCommand):
 
 
     def __call__(self):
-        #import pdb; pdb.set_trace()
 
         if hasattr(self.options, 'dataset') and self.options.dataset:
             dataset = self.options.dataset
@@ -62,7 +61,6 @@ class checkdataset(SubCommand):
         os.rmdir(tmpDir)
         return {'commandStatus': 'SUCCESS'}
 
-
     def setOptions(self):
         """
         __setOptions__
@@ -73,7 +71,6 @@ class checkdataset(SubCommand):
                                dest='dataset',
                                default=None,
                                help='dataset of block ID or Rucio DID (scope:name)')
-
 
     def validateOptions(self):
         SubCommand.validateOptions(self)
