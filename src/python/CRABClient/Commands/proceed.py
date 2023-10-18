@@ -38,10 +38,11 @@ class proceed(SubCommand):
         msg = "Task continuation request successfully sent to the CRAB3 server"
         if result['result'][0]['result'] != 'ok':
             msg += "\nServer responded with: '%s'" % (result['result'][0]['result'])
-            status = {'status': 'FAILED'}
+            resultDict = {'status': 'FAILED'}
         else:
-            status = {'status': 'SUCCESS'}
+            resultDict = {'status': 'SUCCESS'}
             self.logger.info("To check task progress, use 'crab status'")
         self.logger.info(msg)
+        resultDict['commandStatus'] = resultDict['status']  # add, do not override status key, in case someone was using it
 
-        return status
+        return resultDict

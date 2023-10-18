@@ -1,3 +1,4 @@
+import sys
 from datetime import datetime, date, timedelta
 
 from ServerUtilities import TASKDBSTATUSES
@@ -35,7 +36,8 @@ task status does not progress beyond SUBMITTED unless the task is KILLED
             if self.options.status:
                 msg += " with status %s" % (self.options.status)
             self.logger.info(msg)
-            return result
+            returnDict = {'commandStatus': 'SUCCESS', 'taskList': []}
+            return returnDict
 
         msg = "\nList of tasks from %s until %s" % (self.date, today)
         if self.options.status:
@@ -52,7 +54,14 @@ task status does not progress beyond SUBMITTED unless the task is KILLED
             self.logger.info('-'*80)
         self.logger.info('\n')
 
-        return result
+        caller = sys._getframe(1)
+        if not 'crab.py' in caller.f_code.co_filename:
+            msg = "ATTENTION return value for 'tasks' has been changed to a dictionary"
+            msg += "\n format is {'commandStatus': 'SUCCESS' or 'FAILED',"
+            msg += "\n            'tasklist': list of [task, status] lists as before}"
+            self.logger.warning(msg)
+        returnDict = {'commandStatus': 'SUCCESS', 'taskList': result}
+        return returnDict
 
 
     def setOptions(self):

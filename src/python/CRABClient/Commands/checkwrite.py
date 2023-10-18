@@ -83,7 +83,10 @@ class checkwrite(SubCommand):
         self.subdir = 'crab3checkwrite_' + timestamp
         lfn = self.lfnPrefix + '/' + self.subdir + '/' + self.filename
         site = self.options.sitename
-        pfn = self.getPFN(site=site, lfn=lfn, username=username)
+        try:
+            pfn = self.getPFN(site=site, lfn=lfn, username=username)
+        except Exception:
+            return {'commandStatus':'FAILED'}
         self.createFile()
         self.logger.info("Will use PFN: %s", pfn)
         dirpfn = pfn[:len(pfn)-len(self.filename)]
@@ -124,12 +127,12 @@ class checkwrite(SubCommand):
             else:
                 finalmsg  = 'Unable to check write permission in %s on site %s' % (self.lfnPrefix, self.options.sitename)
                 finalmsg += '\nPlease try again later or contact the site administrators sending them the \'crab checkwrite\' output as printed above.'
-                returndict = {'status' : 'FAILED'}
+                returndict = {'commandStatus':'FAILED'}
         self.removeFile()
 
         self.logger.info('\nCheckwrite Result:')
         self.logger.info(finalmsg)
-        if returndict['status'] == 'FAILED':
+        if returndict['commandStatus'] == 'FAILED':
             self.logger.info('%sNote%s: You cannot write to a site if you did not ask permission.' % (colors.BOLD, colors.NORMAL))
             if 'CH_CERN' in self.options.sitename:
                 dbgmsg = '%sAdditional diagnostic info for CERN EOS%s\n' % (colors.RED, colors.NORMAL)

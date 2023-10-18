@@ -34,6 +34,10 @@ def execRaw(command, args):
         execRaw - executes a given command with certain arguments and returns
                   the raw result back from the client. args is a python list,
                   the same python list parsed by the optparse module
+                  Every command returns a dictionary of the form
+                  {'commandStatus': status, key: val, key: val ....}
+                  where status can have the values 'SUCCESS' or 'FAILED'
+                  and the other keys and values are command dependent !
     """
     tblogger, logger, memhandler = initLoggers()
 
