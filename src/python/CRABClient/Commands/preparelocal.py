@@ -133,20 +133,9 @@ class preparelocal(SubCommand):
         inputArgsStr = "-a %(CRAB_Archive)s --sourceURL=%(CRAB_ISB)s --jobNumber=%(CRAB_Id)s --cmsswVersion=%(CRAB_JobSW)s --scramArch=%(CRAB_JobArch)s --inputFile=%(inputFiles)s --runAndLumis=%(runAndLumiMask)s --lheInputFiles=%(lheInputFiles)s --firstEvent=%(firstEvent)s --firstLumi=%(firstLumi)s --lastEvent=%(lastEvent)s --firstRun=%(firstRun)s --seeding=%(seeding)s --scriptExe=%(scriptExe)s --eventsPerLumi=%(eventsPerLumi)s --maxRuntime=%(maxRuntime)s --scriptArgs=%(scriptArgs)s -o %(CRAB_AdditionalOutputFiles)s\n"
         for f in ["gWMS-CMSRunAnalysis.sh", "CMSRunAnalysis.sh", "cmscp.py", "CMSRunAnalysis.tar.gz",
                   "sandbox.tar.gz", "run_and_lumis.tar.gz", "input_files.tar.gz", "Job.submit",
-                  # "submit_env.sh" ## uncomment this line after the new TW with the new jobwrapper is deployed.
+                  "submit_env.sh"
                   ]:
             shutil.copy2(f, targetDir)
-        try:
-            # (dario, 202212)
-            # this try/except has been introduced only for backwards compatibility
-            # of the crab client with the old TW with the old jobwrapper.
-            # once the new jobwrapper is deployed, we can move submit_env.sh
-            # into the list a few lines above.
-            shutil.copy2("submit_env.sh", targetDir)
-        except Exception as e:
-            # it is allright that submit.env is not found, just means new client with old TW
-            pass
-
 
         with open(os.path.join(targetDir, "InputArgs.txt"), "w") as fd:
             for ia in inputArgs:
