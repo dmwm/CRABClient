@@ -44,8 +44,8 @@ class remake(SubCommand):
                 msg += "\n format is {'commandStatus': 'SUCCESS' or 'FAILED',"
                 msg += "\n            'workDir': name of the work directory created}"
                 self.logger.warning(msg)
-            returnDict = {'commandStatus': 'SUCCESS', 'workDir': requestarea}
-            return returnDict
+        returnDict = {'commandStatus': 'SUCCESS', 'workDir': requestarea}
+        return returnDict
 
     def setOptions(self):
         """
