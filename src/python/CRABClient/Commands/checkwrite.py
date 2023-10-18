@@ -6,7 +6,7 @@ import datetime
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientUtilities import execute_command, colors, cmd_exist
 from CRABClient.UserUtilities import getUsername
-from CRABClient.ClientExceptions import MissingOptionException, ConfigurationException
+from CRABClient.ClientExceptions import MissingOptionException, ConfigurationException, CommandFailedException
 from ServerUtilities import checkOutLFN
 
 class checkwrite(SubCommand):
@@ -84,9 +84,13 @@ class checkwrite(SubCommand):
         lfn = self.lfnPrefix + '/' + self.subdir + '/' + self.filename
         site = self.options.sitename
         try:
-            pfn = self.getPFN(site=site, lfn=lfn, username=username)
-        except Exception:
-            return {'commandStatus':'FAILED'}
+            if self.rucio:
+                pfn = self.getPFNviaRucio(site=site, lfn=lfn, username=username)
+            else:
+                pfn = self.getPFNviaScript(site=site, lfn=lfn, username=username)
+        except Exception as e:
+            self.logger.error(e)
+            return {'commandStatus': 'FAILED'}
         self.createFile()
         self.logger.info("Will use PFN: %s", pfn)
         dirpfn = pfn[:len(pfn)-len(self.filename)]
@@ -171,9 +175,22 @@ class checkwrite(SubCommand):
             self.logger.info('%sWarning%s: Failed to delete file %s' % (colors.RED, colors.NORMAL, self.filename))
 
 
-    def getPFN(self, site='T2_CH_CERN', lfn='/store/user', username='jdoe'):
+    def getPFNviaRucio(self, site='T2_CH_CERN', lfn='/store/user', username='jdoe'):
+        rse = site
+        did = "user." + username + ':' + lfn
+        lfns = [did]
+        for operation in ['third_party_copy_write', 'write', 'read']:
+                pfns = self.rucio.lfns2pfns(rse, lfns, operation=operation)
+                break
+        if not pfns:
+            msg = "Failed to resolve LNF to PFN via Rucio."
+            self.logger.error(msg)
+            raise CommandFailedException(msg)
+        pfn = pfns[lfns[0]]
+        return pfn
 
-        # prepare a simply python script to resolve lfn2pfn via Rucio
+    def getPFNviaScript(self, site='T2_CH_CERN', lfn='/store/user', username='jdoe'):
+        # fall back to a python script to resolve lfn2pfn via Rucio
         template = """
 from rucio.client import Client
 client = Client()
@@ -185,6 +202,7 @@ for operation in ['third_party_copy_write', 'write', 'read']:
         out = client.lfns2pfns(rse, lfn, operation=operation)
         break
     except Exception as ex:
+        out = None
         print("Failed to resolve LNF to PFN via Rucio. Error is:\\n %s" % str(ex))
 if not out:
     print("Failed to resolve LNF to PFN via Rucio.")
