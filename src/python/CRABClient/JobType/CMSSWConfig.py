@@ -271,8 +271,8 @@ class CMSSWConfig(object):
             return False, msg
 
         #Assumes a default of 1 if the parameter is not specified
-        cfgNumCores = getattr(self.config.JobType, 'numCores', None)
-        numPSetCores = getattr(getattr(self.fullConfig.process, 'options', object), 'numberOfThreads', None)
+        cfgNumCores = getattr(self.config.JobType, 'numCores', 1)
+        numPSetCores = getattr(getattr(self.fullConfig.process, 'options', object), 'numberOfThreads', uint32(1))
         if numPSetCores and not isinstance(numPSetCores, uint32):
             msg = "The only accepted type for process.options.numberOfThreads is uint32. Please, change its type in the PSet."
             msg += "See https://github.com/cms-sw/cmssw/issues/32070 for details"
