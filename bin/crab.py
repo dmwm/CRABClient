@@ -29,12 +29,6 @@ if sys.version_info < (2, 6):
     print('\nError: using a version of python < 2.6. Exiting...\n')
     sys.exit()
 
-import pycurl
-if not 'OpenSSL' in pycurl.version:
-    print('\nError: missing SSL support in pycurl. Make sure you do cmsenv first. Exiting...')
-    print('pycurl version is: %s\n' % pycurl.version)
-    sys.exit()
-
 if 'crab-dev' in __file__:
     print('BEWARE: this is the development version of CRAB Client.\nBe sure to have a good reason for using it\n')
 
@@ -178,13 +172,6 @@ if __name__ == "__main__":
             errorId = re.search(r'(?<=X-Error-Id:\s)[^\n]*', err).group(0)
             client.logger.info('Error Id: %s', errorId)
         logging.getLogger('CRAB3').exception('Caught RESTInterfaceException exception')
-    except pycurl.error as pe:
-        client.logger.error(pe)
-        logging.getLogger('CRAB3').exception('Caught pycurl.error exception')
-        exitcode = pe.args[0]
-        # SB following line is wrong, the exception (pe) is not a list. Anyhow we want to remove pycurl
-        if pe[1].find('(DNS server returned answer with no data)'):
-            client.logger.info(schedInterv)
     except ClientException as ce:
         client.logger.error(ce)
         logging.getLogger('CRAB3').exception('Caught ClientException exception')

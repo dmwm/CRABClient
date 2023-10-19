@@ -14,7 +14,10 @@ import tempfile
 from functools import reduce
 from ast import literal_eval
 
-from FWCore.PythonUtilities.LumiList import LumiList
+try:
+    from FWCore.PythonUtilities.LumiList import LumiList
+except Exception:
+    from CRABClient.LumiList import LumiList
 
 from ServerUtilities import BOOTSTRAP_CFGFILE_DUMP, getProxiedWebDir, NEW_USER_SANDBOX_EXCLUSIONS
 from ServerUtilities import SERVICE_INSTANCES
