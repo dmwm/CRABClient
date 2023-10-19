@@ -6,7 +6,10 @@ Conventions:
 """
 from ast import literal_eval
 
-from FWCore.PythonUtilities.LumiList import LumiList
+try:
+    from FWCore.PythonUtilities.LumiList import LumiList
+except Exception:
+    from CRABClient.LumiList import LumiList
 
 from CRABClient.ClientExceptions import ConfigurationException
 

@@ -7,7 +7,10 @@ import logging
 import traceback
 import json
 
-from FWCore.PythonUtilities.LumiList import LumiList
+try:
+    from FWCore.PythonUtilities.LumiList import LumiList
+except Exception:
+    from CRABClient.LumiList import LumiList
 
 ## CRAB dependencies
 from CRABClient.ClientUtilities import DBSURLS, LOGLEVEL_MUTE, colors
