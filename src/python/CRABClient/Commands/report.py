@@ -5,7 +5,11 @@ import json
 import tarfile
 from ast import literal_eval
 
-from FWCore.PythonUtilities.LumiList import LumiList
+try:
+    from FWCore.PythonUtilities.LumiList import LumiList
+except Exception:  # pylint: disable=broad-except
+    # if FWCore version is not py3 compatible, use our own
+    from CRABClient.LumiList import LumiList
 
 from CRABClient.ClientUtilities import colors, execute_command
 from CRABClient.Commands.SubCommand import SubCommand
@@ -486,35 +490,3 @@ class report(SubCommand):
             msg = "%sError%s:" % (colors.RED, colors.NORMAL)
             msg += " The --recovery option only accepts the following values: %s" % (recoveryMethods)
             raise ConfigurationException(msg)
-
-################# Unused functions moved here just in case we find out why this code is here ###############
-
-    def compactLumis(self, datasetInfo):
-        """ Help function that allow to convert from runLumis divided per file (result of listDatasetFileDetails)
-            to an aggregated result.
-        """
-        lumilist = {}
-        for _, info in datasetInfo.items():
-            for run, lumis in info['Lumis'].items():
-                lumilist.setdefault(str(run), []).extend(lumis)
-        return lumilist
-
-    def prepareCurl(self):
-        import pycurl
-        curl = pycurl.Curl()
-        curl.setopt(pycurl.NOSIGNAL, 0)
-        curl.setopt(pycurl.TIMEOUT, 30)
-        curl.setopt(pycurl.CONNECTTIMEOUT, 30)
-        curl.setopt(pycurl.FOLLOWLOCATION, 0)
-        curl.setopt(pycurl.MAXREDIRS, 0)
-        return curl
-
-    def myPerform(self, curl, url):
-        import pycurl
-        try:
-            curl.perform()
-        except pycurl.error as e:
-            raise ClientException(("Failed to contact Grid scheduler when getting URL %s. "
-                                   "This might be a temporary error, please retry later and "
-                                   "contact %s if the error persist. Error from curl: %s" % \
-                                   (url, FEEDBACKMAIL, str(e))))

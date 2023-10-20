@@ -10,7 +10,7 @@ CMSSW_Serie=$(echo $CMSSW_VERSION | cut -d_ -f3)  # e.g. from CMSSW_10_6_x this 
 # would be good to do also for CMSSW_10_6 + (for UL) but we use
 # FWCore.PythonUtilities.LumiList which imports urllib2 which
 # is not available in python3
-[ $CMSSW_Major -ge 11 ] && python_cmd="python3"
+[ $CMSSW_Major -ge 10 ] && python_cmd="python3"
 
 if [ $python_cmd = "python3" ] ; then
   # can also include Rucio client (we do not want to deal with old python2 client)
