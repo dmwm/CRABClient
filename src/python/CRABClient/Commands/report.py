@@ -7,7 +7,8 @@ from ast import literal_eval
 
 try:
     from FWCore.PythonUtilities.LumiList import LumiList
-except Exception:
+except Exception:  # pylint: disable=broad-except
+    # if FWCore version is not py3 compatible, use our own
     from CRABClient.LumiList import LumiList
 
 from CRABClient.ClientUtilities import colors, execute_command

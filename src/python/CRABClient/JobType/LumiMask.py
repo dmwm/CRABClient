@@ -9,7 +9,8 @@ if sys.version_info < (3, 0):
 
 try:
     from FWCore.PythonUtilities.LumiList import LumiList
-except Exception:
+except Exception:  # pylint: disable=broad-except
+    # if FWCore version is not py3 compatible, use our own
     from CRABClient.LumiList import LumiList
 
 from CRABClient.ClientExceptions import ConfigurationException
