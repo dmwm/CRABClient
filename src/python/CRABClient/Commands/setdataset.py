@@ -7,7 +7,7 @@ import sys
 import json
 
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ClientExceptions import MissingOptionException, ConfigurationException
+from CRABClient.ClientExceptions import MissingOptionException, ConfigurationException, CommandFailedException
 from CRABClient.ClientUtilities import colors
 from CRABClient.CrabRestInterface import HTTPRequests
 
@@ -20,6 +20,50 @@ try:
     from CRABClient import __version__
 except:  # pylint: disable=bare-except
     __version__ = '0.0.0'
+
+
+def getDbsREST(instance=None, logger=None, cert=None, key=None, version=None):
+    """
+    given a DBS istance (e.g. prod/phys03) returns a DBSReader and DBSWriter
+    client instances which communicate with DBS REST via curl
+    Arguments:
+    logger: a logger
+    cert, key : name of files, can use the path to X509_USER_PROXY for both
+    version: the CRAB Client version to put in the User Agent field of the query
+    """
+    # if user supplied a simple prod/phys03 like instance, these two lines will do
+    # note that our HTTPRequests will add https://
+    dbsReadUrl = "cmsweb.cern.ch:8443/dbs/" + instance + "/DBSReader/"
+    dbsWriteUrl = "cmsweb.cern.ch:8443/dbs/" + instance + "/DBSWriter/"
+    # a possible use case e.g. for testing is to use int instance of DBS. requires testbed CMSWEB
+    if instance.startswith('int'):
+        dbsReadUrl = dbsReadUrl.replace('cmsweb', 'cmsweb-testbed')
+        dbsWriteUrl = dbsWriteUrl.replace('cmsweb', 'cmsweb-testbed')
+    # if user knoww better and provided a full URL, we'll take and adapt
+    # to have both Reader and Writer,
+    if instance.startswith("https://"):
+        url = instance.lstrip("https://")  # will be added back in HTTPRequests
+        if "DBSReader" in url:
+            dbsReadUrl = url
+            dbsWriteUrl = url.replace('DBSReader', 'DBSWriter')
+        elif 'DBSWriter' in url:
+            dbsWriteUrl = url
+            dbsReadUrl = url.replace('DBSWriter', 'DBSReader')
+        else:
+            raise ConfigurationException("bad instance value %s" % instance)
+
+    logger.debug('Read Url  = %s' % dbsReadUrl)
+    logger.debug('Write Url = %s' % dbsWriteUrl)
+
+    dbsReader = HTTPRequests(hostname=dbsReadUrl, localcert=cert, localkey=key,
+                             retry=2, logger= logger, verbose=False,
+                             userAgent='CRABClient', version=version)
+
+    dbsWriter = HTTPRequests(hostname=dbsWriteUrl, localcert=cert, localkey=key,
+                             retry=2, logger= logger, verbose=False,
+                             userAgent='CRABClient', version=version)
+    return dbsReader, dbsWriter
+
 
 class setdataset(SubCommand):
     """
@@ -50,45 +94,13 @@ class setdataset(SubCommand):
         if recursive:
             self.logger.warning("ATTENTION: recursive option is not implemented yet. Ignoring it")
 
-        # from DBS instance, to DBS URL's.
-        # if user supplied a simple prod/phys03 like instance, these two lines will do
-        # note that our HTTPRequests will add https://
-        dbsReadUrl = "cmsweb.cern.ch:8443/dbs/" + instance + "/DBSReader/"
-        dbsWriteUrl = "cmsweb.cern.ch:8443/dbs/" + instance + "/DBSWriter/"
-        # a possible use case e.g. for testing is to use int instance of DBS. requires testbed CMSWEB
-        if instance.startswith('int'):
-            dbsReadUrl = dbsReadUrl.replace('cmsweb', 'cmsweb-testbed')
-            dbsWriteUrl = dbsWriteUrl.replace('cmsweb', 'cmsweb-testbed')
-        # if user knoww better and provided a full URL, we'll take and adapt
-        # to have both Reader and Writer,
-        if instance.startswith("https://"):
-            url = instance.lstrip("https://")  # will be added back in HTTPRequests
-            if "DBSReader" in url:
-                dbsReadUrl = url
-                dbsWriteUrl = url.replace('DBSReader', 'DBSWriter')
-            elif 'DBSWriter' in url:
-                dbsWriteUrl = url
-                dbsReadUrl = url.replace('DBSWriter', 'DBSReader')
-            else:
-                raise ConfigurationException("bad instance value %s" % instance)
-
-        self.logger.debug('Read Url  = %s' % dbsReadUrl)
-        self.logger.debug('Write Url = %s' % dbsWriteUrl)
-
-        cert = self.proxyfilename
-        key = self.proxyfilename
-
-        dbsReader = HTTPRequests(hostname=dbsReadUrl, localcert=cert, localkey=key,
-                                 retry=2, logger=self.logger, verbose=False,
-                                 userAgent='CRABClient', version=__version__)
-
-        dbsWriter = HTTPRequests(hostname=dbsWriteUrl, localcert=cert, localkey=key,
-                                 retry=2, logger=self.logger, verbose=False,
-                                 userAgent='CRABClient', version=__version__)
+        # from DBS instance, to DBS REST services
+        dbsReader, dbsWriter = getDbsREST(instance=instance, logger=self.logger,
+                                          cert=self.proxyfilename, key=self.proxyfilename,
+                                          version=__version__)
 
         self.logger.info("looking up Dataset %s in DBS %s" % (dataset, instance) )
         datasetStatusQuery = {'dataset': dataset, 'dataset_access_type': '*', 'detail': True}
-
         ds, rc, msg = dbsReader.get(uri="datasets",data=urlencode(datasetStatusQuery))
         self.logger.debug('exitcode= %s', rc)
         if not ds:
@@ -98,12 +110,13 @@ class setdataset(SubCommand):
         self.logger.info("Will set it to %s" % status)
         data = {'dataset': dataset, 'dataset_access_type': status}
         jdata = json.dumps(data)
-        _, rc, msg = dbsWriter.put(uri='datasets', data=jdata)
-        if msg == 'OK':
+        out, rc, msg = dbsWriter.put(uri='datasets', data=jdata)
+        if rc == 200 and msg == 'OK':
             self.logger.info("Dataset status changed successfully")
             result = 'SUCCESS'
         else:
-            self.logger.error("Dataset status change failed")
+            msg = "Dataset status change failed: %s" % out
+            raise CommandFailedException(msg)
 
         ds, rc, msg = dbsReader.get(uri="datasets",data=urlencode(datasetStatusQuery))
         self.logger.debug('exitcode= %s', rc)

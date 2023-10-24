@@ -2,11 +2,19 @@
 """
 allow users to (in)validate some files in their USER datasets in phys03
 """
-from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ClientExceptions import MissingOptionException, ConfigurationException
-from CRABClient.ClientUtilities import colors
 
-from CRABClient.CrabRestInterface import HTTPRequests
+import sys
+import json
+
+from CRABClient.Commands.SubCommand import SubCommand
+from CRABClient.ClientExceptions import MissingOptionException, ConfigurationException, CommandFailedException
+from CRABClient.ClientUtilities import colors
+from CRABClient.Commands.setdataset import getDbsREST
+
+if sys.version_info >= (3, 0):
+    from urllib.parse import urlencode  # pylint: disable=E0611
+if sys.version_info < (3, 0):
+    from urllib import urlencode
 
 try:
     from CRABClient import __version__
@@ -25,58 +33,87 @@ class setfiles(SubCommand):
 
     def __init__(self, logger, cmdargs=None):
         SubCommand.__init__(self, logger, cmdargs)
-        #self.instance = None
-        #self.dataset = None
-        #self.status = None
-        #self.recursive = None
 
 
     def __call__(self):
+
+        result = 'FAILED'  # will change to 'SUCCESS' when all is OK
+
         instance = self.options.instance
         dataset = self.options.dataset
-        if instance.startswith('https://'):
-            if 'DBSReader' in instance:
-                dbsReadUrl = instance
-                dbsWriteUrl = instance.replace('DBSReader', 'DBSWriter')
-            elif 'DBSWriter' in instance:
-                dbsWriteUrl = instance
-                dbsReadUrl = instance.replace('DBSWriter', 'DBSReader')
+        lfn = self.options.lfn
+        files = self.options.files
+        status = self.options.status
+        self.logger.debug('instance     = %s' % instance)
+        self.logger.debug('dataset      = %s' % dataset)
+        self.logger.debug('lfn          = %s' % lfn)
+        self.logger.debug('files        = %s' % files)
+        self.logger.debug('status       = %s' % status)
+
+        statusToSet = 1 if status == 'VALID' else 0
+
+        filesToChange = None
+        if files:
+            # did the user specify the name of a file containing a list of LFN's ?
+            try:
+                with open(files, 'r') as f:
+                    flist = [lfn.strip() for lfn in f]
+                    filesToChange = ','.join(flist)
+            except IOError:
+                # no. Assume we have a comma separated list of LFN's (a single LFN is also OK)
+                filesToChange = files.strip(",").strip()
+            finally:
+                # files and dataset options are mutually exclusive
+                dataset = None
+
+        # from DBS instance, to DBS REST services
+        dbsReader, dbsWriter = getDbsREST(instance=instance, logger=self.logger,
+                                          cert=self.proxyfilename, key=self.proxyfilename,
+                                          version=__version__)
+
+        if lfn:
+            self.logger.info("looking up LFN %s in DBS %s" % (lfn, instance) )
+            lfnStatusQuery = {'logical_file_name': lfn, 'detail': True}
+            out, rc, msg = dbsReader.get(uri="files",data=lfnStatusQuery)
+            self.logger.debug('exitcode= %s', rc)
+            if not out:
+                self.logger.error("ERROR: LFN %s not found in DBS" % lfn)
+                raise ConfigurationException
+            statusInDB = 'VALID' if out[0]['is_file_valid'] == 1 else 'INVALID'
+            self.logger.info("File status in DBS is %s" % statusInDB)
+            self.logger.info("Will set it to %s" % status)
+
+            data = {'logical_file_name': lfn, 'is_file_valid': statusToSet}
+            jdata = json.dumps(data)
+            out, rc, msg = dbsWriter.put(uri='files', data=jdata)
+            if rc == 200 and msg == 'OK':
+                self.logger.info("Dataset status changed successfully")
+                result = 'SUCCESS'
             else:
-                msg = 'invalid instance %s' % instance
-                raise ConfigurationException(msg)
+                msg = "Dataset status change failed: %s" % out
+                raise CommandFailedException(msg)
+
+            out, rc, msg = dbsReader.get(uri="files",data=urlencode(lfnStatusQuery))
+            self.logger.debug('exitcode= %s', rc)
+            statusInDB = 'VALID' if out[0]['is_file_valid'] == 1 else 'INVALID'
+            self.logger.info("LFN status in DBS now is %s" % statusInDB)
+
         else:
-            dbsWriteUrl = "https://cmsweb.cern.ch:8443/prod/dbs/phys03/DBSWriter"
-            dbsReadUrl = "https://cmsweb.cern.ch:8443/prod/dbs/phys03/DBSReader"
+            # when acting on a list of LFN's, can't print status before/after, just do
+            if filesToChange:
+                data = {'logical_file_name': filesToChange, 'is_file_valid': statusToSet}
+            if dataset:
+                data = {'dataset': dataset, 'is_file_valid': statusToSet}
+            jdata = json.dumps(data)
+            out, rc, msg = dbsWriter.put(uri='files', data=jdata)
+            if rc == 200 and msg == 'OK':
+                self.logger.info("Dataset status changed successfully")
+                result = 'SUCCESS'
+            else:
+                msg = "Dataset status change failed: %s" % out
+                raise CommandFailedException(msg)
 
-        self.logger.info('instance  = %s' % instance)
-        self.logger.info('Read Url  = %s' % dbsReadUrl)
-        self.logger.info('Write Url = %s' % dbsWriteUrl)
-        self.logger.info('dataset   = %s' % dataset)
-
-        localcert = 'dgfhfeg'
-        localkey = 'sfghret'
-
-        dbsReader = HTTPRequests(hostname=dbsReadUrl, localcert=localcert, localkey=localkey,
-                                 retry=2, logger=self.logger, verbose=False,
-                                 userAgent='CRABClient', version=__version__)
-
-        dbsWriter = HTTPRequests(hostname=dbsWriteUrl, localcert=localcert, localkey=localkey,
-                                 retry=2, logger=self.logger, verbose=False,
-                                 userAgent='CRABClient', version=__version__)
-
-        ds = '/GenericTTbar/belforte-Stefano-TestRucioP-230817-94ba0e06145abd65ccb1d21786dc7e1d/USER'
-        myd = dbsReader.get(uri="dataset",data='dataset=%s'%ds)
-        self.logger.info(myd)
-
-
-
-        allOK = True
-
-        if allOK:
-            return {'commandStatus': 'SUCCESS'}
-        else:
-            return{'commandStatus': 'FAILED'}
-
+        return {'commandStatus': result}
 
     def setOptions(self):
         """
@@ -84,31 +121,41 @@ class setfiles(SubCommand):
 
         This allows to set specific command options
         """
-        self.parser.add_option('--instance', dest='instance', default='prod/phys03',
+        self.parser.add_option('-i', '--instance', dest='instance', default='prod/phys03',
                                help='DBS instance. e.g. prod/phys03 (default) or int/phys03'
                                )
-        self.parser.add_option('--dataset', dest='dataset', default=None,
-                               help='dataset name')
-        self.parser.add_option('--status', dest='status',default=None,
-                               help='New status of the dataset: VALID/INVALID/DELETED/DEPRECATED',
-                               choices=['VALID', 'INVALID', 'DELETED', 'DEPRECATED']
+        self.parser.add_option('-d', '--dataset', dest='dataset', default=None,
+                               help='Will apply status to all files in this dataset.' +
+                                    ' Use either --files or--dataset',
+                               metavar='<dataset_name>')
+        #self.parser.add_option('--block', dest='block', default=None,
+        #                       help='Will apply status to all files in this block')
+        self.parser.add_option('-s', '--status', dest='status',default=None,
+                               help='New status of the file(s): VALID/INVALID',
+                               choices=['VALID', 'INVALID']
                                )
-        self.parser.add_option('--recursive', dest='recursive', default=False, action="store_true",
-                               help='Apply status to children datasets and sets all files status in those' +
-                               'as VALID if status=VALID, INVALID otherwise'
-                               )
+        self.parser.add_option('--lfn', dest='lfn', default=None,
+                               help='LFN to change status of')
+        self.parser.add_option('-f', '--files', dest='files', default=None,
+                               help='List of files to be validated/invalidated.' +
+                                    ' Can be either a file containg lfns or' +
+                                    ' a comma separated list of lfns. Use either --files or --dataset',
+                               metavar="<lfn1,..,lfnx or filename>")
 
     def validateOptions(self):
         SubCommand.validateOptions(self)
 
-        if self.options.dataset is None:
-            msg = "%sError%s: Please specify the dataset to check." % (colors.RED, colors.NORMAL)
-            msg += " Use the --dataset option."
+        if not self.options.files and not self.options.dataset:
+            msg = "%sError%s: Please specify the files to change." % (colors.RED, colors.NORMAL)
+            msg += " Use either the --files or the --dataset option."
             ex = MissingOptionException(msg)
-            ex.missingOption = "dataset"
+            ex.missingOption = "files"
             raise ex
+        if self.options.files and self.options.dataset:
+            msg = "%sError%s: You can not use both --files and --dataset at same time" % (colors.RED, colors.NORMAL)
+            raise ConfigurationException(msg)
         if self.options.status is None:
-            msg = "%sError%s: Please specify the new dataset status." % (colors.RED, colors.NORMAL)
+            msg = "%sError%s: Please specify the new file(s) status." % (colors.RED, colors.NORMAL)
             msg += " Use the --status option."
             ex = MissingOptionException(msg)
             ex.missingOption = "status"
