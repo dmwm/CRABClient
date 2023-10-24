@@ -45,55 +45,82 @@ class setfiles(SubCommand):
 
         instance = self.options.instance
         dataset = self.options.dataset
-        block = self.options.block
+        #block = self.options.block
         lfn = self.options.lfn
+        files = self.options.files
         #lfnList = self.options.lfnList
         #fileWithList = self.options.fileWithList
         status = self.options.status
         self.logger.debug('instance     = %s' % instance)
         self.logger.debug('dataset      = %s' % dataset)
-        self.logger.debug('block        = %s' % block)
+        #self.logger.debug('block        = %s' % block)
         self.logger.debug('lfn          = %s' % lfn)
+        self.logger.debug('files        = %s' % files)
         #self.logger.debug('lfnList      = %s' % lfnList)
         #self.logger.debug('fileWithList = %s' % fileWithList)
         self.logger.debug('status       = %s' % status)
+
+        statusToSet = 1 if status == 'VALID' else 0
+
+        filesToChange = []
+        if files:
+            try:
+                # did the user specify the name of a file containing a list of LFN's ?
+                with open(files, 'r') as f:
+                    filesToChange = [lfn.strip() for lfn in f]
+            except IOError:
+                # no. Assume we have a comma separated list of LFN's (a single LFN is also OK)
+                fileList = files.strip(",").strip()
+                for f in fileList.split(","):
+                    filesToChange.append(f.strip())
+            finally:
+                dataset = None
 
         # from DBS instance, to DBS REST services
         dbsReader, dbsWriter = getDbsREST(instance=instance, logger=self.logger,
                                           cert=self.proxyfilename, key=self.proxyfilename,
                                           version=__version__)
 
+        if lfn:
+            self.logger.info("looking up LFN %s in DBS %s" % (lfn, instance) )
+            lfnStatusQuery = {'logical_file_name': lfn, 'detail': True}
+            out, rc, msg = dbsReader.get(uri="files",data=lfnStatusQuery)
+            self.logger.debug('exitcode= %s', rc)
+            if not out:
+                self.logger.error("ERROR: LFN %s not found in DBS" % lfn)
+                raise ConfigurationException
+            statusInDB = 'VALID' if out[0]['is_file_valid'] == 1 else 'INVALID'
+            self.logger.info("File status in DBS is %s" % statusInDB)
+            self.logger.info("Will set it to %s" % status)
 
-        self.logger.info("looking up LFN %s in DBS %s" % (lfn, instance) )
-        lfnStatusQuery = {'logical_file_name': lfn, 'detail': True}
-        out, rc, msg = dbsReader.get(uri="files",data=lfnStatusQuery)
-        self.logger.debug('exitcode= %s', rc)
-        if not out:
-            self.logger.error("ERROR: LFN %s not found in DBS" % lfn)
-            raise ConfigurationException
-        statusInDB = 'VALID' if out[0]['is_file_valid'] == 1 else 'INVALID'
-        self.logger.info("File status in DBS is %s" % statusInDB)
-        self.logger.info("Will set it to %s" % status)
+            data = {'logical_file_name': lfn, 'is_file_valid': statusToSet}
+            jdata = json.dumps(data)
+            out, rc, msg = dbsWriter.put(uri='files', data=jdata)
+            if rc == 200 and msg == 'OK':
+                self.logger.info("Dataset status changed successfully")
+                result = 'SUCCESS'
+            else:
+                msg = "Dataset status change failed: %s" % out
+                raise CommandFailedException(msg)
 
+            out, rc, msg = dbsReader.get(uri="files",data=urlencode(lfnStatusQuery))
+            self.logger.debug('exitcode= %s', rc)
+            statusInDB = 'VALID' if out[0]['is_file_valid'] == 1 else 'INVALID'
+            self.logger.info("LFN status in DBS now is %s" % statusInDB)
 
-        statusToSet = 1 if status == 'VALID' else 0
-        data = {'logical_file_name': lfn, 'is_file_valid': statusToSet}
-        jdata = json.dumps(data)
-        out, rc, msg = dbsWriter.put(uri='files', data=jdata)
-        if rc == 200 and msg == 'OK':
-            self.logger.info("Dataset status changed successfully")
-            result = 'SUCCESS'
         else:
-            msg = "Dataset status change failed: %s" % out
-            raise CommandFailedException(msg)
-
-        out, rc, msg = dbsReader.get(uri="files",data=urlencode(lfnStatusQuery))
-        self.logger.debug('exitcode= %s', rc)
-        statusInDB = 'VALID' if out[0]['is_file_valid'] == 1 else 'INVALID'
-        self.logger.info("LFN status in DBS now is %s" % statusInDB)
+            # when acting on a list of LFN's, can't print status before/after, just do
+            data = {'logical_file_name': filesToChange, 'dataset': dataset, 'is_file_valid': statusToSet}
+            jdata = json.dumps(data)
+            out, rc, msg = dbsWriter.put(uri='files', data=jdata)
+            if rc == 200 and msg == 'OK':
+                self.logger.info("Dataset status changed successfully")
+                result = 'SUCCESS'
+            else:
+                msg = "Dataset status change failed: %s" % out
+                raise CommandFailedException(msg)
 
         return {'commandStatus': result}
-
 
     def setOptions(self):
         """
@@ -101,30 +128,39 @@ class setfiles(SubCommand):
 
         This allows to set specific command options
         """
-        self.parser.add_option('--instance', dest='instance', default='prod/phys03',
+        self.parser.add_option('-i', '--instance', dest='instance', default='prod/phys03',
                                help='DBS instance. e.g. prod/phys03 (default) or int/phys03'
                                )
-        self.parser.add_option('--dataset', dest='dataset', default=None,
-                               help='Will apply status to all files in this dataset')
-        self.parser.add_option('--block', dest='block', default=None,
-                               help='Will apply status to all files in this block')
-        self.parser.add_option('--status', dest='status',default=None,
+        self.parser.add_option('-d', '--dataset', dest='dataset', default=None,
+                               help='Will apply status to all files in this dataset.' +
+                                    ' Use either --files or--dataset',
+                               metavar='<dataset_name>')
+        #self.parser.add_option('--block', dest='block', default=None,
+        #                       help='Will apply status to all files in this block')
+        self.parser.add_option('-s', '--status', dest='status',default=None,
                                help='New status of the file(s): VALID/INVALID',
                                choices=['VALID', 'INVALID']
                                )
         self.parser.add_option('--lfn', dest='lfn', default=None,
                                help='LFN to change status of')
-
+        self.parser.add_option('-f', '--files', dest='files', default=None,
+                               help='List of files to be validated/invalidated.' +
+                                    ' Can be either a file containg lfns or' +
+                                    ' a comma separated list of lfns. Use either --files or --dataset',
+                               metavar="<lfn1,..,lfnx or filename>")
 
     def validateOptions(self):
         SubCommand.validateOptions(self)
 
-        if self.options.lfn is None:
-            msg = "%sError%s: Please specify the dataset to check." % (colors.RED, colors.NORMAL)
-            msg += " Use the --lfn option."
+        if not self.options.files and not self.options.dataset:
+            msg = "%sError%s: Please specify the files to change." % (colors.RED, colors.NORMAL)
+            msg += " Use either the --files or the --dataset option."
             ex = MissingOptionException(msg)
-            ex.missingOption = "lfn"
+            ex.missingOption = "files"
             raise ex
+        if self.options.files and self.options.dataset:
+            msg = "%sError%s: You can not use both --files and --dataset at same time" % (colors.RED, colors.NORMAL)
+            raise ConfigurationException(msg)
         if self.options.status is None:
             msg = "%sError%s: Please specify the new file(s) status." % (colors.RED, colors.NORMAL)
             msg += " Use the --status option."
