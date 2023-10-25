@@ -203,7 +203,8 @@ class HTTPRequests(dict):
         # retries are counted AFTER 1st try, so call is made up to nRetries+1 times !
         nRetries = max(2, self['retry'])
         for i in range(nRetries + 1):
-            stdout, stderr, curlExitCode = execute_command(command=command, logger=None)
+            curlLogger = self.logger if self.verbose else None
+            stdout, stderr, curlExitCode = execute_command(command=command, logger=curlLogger)
             http_code, http_reason = parseResponseHeader(stderr)
 
             if curlExitCode != 0 or http_code != 200:
