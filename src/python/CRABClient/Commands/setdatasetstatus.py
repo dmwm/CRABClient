@@ -65,7 +65,7 @@ def getDbsREST(instance=None, logger=None, cert=None, key=None, version=None):
     return dbsReader, dbsWriter
 
 
-class setdataset(SubCommand):
+class setdatasetstatus(SubCommand):
     """
     Set status of a USER dataet in phys03,
     optionally invalidates/revalidates all files in it
@@ -73,7 +73,7 @@ class setdataset(SubCommand):
     and to work whenever CRAB is supported, i.e. with both python2 and python3
     """
 
-    name = 'setdataset'
+    name = 'setdatasetstatus'
 
     def __init__(self, logger, cmdargs=None):
         SubCommand.__init__(self, logger, cmdargs)
