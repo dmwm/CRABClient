@@ -60,6 +60,9 @@ class setfilestatus(SubCommand):
                 # files and dataset options are mutually exclusive
                 dataset = None
 
+        if ',' in filesToChange:
+            raise NotImplementedError('list of LFNs is not supported yet')
+
         # from DBS instance, to DBS REST services
         dbsReader, dbsWriter = getDbsREST(instance=instance, logger=self.logger,
                                           cert=self.proxyfilename, key=self.proxyfilename,
