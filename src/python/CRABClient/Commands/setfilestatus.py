@@ -1,4 +1,4 @@
-#pylint: disable=consider-using-f-string
+# pylint: disable=consider-using-f-string
 """
 allow users to (in)validate some files in their USER datasets in phys03
 """
@@ -15,6 +15,7 @@ try:
 except:  # pylint: disable=bare-except
     __version__ = '0.0.0'
 
+
 class setfilestatus(SubCommand):
     """
     Set status of a USER dataset in phys03,
@@ -27,7 +28,6 @@ class setfilestatus(SubCommand):
 
     def __init__(self, logger, cmdargs=None):
         SubCommand.__init__(self, logger, cmdargs)
-
 
     def __call__(self):
 
@@ -92,16 +92,16 @@ class setfilestatus(SubCommand):
                                help='DBS instance. e.g. prod/phys03 (default) or int/phys03'
                                )
         self.parser.add_option('-d', '--dataset', dest='dataset', default=None,
-                               help='Will apply status to all files in this dataset.' +
+                               help='Will apply status to all files in this dataset.' + \
                                     ' Use either --files or--dataset',
                                metavar='<dataset_name>')
-        self.parser.add_option('-s', '--status', dest='status',default=None,
+        self.parser.add_option('-s', '--status', dest='status', default=None,
                                help='New status of the file(s): VALID/INVALID',
                                choices=['VALID', 'INVALID']
                                )
         self.parser.add_option('-f', '--files', dest='files', default=None,
-                               help='List of files to be validated/invalidated.' +
-                                    ' Can be either a simple LFN or a file containg LFNs or' +
+                               help='List of files to be validated/invalidated.' + \
+                                    ' Can be either a simple LFN or a file containg LFNs or' + \
                                     ' a comma separated list of LFNs. Use either --files or --dataset',
                                metavar="<lfn1[,..,lfnx] or filename>")
 

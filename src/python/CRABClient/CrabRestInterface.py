@@ -1,3 +1,4 @@
+# pylint: disable=consider-using-f-string
 """
 Handles client interactions with remote REST interface
 """

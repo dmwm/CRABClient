@@ -1,4 +1,4 @@
-#pylint: disable=consider-using-f-string
+# pylint: disable=consider-using-f-string
 """
 allow users to (in)validate their own DBS USER datasets
 """
@@ -56,11 +56,11 @@ def getDbsREST(instance=None, logger=None, cert=None, key=None, version=None):
     logger.debug('Write Url = %s' % dbsWriteUrl)
 
     dbsReader = HTTPRequests(hostname=dbsReadUrl, localcert=cert, localkey=key,
-                             retry=2, logger= logger, verbose=False, contentType='application/json',
+                             retry=2, logger=logger, verbose=False, contentType='application/json',
                              userAgent='CRABClient', version=version)
 
     dbsWriter = HTTPRequests(hostname=dbsWriteUrl, localcert=cert, localkey=key,
-                             retry=2, logger= logger, verbose=False, contentType='application/json',
+                             retry=2, logger=logger, verbose=False, contentType='application/json',
                              userAgent='CRABClient', version=version)
     return dbsReader, dbsWriter
 
@@ -77,7 +77,6 @@ class setdatasetstatus(SubCommand):
 
     def __init__(self, logger, cmdargs=None):
         SubCommand.__init__(self, logger, cmdargs)
-
 
     def __call__(self):
         result = 'FAILED'  # will change to 'SUCCESS' when all is OK
@@ -99,9 +98,9 @@ class setdatasetstatus(SubCommand):
                                           cert=self.proxyfilename, key=self.proxyfilename,
                                           version=__version__)
 
-        self.logger.info("looking up Dataset %s in DBS %s" % (dataset, instance) )
+        self.logger.info("looking up Dataset %s in DBS %s" % (dataset, instance))
         datasetStatusQuery = {'dataset': dataset, 'dataset_access_type': '*', 'detail': True}
-        ds, rc, msg = dbsReader.get(uri="datasets",data=urlencode(datasetStatusQuery))
+        ds, rc, msg = dbsReader.get(uri="datasets", data=urlencode(datasetStatusQuery))
         self.logger.debug('exitcode= %s', rc)
         if not ds:
             self.logger.error("ERROR: dataset %s not found in DBS" % dataset)
@@ -118,7 +117,7 @@ class setdatasetstatus(SubCommand):
             msg = "Dataset status change failed: %s" % out
             raise CommandFailedException(msg)
 
-        ds, rc, msg = dbsReader.get(uri="datasets",data=urlencode(datasetStatusQuery))
+        ds, rc, msg = dbsReader.get(uri="datasets", data=urlencode(datasetStatusQuery))
         self.logger.debug('exitcode= %s', rc)
         self.logger.info("Dataset status in DBS now is %s" % ds[0]['dataset_access_type'])
 
@@ -131,7 +130,7 @@ class setdatasetstatus(SubCommand):
         This allows to set specific command options
         """
         self.parser.add_option('--instance', dest='instance', default='prod/phys03',
-                               help="DBS instance. e.g. prod/phys03 (default) or int/phys03. Use at your own risk." +
+                               help="DBS instance. e.g. prod/phys03 (default) or int/phys03. Use at your own risk." + \
                                     "Unless you really know what you are doing, stay with the default"
                                )
         self.parser.add_option('--dataset', dest='dataset', default=None,
@@ -141,7 +140,7 @@ class setdatasetstatus(SubCommand):
                                choices=['VALID', 'INVALID', 'DELETED', 'DEPRECATED']
                                )
         self.parser.add_option('--recursive', dest='recursive', default=False, action="store_true",
-                               help="Apply status to children datasets and sets all files status in those" +
+                               help="Apply status to children datasets and sets all files status in those" + \
                                "to VALID if status=VALID, INVALID otherwise"
                                )
 
