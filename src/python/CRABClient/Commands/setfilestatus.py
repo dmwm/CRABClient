@@ -35,12 +35,10 @@ class setfilestatus(SubCommand):
 
         instance = self.options.instance
         dataset = self.options.dataset
-        lfn = self.options.lfn
         files = self.options.files
         status = self.options.status
         self.logger.debug('instance     = %s' % instance)
         self.logger.debug('dataset      = %s' % dataset)
-        self.logger.debug('lfn          = %s' % lfn)
         self.logger.debug('files        = %s' % files)
         self.logger.debug('status       = %s' % status)
 
@@ -68,36 +66,6 @@ class setfilestatus(SubCommand):
                                           cert=self.proxyfilename, key=self.proxyfilename,
                                           version=__version__)
 
-        """
-        if lfn:
-            self.logger.info("looking up LFN %s in DBS %s" % (lfn, instance) )
-            lfnStatusQuery = {'logical_file_name': lfn, 'detail': True}
-            out, rc, msg = dbsReader.get(uri="files",data=lfnStatusQuery)
-            self.logger.debug('exitcode= %s', rc)
-            if not out:
-                self.logger.error("ERROR: LFN %s not found in DBS" % lfn)
-                raise ConfigurationException
-            statusInDB = 'VALID' if out[0]['is_file_valid'] == 1 else 'INVALID'
-            self.logger.info("File status in DBS is %s" % statusInDB)
-            self.logger.info("Will set it to %s" % status)
-
-            data = {'logical_file_name': lfn, 'is_file_valid': statusToSet}
-            jdata = json.dumps(data)
-            out, rc, msg = dbsWriter.put(uri='files', data=jdata)
-            if rc == 200 and msg == 'OK':
-                self.logger.info("Dataset status changed successfully")
-                result = 'SUCCESS'
-            else:
-                msg = "Dataset status change failed: %s" % out
-                raise CommandFailedException(msg)
-
-            out, rc, msg = dbsReader.get(uri="files",data=urlencode(lfnStatusQuery))
-            self.logger.debug('exitcode= %s', rc)
-            statusInDB = 'VALID' if out[0]['is_file_valid'] == 1 else 'INVALID'
-            self.logger.info("LFN status in DBS now is %s" % statusInDB)
-
-        else:
-        """
         # when acting on a list of LFN's, can't print status of all files before/after
         # best we can do is to print the number of valid/invalid file in the dataset: TODO
         if filesToChange:
