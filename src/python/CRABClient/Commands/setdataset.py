@@ -56,11 +56,11 @@ def getDbsREST(instance=None, logger=None, cert=None, key=None, version=None):
     logger.debug('Write Url = %s' % dbsWriteUrl)
 
     dbsReader = HTTPRequests(hostname=dbsReadUrl, localcert=cert, localkey=key,
-                             retry=2, logger= logger, verbose=False,
+                             retry=2, logger= logger, verbose=False, contentType='application/json',
                              userAgent='CRABClient', version=version)
 
     dbsWriter = HTTPRequests(hostname=dbsWriteUrl, localcert=cert, localkey=key,
-                             retry=2, logger= logger, verbose=False,
+                             retry=2, logger= logger, verbose=False, contentType='application/json',
                              userAgent='CRABClient', version=version)
     return dbsReader, dbsWriter
 
