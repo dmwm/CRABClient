@@ -3,25 +3,19 @@
 allow users to (in)validate some files in their USER datasets in phys03
 """
 
-import sys
 import json
 
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import MissingOptionException, ConfigurationException, CommandFailedException
 from CRABClient.ClientUtilities import colors
-from CRABClient.Commands.setdataset import getDbsREST
-
-if sys.version_info >= (3, 0):
-    from urllib.parse import urlencode  # pylint: disable=E0611
-if sys.version_info < (3, 0):
-    from urllib import urlencode
+from CRABClient.Commands.setdatasetstatus import getDbsREST
 
 try:
     from CRABClient import __version__
 except:  # pylint: disable=bare-except
     __version__ = '0.0.0'
 
-class setfiles(SubCommand):
+class setfilestatus(SubCommand):
     """
     Set status of a USER dataset in phys03,
     optionally invalidates/revalidates all files in it
@@ -29,7 +23,7 @@ class setfiles(SubCommand):
     and to work whenever CRAB is supported, i.e. with both python2 and python3
     """
 
-    name = 'setfiles'
+    name = 'setfilestatus'
 
     def __init__(self, logger, cmdargs=None):
         SubCommand.__init__(self, logger, cmdargs)
@@ -71,6 +65,7 @@ class setfiles(SubCommand):
                                           cert=self.proxyfilename, key=self.proxyfilename,
                                           version=__version__)
 
+        """
         if lfn:
             self.logger.info("looking up LFN %s in DBS %s" % (lfn, instance) )
             lfnStatusQuery = {'logical_file_name': lfn, 'detail': True}
@@ -99,19 +94,21 @@ class setfiles(SubCommand):
             self.logger.info("LFN status in DBS now is %s" % statusInDB)
 
         else:
-            # when acting on a list of LFN's, can't print status before/after, just do
-            if filesToChange:
-                data = {'logical_file_name': filesToChange, 'is_file_valid': statusToSet}
-            if dataset:
-                data = {'dataset': dataset, 'is_file_valid': statusToSet}
-            jdata = json.dumps(data)
-            out, rc, msg = dbsWriter.put(uri='files', data=jdata)
-            if rc == 200 and msg == 'OK':
-                self.logger.info("Dataset status changed successfully")
-                result = 'SUCCESS'
-            else:
-                msg = "Dataset status change failed: %s" % out
-                raise CommandFailedException(msg)
+        """
+        # when acting on a list of LFN's, can't print status of all files before/after
+        # best we can do is to print the number of valid/invalid file in the dataset: TODO
+        if filesToChange:
+            data = {'logical_file_name': filesToChange, 'is_file_valid': statusToSet}
+        if dataset:
+            data = {'dataset': dataset, 'is_file_valid': statusToSet}
+        jdata = json.dumps(data)
+        out, rc, msg = dbsWriter.put(uri='files', data=jdata)
+        if rc == 200 and msg == 'OK':
+            self.logger.info("Dataset status changed successfully")
+            result = 'SUCCESS'
+        else:
+            msg = "Dataset status change failed: %s" % out
+            raise CommandFailedException(msg)
 
         return {'commandStatus': result}
 
@@ -128,19 +125,15 @@ class setfiles(SubCommand):
                                help='Will apply status to all files in this dataset.' +
                                     ' Use either --files or--dataset',
                                metavar='<dataset_name>')
-        #self.parser.add_option('--block', dest='block', default=None,
-        #                       help='Will apply status to all files in this block')
         self.parser.add_option('-s', '--status', dest='status',default=None,
                                help='New status of the file(s): VALID/INVALID',
                                choices=['VALID', 'INVALID']
                                )
-        self.parser.add_option('--lfn', dest='lfn', default=None,
-                               help='LFN to change status of')
         self.parser.add_option('-f', '--files', dest='files', default=None,
                                help='List of files to be validated/invalidated.' +
-                                    ' Can be either a file containg lfns or' +
-                                    ' a comma separated list of lfns. Use either --files or --dataset',
-                               metavar="<lfn1,..,lfnx or filename>")
+                                    ' Can be either a simple LFN or a file containg LFNs or' +
+                                    ' a comma separated list of LFNs. Use either --files or --dataset',
+                               metavar="<lfn1[,..,lfnx] or filename>")
 
     def validateOptions(self):
         SubCommand.validateOptions(self)
