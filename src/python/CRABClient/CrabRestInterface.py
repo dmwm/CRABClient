@@ -84,11 +84,11 @@ def parseResponseHeader(response):
 class HTTPRequests(dict):
     """
     This code forks a subprocess which executes curl to communicate
-    with CRAB REST.
+    with CRAB or other REST servers which returns JSON
     """
 
-    def __init__(self, hostname='localhost', localcert=None, localkey=None, version=__version__,
-                 retry=0, logger=None, verbose=False, userAgent='CRAB?'):
+    def __init__(self, hostname='localhost', localcert=None, localkey=None, contentType=None,
+                 retry=0, logger=None, version=__version__, verbose=False, userAgent='CRAB?'):
         """
         Initialise an HTTP handler
         """
@@ -112,6 +112,7 @@ class HTTPRequests(dict):
         self.setdefault("retry", retry)
         self.setdefault("verbose", verbose)
         self.setdefault("userAgent", userAgent)
+        self.setdefault("Content-type", contentType)
         self.logger = logger if logger else logging.getLogger()
 
     def get(self, uri=None, data=None):
@@ -182,6 +183,8 @@ class HTTPRequests(dict):
             command += '/cvmfs/cms.cern.ch/cmsmon/gocurl -verbose 2 -method {0}'.format(verb)
             command += ' -header "User-Agent: %s/%s"' % (self['userAgent'], self['version'])
             command += ' -header "Accept: */*"'
+            if self['Content-type']:
+                command += ' -header "Content-type: %s"' % self['Content-type']
             if verb in ['POST', 'PUT']:
                 command += ' -header "Content-Type: application/x-www-form-urlencoded"'
             command += ' -data "@%s"' % path
@@ -193,6 +196,8 @@ class HTTPRequests(dict):
             command += 'curl -v -X {0}'.format(verb)
             command += ' -H "User-Agent: %s/%s"' % (self['userAgent'], self['version'])
             command += ' -H "Accept: */*"'
+            if self['Content-type']:
+                command += ' -H "Content-type: %s"' % self['Content-type']
             command += ' --data @%s' % path
             command += ' --cert "%s"' % self['cert']
             command += ' --key "%s"' % self['key']
@@ -261,8 +266,9 @@ class CRABRest:
 
     def __init__(self, hostname='localhost', localcert=None, localkey=None, version=__version__,
                  retry=0, logger=None, verbose=False, userAgent='CRAB?'):
-        self.server = HTTPRequests(hostname, localcert, localkey, version,
-                                   retry, logger, verbose, userAgent)
+        self.server = HTTPRequests(hostname=hostname, localcert=localcert, localkey=localkey,
+                                   version=version,
+                                   retry=retry, logger=logger, verbose=verbose, userAgent=userAgent)
         instance = 'prod'
         self.uriNoApi = '/crabserver/' + instance + '/'
 
