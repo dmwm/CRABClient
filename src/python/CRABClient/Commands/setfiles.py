@@ -33,10 +33,6 @@ class setfiles(SubCommand):
 
     def __init__(self, logger, cmdargs=None):
         SubCommand.__init__(self, logger, cmdargs)
-        #self.instance = None
-        #self.dataset = None
-        #self.status = None
-        #self.recursive = None
 
 
     def __call__(self):
@@ -45,27 +41,21 @@ class setfiles(SubCommand):
 
         instance = self.options.instance
         dataset = self.options.dataset
-        #block = self.options.block
         lfn = self.options.lfn
         files = self.options.files
-        #lfnList = self.options.lfnList
-        #fileWithList = self.options.fileWithList
         status = self.options.status
         self.logger.debug('instance     = %s' % instance)
         self.logger.debug('dataset      = %s' % dataset)
-        #self.logger.debug('block        = %s' % block)
         self.logger.debug('lfn          = %s' % lfn)
         self.logger.debug('files        = %s' % files)
-        #self.logger.debug('lfnList      = %s' % lfnList)
-        #self.logger.debug('fileWithList = %s' % fileWithList)
         self.logger.debug('status       = %s' % status)
 
         statusToSet = 1 if status == 'VALID' else 0
 
-        filesToChange = []
+        filesToChange = None
         if files:
+            # did the user specify the name of a file containing a list of LFN's ?
             try:
-                # did the user specify the name of a file containing a list of LFN's ?
                 with open(files, 'r') as f:
                     filesToChange = [lfn.strip() for lfn in f]
             except IOError:
@@ -74,6 +64,7 @@ class setfiles(SubCommand):
                 for f in fileList.split(","):
                     filesToChange.append(f.strip())
             finally:
+                # files and dataset options are mutually exclusive
                 dataset = None
 
         # from DBS instance, to DBS REST services
@@ -110,7 +101,10 @@ class setfiles(SubCommand):
 
         else:
             # when acting on a list of LFN's, can't print status before/after, just do
-            data = {'logical_file_name': filesToChange, 'dataset': dataset, 'is_file_valid': statusToSet}
+            if filesToChange:
+                data = {'logical_file_name': filesToChange, 'is_file_valid': statusToSet}
+            if dataset:
+                data = {'dataset': dataset, 'is_file_valid': statusToSet}
             jdata = json.dumps(data)
             out, rc, msg = dbsWriter.put(uri='files', data=jdata)
             if rc == 200 and msg == 'OK':
