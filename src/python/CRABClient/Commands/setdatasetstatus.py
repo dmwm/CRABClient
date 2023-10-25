@@ -1,4 +1,4 @@
-# pylint: disable=consider-using-f-string
+# pylint: disable=consider-using-f-string, unspecified-encoding
 """
 allow users to (in)validate their own DBS USER datasets
 """
@@ -135,7 +135,7 @@ class setdatasetstatus(SubCommand):
                                )
         self.parser.add_option('--dataset', dest='dataset', default=None,
                                help='dataset name')
-        self.parser.add_option('--status', dest='status',default=None,
+        self.parser.add_option('--status', dest='status', default=None,
                                help="New status of the dataset: VALID/INVALID/DELETED/DEPRECATED",
                                choices=['VALID', 'INVALID', 'DELETED', 'DEPRECATED']
                                )

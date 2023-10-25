@@ -1,4 +1,4 @@
-# pylint: disable=consider-using-f-string
+# pylint: disable=consider-using-f-string, unspecified-encoding
 """
 allow users to (in)validate some files in their USER datasets in phys03
 """
@@ -33,6 +33,7 @@ class setfilestatus(SubCommand):
 
         result = 'FAILED'  # will change to 'SUCCESS' when all is OK
 
+        # intitalize, and validate args
         instance = self.options.instance
         dataset = self.options.dataset
         files = self.options.files
@@ -64,23 +65,53 @@ class setfilestatus(SubCommand):
         dbsReader, dbsWriter = getDbsREST(instance=instance, logger=self.logger,
                                           cert=self.proxyfilename, key=self.proxyfilename,
                                           version=__version__)
+        # we will need the dataset name
+        if dataset:
+            datasetName = dataset
+        else:
+            # get it from DBS
+            lfn = filesToChange.split(',')[0]
+            query = {'logical_file_name': lfn}
+            out, rc, msg = dbsReader.get(uri='datasets', data=query)
+            if not out:
+                self.logger.error("ERROR: file %s not found in DBS" % lfn)
+                raise ConfigurationException
+            datasetName = out[0]['dataset']
+            self.logger.info('LFN to be changed belongs to dataset %s' % datasetName)
 
         # when acting on a list of LFN's, can't print status of all files before/after
-        # best we can do is to print the number of valid/invalid file in the dataset: TODO
+        # best we can do is to print the number of valid/invalid file in the dataset
+        # before/after.
+
+        self.logFilesTally(dataset=datasetName, dbs=dbsReader)
+
         if filesToChange:
             data = {'logical_file_name': filesToChange, 'is_file_valid': statusToSet}
         if dataset:
             data = {'dataset': dataset, 'is_file_valid': statusToSet}
-        jdata = json.dumps(data)
+        jdata = json.dumps(data)  # PUT requires data in JSON format
         out, rc, msg = dbsWriter.put(uri='files', data=jdata)
         if rc == 200 and msg == 'OK':
-            self.logger.info("Dataset status changed successfully")
+            self.logger.info("File(s) status changed successfully")
             result = 'SUCCESS'
         else:
-            msg = "Dataset status change failed: %s" % out
+            msg = "File(s) status change failed: %s" % out
             raise CommandFailedException(msg)
 
+        self.logFilesTally(dataset=datasetName, dbs=dbsReader)
+
         return {'commandStatus': result}
+
+    def logFilesTally(self, dataset=None, dbs=None):
+        """ prints total/valid/invalid files in dataset """
+        query = {'dataset': dataset, 'validFileOnly': 1}
+        out, _, _ = dbs.get(uri='files', data=query)
+        valid = len(out)
+        query = {'dataset': dataset, 'validFileOnly': 0}
+        out, _, _ = dbs.get(uri='files', data=query)
+        total = len(out)
+        invalid = total - valid
+        self.logger.info("Dataset file count total/valid/invalid = %d/%d/%d" % (total, valid, invalid))
 
     def setOptions(self):
         """
