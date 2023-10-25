@@ -57,12 +57,11 @@ class setfiles(SubCommand):
             # did the user specify the name of a file containing a list of LFN's ?
             try:
                 with open(files, 'r') as f:
-                    filesToChange = [lfn.strip() for lfn in f]
+                    flist = [lfn.strip() for lfn in f]
+                    filesToChange = ','.join(flist)
             except IOError:
                 # no. Assume we have a comma separated list of LFN's (a single LFN is also OK)
-                fileList = files.strip(",").strip()
-                for f in fileList.split(","):
-                    filesToChange.append(f.strip())
+                filesToChange = files.strip(",").strip()
             finally:
                 # files and dataset options are mutually exclusive
                 dataset = None
