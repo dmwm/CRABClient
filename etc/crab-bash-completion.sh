@@ -23,13 +23,13 @@ _UseCrab ()
         "")
             case "$cur" in
             "")
-                COMPREPLY=( $(compgen -W '--version --help -h --quiet --debug status tasks proceed checkwrite getlog checkusername checkdataset submit getoutput resubmit kill uploadlog remake report preparelocal createmyproxy' -- $cur) )
+                COMPREPLY=( $(compgen -W '--version --help -h --quiet --debug status tasks proceed checkwrite getlog checkusername checkdataset submit getoutput resubmit kill uploadlog remake report preparelocal createmyproxy setdatasetstatus setfilestatus' -- $cur) )
                 ;;
             -*)
                 COMPREPLY=( $(compgen -W '--version --help -h --quiet --debug' -- $cur) )
                 ;;
             *)
-                COMPREPLY=( $(compgen -W 'status tasks proceed checkwrite getlog checkusername checkdataset submit getoutput resubmit kill uploadlog remake report preparelocal createmyproxy' -- $cur) )
+                COMPREPLY=( $(compgen -W 'status tasks proceed checkwrite getlog checkusername checkdataset submit getoutput resubmit kill uploadlog remake report preparelocal createmyproxy setdatasetstatus setfilestatus' -- $cur) )
                 ;;
             esac
             ;;
@@ -284,9 +284,29 @@ _UseCrab ()
             esac
             ;;
 
+        "setdatasetstatus")
+            case "$cur" in
+                -*)
+                    COMPREPLY=( $(compgen -W '--help -h --status --dataset' -- $cur) )
+                    ;;
+                *)
+                    COMPREPLY=( $(compgen -f $cur) )
+            esac
+            ;;
+
+        "setfilestatus")
+            case "$cur" in
+                -*)
+                    COMPREPLY=( $(compgen -W '--help -h --status --dataset --files' -- $cur) )
+                    ;;
+                *)
+                    COMPREPLY=( $(compgen -f $cur) )
+            esac
+            ;;
+
 
         *)
-            COMPREPLY=( $(compgen -W 'status tasks proceed checkwrite getlog checkusername submit getoutput resubmit kill uploadlog remake report preparelocal' -- $cur) )
+            COMPREPLY=( $(compgen -W 'status tasks proceed checkwrite getlog checkusername submit getoutput resubmit kill uploadlog remake report preparelocal setdatasetstatus setfilestatus' -- $cur) )
             ;;
     esac
 
