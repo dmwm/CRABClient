@@ -86,7 +86,7 @@ class HTTPRequests(dict):
     """
 
     def __init__(self, hostname='localhost', localcert=None, localkey=None, contentType=None,
-                 retry=0, logger=None, version=__version__, verbose=False, userAgent='CRAB?'):
+                 retry=0, logger=None, version=__version__, verbose=False, userAgent=None):
         """
         Initialise an HTTP handler
         """
@@ -104,11 +104,13 @@ class HTTPRequests(dict):
             else:
                 # add port 8443
                 self['host'] = self['host'].replace(".cern.ch", ".cern.ch:8443", 1)
+        if not userAgent:
+            userAgent = 'CRABClient/%s' % __version__
         self.setdefault("cert", localcert)
         self.setdefault("key", localkey)
         self.setdefault("retry", retry)
         self.setdefault("verbose", verbose)
-        self.setdefault("userAgent", "%s/%s" % (userAgent, __version__))
+        self.setdefault("userAgent", userAgent)
         self.setdefault("Content-type", contentType)
         self.logger = logger if logger else logging.getLogger()
 
@@ -262,7 +264,7 @@ class CRABRest:
     """
 
     def __init__(self, hostname='localhost', localcert=None, localkey=None,
-                 retry=0, logger=None, verbose=False, userAgent='CRAB?'):
+                 retry=0, logger=None, verbose=False, userAgent=None):
         self.server = HTTPRequests(hostname=hostname, localcert=localcert, localkey=localkey,
                                    retry=retry, logger=logger, verbose=verbose, userAgent=userAgent)
         instance = 'prod'
@@ -291,7 +293,7 @@ class CRABRest:
         return self.server.delete(uri, data)
 
 
-def getDbsREST(instance=None, logger=None, cert=None, key=None):
+def getDbsREST(instance=None, logger=None, cert=None, key=None, userAgent=None):
     """
     given a DBS istance (e.g. prod/phys03) returns a DBSReader and DBSWriter
     HTTP client instances which can communicate with DBS REST via curl
@@ -329,10 +331,8 @@ def getDbsREST(instance=None, logger=None, cert=None, key=None):
     logger.debug('Write Url = %s' % dbsWriteUrl)
 
     dbsReader = HTTPRequests(hostname=dbsReadUrl, localcert=cert, localkey=key,
-                             retry=2, logger=logger, verbose=False, contentType='application/json',
-                             userAgent='CRABClient')
+                             retry=2, logger=logger, verbose=False, userAgent=userAgent)
 
     dbsWriter = HTTPRequests(hostname=dbsWriteUrl, localcert=cert, localkey=key,
-                             retry=2, logger=logger, verbose=False, contentType='application/json',
-                             userAgent='CRABClient')
+                             retry=2, logger=logger, verbose=False, userAgent=userAgent)
     return dbsReader, dbsWriter
