@@ -9,60 +9,13 @@ import json
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import MissingOptionException, ConfigurationException, CommandFailedException
 from CRABClient.ClientUtilities import colors
-from CRABClient.CrabRestInterface import HTTPRequests
+from CRABClient.RestInterfaces import getDbsREST
 
 if sys.version_info >= (3, 0):
     from urllib.parse import urlencode  # pylint: disable=E0611
 if sys.version_info < (3, 0):
     from urllib import urlencode
 
-try:
-    from CRABClient import __version__
-except:  # pylint: disable=bare-except
-    __version__ = '0.0.0'
-
-
-def getDbsREST(instance=None, logger=None, cert=None, key=None, version=None):
-    """
-    given a DBS istance (e.g. prod/phys03) returns a DBSReader and DBSWriter
-    client instances which communicate with DBS REST via curl
-    Arguments:
-    logger: a logger
-    cert, key : name of files, can use the path to X509_USER_PROXY for both
-    version: the CRAB Client version to put in the User Agent field of the query
-    """
-    # if user supplied a simple prod/phys03 like instance, these two lines will do
-    # note that our HTTPRequests will add https://
-    dbsReadUrl = "cmsweb.cern.ch:8443/dbs/" + instance + "/DBSReader/"
-    dbsWriteUrl = "cmsweb.cern.ch:8443/dbs/" + instance + "/DBSWriter/"
-    # a possible use case e.g. for testing is to use int instance of DBS. requires testbed CMSWEB
-    if instance.startswith('int'):
-        dbsReadUrl = dbsReadUrl.replace('cmsweb', 'cmsweb-testbed')
-        dbsWriteUrl = dbsWriteUrl.replace('cmsweb', 'cmsweb-testbed')
-    # if user knoww better and provided a full URL, we'll take and adapt
-    # to have both Reader and Writer,
-    if instance.startswith("https://"):
-        url = instance.lstrip("https://")  # will be added back in HTTPRequests
-        if "DBSReader" in url:
-            dbsReadUrl = url
-            dbsWriteUrl = url.replace('DBSReader', 'DBSWriter')
-        elif 'DBSWriter' in url:
-            dbsWriteUrl = url
-            dbsReadUrl = url.replace('DBSWriter', 'DBSReader')
-        else:
-            raise ConfigurationException("bad instance value %s" % instance)
-
-    logger.debug('Read Url  = %s' % dbsReadUrl)
-    logger.debug('Write Url = %s' % dbsWriteUrl)
-
-    dbsReader = HTTPRequests(hostname=dbsReadUrl, localcert=cert, localkey=key,
-                             retry=2, logger=logger, verbose=False, contentType='application/json',
-                             userAgent='CRABClient', version=version)
-
-    dbsWriter = HTTPRequests(hostname=dbsWriteUrl, localcert=cert, localkey=key,
-                             retry=2, logger=logger, verbose=False, contentType='application/json',
-                             userAgent='CRABClient', version=version)
-    return dbsReader, dbsWriter
 
 
 class setdatasetstatus(SubCommand):
@@ -95,8 +48,7 @@ class setdatasetstatus(SubCommand):
 
         # from DBS instance, to DBS REST services
         dbsReader, dbsWriter = getDbsREST(instance=instance, logger=self.logger,
-                                          cert=self.proxyfilename, key=self.proxyfilename,
-                                          version=__version__)
+                                          cert=self.proxyfilename, key=self.proxyfilename)
 
         self.logger.info("looking up Dataset %s in DBS %s" % (dataset, instance))
         datasetStatusQuery = {'dataset': dataset, 'dataset_access_type': '*', 'detail': True}
