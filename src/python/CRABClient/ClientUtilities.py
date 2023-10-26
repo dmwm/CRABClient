@@ -230,8 +230,7 @@ def uploadlogfile(logger, proxyfilename, taskname=None, logfilename=None, logpat
         # so it needs its own REST server instantiation
         restClass = CRABClient.Emulator.getEmulator('rest')
         crabserver = restClass(hostname=serverurl, localcert=proxyfilename, localkey=proxyfilename,
-                               retry=2, logger=logger, verbose=False, version=__version__,
-                               userAgent='CRABClient')
+                               retry=2, logger=logger, verbose=False, userAgent='CRABClient')
         crabserver.setDbInstance(instance)
         cacheurl = server_info(crabserver=crabserver, subresource='backendurls')['cacheSSL']
 
@@ -646,7 +645,6 @@ def validateSubmitOptions(options, args):
 #Since server_info class needs SubCommand, and SubCommand needs server_info for
 #delegating the proxy then we are screwed
 #If anyone has a better solution please go on, otherwise live with that one :) :)
-from CRABClient import __version__
 
 def server_info(crabserver=None, subresource=None):
     """
