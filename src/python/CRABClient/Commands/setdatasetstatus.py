@@ -19,7 +19,7 @@ if sys.version_info < (3, 0):
 
 class setdatasetstatus(SubCommand):
     """
-    Set status of a USER dataet in phys03,
+    Set status of a USER dataset in phys03,
     optionally invalidates/revalidates all files in it
     meant to replace https://github.com/dmwm/DBS/blob/master/Client/utils/DataOpsScripts/DBS3SetDatasetStatus.py
     and to work whenever CRAB is supported, i.e. with both python2 and python3
