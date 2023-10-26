@@ -1,5 +1,6 @@
 from optparse import OptionParser
 
+from CRABClient import __version__ as client_version
 from ServerUtilities import SERVICE_INSTANCES
 
 
