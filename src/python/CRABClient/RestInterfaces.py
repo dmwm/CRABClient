@@ -184,8 +184,6 @@ class HTTPRequests(dict):
             command += ' -header "Accept: */*"'
             if self['Content-type']:
                 command += ' -header "Content-type: %s"' % self['Content-type']
-            if verb in ['POST', 'PUT']:
-                command += ' -header "Content-Type: application/x-www-form-urlencoded"'
             command += ' -data "@%s"' % path
             command += ' -cert "%s"' % self['cert']
             command += ' -key "%s"' % self['key']
