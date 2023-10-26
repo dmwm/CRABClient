@@ -264,6 +264,7 @@ class CRABRest:
     def __init__(self, hostname='localhost', localcert=None, localkey=None,
                  retry=0, logger=None, verbose=False, userAgent=None):
         self.server = HTTPRequests(hostname=hostname, localcert=localcert, localkey=localkey,
+                                   contentType='application/json',
                                    retry=retry, logger=logger, verbose=verbose, userAgent=userAgent)
         instance = 'prod'
         self.uriNoApi = '/crabserver/' + instance + '/'
