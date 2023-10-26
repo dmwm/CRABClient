@@ -20,15 +20,12 @@ except ImportError:
 
 from CRABClient.ClientUtilities import execute_command
 from ServerUtilities import encodeRequest
-from CRABClient.ClientExceptions import RESTInterfaceException
+from CRABClient.ClientExceptions import RESTInterfaceException, ConfigurationException
 
 try:
-    from TaskWorker import __version__
+    from CRABClient import __version__
 except:  # pylint: disable=bare-except
-    try:
-        from CRABClient import __version__
-    except:  # pylint: disable=bare-except
-        __version__ = '0.0.0'
+    __version__ = '0.0.0'
 
 
 EnvironmentException = Exception
@@ -109,10 +106,9 @@ class HTTPRequests(dict):
                 self['host'] = self['host'].replace(".cern.ch", ".cern.ch:8443", 1)
         self.setdefault("cert", localcert)
         self.setdefault("key", localkey)
-        self.setdefault("version", version)
         self.setdefault("retry", retry)
         self.setdefault("verbose", verbose)
-        self.setdefault("userAgent", userAgent)
+        self.setdefault("userAgent", "%s/%s" % (userAgent, __version__))
         self.setdefault("Content-type", contentType)
         self.logger = logger if logger else logging.getLogger()
 
@@ -268,7 +264,6 @@ class CRABRest:
     def __init__(self, hostname='localhost', localcert=None, localkey=None, version=__version__,
                  retry=0, logger=None, verbose=False, userAgent='CRAB?'):
         self.server = HTTPRequests(hostname=hostname, localcert=localcert, localkey=localkey,
-                                   version=version,
                                    retry=retry, logger=logger, verbose=verbose, userAgent=userAgent)
         instance = 'prod'
         self.uriNoApi = '/crabserver/' + instance + '/'
@@ -294,3 +289,50 @@ class CRABRest:
     def delete(self, api=None, data=None):
         uri = self.uriNoApi + api
         return self.server.delete(uri, data)
+
+
+def getDbsREST(instance=None, logger=None, cert=None, key=None):
+    """
+    given a DBS istance (e.g. prod/phys03) returns a DBSReader and DBSWriter
+    HTTP client instances which can communicate with DBS REST via curl
+    Arguments:
+    instance: a DBS instance in the form prod/global or prod/phys03 or similar
+            or a full DBS URL like https:cmsweb.cern.ch/dbs/dev/phys01/DBSReader
+            in the latter care the corresponding DBSWriter will also be created, or
+            viceversa, the caller can indicate a DBSWriter and will get back HTTPRequest
+            objects for both Reader and Writer
+    logger: a logger
+    cert, key : name of files, can use the path to X509_USER_PROXY for both
+    """
+    # if user supplied a simple prod/phys03 like instance, these two lines will do
+    # note that our HTTPRequests will add https://
+    dbsReadUrl = "cmsweb.cern.ch:8443/dbs/" + instance + "/DBSReader/"
+    dbsWriteUrl = "cmsweb.cern.ch:8443/dbs/" + instance + "/DBSWriter/"
+    # a possible use case e.g. for testing is to use int instance of DBS. requires testbed CMSWEB
+    if instance.startswith('int'):
+        dbsReadUrl = dbsReadUrl.replace('cmsweb', 'cmsweb-testbed')
+        dbsWriteUrl = dbsWriteUrl.replace('cmsweb', 'cmsweb-testbed')
+    # if user knoww better and provided a full URL, we'll take and adapt
+    # to have both Reader and Writer,
+    if instance.startswith("https://"):
+        url = instance.lstrip("https://")  # will be added back in HTTPRequests
+        if "DBSReader" in url:
+            dbsReadUrl = url
+            dbsWriteUrl = url.replace('DBSReader', 'DBSWriter')
+        elif 'DBSWriter' in url:
+            dbsWriteUrl = url
+            dbsReadUrl = url.replace('DBSWriter', 'DBSReader')
+        else:
+            raise ConfigurationException("bad instance value %s" % instance)
+
+    logger.debug('Read Url  = %s' % dbsReadUrl)
+    logger.debug('Write Url = %s' % dbsWriteUrl)
+
+    dbsReader = HTTPRequests(hostname=dbsReadUrl, localcert=cert, localkey=key,
+                             retry=2, logger=logger, verbose=False, contentType='application/json',
+                             userAgent='CRABClient')
+
+    dbsWriter = HTTPRequests(hostname=dbsWriteUrl, localcert=cert, localkey=key,
+                             retry=2, logger=logger, verbose=False, contentType='application/json',
+                             userAgent='CRABClient')
+    return dbsReader, dbsWriter
