@@ -230,7 +230,7 @@ def uploadlogfile(logger, proxyfilename, taskname=None, logfilename=None, logpat
         # so it needs its own REST server instantiation
         restClass = CRABClient.Emulator.getEmulator('rest')
         crabserver = restClass(hostname=serverurl, localcert=proxyfilename, localkey=proxyfilename,
-                               retry=2, logger=logger, verbose=False, userAgent='CRABClient')
+                               retry=2, logger=logger, verbose=False)
         crabserver.setDbInstance(instance)
         cacheurl = server_info(crabserver=crabserver, subresource='backendurls')['cacheSSL']
 
