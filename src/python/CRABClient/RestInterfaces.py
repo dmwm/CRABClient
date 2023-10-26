@@ -20,15 +20,12 @@ except ImportError:
 
 from CRABClient.ClientUtilities import execute_command
 from ServerUtilities import encodeRequest
-from CRABClient.ClientExceptions import RESTInterfaceException
+from CRABClient.ClientExceptions import RESTInterfaceException, ConfigurationException
 
 try:
-    from TaskWorker import __version__
+    from CRABClient import __version__
 except:  # pylint: disable=bare-except
-    try:
-        from CRABClient import __version__
-    except:  # pylint: disable=bare-except
-        __version__ = '0.0.0'
+    __version__ = '0.0.0'
 
 
 EnvironmentException = Exception
@@ -89,7 +86,7 @@ class HTTPRequests(dict):
     """
 
     def __init__(self, hostname='localhost', localcert=None, localkey=None, contentType=None,
-                 retry=0, logger=None, version=__version__, verbose=False, userAgent='CRAB?'):
+                 retry=0, logger=None, version=__version__, verbose=False, userAgent=None):
         """
         Initialise an HTTP handler
         """
@@ -107,9 +104,10 @@ class HTTPRequests(dict):
             else:
                 # add port 8443
                 self['host'] = self['host'].replace(".cern.ch", ".cern.ch:8443", 1)
+        if not userAgent:
+            userAgent = 'CRABClient/%s' % __version__
         self.setdefault("cert", localcert)
         self.setdefault("key", localkey)
-        self.setdefault("version", version)
         self.setdefault("retry", retry)
         self.setdefault("verbose", verbose)
         self.setdefault("userAgent", userAgent)
@@ -162,7 +160,7 @@ class HTTPRequests(dict):
         caCertPath = self.getCACertPath()
         url = 'https://' + self['host'] + uri
 
-        # if it is a dictionary, we need to encode it to string
+        # if it is a dictionary, we need to encode it to string (will not affect JSON)
         if isinstance(data, dict):
             data = encodeRequest(data)
         self.logger.debug("Encoded data for curl request: %s", data)
@@ -182,12 +180,10 @@ class HTTPRequests(dict):
         # Same variable is also used inside CRABServer, we should keep name changes (if any) synchronized
         if os.getenv('CRAB_useGoCurl'):
             command += '/cvmfs/cms.cern.ch/cmsmon/gocurl -verbose 2 -method {0}'.format(verb)
-            command += ' -header "User-Agent: %s/%s"' % (self['userAgent'], self['version'])
+            command += ' -header "User-Agent: %s"' % self['userAgent']
             command += ' -header "Accept: */*"'
             if self['Content-type']:
                 command += ' -header "Content-type: %s"' % self['Content-type']
-            if verb in ['POST', 'PUT']:
-                command += ' -header "Content-Type: application/x-www-form-urlencoded"'
             command += ' -data "@%s"' % path
             command += ' -cert "%s"' % self['cert']
             command += ' -key "%s"' % self['key']
@@ -195,7 +191,7 @@ class HTTPRequests(dict):
             command += ' -url "%s" | tee /dev/stderr ' % url
         else:
             command += 'curl -v -X {0}'.format(verb)
-            command += ' -H "User-Agent: %s/%s"' % (self['userAgent'], self['version'])
+            command += ' -H "User-Agent: %s"' % self['userAgent']
             command += ' -H "Accept: */*"'
             if self['Content-type']:
                 command += ' -H "Content-type: %s"' % self['Content-type']
@@ -265,10 +261,9 @@ class CRABRest:
     Add two methods to set and get the DB instance
     """
 
-    def __init__(self, hostname='localhost', localcert=None, localkey=None, version=__version__,
-                 retry=0, logger=None, verbose=False, userAgent='CRAB?'):
+    def __init__(self, hostname='localhost', localcert=None, localkey=None,
+                 retry=0, logger=None, verbose=False, userAgent=None):
         self.server = HTTPRequests(hostname=hostname, localcert=localcert, localkey=localkey,
-                                   version=version,
                                    retry=retry, logger=logger, verbose=verbose, userAgent=userAgent)
         instance = 'prod'
         self.uriNoApi = '/crabserver/' + instance + '/'
@@ -294,3 +289,48 @@ class CRABRest:
     def delete(self, api=None, data=None):
         uri = self.uriNoApi + api
         return self.server.delete(uri, data)
+
+
+def getDbsREST(instance=None, logger=None, cert=None, key=None, userAgent=None):
+    """
+    given a DBS istance (e.g. prod/phys03) returns a DBSReader and DBSWriter
+    HTTP client instances which can communicate with DBS REST via curl
+    Arguments:
+    instance: a DBS instance in the form prod/global or prod/phys03 or similar
+            or a full DBS URL like https:cmsweb.cern.ch/dbs/dev/phys01/DBSReader
+            in the latter care the corresponding DBSWriter will also be created, or
+            viceversa, the caller can indicate a DBSWriter and will get back HTTPRequest
+            objects for both Reader and Writer
+    logger: a logger
+    cert, key : name of files, can use the path to X509_USER_PROXY for both
+    """
+    # if user supplied a simple prod/phys03 like instance, these two lines will do
+    # note that our HTTPRequests will add https://
+    dbsReadUrl = "cmsweb.cern.ch:8443/dbs/" + instance + "/DBSReader/"
+    dbsWriteUrl = "cmsweb.cern.ch:8443/dbs/" + instance + "/DBSWriter/"
+    # a possible use case e.g. for testing is to use int instance of DBS. requires testbed CMSWEB
+    if instance.startswith('int'):
+        dbsReadUrl = dbsReadUrl.replace('cmsweb', 'cmsweb-testbed')
+        dbsWriteUrl = dbsWriteUrl.replace('cmsweb', 'cmsweb-testbed')
+    # if user knoww better and provided a full URL, we'll take and adapt
+    # to have both Reader and Writer,
+    if instance.startswith("https://"):
+        url = instance.lstrip("https://")  # will be added back in HTTPRequests
+        if "DBSReader" in url:
+            dbsReadUrl = url
+            dbsWriteUrl = url.replace('DBSReader', 'DBSWriter')
+        elif 'DBSWriter' in url:
+            dbsWriteUrl = url
+            dbsReadUrl = url.replace('DBSWriter', 'DBSReader')
+        else:
+            raise ConfigurationException("bad instance value %s" % instance)
+
+    logger.debug('Read Url  = %s' % dbsReadUrl)
+    logger.debug('Write Url = %s' % dbsWriteUrl)
+
+    dbsReader = HTTPRequests(hostname=dbsReadUrl, localcert=cert, localkey=key,
+                             retry=2, logger=logger, verbose=False, userAgent=userAgent)
+
+    dbsWriter = HTTPRequests(hostname=dbsWriteUrl, localcert=cert, localkey=key,
+                             retry=2, logger=logger, verbose=False, userAgent=userAgent)
+    return dbsReader, dbsWriter

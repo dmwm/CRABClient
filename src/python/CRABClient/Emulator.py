@@ -24,6 +24,6 @@ def setEmulator(name, value):
     overrideDict[name] = value
 
 def getDefaults():
-    import CRABClient.CrabRestInterface
-    return {'rest' : CRABClient.CrabRestInterface.CRABRest,
+    import CRABClient.RestInterfaces
+    return {'rest' : CRABClient.RestInterfaces.CRABRest,
             'ufc' : 'dummy_ufc'}

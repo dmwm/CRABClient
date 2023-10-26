@@ -8,12 +8,8 @@ import json
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import MissingOptionException, ConfigurationException, CommandFailedException
 from CRABClient.ClientUtilities import colors
-from CRABClient.Commands.setdatasetstatus import getDbsREST
 
-try:
-    from CRABClient import __version__
-except:  # pylint: disable=bare-except
-    __version__ = '0.0.0'
+from CRABClient.RestInterfaces import getDbsREST
 
 
 class setfilestatus(SubCommand):
@@ -63,8 +59,7 @@ class setfilestatus(SubCommand):
 
         # from DBS instance, to DBS REST services
         dbsReader, dbsWriter = getDbsREST(instance=instance, logger=self.logger,
-                                          cert=self.proxyfilename, key=self.proxyfilename,
-                                          version=__version__)
+                                          cert=self.proxyfilename, key=self.proxyfilename)
         # we will need the dataset name
         if dataset:
             datasetName = dataset
