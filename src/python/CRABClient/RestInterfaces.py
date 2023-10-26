@@ -178,7 +178,7 @@ class HTTPRequests(dict):
         # Same variable is also used inside CRABServer, we should keep name changes (if any) synchronized
         if os.getenv('CRAB_useGoCurl'):
             command += '/cvmfs/cms.cern.ch/cmsmon/gocurl -verbose 2 -method {0}'.format(verb)
-            command += ' -header "User-Agent: %s/%s"' % (self['userAgent'], self['version'])
+            command += ' -header "User-Agent: %s"' % self['userAgent']
             command += ' -header "Accept: */*"'
             if self['Content-type']:
                 command += ' -header "Content-type: %s"' % self['Content-type']
@@ -191,7 +191,7 @@ class HTTPRequests(dict):
             command += ' -url "%s" | tee /dev/stderr ' % url
         else:
             command += 'curl -v -X {0}'.format(verb)
-            command += ' -H "User-Agent: %s/%s"' % (self['userAgent'], self['version'])
+            command += ' -H "User-Agent: %s/%s"' % self['userAgent']
             command += ' -H "Accept: */*"'
             if self['Content-type']:
                 command += ' -H "Content-type: %s"' % self['Content-type']
