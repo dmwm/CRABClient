@@ -160,7 +160,7 @@ class HTTPRequests(dict):
         caCertPath = self.getCACertPath()
         url = 'https://' + self['host'] + uri
 
-        # if it is a dictionary, we need to encode it to string
+        # if it is a dictionary, we need to encode it to string (will not affect JSON)
         if isinstance(data, dict):
             data = encodeRequest(data)
         self.logger.debug("Encoded data for curl request: %s", data)
