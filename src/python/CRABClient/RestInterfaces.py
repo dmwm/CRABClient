@@ -261,7 +261,7 @@ class CRABRest:
     Add two methods to set and get the DB instance
     """
 
-    def __init__(self, hostname='localhost', localcert=None, localkey=None, version=__version__,
+    def __init__(self, hostname='localhost', localcert=None, localkey=None,
                  retry=0, logger=None, verbose=False, userAgent='CRAB?'):
         self.server = HTTPRequests(hostname=hostname, localcert=localcert, localkey=localkey,
                                    retry=retry, logger=logger, verbose=verbose, userAgent=userAgent)

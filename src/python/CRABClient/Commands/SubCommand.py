@@ -362,18 +362,16 @@ class SubCommand(ConfigCommand):
         # this is usually the first time that a call to the server is made, so where Emulator('rest') is initialized
         # arguments to Emulator('rest') call must match those for HTTPRequest.__init__ in RESTInteractions.py
         #server = CRABClient.Emulator.getEmulator('rest')(url=serverurl, localcert=proxyfilename, localkey=proxyfilename,
-        #          version=__version__, retry=2, logger=logger)
+        #          retry=2, logger=logger)
         if self.cmdconf['requiresREST']:
             crabRest = CRABClient.Emulator.getEmulator('rest')
             self.crabserver = crabRest(hostname=self.serverurl, localcert=self.proxyfilename, localkey=self.proxyfilename,
-                                        retry=2, logger=self.logger, verbose=False, version=__version__,
-                                        userAgent='CRABClient')
+                                        retry=2, logger=self.logger, verbose=False, userAgent='CRABClient')
             self.crabserver.setDbInstance(self.instance)
             # prepare also a test crabserver instance which will send tarballs to S3
             self.s3tester = crabRest(hostname='cmsweb-testbed.cern.ch',
                                       localcert=self.proxyfilename, localkey=self.proxyfilename,
-                                      retry=0, logger=self.logger, verbose=False, version=__version__,
-                                      userAgent='CRABClient')
+                                      retry=0, logger=self.logger, verbose=False, userAgent='CRABClient')
             self.s3tester.setDbInstance('preprod')
             self.handleMyProxy()
 
