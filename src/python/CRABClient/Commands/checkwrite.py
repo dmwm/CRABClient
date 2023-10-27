@@ -5,10 +5,9 @@ import datetime
 
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientUtilities import execute_command, colors, cmd_exist
-from CRABClient.ClientUtilities import RUCIO_QUOTA_WARNING_GB, RUCIO_QUOTA_MINIMUM_GB
 from CRABClient.UserUtilities import getUsername
 from CRABClient.ClientExceptions import MissingOptionException, ConfigurationException, CommandFailedException
-from ServerUtilities import checkOutLFN
+from ServerUtilities import checkOutLFN, isEnoughRucioQuota
 
 class checkwrite(SubCommand):
     """
@@ -36,6 +35,7 @@ class checkwrite(SubCommand):
             self.logger.info('Will check write permission in the default location /store/user/<username>')
             self.lfnPrefix = '/store/user/' + username
 
+        self.initRucioClient(self.lfnPrefix)
         ## Check that the location where we want to check write permission
         ## is one where the user will be allowed to stageout.
         self.logger.info("Validating LFN %s...", self.lfnPrefix)
@@ -61,8 +61,8 @@ class checkwrite(SubCommand):
             return {'commandStatus':'FAILED'}
 
         # if user asked to to use Rucio for ASO we simply check quota, since user can't directly write there
-        if self.lfnPrefix.startswith('/store/user/rucio/') or self.lfnPrefix.startswith('/store/group/rucio/') :
-            status = self.checkRucioQuota(username, site)
+        if self.lfnPrefix.startswith('/store/user/rucio/') or self.lfnPrefix.startswith('/store/group/rucio/'):
+            status = self.checkRucioQuota(self.lfnPrefix, site)
             return {'commandStatus': status}
 
         cp_cmd = ""
@@ -237,41 +237,41 @@ exit(0)
         pfn = rucioOut.rstrip()
         return pfn
 
-    def checkRucioQuota(self, username, site):
+
+    def checkRucioQuota(self, lfn, site):
         if not self.rucio:
             self.logger.warning("Rucio client not available with this CMSSW version. Can not check")
-            return {'commandStatus':'FAILED'}
-        quota = list(self.rucio.get_local_account_usage(username, site))
-        if not quota:
+            return 'FAILED'
+        hasQuota, isEnough, isQuotaWarning, quota = isEnoughRucioQuota(self.rucio, site)
+        freeGB = quota[2]
+        if hasQuota and isEnough:
+            status = 'SUCCESS'
+            msg = "you have %d GB available as Rucio quota at site %s" % (freeGB, site)
+            self.logger.info(msg)
+            if isQuotaWarning:
+                msg = 'This is very little and although CRAB will submit, stageout may fail. Please cleanup'
+                self.logger.warning(msg)
+            self.logger.info("You can use this site for Rucio-based ASO")
+        elif hasQuota and not isEnough:
+            msg = "your available space is not enough to allow CRAB to submit jobs. Cleanup !!"
+            status = 'FAILED'
+        else:
             msg = "You do not have any Rucio quota at site %s" % site
             self.logger.error(msg)
             status ='FAILED'
-        else:
-            freeGB = quota[0]['bytes_remaining']/1024/1024/1024
-            msg = "you have %d GB available as Rucio quota at site %s" % (freeGB, site)
-            self.logger.info(msg)
-            if freeGB > RUCIO_QUOTA_MINIMUM_GB:
-                status = 'SUCCESS'
-                if freeGB <= RUCIO_QUOTA_WARNING_GB:
-                    msg = 'This is very little and although CRAB will submit, stageout may fail. Please cleanup'
-                    self.logger.warning(msg)
-                else:
-                    self.logger.info("You can use this site for Rucio-based ASO")
-            else:
-                msg = "your available space is not enough to allow CRAB to submit jobs. Cleanup !!"
-                status = 'FAILED'
 
-            msg = "FYI this is your Rucio quota situation (rounded to GBytes = 10^9 Bytes)"
-            quotaRecords = self.rucio.get_local_account_usage(username)
-            msg += "\n%20s%10s%10s%10s" % ('Site', 'Quota', 'Used', 'Free')
-            for record in quotaRecords:
-                site = record['rse']
-                totalGB = record['bytes_limit'] / 1000 / 1000 / 1000
-                usedGB = record['bytes'] / 1000 / 1000 / 1000
-                freeGB = record['bytes_remaining'] / 1000 / 1000 / 1000
-                msg += "\n%20s%10d%10d%10d" % (site, totalGB, usedGB, freeGB)
-            self.logger.info(msg)
-            return status
+        # print summary of rucio quota
+        msg = "FYI this is your Rucio quota situation (rounded to GBytes = 10^9 Bytes)"
+        quotaRecords = self.rucio.get_local_account_usage(self.rucio.account)
+        msg += "\n%20s%10s%10s%10s" % ('Site', 'Quota', 'Used', 'Free')
+        for record in quotaRecords:
+            site = record['rse']
+            totalGB = record['bytes_limit'] / 1000 / 1000 / 1000
+            usedGB = record['bytes'] / 1000 / 1000 / 1000
+            freeGB = record['bytes_remaining'] / 1000 / 1000 / 1000
+            msg += "\n%20s%10d%10d%10d" % (site, totalGB, usedGB, freeGB)
+        self.logger.info(msg)
+        return status
 
     def cp(self, pfn, command):
 

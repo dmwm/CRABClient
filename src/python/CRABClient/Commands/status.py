@@ -20,14 +20,13 @@ if sys.version_info < (3, 0):
 
 from CRABClient.ClientUtilities import colors, validateJobids, compareJobids
 from CRABClient.ClientUtilities import PKL_R_MODE
-from CRABClient.ClientUtilities import RUCIO_QUOTA_WARNING_GB, RUCIO_QUOTA_MINIMUM_GB
 from CRABClient.UserUtilities import curlGetFileFromURL, getColumn
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ConfigurationException
 from CRABClient.ClientMapping import parametersMapping
 
-from ServerUtilities import getEpochFromDBTime, TASKDBSTATUSES_TMP, FEEDBACKMAIL,\
-    getProxiedWebDir
+from ServerUtilities import (getEpochFromDBTime, TASKDBSTATUSES_TMP,
+                             FEEDBACKMAIL, getProxiedWebDir, isEnoughRucioQuota)
 
 PUBLICATION_STATES = {
     'not_published': 'idle',
@@ -73,6 +72,8 @@ class status(SubCommand):
         else:
             outputDatasetList = None
         outDataset = outputDatasetList[0] if outputDatasetList else None # we do not support multiple output datasets anymore
+
+        self.initRucioClient(outputLfn)
 
         #Print information from the database
         self.printTaskInfo(crabDBInfo, user)
@@ -1139,25 +1140,19 @@ class status(SubCommand):
             return
         if site == 'T3_CERN_CERNBOX':
             return
-        # check Rucio quota and warn user as proper
-        try:
-            # Rucio returns a generator, so convert to a list and pick the only element (one site!)
-            quota = list(self.rucio.get_local_account_usage(user, site))[0]
-        except Exception as e:
-            print("Warning: Failed to get Rucio quota info\n %s" %e)
-            return
-        freeGB = quota['bytes_remaining'] / 1000 / 1000 / 1000
-        totalGB = quota['bytes_limit'] / 1000 / 1000 / 1000
-        usedGB = quota['bytes'] / 1000 / 1000 / 1000
+
+        _, isEnough, isQuotaWarning, quota = isEnoughRucioQuota(self.rucio, site)
+
+        totalGB, _, freeGB = quota
         print("You have %d/%d GBytes available as Rucio quota at site %s" % (freeGB, totalGB, site))
-        if freeGB < RUCIO_QUOTA_MINIMUM_GB:
+        if not isEnough:
             msg = "%sALARM: Not enough space at ASO destination %s" % (colors.RED, colors.NORMAL)
             msg += "\n This very dangerous. Your output stageout will get stuck."
             msg += "\n status information will be stale and could be misleading"
             msg += "\n %sYOU MUST CLEANUP YOUR RUCIO SPACE IMMEDIATELY (remove some rules)%s:" % (colors.RED, colors.NORMAL)
             self.logger.warning(msg)
             return
-        if freeGB < RUCIO_QUOTA_WARNING_GB:
+        if isQoutaWarning:
             msg = "%sWarning%s: " % (colors.RED, colors.NORMAL)
             msg += "This may be not enough for your output, leading to problems. Consider cleaning up"
             self.logger.warning(msg)

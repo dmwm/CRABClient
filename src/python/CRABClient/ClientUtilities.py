@@ -25,7 +25,7 @@ from optparse import OptionValueError
 ## CRAB dependencies
 import CRABClient.Emulator
 from ServerUtilities import uploadToS3, getDownloadUrlFromS3
-from CRABClient.ClientExceptions import ClientException, TaskNotFoundException, CachefileNotFoundException, ConfigurationException, ConfigException, UsernameException, ProxyException, RESTCommunicationException
+from CRABClient.ClientExceptions import ClientException, TaskNotFoundException, CachefileNotFoundException, ConfigurationException, ConfigException, UsernameException, ProxyException, RESTCommunicationException, RucioClientException
 
 # pickle files need to be opeb in different mode in python2 or python3
 if sys.version_info >= (3, 0):
@@ -224,7 +224,7 @@ def uploadlogfile(logger, proxyfilename, taskname=None, logfilename=None, logpat
     if proxyfilename == None:
         logger.debug('No proxy was given')
         doupload = False
-        
+
     if doupload:
         # uploadLog is executed directly from crab main script, does not inherit from SubCommand
         # so it needs its own REST server instantiation
@@ -797,4 +797,3 @@ def execute_command(command=None, logger=None, timeout=None, redirect=True):
         logger.debug('output : %s\n error: %s\n retcode : %s' % (stdout, stderr, rc))
 
     return stdout, stderr, rc
-

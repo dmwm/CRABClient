@@ -1,6 +1,6 @@
 import os
 import re
-import imp 
+import imp
 import json
 import types
 from ast import literal_eval
@@ -17,7 +17,8 @@ from CRABClient.CRABOptParser import CRABCmdOptParser
 from CRABClient.CredentialInteractions import CredentialInteractions
 from CRABClient.ClientUtilities import loadCache, getWorkArea, server_info, createWorkArea, execute_command
 from CRABClient.ClientExceptions import (ConfigurationException, MissingOptionException,
-                                         EnvironmentException, CachefileNotFoundException)
+                                         EnvironmentException, CachefileNotFoundException,
+                                         RucioClientException)
 from CRABClient.ClientMapping import (renamedParams, commandsConfiguration, configParametersInfo,
                                       getParamDefaultValue, deprecatedParams)
 from CRABClient.UserUtilities import getUsername
@@ -351,9 +352,9 @@ class SubCommand(ConfigCommand):
         # At this point we check if there is a valid proxy, and
         # eventually create a new one. If the proxy was not created by CRAB, we check that the
         # VO role/group in the proxy are the same as specified by the user in the configuration
-        # file (or in the command line options). If it is not, we ask the user if he wants to 
-        # overwrite the current proxy. If he doesn't want to overwrite it, we don't continue 
-        # and ask him to provide the VO role/group as in the existing proxy. 
+        # file (or in the command line options). If it is not, we ask the user if he wants to
+        # overwrite the current proxy. If he doesn't want to overwrite it, we don't continue
+        # and ask him to provide the VO role/group as in the existing proxy.
         # Finally, delegate the proxy to myproxy server.
         self.handleVomsProxy(proxyOptsSetPlace)
 
@@ -375,17 +376,6 @@ class SubCommand(ConfigCommand):
             self.s3tester.setDbInstance('preprod')
             self.handleMyProxy()
 
-        if self.cmdconf['requiresRucio']:
-            if os.environ.get('RUCIO_HOME', None):
-                username = getUsername(self.proxyfilename, logger=self.logger)
-                from rucio.client import Client
-                os.environ['RUCIO_ACCOUNT'] = username
-                self.rucio = Client()
-                me = self.rucio.whoami()
-                self.logger.info('Rucio client intialized for account %s' % me['account'])
-            else:
-                self.rucio = None
-
         # Validate the command options
         self.validateOptions()
         self.validateOptions()
@@ -400,7 +390,6 @@ class SubCommand(ConfigCommand):
         self.logger.debug("Server base url is %s" %(self.serverurl))
         if self.cmdconf['requiresREST']:
             self.logger.debug("Command api %s" %(self.defaultApi))
-
 
     def serverInstance(self):
         """
@@ -475,7 +464,7 @@ class SubCommand(ConfigCommand):
         return
 
     def handleMyProxy(self):
-        """ 
+        """
         check myproxy credential and delegate again it if necessary.
         takes no input and returns no output, bur raises exception if delegation failed
         """
@@ -594,6 +583,29 @@ class SubCommand(ConfigCommand):
             with open(crabCacheFileName_tmp, 'w') as fd:
                 json.dump(self.crab3dic, fd)
             os.rename(crabCacheFileName_tmp, crabCacheFileName)
+
+    def initRucioClient(self, lfn):
+        if self.cmdconf['requiresRucio']:
+            if os.environ.get('RUCIO_HOME', None):
+                from ServerUtilities import getRucioAccountFromLFN
+                from rucio.client import Client
+                from rucio.common.exception import RucioException
+                if hasattr(self.options, 'userlfn') and self.options.userlfn is not None\
+                    and (self.options.userlfn.startswith('/store/user/rucio/')
+                         or self.options.userlfn.startswith('/store/group/rucio/')):
+                    account = getRucioAccountFromLFN(self.options.userlfn)
+                else:
+                    account = getUsername(self.proxyfilename, logger=self.logger)
+                os.environ['RUCIO_ACCOUNT'] = account
+                try:
+                    self.rucio = Client()
+                    me = self.rucio.whoami()
+                    self.logger.info('Rucio client intialized for account %s' % me['account'])
+                except RucioException as e:
+                    msg = "Cannot initialize Rucio Client. Error: %s" % str(e)
+                    raise RucioClientException(msg)
+            else:
+                self.rucio = None
 
 
     def __call__(self):
