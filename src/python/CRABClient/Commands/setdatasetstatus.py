@@ -72,6 +72,8 @@ class setdatasetstatus(SubCommand):
         self.logger.debug('exitcode= %s', rc)
         self.logger.info("Dataset status in DBS now is %s" % ds[0]['dataset_access_type'])
 
+        self.logger.info("NOTE: status of files inside the dataset has NOT been changed")
+
         return {'commandStatus': result}
 
     def setOptions(self):
