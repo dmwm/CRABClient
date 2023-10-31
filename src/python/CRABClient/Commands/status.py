@@ -1152,7 +1152,7 @@ class status(SubCommand):
             msg += "\n %sYOU MUST CLEANUP YOUR RUCIO SPACE IMMEDIATELY (remove some rules)%s:" % (colors.RED, colors.NORMAL)
             self.logger.warning(msg)
             return
-        if isQoutaWarning:
+        if isQuotaWarning:
             msg = "%sWarning%s: " % (colors.RED, colors.NORMAL)
             msg += "This may be not enough for your output, leading to problems. Consider cleaning up"
             self.logger.warning(msg)

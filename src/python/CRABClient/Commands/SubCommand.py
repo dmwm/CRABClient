@@ -391,6 +391,8 @@ class SubCommand(ConfigCommand):
         if self.cmdconf['requiresREST']:
             self.logger.debug("Command api %s" %(self.defaultApi))
 
+        self.rucio = None
+
     def serverInstance(self):
         """
         Deriving the correct instance to use and the server url. Client is allowed to propagate the instance name and corresponding url
@@ -603,7 +605,7 @@ class SubCommand(ConfigCommand):
                     self.logger.info('Rucio client intialized for account %s' % me['account'])
                 except RucioException as e:
                     msg = "Cannot initialize Rucio Client. Error: %s" % str(e)
-                    raise RucioClientException(msg)
+                    raise RucioClientException(msg) from e
             else:
                 self.rucio = None
 
