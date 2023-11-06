@@ -13,10 +13,7 @@ from CRABClient.RestInterfaces import getDbsREST
 
 class setfilestatus(SubCommand):
     """
-    Set status of a USER dataset in phys03,
-    optionally invalidates/revalidates all files in it
-    meant to replace https://github.com/dmwm/DBS/blob/master/Client/utils/DataOpsScripts/DBS3SetDatasetStatus.py
-    and to work whenever CRAB is supported, i.e. with both python2 and python3
+    Set status of a USER file in phys03
     """
 
     name = 'setfilestatus'
