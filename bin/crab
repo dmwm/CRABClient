@@ -6,10 +6,7 @@ python_cmd="python"
 CMSSW_Major=$(echo $CMSSW_VERSION | cut -d_ -f2)  # e.g. from CMSSW_13_1_x this is "13"
 CMSSW_Serie=$(echo $CMSSW_VERSION | cut -d_ -f3)  # e.g. from CMSSW_10_6_x this is "6"
 
-# CRAB can use python3 starting from CMSSW_11
-# would be good to do also for CMSSW_10_6 + (for UL) but we use
-# FWCore.PythonUtilities.LumiList which imports urllib2 which
-# is not available in python3
+# CRABClient can use python3 starting from CMSSW_10
 [ $CMSSW_Major -ge 10 ] && python_cmd="python3"
 
 if [ $python_cmd = "python3" ] ; then
