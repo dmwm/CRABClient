@@ -106,6 +106,10 @@ class recover(SubCommand):
         side effects:
         - if needed, create a new directory locally with requestcache for the 
           original failing task
+
+        TODO an alternative would be to use calling other commands via the crabapi,
+        as done with "multicrab".
+        https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRABClientLibraryAPI#Multicrab_using_the_crabCommand
         """
         # step1: remake
         cmdargs = []
@@ -340,7 +344,7 @@ class recover(SubCommand):
 
         # - [x] make sure that there are no ongoing publications
         self.logger.info("DM DEBUG - checkkill - publication %s", self.failingTaskStatus["publication"] )
-        terminalStatesPub = set(("failed", "done", "not_required"))
+        terminalStatesPub = set(("failed", "done", "not_required", "disabled"))
         assert set(self.failingTaskStatus["publication"].keys()).issubset(terminalStatesPub), \
             "In order to recover a task, publication for all the jobs need to be in a terminal state ({}). You have {}"\
                 .format(terminalStatesPub, self.failingTaskStatus["publication"].keys())
@@ -362,6 +366,24 @@ class recover(SubCommand):
         - populates the directory "result" inside the workdir of the original failing task
           with the output of crab report
         """
+
+        failingTaskPublish = getColumn(self.failingCrabDBInfo, 'tm_publication')
+        self.logger.info("DM DEBUG - tm_publication: %s %s", type(failingTaskPublish), failingTaskPublish)
+        # - if the user specified --strategy=notPublished but the original failing task
+        #   disabled publishing, then `crab report` fails and raises and exception.
+        #   so, we will automatically switch to notFinished and print a warning
+        # - assuming "strategy" is always in self.options.__dict__.keys():
+        if failingTaskPublish != "T" and self.options.__dict__["strategy"] != "notFinished":
+            self.logger.warning("WARNING - The original task had publication disabled. recovery strategy changed to notFinished")
+            self.options.__dict__["strategy"] = "notFinished"
+
+        try:
+            os.remove(os.path.join(self.crabProjDir, "results", "notFinishedLumis.json"))
+            os.remove(os.path.join(self.crabProjDir, "results", "notPublishedLumis.json"))
+            self.logger.info("DM DEBUG - crab report - needed to delete existing files!")
+        except:
+            pass
+
         cmdargs = []
         cmdargs.append("-d")
         cmdargs.append(str(self.crabProjDir))
@@ -374,6 +396,7 @@ class recover(SubCommand):
         if "proxy" in self.options.__dict__.keys():
             cmdargs.append("--proxy")
             cmdargs.append(self.options.__dict__["proxy"])
+
         self.logger.info("DM DEBUG - report, cmdargs: %s", cmdargs)
         reportCmd = report(logger=self.logger, cmdargs=cmdargs)
         retval = reportCmd()
@@ -381,11 +404,6 @@ class recover(SubCommand):
         self.logger.info("DM DEBUG - report, after, self.configuration: %s", self.configuration)
 
         recoverLumimaskPath = ""
-        failingTaskPublish = getColumn(self.failingCrabDBInfo, 'tm_publication')
-        self.logger.info("DM DEBUG - tm_publication: %s %s", type(failingTaskPublish), failingTaskPublish)
-        # - if the user specified --strategy=notPublished but the original failing task
-        #   disabled publishing, then `crab report` fails and raises and exception.
-        # - assuming "strategy" is always in self.options.__dict__.keys():
         if failingTaskPublish == "T" and self.options.__dict__["strategy"] == "notPublished":
             recoverLumimaskPath = os.path.join(self.crabProjDir, "results", "notPublishedLumis.json")
         else:
@@ -525,7 +543,7 @@ class recover(SubCommand):
         # step: recovery
         self.parser.add_option("--strategy",
                                dest = "strategy",
-                               default="notFinished",
+                               default="notPublished",
                                help = "When using lumibased splitting, sets crab report --recovery=$option")
 
         self.parser.add_option("--destinstance",
