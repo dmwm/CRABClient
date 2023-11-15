@@ -797,3 +797,32 @@ def execute_command(command=None, logger=None, timeout=None, redirect=True):
         logger.debug('output : %s\n error: %s\n retcode : %s' % (stdout, stderr, rc))
 
     return stdout, stderr, rc
+
+def getRucioClientFromLFN(origClient, lfn, logger):
+    """
+    Get appropriate Rucio client with account parsing from LFN.
+
+    :param origClient:
+    :type origClient:
+    :param lfn: LFN
+    :type lfn: str
+    :param logger: logger object
+    :type logger: logging
+
+    :return: rucio client object
+    :rtype: rucio.client.Client
+    """
+    from ServerUtilities import getRucioAccountFromLFN
+    from rucio.client import Client
+    from rucio.common.exception import RucioException
+    account = getRucioAccountFromLFN(lfn)
+    if origClient.account == account:
+        return origClient
+    try:
+        client = Client(account=account)
+        me = client.whoami()
+        logger.debug('Initializing new Rucio client for account %s' % me['account'])
+        return client
+    except RucioException as e:
+        msg = "Cannot initialize Rucio Client."
+        raise RucioClientException(msg) from e

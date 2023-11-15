@@ -18,7 +18,7 @@ if sys.version_info >= (3, 0):
 if sys.version_info < (3, 0):
     from urllib import quote
 
-from CRABClient.ClientUtilities import colors, validateJobids, compareJobids
+from CRABClient.ClientUtilities import (colors, getRucioClientFromLFN, validateJobids, compareJobids)
 from CRABClient.ClientUtilities import PKL_R_MODE
 from CRABClient.UserUtilities import curlGetFileFromURL, getColumn
 from CRABClient.Commands.SubCommand import SubCommand
@@ -239,7 +239,7 @@ class status(SubCommand):
         usingRucio = outputLfn.startswith('/store/user/rucio') or outputLfn.startswith('/store/group/rucio')
 
         if dagStatus != 'COMPLETED' and usingRucio:
-            self.printRucioQuotaInfo(user, outputDestinationSite)
+            self.printRucioQuotaInfo(outputLfn, outputDestinationSite)
 
         container = None
         if usingRucio:
@@ -1135,24 +1135,25 @@ class status(SubCommand):
 
         return pubStatus
 
-    def printRucioQuotaInfo(self, user, site):
+    def printRucioQuotaInfo(self, lfn, site):
         if not self.rucio:
             return
         if site == 'T3_CERN_CERNBOX':
             return
-
-        _, isEnough, isQuotaWarning, quota = isEnoughRucioQuota(self.rucio, site)
-
-        totalGB, _, freeGB = quota
-        print("You have %d/%d GBytes available as Rucio quota at site %s" % (freeGB, totalGB, site))
-        if not isEnough:
+        # We need to switch to group account when needed untils CMS Rucio fix
+        # the permission issue.
+        # See https://mattermost.web.cern.ch/cms-o-and-c/pl/ej7zwkr747rifezzcyyweisx9r
+        rucioClient = getRucioClientFromLFN(self.rucio, lfn, self.logger)
+        quotaCheck = isEnoughRucioQuota(rucioClient, site)
+        self.logger.info("You have %d/%d GBytes available as Rucio quota at site %s" % (quotaCheck['free'], quotaCheck['total'], site))
+        if not quotaCheck['isEnough']:
             msg = "%sALARM: Not enough space at ASO destination %s" % (colors.RED, colors.NORMAL)
             msg += "\n This very dangerous. Your output stageout will get stuck."
             msg += "\n status information will be stale and could be misleading"
             msg += "\n %sYOU MUST CLEANUP YOUR RUCIO SPACE IMMEDIATELY (remove some rules)%s:" % (colors.RED, colors.NORMAL)
             self.logger.warning(msg)
             return
-        if isQuotaWarning:
+        if quotaCheck['isQuotaWarning']:
             msg = "%sWarning%s: " % (colors.RED, colors.NORMAL)
             msg += "This may be not enough for your output, leading to problems. Consider cleaning up"
             self.logger.warning(msg)

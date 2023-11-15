@@ -4,7 +4,8 @@ import time
 import datetime
 
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.ClientUtilities import execute_command, colors, cmd_exist
+from CRABClient.ClientUtilities import (execute_command, colors, cmd_exist,
+                                        getRucioClientFromLFN)
 from CRABClient.UserUtilities import getUsername
 from CRABClient.ClientExceptions import MissingOptionException, ConfigurationException, CommandFailedException
 from ServerUtilities import checkOutLFN, isEnoughRucioQuota
@@ -242,17 +243,17 @@ exit(0)
         if not self.rucio:
             self.logger.warning("Rucio client not available with this CMSSW version. Can not check")
             return 'FAILED'
-        hasQuota, isEnough, isQuotaWarning, quota = isEnoughRucioQuota(self.rucio, site)
-        freeGB = quota[2]
-        if hasQuota and isEnough:
+        rucioClient = getRucioClientFromLFN(self.rucio, lfn, self.logger)
+        quotaCheck = isEnoughRucioQuota(rucioClient, site)
+        if quotaCheck['hasQuota'] and quotaCheck['isEnough']:
             status = 'SUCCESS'
-            msg = "you have %d GB available as Rucio quota at site %s" % (freeGB, site)
+            msg = "you have %d GB available as Rucio quota at site %s" % (quotaCheck['free'], site)
             self.logger.info(msg)
-            if isQuotaWarning:
+            if quotaCheck['isQuotaWarning']:
                 msg = 'This is very little and although CRAB will submit, stageout may fail. Please cleanup'
                 self.logger.warning(msg)
             self.logger.info("You can use this site for Rucio-based ASO")
-        elif hasQuota and not isEnough:
+        elif quotaCheck['hasQuota'] and not quotaCheck['isEnough']:
             msg = "your available space is not enough to allow CRAB to submit jobs. Cleanup !!"
             status = 'FAILED'
         else:
@@ -262,7 +263,7 @@ exit(0)
 
         # print summary of rucio quota
         msg = "FYI this is your Rucio quota situation (rounded to GBytes = 10^9 Bytes)"
-        quotaRecords = self.rucio.get_local_account_usage(self.rucio.account)
+        quotaRecords = rucioClient.get_local_account_usage(self.rucio.account)
         msg += "\n%20s%10s%10s%10s" % ('Site', 'Quota', 'Used', 'Free')
         for record in quotaRecords:
             site = record['rse']
