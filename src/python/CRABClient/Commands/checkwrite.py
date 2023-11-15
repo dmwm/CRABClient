@@ -243,6 +243,9 @@ exit(0)
         if not self.rucio:
             self.logger.warning("Rucio client not available with this CMSSW version. Can not check")
             return 'FAILED'
+        # We need to switch to group account when needed untils CMS Rucio fix
+        # the permission issue.
+        # See https://mattermost.web.cern.ch/cms-o-and-c/pl/ej7zwkr747rifezzcyyweisx9r
         rucioClient = getRucioClientFromLFN(self.rucio, lfn, self.logger)
         quotaCheck = isEnoughRucioQuota(rucioClient, site)
         if quotaCheck['hasQuota'] and quotaCheck['isEnough']:
