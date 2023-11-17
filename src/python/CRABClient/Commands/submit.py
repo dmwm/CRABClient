@@ -119,11 +119,10 @@ class submit(SubCommand):
                       % (colors.RED, colors.NORMAL, non_edm_files)
                 self.logger.warning(msg)
 
-        self.logger.info("DM DEBUG - self.configuration {}".format(str(self.configuration)))
-        self.logger.info("DM DEBUG - self.configreq {}".format(self.configreq))
-        self.logger.info("DM DEBUG - jobconfig {}".format(jobconfig))
+        self.logger.debug("submit() - self.configuration {}".format(str(self.configuration)))
+        self.logger.debug("submit() - self.configreq {}".format(self.configreq))
+        self.logger.debug("submit() - jobconfig {}".format(jobconfig))
         self.configreq.update(jobconfig)
-        # import pdb; pdb.set_trace()
 
         server = self.crabserver
 

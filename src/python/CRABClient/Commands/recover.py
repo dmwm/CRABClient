@@ -83,9 +83,9 @@ class recover(SubCommand):
         # self.options and self.args are automatically filled by the __init__()
         # that recover inherits from SubCommand. 
 
-        self.logger.info("DM DEBUG - start, self.cmdargs %s", self.cmdargs)
-        self.logger.info("DM DEBUG - start, self.options %s", self.options)
-        self.logger.info("DM DEBUG - start, self.args %s",    self.args)
+        self.logger.debug("stepInit() - self.cmdargs %s", self.cmdargs)
+        self.logger.debug("stepInit() - self.options %s", self.options)
+        self.logger.debug("stepInit() - self.args %s",    self.args)
 
         self.failingTaskStatus = None
         self.failingTaskInfo = {}
@@ -121,18 +121,18 @@ class recover(SubCommand):
         if "proxy" in self.options.__dict__.keys():
             cmdargs.append("--proxy")
             cmdargs.append(self.options.__dict__["proxy"])
-        self.logger.info("DM DEBUG - remake, cmdargs: %s", cmdargs)
+        self.logger.debug("stepRemakeAndValidate() - remake, cmdargs: %s", cmdargs)
         remakeCmd = remake(logger=self.logger, cmdargs=cmdargs)
         retval = remakeCmd.remakecache(self.options.cmptask)
-        self.logger.info("DB DEBUG - remake, retval: %s", retval)
-        self.logger.info("DM DEBUG - remake, after, self.configuration: %s", self.configuration)
+        self.logger.debug("stepRemakeAndValidate() - remake, retval: %s", retval)
+        self.logger.debug("stepRemakeAndValidate() - remake, after, self.configuration: %s", self.configuration)
 
         ## validate
         ## - we can not recover a task that is older than 30d, because we need
         ##   files from the schedd about the status of each job
         ## - we want to recover only "analysis" tasks
         self.failingCrabDBInfo, _, _ = self.crabserver.get(api='task', data={'subresource':'search', 'workflow':self.options.cmptask})
-        self.logger.info("DM DEBUG - Got information from server oracle database: %s", self.failingCrabDBInfo)
+        self.logger.debug("stepRemakeAndValidate() - Got information from server oracle database: %s", self.failingCrabDBInfo)
         startTimeDb = getColumn(self.failingCrabDBInfo, 'tm_start_time')
         # 2023-10-24 10:56:26.573303
         # datetime.fromisoformat is not available on py3, we need to use strptime
@@ -152,7 +152,7 @@ class recover(SubCommand):
         self.failingTaskInfo["publication"] = True if getColumn(self.failingCrabDBInfo, 'tm_publication') == "T" else False
         self.failingTaskInfo["username"] = getColumn(self.failingCrabDBInfo, 'tm_username')
 
-        self.logger.info("DM DEBUG - failingtaskinfo - %s", self.failingTaskInfo)
+        self.logger.debug("stepRemakeAndValidate() - failingtaskinfo - %s", self.failingTaskInfo)
 
         self.crabProjDir = retval["workDir"]
 
@@ -177,9 +177,9 @@ class recover(SubCommand):
         if "proxy" in self.options.__dict__.keys():
             cmdargs.append("--proxy")
             cmdargs.append(self.options.__dict__["proxy"])
-        self.logger.info("DM DEBUG - status, cmdargs: %s", cmdargs)
+        self.logger.debug("stepStatus() - status, cmdargs: %s", cmdargs)
         statusCmd = status(logger=self.logger, cmdargs=cmdargs)
-        self.logger.info("DB DEBUG - handlers %s", self.logger.handlers)
+        self.logger.debug("stepStatus() - handlers %s", self.logger.handlers)
         handlerLevels = []
         for h in self.logger.handlers:
             handlerLevels.append(h.level)
@@ -188,10 +188,10 @@ class recover(SubCommand):
         self.failingTaskStatus = retval
         for idx, h in enumerate(self.logger.handlers):
             h.setLevel(handlerLevels[idx])
-        self.logger.info("DB DEBUG - handlers %s", self.logger.handlers)
-        self.logger.info("DB DEBUG - handlers %s", handlerLevels)
+        self.logger.debug("stepStatus() - handlers %s", self.logger.handlers)
+        self.logger.debug("stepStatus() - handlers %s", handlerLevels)
 
-        self.logger.info("DM DEBUG - status, retval: %s", retval)
+        self.logger.debug("stepStatus() - status, retval: %s", retval)
 
         ## useful for filebased splitting
         # convert
@@ -199,7 +199,7 @@ class recover(SubCommand):
         # to
         # [1, 2, 4]
         self.failedJobs = [job[1] for job in retval["jobList"] if job[0] == "failed"]
-        self.logger.info("DM DEBUG - status, failedJobs: %s", self.failedJobs)
+        self.logger.debug("stepStatus() - status, failedJobs: %s", self.failedJobs)
 
         return retval
 
@@ -214,7 +214,7 @@ class recover(SubCommand):
         if self.failingTaskStatus["dbStatus"] == "KILLED" or \
             (self.failingTaskStatus["dbStatus"] in ("NEW", "QUEUED") and self.failingTaskStatus["command"] == "KILL"):
             returnDict = {'kill' : 'already killed', 'commandStatus': 'SUCCESS'}
-            self.logger.info("DM DEBUG - kill - task already killed")
+            self.logger.info("step kill - task already killed, nothing to do")
             return returnDict
 
         # avoid that crab operators kill users tasks by mistake.
@@ -223,7 +223,7 @@ class recover(SubCommand):
         username = getUsername(self.proxyfilename, logger=self.logger)
         if self.failingTaskInfo["username"] != username and not self.options.__dict__["forceKill"]:
             returnDict = {'kill' : 'do not kill task submitted by another user', 'commandStatus': 'FAILED'}
-            self.logger.info("DM DEBUG - kill - task submitted by another user should not be killed")
+            self.logger.info("step kill - task submitted by another user, will not kill it")
             return returnDict
 
         cmdargs = []
@@ -237,12 +237,12 @@ class recover(SubCommand):
         if "proxy" in self.options.__dict__.keys():
             cmdargs.append("--proxy")
             cmdargs.append(self.options.__dict__["proxy"])
-        self.logger.info("DM DEBUG - kill, cmdargs: %s", cmdargs)
+        self.logger.debug("stepKill() - cmdargs: %s", cmdargs)
         killCmd = kill(logger=self.logger, cmdargs=cmdargs)
         retval = killCmd()
 
-        self.logger.info("DB DEBUG - kill, retval: %s", retval)
-        self.logger.info("DM DEBUG - kill, after, self.configuration: %s", self.configuration)
+        self.logger.debug("stepKill() - retval: %s", retval)
+        self.logger.debug("stepKill() - after, self.configuration: %s", self.configuration)
 
         return retval
 
@@ -312,10 +312,10 @@ class recover(SubCommand):
         """
 
         # make sure the the "task status" is a "static" one
-        self.logger.info("DM DEBUG - checkkill - status %s", self.failingTaskStatus["status"])
-        self.logger.info("DM DEBUG - checkkill - command %s", self.failingTaskStatus["command"])
-        self.logger.info("DM DEBUG - checkkill - dagStatus %s", self.failingTaskStatus["dagStatus"])
-        self.logger.info("DM DEBUG - checkkill - dbStatus %s", self.failingTaskStatus["dbStatus"])
+        self.logger.debug("stepCheckKill() - status %s", self.failingTaskStatus["status"])
+        self.logger.debug("stepCheckKill() - command %s", self.failingTaskStatus["command"])
+        self.logger.debug("stepCheckKill() - dagStatus %s", self.failingTaskStatus["dagStatus"])
+        self.logger.debug("stepCheckKill() - dbStatus %s", self.failingTaskStatus["dbStatus"])
 
         # check the task status. 
         # it does not make sense to recover a task in COMPLETED
@@ -343,7 +343,7 @@ class recover(SubCommand):
                 .format(terminalStates, self.failingTaskStatus["jobsPerStatus"].keys())
 
         # - [x] make sure that there are no ongoing publications
-        self.logger.info("DM DEBUG - checkkill - publication %s", self.failingTaskStatus["publication"] )
+        self.logger.debug("stepCheckKill - publication %s", self.failingTaskStatus["publication"] )
         terminalStatesPub = set(("failed", "done", "not_required", "disabled"))
         assert set(self.failingTaskStatus["publication"].keys()).issubset(terminalStatesPub), \
             "In order to recover a task, publication for all the jobs need to be in a terminal state ({}). You have {}"\
@@ -368,19 +368,19 @@ class recover(SubCommand):
         """
 
         failingTaskPublish = getColumn(self.failingCrabDBInfo, 'tm_publication')
-        self.logger.info("DM DEBUG - tm_publication: %s %s", type(failingTaskPublish), failingTaskPublish)
+        self.logger.debug("stepReport() - tm_publication: %s %s", type(failingTaskPublish), failingTaskPublish)
         # - if the user specified --strategy=notPublished but the original failing task
         #   disabled publishing, then `crab report` fails and raises and exception.
         #   so, we will automatically switch to notFinished and print a warning
         # - assuming "strategy" is always in self.options.__dict__.keys():
         if failingTaskPublish != "T" and self.options.__dict__["strategy"] != "notFinished":
-            self.logger.warning("WARNING - The original task had publication disabled. recovery strategy changed to notFinished")
+            self.logger.warning("WARNING - crab report - The original task had publication disabled. recovery strategy changed to notFinished")
             self.options.__dict__["strategy"] = "notFinished"
 
         try:
             os.remove(os.path.join(self.crabProjDir, "results", "notFinishedLumis.json"))
             os.remove(os.path.join(self.crabProjDir, "results", "notPublishedLumis.json"))
-            self.logger.info("DM DEBUG - crab report - needed to delete existing files!")
+            self.logger.info("crab report - needed to delete existing files!")
         except:
             pass
 
@@ -397,11 +397,11 @@ class recover(SubCommand):
             cmdargs.append("--proxy")
             cmdargs.append(self.options.__dict__["proxy"])
 
-        self.logger.info("DM DEBUG - report, cmdargs: %s", cmdargs)
+        self.logger.debug("stepReport() - report, cmdargs: %s", cmdargs)
         reportCmd = report(logger=self.logger, cmdargs=cmdargs)
         retval = reportCmd()
-        self.logger.info("DM DEBUG - report, retval: %s", retval)
-        self.logger.info("DM DEBUG - report, after, self.configuration: %s", self.configuration)
+        self.logger.debug("stepReport() - report, retval: %s", retval)
+        self.logger.debug("stepReport() - report, after, self.configuration: %s", self.configuration)
 
         recoverLumimaskPath = ""
         if failingTaskPublish == "T" and self.options.__dict__["strategy"] == "notPublished":
@@ -409,7 +409,7 @@ class recover(SubCommand):
         else:
             # the only other option should be self.options.__dict__["strategy"] == "notFinished":
             recoverLumimaskPath = os.path.join(self.crabProjDir, "results", "notFinishedLumis.json")
-        self.logger.info("DM DEBUG - recovery task will process lumis contained in file %s", recoverLumimaskPath)
+        self.logger.info("crab report - recovery task will process lumis contained in file %s", recoverLumimaskPath)
 
         if os.path.exists(recoverLumimaskPath):
             returnDict = {'commandStatus' : 'SUCCESS', 'recoverLumimaskPath': recoverLumimaskPath}
@@ -433,10 +433,10 @@ class recover(SubCommand):
         if "proxy" in self.options.__dict__.keys():
             cmdargs.append("--proxy")
             cmdargs.append(self.options.__dict__["proxy"])
-        self.logger.info("DM DEBUG - getsandbox, cmdargs: %s", cmdargs)
+        self.logger.debug("stepGetsandbox() - cmdargs: %s", cmdargs)
         getsandboxCmd = getsandbox(logger=self.logger, cmdargs=cmdargs)
         retval = getsandboxCmd()
-        self.logger.info("DM DEBUG - getsandbox, retval: %s", retval)
+        self.logger.debug("stepGetsandbox() - retval: %s", retval)
         return retval
 
     def stepExtractSandbox(self, sandbox_paths):
@@ -507,12 +507,12 @@ class recover(SubCommand):
         if self.failingTaskInfo["username"] != username:
             cmdargs.append("Data.outLFNDirBase=/store/user/{}".format(username))
 
-        self.logger.warning("crab recover will change the config.Data.lumiMask to: %s", notFinishedJsonPath)
-        self.logger.info("DM DEBUG - submit, cmdargs %s", cmdargs)
+        self.logger.warning("crab submit - will use config.Data.lumiMask=%s", notFinishedJsonPath)
+        self.logger.debug("stepSubmit() - cmdargs %s", cmdargs)
         submitCmd = submit(logger=self.logger, cmdargs=cmdargs)
 
         retval = submitCmd()
-        self.logger.info("DM DEBUG - submit, retval %s", retval)
+        self.logger.debug("stepSubmit() - retval %s", retval)
         return retval
 
     def stepSubmitFileBased(self):
