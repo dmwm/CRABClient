@@ -362,8 +362,7 @@ class report(SubCommand):
                             fd.close()
                 tarball.close()
             else:
-                # FIXME, dario, is this error message a copy-paste error?
-                self.logger.error("Failed to retrieve input dataset duplicate lumis.")
+                self.logger.error("Failed to retrieve run_and_lumis.tar.gz")
 
         return res
 
