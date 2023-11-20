@@ -136,6 +136,7 @@ commandsConfiguration = {
     'checkusername' : {'acceptsArguments': False, 'requiresREST': False, 'requiresRucio': False, 'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'requiresLocalCache': False},
     'checkwrite'    : {'acceptsArguments': False, 'requiresREST': False, 'requiresRucio': True,  'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': True,  'requiresLocalCache': False},
     'checkdataset'  : {'acceptsArguments': False, 'requiresREST': False, 'requiresRucio': True,  'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'requiresLocalCache': False},
+    'checkfile'     : {'acceptsArguments': False, 'requiresREST': False, 'requiresRucio': True,  'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'requiresLocalCache': False},
     'setdatasetstatus' : {'acceptsArguments': False, 'requiresREST': False, 'requiresRucio': False, 'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'requiresLocalCache': False},
     'setfilestatus' : {'acceptsArguments': False, 'requiresREST': False, 'requiresRucio': False, 'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'requiresLocalCache': False},
     'getlog'        : {'acceptsArguments': False, 'requiresREST': True,  'requiresRucio': False, 'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': True,  'requiresLocalCache': True },
