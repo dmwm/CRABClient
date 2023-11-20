@@ -123,7 +123,8 @@ class recover(SubCommand):
             cmdargs.append(self.options.__dict__["proxy"])
         self.logger.debug("stepRemakeAndValidate() - remake, cmdargs: %s", cmdargs)
         remakeCmd = remake(logger=self.logger, cmdargs=cmdargs)
-        retval = remakeCmd.remakecache(self.options.cmptask)
+        with SubcommandExecution(self.logger, "remake") as _:
+            retval = remakeCmd.remakecache(self.options.cmptask)
         self.logger.debug("stepRemakeAndValidate() - remake, retval: %s", retval)
         self.logger.debug("stepRemakeAndValidate() - remake, after, self.configuration: %s", self.configuration)
 
@@ -180,16 +181,23 @@ class recover(SubCommand):
         self.logger.debug("stepStatus() - status, cmdargs: %s", cmdargs)
         statusCmd = status(logger=self.logger, cmdargs=cmdargs)
         self.logger.debug("stepStatus() - handlers %s", self.logger.handlers)
-        handlerLevels = []
-        for h in self.logger.handlers:
-            handlerLevels.append(h.level)
-            h.setLevel(LOGLEVEL_MUTE)
-        retval = statusCmd()
+
+        ## old
+        # handlerLevels = []
+        # for h in self.logger.handlers:
+        #     handlerLevels.append(h.level)
+        #     h.setLevel(LOGLEVEL_MUTE)
+        # retval = statusCmd()
+        # self.failingTaskStatus = retval
+        # for idx, h in enumerate(self.logger.handlers):
+        #     h.setLevel(handlerLevels[idx])
+        # self.logger.debug("stepStatus() - handlers %s", self.logger.handlers)
+        # self.logger.debug("stepStatus() - handlers %s", handlerLevels)
+
+        ## new
+        with SubcommandExecution(self.logger, "status") as _:
+            retval = statusCmd()
         self.failingTaskStatus = retval
-        for idx, h in enumerate(self.logger.handlers):
-            h.setLevel(handlerLevels[idx])
-        self.logger.debug("stepStatus() - handlers %s", self.logger.handlers)
-        self.logger.debug("stepStatus() - handlers %s", handlerLevels)
 
         self.logger.debug("stepStatus() - status, retval: %s", retval)
 
@@ -239,7 +247,8 @@ class recover(SubCommand):
             cmdargs.append(self.options.__dict__["proxy"])
         self.logger.debug("stepKill() - cmdargs: %s", cmdargs)
         killCmd = kill(logger=self.logger, cmdargs=cmdargs)
-        retval = killCmd()
+        with SubcommandExecution(self.logger, "kill") as _:
+            retval = killCmd()
 
         self.logger.debug("stepKill() - retval: %s", retval)
         self.logger.debug("stepKill() - after, self.configuration: %s", self.configuration)
@@ -399,7 +408,9 @@ class recover(SubCommand):
 
         self.logger.debug("stepReport() - report, cmdargs: %s", cmdargs)
         reportCmd = report(logger=self.logger, cmdargs=cmdargs)
-        retval = reportCmd()
+        with SubcommandExecution(self.logger, "report") as _:
+            # FIXME - stays noisy because interference with getMutedStatusInfo()
+            retval = reportCmd()
         self.logger.debug("stepReport() - report, retval: %s", retval)
         self.logger.debug("stepReport() - report, after, self.configuration: %s", self.configuration)
 
@@ -435,7 +446,8 @@ class recover(SubCommand):
             cmdargs.append(self.options.__dict__["proxy"])
         self.logger.debug("stepGetsandbox() - cmdargs: %s", cmdargs)
         getsandboxCmd = getsandbox(logger=self.logger, cmdargs=cmdargs)
-        retval = getsandboxCmd()
+        with SubcommandExecution(self.logger, "getsandbox") as _:
+            retval = getsandboxCmd()
         self.logger.debug("stepGetsandbox() - retval: %s", retval)
         return retval
 
@@ -511,7 +523,8 @@ class recover(SubCommand):
         self.logger.debug("stepSubmit() - cmdargs %s", cmdargs)
         submitCmd = submit(logger=self.logger, cmdargs=cmdargs)
 
-        retval = submitCmd()
+        with SubcommandExecution(self.logger, "submit") as _:
+            retval = submitCmd()
         self.logger.debug("stepSubmit() - retval %s", retval)
         return retval
 
@@ -576,3 +589,25 @@ class recover(SubCommand):
             if not re.match(regex, self.options.cmptask):
                 msg = "%sError%s: Task name does not match the regular expression '%s'." % (colors.RED, colors.NORMAL, regex)
                 raise ConfigurationException(msg)
+
+class SubcommandExecution:
+    """
+    Context manager to silence logging when calling a subcommand.
+    """
+
+    def __init__(self, logger, commandname):
+        self.handlerLevels = []
+        self.logger = logger
+        self.commandname = commandname
+
+    def __enter__(self):
+        self.logger.debug("%s - handlers1: %s", self.commandname, self.logger.handlers)
+        for h in self.logger.handlers:
+            self.handlerLevels.append(h.level)
+            h.setLevel(LOGLEVEL_MUTE)
+
+    def __exit__(self, *exc):
+        for idx, h in enumerate(self.logger.handlers):
+            h.setLevel(self.handlerLevels[idx])
+        self.logger.debug("%s - handlers2: %s", self.commandname, self.handlerLevels)
+        self.logger.debug("%s - handlers3: %s", self.commandname, self.logger.handlers)
