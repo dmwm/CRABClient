@@ -253,13 +253,19 @@ class submit(SubCommand):
         if external_plugin_name:
             addPlugin(external_plugin_name) # Do we need to do this here?
         if crab_plugin_name:
-            # FIXME we do not have only analysis or MC
             if crab_plugin_name.upper() not in crab_job_types:
                 msg = "Invalid CRAB configuration: Parameter JobType.pluginName has an invalid value ('%s')." % (crab_plugin_name)
                 msg += "\nAllowed values are: %s." % (", ".join(['%s' % job_type for job_type in crab_job_types.keys()]))
                 return False, msg
-            msg = "Will use CRAB %s plugin" % ("Analysis" if crab_plugin_name.upper() == 'ANALYSIS' else "PrivateMC")
-            msg += " (i.e. will run %s job type)." % ("an analysis" if crab_plugin_name.upper() == 'ANALYSIS' else "a MC generation")
+            msg = "Will use CRAB plugin %s" % (crab_plugin_name.upper())
+            if crab_plugin_name.upper() == 'ANALYSIS':
+                msg += " (i.e. will run an analysis job type)."
+            elif crab_plugin_name.upper() == 'PRIVATEMC':
+                msg += " (i.e. will run an a MC generation job type)."
+            elif crab_plugin_name.upper() == 'COPYCAT':
+                msg += " (i.e. will run a copy of a task. the exact job type will be defined later)."
+            elif crab_plugin_name.upper() == 'RECOVER':
+                msg += " (i.e. will run the recovery of a task. the exact job type will be defined later)."
             self.logger.debug(msg)
 
         ## Check that the requested memory does not exceed the allowed maximum.
