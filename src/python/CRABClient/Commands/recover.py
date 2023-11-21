@@ -32,6 +32,7 @@ from CRABClient.Commands.getsandbox import getsandbox
 # step submit
 from CRABClient.Commands.submit import submit
 from CRABClient.UserUtilities import getColumn
+from CRABClient.ClientUtilities import colors
 
 SPLITTING_RECOVER_LUMIBASED = set(("LumiBased", "Automatic", "EventAwareLumiBased"))
 SPLITTING_RECOVER_FILEBASED = set(("FileBased"))
@@ -73,7 +74,8 @@ class recover(SubCommand):
         # no need for "else" here, the splitting algo should already be checked in
         # stepRemakeAndValidate
 
-        self.logger.info("DM DEBUG - retval - %s", retval)
+        self.logger.debug("recover - retval %s", retval)
+        self.logger.info("crab recover - submitted recovery task %s", retval["uniquerequestname"])
         return retval
 
 
@@ -234,7 +236,7 @@ class recover(SubCommand):
         if self.failingTaskStatus["dbStatus"] == "KILLED" or \
             (self.failingTaskStatus["dbStatus"] in ("NEW", "QUEUED") and self.failingTaskStatus["command"] == "KILL"):
             returnDict = {'kill' : 'already killed', 'commandStatus': 'SUCCESS'}
-            self.logger.info("step kill - task already killed, nothing to do")
+            self.logger.info("step kill - task already killed")
             return returnDict
 
         # avoid that crab operators kill users tasks by mistake.
@@ -436,6 +438,8 @@ class recover(SubCommand):
             if publishedAllLumis:
                 self.logger.info("stepReport() - all lumis have been published in the output dataset. crab recover will exit")
         else:
+            if failingTaskPublish == "T" and self.options.__dict__["strategy"] == "notFinished":
+                self.logger.warning("%sWarning%s: You are recovering a task with publication enabled with notFinished strategy, this will likely cause to have DUPLICATE LUMIS in the output dataset." % (colors.RED, colors.NORMAL))
             # the only other option should be self.options.__dict__["strategy"] == "notFinished":
             recoverLumimaskPath = os.path.join(self.crabProjDir, "results", "notFinishedLumis.json")
             # print a proper error message if the original task+recovery task(s) have processed everything.
@@ -444,7 +448,7 @@ class recover(SubCommand):
                 # should be COMPLETED, which is not accepted by stepCheckKill
                 self.logger.info("stepReport() - all lumis have been processed by original task. crab recover will exit")
 
-        self.logger.info("crab report - recovery task will process lumis contained in file %s", recoverLumimaskPath)
+        self.logger.debug("crab report - recovery task will process lumis contained in file %s", recoverLumimaskPath)
 
 
         if os.path.exists(recoverLumimaskPath):
@@ -544,12 +548,12 @@ class recover(SubCommand):
         if self.failingTaskInfo["username"] != username:
             cmdargs.append("Data.outLFNDirBase=/store/user/{}".format(username))
 
-        self.logger.warning("crab submit - will use config.Data.lumiMask=%s", notFinishedJsonPath)
+        self.logger.warning("crab submit - recovery task will process lumis contained in file config.Data.lumiMask=%s", notFinishedJsonPath)
         self.logger.debug("stepSubmit() - cmdargs %s", cmdargs)
         submitCmd = submit(logger=self.logger, cmdargs=cmdargs)
 
-        with SubcommandExecution(self.logger, "submit") as _:
-            retval = submitCmd()
+        # with SubcommandExecution(self.logger, "submit") as _:
+        retval = submitCmd()
         self.logger.debug("stepSubmit() - retval %s", retval)
         return retval
 
