@@ -150,6 +150,7 @@ class Recover(BasicJobType):
 
         copyOfTaskCrabConfig = os.path.join(self.config.JobType.copyCatWorkdir, "debug_sandbox", 'debug', 'crabConfig.py')
         copyOfTaskPSet =       os.path.join(self.config.JobType.copyCatWorkdir, "debug_sandbox", 'debug', 'originalPSet.py')
+        self.config.JobType.psetName = copyOfTaskPSet
         debugFilesUploadResult = None
         with UserTarball(name=newDebugPath, logger=self.logger, config=self.config,
                          crabserver=self.crabserver, s3tester=self.s3tester) as dtb:
@@ -162,16 +163,6 @@ class Recover(BasicJobType):
                        "More details can be found in %s" % (e, self.logger.logfile))
                 LOGGERS['CRAB3'].exception(msg) #the traceback is only printed into the logfile
 
-        # parse config (copy from submit subcommand)
-        ## TODO FIXME DM dario - maybe i can avoid loading it again, i already pass it...
-        cfgcmd = ConfigCommand()
-        cfgcmd.logger = self.logger
-        cfgcmd.loadConfig(copyOfTaskCrabConfig)
-        #cfgcmd.loadConfig('crabConfig2.py')
-        cfgcmd.configuration.JobType.psetName = copyOfTaskPSet
-        # remove lumimasks here to prevent loading lumis form file
-        # cfgcmd.configuration.Data.lumiMask = None
-        # cfgcmd.configuration.Data.runRange = None
 
         configreq = {'dryrun': 0}
         for param in parametersMapping['on-server']:
@@ -179,7 +170,7 @@ class Recover(BasicJobType):
             config_params = parametersMapping['on-server'][param]['config']
             for config_param in config_params:
                 attrs = config_param.split('.')
-                temp = cfgcmd.configuration
+                temp = self.config
                 for attr in attrs:
                     temp = getattr(temp, attr, None)
                     if temp is None:
