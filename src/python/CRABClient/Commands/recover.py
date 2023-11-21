@@ -8,11 +8,15 @@ from CRABClient.Commands.SubCommand import SubCommand
 # step: remake
 from CRABClient.Commands.remake import remake
 from CRABClient.ClientUtilities import colors
-from CRABClient.ClientExceptions import MissingOptionException,ConfigurationException
+from CRABClient.ClientExceptions import MissingOptionException, ConfigurationException, \
+    RecoverTooOldException, RecoverUnsupportedJobtypeException, RecoverUnsupportedSplittingException
 
 # step kill
 from CRABClient.Commands.kill import kill
 from CRABClient.UserUtilities import getUsername
+
+# step checkkill
+from CRABClient.ClientExceptions import RecoverUnsupportedTaskStatusException, RecoverUnsupportedJobsStatusException
 
 # step report
 from CRABClient.Commands.report import report
@@ -142,14 +146,21 @@ class recover(SubCommand):
         # https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes
         startTime = datetime.datetime.strptime(startTimeDb, "%Y-%m-%d %H:%M:%S.%f")
         self.logger.debug("Failing task start time %s %s %s", startTimeDb, startTime, type(startTime))
-        assert startTime >= (datetime.datetime.now() - datetime.timedelta(days=30)), \
-            "The failing task was submitted more than 30d ago. We can not recover it."
+
+        if not startTime >= (datetime.datetime.now() - datetime.timedelta(days=30)):
+            msg = "The failing task was submitted more than 30d ago. We can not recover it."
+            raise RecoverTooOldException(msg)
+
         failingJobType = getColumn(self.failingCrabDBInfo, 'tm_job_type')
-        assert failingJobType == "Analysis", \
-            'crab recover supports only tasks with JobType.pluginName=="Analysis", you  have {}'.format(failingJobType)
+        if not failingJobType == "Analysis":
+            msg = 'crab recover supports only tasks with JobType.pluginName=="Analysis", you  have {}'.format(failingJobType)
+            raise RecoverUnsupportedJobtypeException(msg)
+
         splitalgo = getColumn(self.failingCrabDBInfo, 'tm_split_algo')
-        assert splitalgo in SPLITTING_RECOVER_LUMIBASED.union(SPLITTING_RECOVER_FILEBASED) , \
-            'crab recover supports only tasks with LumiBased and FileBased splitting, you have {}'.format(splitalgo)
+        if not splitalgo in SPLITTING_RECOVER_LUMIBASED.union(SPLITTING_RECOVER_FILEBASED):
+            msg = 'crab recover supports only tasks with LumiBased and FileBased splitting, you have {}'.format(splitalgo)
+            raise RecoverUnsupportedSplittingException(msg)
+
         self.failingTaskInfo["splitalgo"] = splitalgo
         self.failingTaskInfo["publication"] = True if getColumn(self.failingCrabDBInfo, 'tm_publication') == "T" else False
         self.failingTaskInfo["username"] = getColumn(self.failingCrabDBInfo, 'tm_username')
@@ -271,8 +282,7 @@ class recover(SubCommand):
 
         ---
 
-        jobsPerStatus can be
-
+        jobsPerStatus can be: 
         - final: finished
         - final: failed
         - final: killed
@@ -303,22 +313,13 @@ class recover(SubCommand):
                              5: "SUBMITTED",
                              6: "KILL",
                              7: "KILLED"}
-        publication states (verified):
+        publication states:
         PUBLICATIONDB_STATES = {0: "NEW",
                                 1: "ACQUIRED",
                                 2: "FAILED",
                                 3: "DONE",
                                 4: "RETRY",
                                 5: "NOT_REQUIRED"}
-        TODO: are these deprecated?
-        PUBLICATION_STATES = {
-            'not_published':       'idle',
-            'publication_failed': 'failed',
-            'published':          'finished',
-            'publishing':         'running',
-        }
-
-
         """
 
         # make sure the the "task status" is a "static" one
@@ -329,18 +330,21 @@ class recover(SubCommand):
 
         # check the task status. 
         # it does not make sense to recover a task in COMPLETED
-        assert self.failingTaskStatus["status"] in ("SUBMITTED", "FAILED", "FAILED (KILLED)"), \
-            "In order to recover a task, the combined status of the task needs can not be {}".format(self.failingTaskStatus["status"])
+        if not self.failingTaskStatus["status"] in ("SUBMITTED", "FAILED", "FAILED (KILLED)"):
+            msg = "In order to recover a task, the combined status of the task needs can not be {}".format(self.failingTaskStatus["status"])
+            raise RecoverUnsupportedTaskStatusException(msg)
 
         # the status on the db should be submitted or killed. or about to be killed
         if self.failingTaskStatus["dbStatus"] in ("NEW", "QUEUED"):
-            assert self.failingTaskStatus["command"] in ("KILL"), \
-                "In order to recover a task, when the status of the task in the oracle DB is {}, the task command can not be {}"\
+            if not self.failingTaskStatus["command"] in ("KILL"):
+                msg = "In order to recover a task, when the status of the task in the oracle DB is {}, the task command can not be {}"\
                     .format(self.failingTaskStatus["dbStatus"], self.failingTaskStatus["command"])
+                raise RecoverUnsupportedTaskStatusException(msg)
         else:
-            assert self.failingTaskStatus["dbStatus"] in ("SUBMITTED", "KILLED"), \
-                "In order to recover a task, the status of the task in the oracle DB can not be {}"\
+            if not self.failingTaskStatus["dbStatus"] in ("SUBMITTED", "KILLED"):
+                msg = "In order to recover a task, the status of the task in the oracle DB can not be {}"\
                     .format(self.failingTaskStatus["dbStatus"])
+                raise RecoverUnsupportedTaskStatusException(msg)
 
         # make sure that the jobs ad publications are in a final state.
         # - [x] make sure that there are no ongoing transfers
@@ -348,21 +352,24 @@ class recover(SubCommand):
         # considering as transient: "idle", "running", "transferring", "cooloff", "held"
         terminalStates = set(("finished", "failed", "killed"))
         # python2: need to convert .keys() into a set
-        assert set(self.failingTaskStatus["jobsPerStatus"].keys()).issubset(terminalStates), \
-            "In order to recover a task, all the jobs need to be in a terminal state ({}). You have {}"\
+        if not set(self.failingTaskStatus["jobsPerStatus"].keys()).issubset(terminalStates):
+            msg = "In order to recover a task, all the jobs need to be in a terminal state ({}). You have {}"\
                 .format(terminalStates, self.failingTaskStatus["jobsPerStatus"].keys())
+            raise RecoverUnsupportedJobsStatusException(msg)
 
         # - [x] make sure that there are no ongoing publications
         self.logger.debug("stepCheckKill - publication %s", self.failingTaskStatus["publication"] )
         terminalStatesPub = set(("failed", "done", "not_required", "disabled"))
-        assert set(self.failingTaskStatus["publication"].keys()).issubset(terminalStatesPub), \
-            "In order to recover a task, publication for all the jobs need to be in a terminal state ({}). You have {}"\
+        if not set(self.failingTaskStatus["publication"].keys()).issubset(terminalStatesPub):
+            msg = "In order to recover a task, publication for all the jobs need to be in a terminal state ({}). You have {}"\
                 .format(terminalStatesPub, self.failingTaskStatus["publication"].keys())
+            raise RecoverUnsupportedJobsStatusException(msg)
 
         # - [x] if all jobs failed, then exit. it is better to submit again the task than using crab recover :)
         #       check that "failed" is the only key of the jobsPerStatus dictionary
-        assert not set(self.failingTaskStatus["jobsPerStatus"].keys()) == set(("failed",)), \
-            "All the jobs of the original task failed. better submitting it again from scratch than recovering it."
+        if set(self.failingTaskStatus["jobsPerStatus"].keys()) == set(("failed",)):
+            msg = "All the jobs of the original task failed. better submitting it again from scratch than recovering it."
+            raise RecoverUnsupportedJobsStatusException(msg)
 
         return {"commandStatus": "SUCCESS", "checkkill": "task can be killed"}
 
