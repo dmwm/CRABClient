@@ -16,6 +16,7 @@ from CRABClient.UserUtilities import getUsername
 
 # step report
 from CRABClient.Commands.report import report
+from CRABClient.JobType.BasicJobType import BasicJobType
 
 # step status
 from CRABClient.Commands.status import status
@@ -411,16 +412,33 @@ class recover(SubCommand):
         with SubcommandExecution(self.logger, "report") as _:
             # FIXME - stays noisy because interference with getMutedStatusInfo()
             retval = reportCmd()
-        self.logger.debug("stepReport() - report, retval: %s", retval)
         self.logger.debug("stepReport() - report, after, self.configuration: %s", self.configuration)
+        self.logger.debug("stepReport() - report, retval: %s", retval)
 
         recoverLumimaskPath = ""
         if failingTaskPublish == "T" and self.options.__dict__["strategy"] == "notPublished":
             recoverLumimaskPath = os.path.join(self.crabProjDir, "results", "notPublishedLumis.json")
+            # print a proper error message if the original task+recovery task(s) have processed everything.
+            publishedAllLumis = True
+            for dataset, lumis in retval["outputDatasetsLumis"].items():
+                notPublishedLumis = BasicJobType.subtractLumis(retval["lumisToProcess"], lumis )
+                self.logger.debug("stepReport() - report, subtract: %s %s", 
+                                dataset, notPublishedLumis)
+                if notPublishedLumis: 
+                    publishedAllLumis = False
+            if publishedAllLumis:
+                self.logger.info("stepReport() - all lumis have been published in the output dataset. crab recover will exit")
         else:
             # the only other option should be self.options.__dict__["strategy"] == "notFinished":
             recoverLumimaskPath = os.path.join(self.crabProjDir, "results", "notFinishedLumis.json")
+            # print a proper error message if the original task+recovery task(s) have processed everything.
+            if not retval["notProcessedLumis"]:
+                # we will likely never reach this if, because in this case the status on the schedd
+                # should be COMPLETED, which is not accepted by stepCheckKill
+                self.logger.info("stepReport() - all lumis have been processed by original task. crab recover will exit")
+
         self.logger.info("crab report - recovery task will process lumis contained in file %s", recoverLumimaskPath)
+
 
         if os.path.exists(recoverLumimaskPath):
             returnDict = {'commandStatus' : 'SUCCESS', 'recoverLumimaskPath': recoverLumimaskPath}
