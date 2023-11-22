@@ -30,9 +30,7 @@ class checkfile(SubCommand):
         self.checkChecksum = False
         self.lfn = None
 
-
     def __call__(self):
-
 
         self.instance = self.options.instance
         self.lfn = self.options.lfn
@@ -50,7 +48,7 @@ class checkfile(SubCommand):
             return {'commandStatus': 'SUCCESS'}
         # following code is only executed in python3, can use f-string etc.
         self.logger.info("Check information in Rucio")
-        status, msg  = self.checkFileInRucio()
+        status, msg = self.checkFileInRucio()
         if not status:
             self.logger.error('LFN not found in Rucio or otherwise not properly stored in Rucio')
             self.logger.error('Details: %s', msg)
@@ -65,7 +63,7 @@ class checkfile(SubCommand):
         self.logger.info("List of disk replicas. Check that file exists and has correct size:")
         self.logger.info(f"{'RSE':^15s}    status")
         rseWithSizeOK = []
-        for  rse, pfn in diskReplicas.items():
+        for rse, pfn in diskReplicas.items():
             isSizeOK, msg = self.checkReplicaSize(pfn)
             if isSizeOK:
                 self.logger.info(f"{rse:<15s}      OK")
@@ -118,7 +116,7 @@ class checkfile(SubCommand):
         return True
 
     def checkFileInRucio(self):
-        from rucio.common.exception  import DataIdentifierNotFound
+        from rucio.common.exception import DataIdentifierNotFound
 
         scope = self.fileToCheck['scope']
         if not scope:

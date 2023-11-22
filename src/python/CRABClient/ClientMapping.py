@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-# following line allows to use nice align with extra spaces, which here is very helpful
-# pylint: disable=bad-whitespace
 """
 _ClientMapping_
 
@@ -12,6 +10,8 @@ For each server parameter, there can be more than one parameter in the CRAB conf
 If that is the case, then the meaning is that any of the parameters in the CRAB configuration
 file is used to set the same server parameter.
 """
+
+import copy
 
 ## In this dictionary, the definitions of 'type', 'required' and 'default'
 ## refer to the parameters in the CRAB configuration file.
@@ -156,7 +156,6 @@ commandsConfiguration = {
 
 
 def revertParamsMapping():
-    import copy
     revertedMapping = {}
     for serverParamName, paramInfo in parametersMapping['on-server'].items():
         info = copy.deepcopy(paramInfo)
