@@ -100,6 +100,9 @@ class checkfile(SubCommand):
         query = {'logical_file_name': self.lfn, 'validFileOnly': False, 'detail': True}
         fs, rc, msg = dbsReader.get(uri="files", data=urlencode(query))
         self.logger.debug('exitcode= %s', rc)
+        if rc:
+            self.logger.error("Error trying to talk with DBS:\n%s" % msg)
+            return False
         if not fs:
             self.logger.error("ERROR: LFN %s not found in DBS" % self.lfn)
             return False
