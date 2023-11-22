@@ -29,7 +29,7 @@ _UseCrab ()
                 COMPREPLY=( $(compgen -W '--version --help -h --quiet --debug' -- $cur) )
                 ;;
             *)
-                COMPREPLY=( $(compgen -W 'status tasks proceed checkwrite getlog checkusername checkdataset submit getoutput resubmit kill uploadlog remake report preparelocal createmyproxy setdatasetstatus setfilestatus' -- $cur) )
+                COMPREPLY=( $(compgen -W 'status tasks proceed checkwrite getlog checkusername checkdataset checkfile submit getoutput resubmit kill uploadlog remake report preparelocal createmyproxy setdatasetstatus setfilestatus' -- $cur) )
                 ;;
             esac
             ;;
@@ -284,6 +284,16 @@ _UseCrab ()
             esac
             ;;
 
+        "checkfile")
+            case "$cur" in
+                -*)
+                    COMPREPLY=( $(compgen -W '--help -h --lfn --instance --scope --checksum' -- $cur) )
+                    ;;
+                *)
+                    COMPREPLY=( $(compgen -f $cur) )
+            esac
+            ;;
+
         "setdatasetstatus")
             case "$cur" in
                 -*)
@@ -306,7 +316,7 @@ _UseCrab ()
 
 
         *)
-            COMPREPLY=( $(compgen -W 'status tasks proceed checkwrite getlog checkusername submit getoutput resubmit kill uploadlog remake report preparelocal setdatasetstatus setfilestatus' -- $cur) )
+            COMPREPLY=( $(compgen -W 'status tasks proceed checkwrite getlog checkusername checkdataset checkfile submit getoutput resubmit kill uploadlog remake report preparelocal setdatasetstatus setfilestatus' -- $cur) )
             ;;
     esac
 
