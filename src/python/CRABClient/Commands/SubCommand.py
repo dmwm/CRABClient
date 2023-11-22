@@ -163,6 +163,7 @@ class ConfigCommand:
                 param = (section + '.' + attr)
                 if param in deprecatedParams:
                     msg = "Invalid CRAB confgituation: Parameter %s has been deprecated. Please remove it" % param
+                    msg += "\n Reason: %s" % deprecatedParams[param]
                     return False, msg
                 if not param in all_config_params:
                     msg = "Invalid CRAB configuration: Parameter %s is not known." % param

@@ -100,8 +100,9 @@ renamedParams = {
     'Data.publishDataName'            : {'newParam' : 'Data.outputDatasetTag',           'version' : 'v3.3.1511'},
 }
 
+# dictionary format: param: reasons
 deprecatedParams = {
-    'JobType.sendPythonFolder'
+    'JobType.sendPythonFolder': 'Now pythonFolder is always added to sandbox'
 }
 
 
