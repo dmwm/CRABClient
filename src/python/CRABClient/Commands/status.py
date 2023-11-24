@@ -73,8 +73,6 @@ class status(SubCommand):
             outputDatasetList = None
         outDataset = outputDatasetList[0] if outputDatasetList else None # we do not support multiple output datasets anymore
 
-        self.initRucioClient(outputLfn)
-
         #Print information from the database
         self.printTaskInfo(crabDBInfo, user)
         if not rootDagId:

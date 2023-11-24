@@ -36,7 +36,6 @@ class checkwrite(SubCommand):
             self.logger.info('Will check write permission in the default location /store/user/<username>')
             self.lfnPrefix = '/store/user/' + username
 
-        self.initRucioClient(self.lfnPrefix)
         ## Check that the location where we want to check write permission
         ## is one where the user will be allowed to stageout.
         self.logger.info("Validating LFN %s...", self.lfnPrefix)
@@ -266,7 +265,7 @@ exit(0)
 
         # print summary of rucio quota
         msg = "FYI this is your Rucio quota situation (rounded to GBytes = 10^9 Bytes)"
-        quotaRecords = rucioClient.get_local_account_usage(self.rucio.account)
+        quotaRecords = rucioClient.get_local_account_usage(rucioClient.account)
         msg += "\n%20s%10s%10s%10s" % ('Site', 'Quota', 'Used', 'Free')
         for record in quotaRecords:
             site = record['rse']
