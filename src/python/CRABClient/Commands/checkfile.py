@@ -37,6 +37,12 @@ class checkfile(SubCommand):
         self.fileToCheck['scope'] = self.options.scope
         self.checkChecksum = self.options.checkChecksum
 
+        if self.checkChecksum:
+            msg = "Beware, several GB of disk space on /tmp are needed for checking replica cheksum(s)"
+            msg += "\nIf you do not have them, create the TMPDIR enviromental variable"
+            msg += "\nand point it to an existing directory of your choice\n"
+            self.logger.info(msg)
+
         self.logger.info("looking up LFN in DBS %s", self.instance)
         found = self.checkFileInDBS()
         if not found:
@@ -60,7 +66,10 @@ class checkfile(SubCommand):
         self.logger.info("LFN has %s disk replicas", nDisk)
         if nDisk == 0:
             return {'commandStatus': 'SUCCESS'}
-        self.logger.info("List of disk replicas. Check that file exists and has correct size:")
+        msg = "List of disk replicas. Check that file exists and has correct size "
+        msg += f"({self.fileToCheck['size']} bytes):"
+        self.logger.info(msg)
+
         self.logger.info(f"{'RSE':^15s}    status")
         rseWithSizeOK = []
         for rse, pfn in diskReplicas.items():
@@ -74,12 +83,12 @@ class checkfile(SubCommand):
 
         if rseWithSizeOK and not self.checkChecksum:
             msg = "Disk replicas files may still be corrupted"
-            msg += "\n run again with --checksum for a thorough check. Beware: SLOW"
+            msg += "\n run again with --checksum for a thorough check. Beware: SLOW and needs GB's of disk"
             self.logger.info(msg)
             return {'commandStatus': 'SUCCESS'}
 
         if rseWithSizeOK:
-            self.logger.info("\nCheck of Adler32 checksum for each disk replica")
+            self.logger.info(f"\nCheck Adler32 checksum ({self.fileToCheck['adler32']}) for each disk replica")
         for rse in rseWithSizeOK:
             pfn = diskReplicas[rse]
             print(f"verify checksum for replica at {rse}. ", end="", flush=True)
@@ -98,7 +107,7 @@ class checkfile(SubCommand):
         query = {'logical_file_name': self.lfn, 'validFileOnly': False, 'detail': True}
         fs, rc, msg = dbsReader.get(uri="files", data=urlencode(query))
         self.logger.debug('exitcode= %s', rc)
-        if rc:
+        if rc != 200:  # this is HTTP code. 200=OK
             self.logger.error("Error trying to talk with DBS:\n%s" % msg)
             return False
         if not fs:
@@ -206,7 +215,10 @@ class checkfile(SubCommand):
 
     def checkReplicaAdler32(self, pfn):
         """
-        compute Adler32 on a remote PFN
+        compute Adler32 on a remote PFN. Need to copy the file first
+        and run gfal-sum on local copy. gfal-sum accepts a remote PFN
+        but in that case it returns some value stored by remote server
+        which can be stale (the checksum when the file was written ?)
         """
 
         f = tempfile.NamedTemporaryFile(delete=False, prefix='testFile_')
@@ -249,11 +261,11 @@ class checkfile(SubCommand):
         self.parser.add_option('--checksum',
                                dest='checkChecksum',
                                action="store_true",
-                               help='check checksum of all disk replicas. SLOW !')
+                               help="check checksum of all disk replicas. SLOW and needs GB's of disk !")
         self.parser.add_option('--instance', dest='instance', default='prod/global',
                                help="DBS instance. e.g. prod/global (default) or prod/phys03"
                                )
-        self.parser.add_option('--scope', dest='scope', default=None,
+        self.parser.add_option('--rucio-scope', dest='scope', default=None,
                                help="Rucio scope. Default is 'cms' for global DBS and 'user:username' for Phys03"
                                )
 

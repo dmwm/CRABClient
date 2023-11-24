@@ -287,7 +287,7 @@ _UseCrab ()
         "checkfile")
             case "$cur" in
                 -*)
-                    COMPREPLY=( $(compgen -W '--help -h --lfn --instance --scope --checksum' -- $cur) )
+                    COMPREPLY=( $(compgen -W '--help -h --lfn --instance --rucio-scope --checksum' -- $cur) )
                     ;;
                 *)
                     COMPREPLY=( $(compgen -f $cur) )
