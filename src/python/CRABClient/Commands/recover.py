@@ -8,15 +8,11 @@ from CRABClient.Commands.SubCommand import SubCommand
 # step: remake
 from CRABClient.Commands.remake import remake
 from CRABClient.ClientUtilities import colors
-from CRABClient.ClientExceptions import MissingOptionException, ConfigurationException, \
-    RecoverTooOldException, RecoverUnsupportedJobtypeException, RecoverUnsupportedSplittingException
+from CRABClient.ClientExceptions import MissingOptionException, ConfigurationException
 
 # step kill
 from CRABClient.Commands.kill import kill
 from CRABClient.UserUtilities import getUsername
-
-# step checkkill
-from CRABClient.ClientExceptions import RecoverUnsupportedTaskStatusException, RecoverUnsupportedJobsStatusException
 
 # step report
 from CRABClient.Commands.report import report
@@ -49,27 +45,37 @@ class recover(SubCommand):
     def __call__(self):
 
         retval = self.stepInit()
+        if retval["commandStatus"] != "SUCCESS": return self.stepExit(retval)
 
         retval = self.stepRemakeAndValidate()
+        if retval["commandStatus"] != "SUCCESS": return self.stepExit(retval)
 
         retval = self.stepStatus()
+        if retval["commandStatus"] != "SUCCESS": return self.stepExit(retval)
 
         retval = self.stepKill()
+        if retval["commandStatus"] != "SUCCESS": return self.stepExit(retval)
         retval = self.stepCheckKill()
+        if retval["commandStatus"] != "SUCCESS": return self.stepExit(retval)
 
         retval = self.stepGetsandbox()
-        self.stepExtractSandbox(retval["sandbox_paths"])
+        if retval["commandStatus"] != "SUCCESS": return self.stepExit(retval)
+        retval = self.stepExtractSandbox(retval["sandbox_paths"])
+        if retval["commandStatus"] != "SUCCESS": return self.stepExit(retval)
 
         if self.failingTaskInfo["splitalgo"] in SPLITTING_RECOVER_LUMIBASED:
             retval = self.stepReport()
+            if retval["commandStatus"] != "SUCCESS": return self.stepExit(retval)
 
             if "recoverLumimaskPath" not in retval:
                 return retval
 
             retval = self.stepSubmitLumiBased(retval["recoverLumimaskPath"])
+            if retval["commandStatus"] != "SUCCESS": return self.stepExit(retval)
 
         elif self.failingTaskInfo["splitalgo"] in SPLITTING_RECOVER_FILEBASED:
             retval = self.stepSubmitFileBased()
+            if retval["commandStatus"] != "SUCCESS": return self.stepExit(retval)
 
         # no need for "else" here, the splitting algo should already be checked in
         # stepRemakeAndValidate
@@ -78,6 +84,15 @@ class recover(SubCommand):
         self.logger.info("crab recover - submitted recovery task %s", retval["uniquerequestname"])
         return retval
 
+    def stepExit(self, retval):
+        """
+        callback to be executed after every step executes with:
+
+        > retval = self.stepYYY()
+        > if retval["commandStatus"] != "SUCCESS": return self.stepExit(retval)
+        """
+        self.logger.info(retval)
+        return retval
 
     def stepInit(self):
         """
@@ -151,17 +166,17 @@ class recover(SubCommand):
 
         if not startTime >= (datetime.datetime.now() - datetime.timedelta(days=30)):
             msg = "The failing task was submitted more than 30d ago. We can not recover it."
-            raise RecoverTooOldException(msg)
+            return {"commandStatus": "FAILED", "step": "RemakeAndValidate" , "msg": msg }
 
         failingJobType = getColumn(self.failingCrabDBInfo, 'tm_job_type')
         if not failingJobType == "Analysis":
             msg = 'crab recover supports only tasks with JobType.pluginName=="Analysis", you  have {}'.format(failingJobType)
-            raise RecoverUnsupportedJobtypeException(msg)
+            return {"commandStatus": "FAILED", "step": "RemakeAndValidate" , "msg": msg }
 
         splitalgo = getColumn(self.failingCrabDBInfo, 'tm_split_algo')
         if not splitalgo in SPLITTING_RECOVER_LUMIBASED.union(SPLITTING_RECOVER_FILEBASED):
             msg = 'crab recover supports only tasks with LumiBased and FileBased splitting, you have {}'.format(splitalgo)
-            raise RecoverUnsupportedSplittingException(msg)
+            return {"commandStatus": "FAILED", "step": "RemakeAndValidate" , "msg": msg }
 
         self.failingTaskInfo["splitalgo"] = splitalgo
         self.failingTaskInfo["publication"] = True if getColumn(self.failingCrabDBInfo, 'tm_publication') == "T" else False
@@ -334,19 +349,19 @@ class recover(SubCommand):
         # it does not make sense to recover a task in COMPLETED
         if not self.failingTaskStatus["status"] in ("SUBMITTED", "FAILED", "FAILED (KILLED)"):
             msg = "In order to recover a task, the combined status of the task needs can not be {}".format(self.failingTaskStatus["status"])
-            raise RecoverUnsupportedTaskStatusException(msg)
+            return {"commandStatus": "FAILED", "step": "checkKill" , "msg": msg }
 
         # the status on the db should be submitted or killed. or about to be killed
         if self.failingTaskStatus["dbStatus"] in ("NEW", "QUEUED"):
             if not self.failingTaskStatus["command"] in ("KILL"):
                 msg = "In order to recover a task, when the status of the task in the oracle DB is {}, the task command can not be {}"\
                     .format(self.failingTaskStatus["dbStatus"], self.failingTaskStatus["command"])
-                raise RecoverUnsupportedTaskStatusException(msg)
+                return {"commandStatus": "FAILED", "step": "checkKill" , "msg": msg }
         else:
             if not self.failingTaskStatus["dbStatus"] in ("SUBMITTED", "KILLED"):
                 msg = "In order to recover a task, the status of the task in the oracle DB can not be {}"\
                     .format(self.failingTaskStatus["dbStatus"])
-                raise RecoverUnsupportedTaskStatusException(msg)
+                return {"commandStatus": "FAILED", "step": "checkKill" , "msg": msg }
 
         # make sure that the jobs ad publications are in a final state.
         # - [x] make sure that there are no ongoing transfers
@@ -357,7 +372,7 @@ class recover(SubCommand):
         if not set(self.failingTaskStatus["jobsPerStatus"].keys()).issubset(terminalStates):
             msg = "In order to recover a task, all the jobs need to be in a terminal state ({}). You have {}"\
                 .format(terminalStates, self.failingTaskStatus["jobsPerStatus"].keys())
-            raise RecoverUnsupportedJobsStatusException(msg)
+            return {"commandStatus": "FAILED", "step": "checkKill" , "msg": msg }
 
         # - [x] make sure that there are no ongoing publications
         self.logger.debug("stepCheckKill - publication %s", self.failingTaskStatus["publication"] )
@@ -365,15 +380,15 @@ class recover(SubCommand):
         if not set(self.failingTaskStatus["publication"].keys()).issubset(terminalStatesPub):
             msg = "In order to recover a task, publication for all the jobs need to be in a terminal state ({}). You have {}"\
                 .format(terminalStatesPub, self.failingTaskStatus["publication"].keys())
-            raise RecoverUnsupportedJobsStatusException(msg)
+            return {"commandStatus": "FAILED", "step": "checkKill" , "msg": msg }
 
         # - [x] if all jobs failed, then exit. it is better to submit again the task than using crab recover :)
         #       check that "failed" is the only key of the jobsPerStatus dictionary
         if set(self.failingTaskStatus["jobsPerStatus"].keys()) == set(("failed",)):
             msg = "All the jobs of the original task failed. better submitting it again from scratch than recovering it."
-            raise RecoverUnsupportedJobsStatusException(msg)
+            return {"commandStatus": "FAILED", "step": "checkKill" , "msg": msg }
 
-        return {"commandStatus": "SUCCESS", "checkkill": "task can be killed"}
+        return {"commandStatus": "SUCCESS", "checkkill": "task can be recovered"}
 
     def stepReport(self):
         """
@@ -454,7 +469,8 @@ class recover(SubCommand):
         if os.path.exists(recoverLumimaskPath):
             returnDict = {'commandStatus' : 'SUCCESS', 'recoverLumimaskPath': recoverLumimaskPath}
         else:
-            returnDict = {'commandStatus' : 'FAILED',}
+            msg = 'the file {} does not exist. crab report could not produce it, the task can not be recovered'.format(recoverLumimaskPath)
+            returnDict = {'commandStatus' : 'FAILED', 'msg': msg}
 
         return returnDict
 
@@ -499,7 +515,7 @@ class recover(SubCommand):
         self.recoverconfig = os.path.join(self.crabProjDir, "debug_sandbox", 
                                           "debug" , "crabConfig.py")
 
-        return None
+        return {"commandStatus": "SUCCESS", }
 
     def stepSubmitLumiBased(self, notFinishedJsonPath):
         """
