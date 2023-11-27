@@ -45,7 +45,7 @@ class checkfile(SubCommand):
             msg += "\nand point it to an existing directory of your choice\n"
             self.logger.info(msg)
 
-        self.logger.info("looking up LFN in DBS %s", self.instance)
+        self.logger.info("looking up LFN in DBS %s", self.dbsInstance)
         found = self.checkFileInDBS()
         if not found:
             self.logger.error('LFN not found in DBS')
@@ -136,7 +136,7 @@ class checkfile(SubCommand):
 
         scope = self.fileToCheck['scope']
         if not scope:
-            if 'global' in self.instance:
+            if 'global' in self.dbsInstance:
                 scope = 'cms'
             else:
                 username = getUsername(self.proxyfilename, logger=self.logger)
