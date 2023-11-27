@@ -5,6 +5,7 @@ import sys
 
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientUtilities import colors, PKL_W_MODE
+from CRABClient.ClientUtilities import commandUsedInsideCrab
 from CRABClient.ClientExceptions import MissingOptionException,ConfigurationException
 
 
@@ -16,8 +17,7 @@ class remake(SubCommand):
     shortnames = ['rmk']
 
     def __call__(self):
-        caller = sys._getframe(1)
-        if not 'crab.py' in caller.f_code.co_filename:
+        if not commandUsedInsideCrab():
             msg = "ATTENTION return value for 'remake' has been changed to a dictionary"
             msg += "\n format is {'commandStatus': 'SUCCESS' or 'FAILED',"
             msg += "\n            'workDir': name of the work directory created}"
