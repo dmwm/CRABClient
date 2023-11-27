@@ -26,11 +26,11 @@ class setfilestatus(SubCommand):
         result = 'FAILED'  # will change to 'SUCCESS' when all is OK
 
         # intitalize, and validate args
-        instance = self.options.instance
+        dbsInstance = self.options.dbsInstance
         dataset = self.options.dataset
         files = self.options.files
         status = self.options.status
-        self.logger.debug('instance     = %s' % instance)
+        self.logger.debug('dbsInstance  = %s' % dbsInstance)
         self.logger.debug('dataset      = %s' % dataset)
         self.logger.debug('files        = %s' % files)
         self.logger.debug('status       = %s' % status)
@@ -54,7 +54,7 @@ class setfilestatus(SubCommand):
                 raise NotImplementedError('list of LFNs is not supported yet')
 
         # from DBS instance, to DBS REST services
-        dbsReader, dbsWriter = getDbsREST(instance=instance, logger=self.logger,
+        dbsReader, dbsWriter = getDbsREST(instance=dbsInstance, logger=self.logger,
                                           cert=self.proxyfilename, key=self.proxyfilename)
         # we will need the dataset name
         if dataset:
@@ -110,8 +110,9 @@ class setfilestatus(SubCommand):
 
         This allows to set specific command options
         """
-        self.parser.add_option('-i', '--instance', dest='instance', default='prod/phys03',
-                               help='DBS instance. e.g. prod/phys03 (default) or int/phys03'
+        self.parser.add_option('--dbs-instance', dest='dbsInstance', default='prod/phys03',
+                               help="DBS instance. e.g. prod/phys03 (default) or int/phys03 or full URL." + \
+                                    "\nUse at your own risk only if you really know what you are doing"
                                )
         self.parser.add_option('-d', '--dataset', dest='dataset', default=None,
                                help='Will apply status to all files in this dataset.' + \
@@ -145,3 +146,8 @@ class setfilestatus(SubCommand):
             ex = MissingOptionException(msg)
             ex.missingOption = "status"
             raise ex
+        dbsInstance = self.options.dbsInstance
+        if not '/' in dbsInstance or len(dbsInstance.split('/'))>2 and not dbsInstance.startswith('https://'):
+            msg = "Bad DBS instance value %s. " % dbsInstance
+            msg += "Use either server/db format or full URL"
+            raise ConfigurationException(msg)
