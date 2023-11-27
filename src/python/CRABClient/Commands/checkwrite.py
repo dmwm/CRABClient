@@ -15,7 +15,7 @@ class checkwrite(SubCommand):
     Let user to test if he/she have permission to write on specify site
     """
     name = 'checkwrite'
-    shortnames = ['chk']
+    shortnames = ['chkw']
 
     def __init__(self, logger, cmdargs=None):
         SubCommand.__init__(self, logger, cmdargs)

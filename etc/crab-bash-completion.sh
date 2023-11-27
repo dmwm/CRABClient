@@ -23,7 +23,7 @@ _UseCrab ()
         "")
             case "$cur" in
             "")
-                COMPREPLY=( $(compgen -W '--version --help -h --quiet --debug status tasks proceed checkwrite getlog checkusername checkdataset submit getoutput resubmit kill uploadlog remake report preparelocal createmyproxy setdatasetstatus setfilestatus' -- $cur) )
+                COMPREPLY=( $(compgen -W '--version --help -h --quiet --debug status tasks proceed checkwrite getlog checkusername checkdataset checkfile submit getoutput resubmit kill uploadlog remake report preparelocal createmyproxy setdatasetstatus setfilestatus' -- $cur) )
                 ;;
             -*)
                 COMPREPLY=( $(compgen -W '--version --help -h --quiet --debug' -- $cur) )
@@ -57,7 +57,7 @@ _UseCrab ()
         "getlog")
             case "$cur" in
                 -*)
-                    COMPREPLY=( $(compgen -W '--help -h --short --dump --xrootd --quantity --parallel --wait --outputpath --jobids --checksum --command --proxy --dir -d --voRole --voGroup --instance' -- $cur) )
+                    COMPREPLY=( $(compgen -W '--help -h --short --dump --xrootd --quantity --parallel --wait --outputpath --jobids --checksum --command --proxy --dir -d ' -- $cur) )
                     ;;
                 *)
                     COMPREPLY=( $(compgen -f $cur) )
@@ -67,7 +67,7 @@ _UseCrab ()
         "kill")
             case "$cur" in
                 -*)
-                    COMPREPLY=( $(compgen -W '--help -h --jobids --killwarning --proxy --dir -d --instance' -- $cur) )
+                    COMPREPLY=( $(compgen -W '--help -h --killwarning --proxy --dir -d ' -- $cur) )
                     ;;
                 *)
                     COMPREPLY=( $(compgen -f $cur) )
@@ -87,7 +87,7 @@ _UseCrab ()
         "out")
             case "$cur" in
                 -*)
-                    COMPREPLY=( $(compgen -W '--help -h --dump --xrootd --quantity --parallel --wait --outputpath --jobids --checksum --command --proxy --dir -d --voRole --voGroup --instance' -- $cur) )
+                    COMPREPLY=( $(compgen -W '--help -h --dump --xrootd --quantity --parallel --wait --outputpath --jobids --checksum --command --proxy --dir -d ' -- $cur) )
                     ;;
                 *)
                     COMPREPLY=( $(compgen -f $cur) )
@@ -107,14 +107,14 @@ _UseCrab ()
         "rep")
             case "$cur" in
                 -*)
-                    COMPREPLY=( $(compgen -W '--help -h --outputdir --recovery --dbs --proxy --dir -d --instance' -- $cur) )
+                    COMPREPLY=( $(compgen -W '--help -h --outputdir --recovery --dbs --proxy --dir -d ' -- $cur) )
                     ;;
                 *)
                     COMPREPLY=( $(compgen -f $cur) )
             esac
             ;;
 
-        "chk")
+        "chkw")
             case "$cur" in
                 -*)
                     COMPREPLY=( $(compgen -W '--help -h --site --lfn --checksum --command --proxy --voRole --voGroup' -- $cur) )
@@ -147,7 +147,7 @@ _UseCrab ()
         "getoutput")
             case "$cur" in
                 -*)
-                    COMPREPLY=( $(compgen -W '--help -h --dump --xrootd --quantity --parallel --wait --outputpath --jobids --checksum --command --proxy --dir -d --voRole --voGroup --instance' -- $cur) )
+                    COMPREPLY=( $(compgen -W '--help -h --dump --xrootd --quantity --parallel --wait --outputpath --jobids --checksum --command --proxy --dir -d ' -- $cur) )
                     ;;
                 *)
                     COMPREPLY=( $(compgen -f $cur) )
@@ -157,7 +157,7 @@ _UseCrab ()
         "resubmit")
             case "$cur" in
                 -*)
-                    COMPREPLY=( $(compgen -W '--help -h --wait --force --publication --jobids --sitewhitelist --siteblacklist --maxjobruntime --maxmemory --numcores --priority --proxy --dir -d --instance' -- $cur) )
+                    COMPREPLY=( $(compgen -W '--help -h --wait --force --publication --jobids --sitewhitelist --siteblacklist --maxjobruntime --maxmemory --numcores --priority --proxy --dir -d ' -- $cur) )
                     ;;
                 *)
                     COMPREPLY=( $(compgen -f $cur) )
@@ -167,7 +167,7 @@ _UseCrab ()
         "status")
             case "$cur" in
                 -*)
-                    COMPREPLY=( $(compgen -W '--help -h --long --json --summary --verboseErrors --sort --jobids --proxy --dir -d --instance' -- $cur) )
+                    COMPREPLY=( $(compgen -W '--help -h --long --json --summary --verboseErrors --sort --jobids --proxy --dir -d ' -- $cur) )
                     ;;
                 *)
                     COMPREPLY=( $(compgen -f $cur) )
@@ -187,7 +187,7 @@ _UseCrab ()
         "log")
             case "$cur" in
                 -*)
-                    COMPREPLY=( $(compgen -W '--help -h --short --dump --xrootd --quantity --parallel --wait --outputpath --jobids --checksum --command --proxy --dir -d --voRole --voGroup --instance' -- $cur) )
+                    COMPREPLY=( $(compgen -W '--help -h --short --dump --xrootd --quantity --parallel --wait --outputpath --jobids --checksum --command --proxy --dir -d ' -- $cur) )
                     ;;
                 *)
                     COMPREPLY=( $(compgen -f $cur) )
@@ -207,7 +207,7 @@ _UseCrab ()
         "report")
             case "$cur" in
                 -*)
-                    COMPREPLY=( $(compgen -W '--help -h --outputdir --recovery --dbs --proxy --dir -d --instance' -- $cur) )
+                    COMPREPLY=( $(compgen -W '--help -h --outputdir --recovery --dbs --proxy --dir -d ' -- $cur) )
                     ;;
                 *)
                     COMPREPLY=( $(compgen -f $cur) )
@@ -217,7 +217,7 @@ _UseCrab ()
         "proceed")
             case "$cur" in
                 -*)
-                    COMPREPLY=( $(compgen -W '--help -h --proxy --dir -d --instance' -- $cur) )
+                    COMPREPLY=( $(compgen -W '--help -h --proxy --dir -d ' -- $cur) )
                     ;;
                 *)
                     COMPREPLY=( $(compgen -f $cur) )
@@ -227,7 +227,7 @@ _UseCrab ()
         "st")
             case "$cur" in
                 -*)
-                    COMPREPLY=( $(compgen -W '--help -h --long --json --summary --verboseErrors --sort --jobids --proxy --dir -d --instance' -- $cur) )
+                    COMPREPLY=( $(compgen -W '--help -h --long --json --summary --verboseErrors --sort --jobids --proxy --dir -d ' -- $cur) )
                     ;;
                 *)
                     COMPREPLY=( $(compgen -f $cur) )
@@ -247,7 +247,7 @@ _UseCrab ()
         "output")
             case "$cur" in
                 -*)
-                    COMPREPLY=( $(compgen -W '--help -h --dump --xrootd --quantity --parallel --wait --outputpath --jobids --checksum --command --proxy --dir -d --voRole --voGroup --instance' -- $cur) )
+                    COMPREPLY=( $(compgen -W '--help -h --dump --xrootd --quantity --parallel --wait --outputpath --jobids --checksum --command --proxy --dir -d ' -- $cur) )
                     ;;
                 *)
                     COMPREPLY=( $(compgen -f $cur) )
@@ -257,7 +257,7 @@ _UseCrab ()
         "preparelocal")
             case "$cur" in
                 -*)
-                    COMPREPLY=( $(compgen -W '--help -h --jobid --enableStageout --destdir --proxy --dir -d --instance' -- $cur) )
+                    COMPREPLY=( $(compgen -W '--help -h --jobid --enableStageout --destdir --proxy --dir -d ' -- $cur) )
                     ;;
                 *)
                     COMPREPLY=( $(compgen -f $cur) )
