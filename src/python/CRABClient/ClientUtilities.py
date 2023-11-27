@@ -25,7 +25,7 @@ from optparse import OptionValueError
 ## CRAB dependencies
 import CRABClient.Emulator
 from ServerUtilities import uploadToS3, getDownloadUrlFromS3
-from CRABClient.ClientExceptions import ClientException, TaskNotFoundException, CachefileNotFoundException, ConfigurationException, ConfigException, UsernameException, ProxyException, RESTCommunicationException
+from CRABClient.ClientExceptions import ClientException, TaskNotFoundException, CachefileNotFoundException, ConfigurationException, ConfigException, UsernameException, ProxyException, RESTCommunicationException, RucioClientException
 
 # pickle files need to be opeb in different mode in python2 or python3
 if sys.version_info >= (3, 0):
@@ -224,7 +224,7 @@ def uploadlogfile(logger, proxyfilename, taskname=None, logfilename=None, logpat
     if proxyfilename == None:
         logger.debug('No proxy was given')
         doupload = False
-        
+
     if doupload:
         # uploadLog is executed directly from crab main script, does not inherit from SubCommand
         # so it needs its own REST server instantiation
@@ -798,3 +798,31 @@ def execute_command(command=None, logger=None, timeout=None, redirect=True):
 
     return stdout, stderr, rc
 
+def getRucioClientFromLFN(origClient, lfn, logger):
+    """
+    Get appropriate Rucio client with account parsing from LFN.
+
+    :param origClient:
+    :type origClient:
+    :param lfn: LFN
+    :type lfn: str
+    :param logger: logger object
+    :type logger: logging
+
+    :return: rucio client object
+    :rtype: rucio.client.Client
+    """
+    from ServerUtilities import getRucioAccountFromLFN
+    from rucio.client import Client
+    from rucio.common.exception import RucioException
+    account = getRucioAccountFromLFN(lfn)
+    if origClient.account == account:
+        return origClient
+    try:
+        client = Client(account=account)
+        me = client.whoami()
+        logger.debug('Initializing new Rucio client for account %s' % me['account'])
+        return client
+    except RucioException as e:
+        msg = "Cannot initialize Rucio Client."
+        raise RucioClientException(msg) from e

@@ -101,3 +101,9 @@ class RESTInterfaceException(ClientException):
     Errors coming from interaction with REST interface
     """
     exitcode = 3016
+
+class RucioClientException(ClientException):
+    """
+    Errors coming from interaction with REST interface
+    """
+    exitcode = 3017
