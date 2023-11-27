@@ -826,3 +826,13 @@ def getRucioClientFromLFN(origClient, lfn, logger):
     except RucioException as e:
         msg = "Cannot initialize Rucio Client."
         raise RucioClientException(msg) from e
+
+def commandUsedInsideCrab():
+    """
+    check if the current command is being executed inside crab.py
+    or as part of a user script which uses CRAB Client API
+    It only works if called from a command __call__ method
+    """
+
+    caller = sys._getframe(1)
+    return 'crab.py' in caller.f_code.co_filename
