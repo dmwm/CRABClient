@@ -287,7 +287,7 @@ _UseCrab ()
         "checkfile")
             case "$cur" in
                 -*)
-                    COMPREPLY=( $(compgen -W '--help -h --lfn --instance --rucio-scope --checksum' -- $cur) )
+                    COMPREPLY=( $(compgen -W '--help -h --lfn --dbs-instance --rucio-scope --checksum' -- $cur) )
                     ;;
                 *)
                     COMPREPLY=( $(compgen -f $cur) )
@@ -297,7 +297,7 @@ _UseCrab ()
         "setdatasetstatus")
             case "$cur" in
                 -*)
-                    COMPREPLY=( $(compgen -W '--help -h --status --dataset' -- $cur) )
+                    COMPREPLY=( $(compgen -W '--help -h --status --dataset --dbs-instance' -- $cur) )
                     ;;
                 *)
                     COMPREPLY=( $(compgen -f $cur) )
@@ -307,7 +307,7 @@ _UseCrab ()
         "setfilestatus")
             case "$cur" in
                 -*)
-                    COMPREPLY=( $(compgen -W '--help -h --status --dataset --files' -- $cur) )
+                    COMPREPLY=( $(compgen -W '--help -h --status --dataset --files --dbs-instance' -- $cur) )
                     ;;
                 *)
                     COMPREPLY=( $(compgen -f $cur) )

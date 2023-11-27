@@ -1,10 +1,13 @@
+"""
+check a file (LFN) status in DBS and Rucio and its disk replicas
+"""
 import sys
 import tempfile
 
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.UserUtilities import getUsername
 from CRABClient.ClientUtilities import execute_command, colors
-from CRABClient.ClientExceptions import MissingOptionException
+from CRABClient.ClientExceptions import MissingOptionException, ConfigurationException
 
 from CRABClient.RestInterfaces import getDbsREST
 
@@ -21,18 +24,17 @@ class checkfile(SubCommand):
     is it valid in DBS ? in Rucio ? is it on disk ? are replicas OK ?
     """
     name = 'checkfile'
-    shortnames = ['chkd']
 
     def __init__(self, logger, cmdargs=None):
         SubCommand.__init__(self, logger, cmdargs)
         self.fileToCheck = {}
-        self.instance = None
+        self.dbsInstance = None
         self.checkChecksum = False
         self.lfn = None
 
     def __call__(self):
 
-        self.instance = self.options.instance
+        self.dbsInstance = self.options.dbsInstance
         self.lfn = self.options.lfn
         self.fileToCheck['scope'] = self.options.scope
         self.checkChecksum = self.options.checkChecksum
@@ -102,30 +104,35 @@ class checkfile(SubCommand):
         return {'commandStatus': 'SUCCESS'}
 
     def checkFileInDBS(self):
-        dbsReader, _ = getDbsREST(instance=self.instance, logger=self.logger,
+        """ check that LFN is present and VALID in DBS. Add to self block and dataset it belongs to """
+        dbsReader, _ = getDbsREST(instance=self.dbsInstance, logger=self.logger,
                                   cert=self.proxyfilename, key=self.proxyfilename)
         query = {'logical_file_name': self.lfn, 'validFileOnly': False, 'detail': True}
         fs, rc, msg = dbsReader.get(uri="files", data=urlencode(query))
         self.logger.debug('exitcode= %s', rc)
         if rc != 200:  # this is HTTP code. 200=OK
-            self.logger.error("Error trying to talk with DBS:\n%s" % msg)
+            self.logger.error("Error trying to talk with DBS:\n%s", msg)
             return False
         if not fs:
-            self.logger.error("ERROR: LFN %s not found in DBS" % self.lfn)
+            self.logger.error("ERROR: LFN %s not found in DBS", self.lfn)
             return False
         fileStatus = 'VALID' if fs[0]['is_file_valid'] else 'INVALID'
-        self.logger.info("  file status in DBS is %s" % fileStatus)
+        self.logger.info("  file status in DBS is %s", fileStatus)
         dbsDataset = fs[0]['dataset']
         block = fs[0]['block_name']
-        self.logger.info("  file belongs to:\n    dataset: %s" % dbsDataset)
-        self.logger.info("    block:   %s" % block)
+        self.logger.info("  file belongs to:\n    dataset: %s", dbsDataset)
+        self.logger.info("    block:   %s", block)
         self.fileToCheck['block'] = block
         self.fileToCheck['dataset'] = dbsDataset
 
         return True
 
     def checkFileInRucio(self):
-        from rucio.common.exception import DataIdentifierNotFound
+        """
+        check that file is present in Rucio and has same parentage as in DBS
+        Add to self expected size and adler32 of file replicas
+        """
+        from rucio.common.exception import DataIdentifierNotFound  # pylint: disable=import-outside-toplevel
 
         scope = self.fileToCheck['scope']
         if not scope:
@@ -184,6 +191,7 @@ class checkfile(SubCommand):
         return replicaList
 
     def findDiskReplicas(self):
+        """ returns a dictionary {rse: pfn, rse: pfn,...} """
         replicas = self.getReplicaList()
         diskReplicas = {}
         nDisk = 0
@@ -196,6 +204,7 @@ class checkfile(SubCommand):
         return nDisk, diskReplicas
 
     def checkReplicaSize(self, pfn):
+        """ verify size of a remote file replica (pfn) """
         cmd = f"eval `scram unsetenv -sh`; gfal-ls -l {pfn}"
         out, err, ec = execute_command(cmd)
         if ec:
@@ -262,19 +271,26 @@ class checkfile(SubCommand):
                                dest='checkChecksum',
                                action="store_true",
                                help="check checksum of all disk replicas. SLOW and needs GB's of disk !")
-        self.parser.add_option('--instance', dest='instance', default='prod/global',
-                               help="DBS instance. e.g. prod/global (default) or prod/phys03"
+        self.parser.add_option('--dbs-instance', dest='dbsInstance', default='prod/global',
+                               help="DBS instance. e.g. prod/global (default) or prod/phys03 or full URL."
+                                    + "\nUse at your own risk only if you really know what you are doing"
                                )
         self.parser.add_option('--rucio-scope', dest='scope', default=None,
-                               help="Rucio scope. Default is 'cms' for global DBS and 'user:username' for Phys03"
+                               help="Rucio scope. Default is 'cms' for global DBS and 'user:username' for phys03"
                                )
 
     def validateOptions(self):
         SubCommand.validateOptions(self)
 
         if self.options.lfn is None:
-            msg = "%sError%s: Please specify the LFN to check." % (colors.RED, colors.NORMAL)
+            msg = "%sError%s: Please specify the LFN to check." % (colors.RED, colors.NORMAL)  # pylint: disable=consider-using-f-string
             msg += " Use the --lfn option."
             ex = MissingOptionException(msg)
             ex.missingOption = "lfn"
             raise ex
+
+        dbsInstance = self.options.dbsInstance
+        if '/' not in dbsInstance or len(dbsInstance.split('/')) > 2 and not dbsInstance.startswith('https://'):
+            msg = "Bad DBS instance value %s. " % dbsInstance  # pylint: disable=consider-using-f-string
+            msg += "Use either server/db format or full URL"
+            raise ConfigurationException(msg)
