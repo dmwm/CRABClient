@@ -24,7 +24,6 @@ if sys.version_info >= (3, 0):
     from urllib.parse import urlparse  # pylint: disable=E0611
 if sys.version_info < (3, 0):
     from urlparse import urlparse
-from optparse import OptionValueError
 
 ## CRAB dependencies
 import CRABClient.Emulator
@@ -560,18 +559,6 @@ def getUsernameFromCRIC(proxyFileName=None):
         msg += "\n  https://twiki.cern.ch/twiki/bin/view/CMSPublic/UsernameForCRAB#Adding_your_DN_to_your_profile"
         raise UsernameException(msg)
     return username
-
-
-def validServerURL(option, opt_str, value, parser):
-    """
-    This raises an optparse error if the url is not valid
-    """
-    if value is not None:
-        if not validURL(value):
-            raise OptionValueError("%s option value '%s' not valid." % (opt_str, value))
-        setattr(parser.values, option.dest, value)
-    else:
-        setattr(parser.values, option.dest, option.default)
 
 
 def validURL(serverurl, attrtohave=None, attrtonothave=None):

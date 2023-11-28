@@ -7,7 +7,6 @@ This module contains the utility methods available for users.
 
 import os
 import logging
-import traceback
 import json
 
 try:
