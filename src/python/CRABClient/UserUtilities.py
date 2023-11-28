@@ -2,6 +2,9 @@
 This module contains the utility methods available for users.
 """
 
+# avoid complains about things that we can not fix in python2
+# pylint: disable=consider-using-f-string, unspecified-encoding, raise-missing-from
+
 import os
 import logging
 import traceback
@@ -14,9 +17,10 @@ except Exception:  # pylint: disable=broad-except
     from CRABClient.LumiList import LumiList
 
 ## CRAB dependencies
-from CRABClient.ClientUtilities import DBSURLS, LOGLEVEL_MUTE, colors
-from CRABClient.ClientUtilities import execute_command, getUserProxy
-from CRABClient.ClientExceptions import ClientException, UsernameException
+from CRABClient.ClientUtilities import LOGLEVEL_MUTE, colors
+from CRABClient.ClientUtilities import execute_command
+from CRABClient.ClientExceptions import ClientException
+from CRABClient.ClientUtilities import getUsernameFromCRIC_wrapped
 from WMCore.Configuration import Configuration
 
 def config():
@@ -48,7 +52,6 @@ def getUsername(proxyFile=None, logger=None):
     if not logger: logger=logging.getLogger()
     logger.debug("Retrieving username ...")
 
-    from CRABClient.ClientUtilities import getUsernameFromCRIC_wrapped
     if not proxyFile:
         proxyFile = '/tmp/x509up_u%d'%os.getuid() if 'X509_USER_PROXY' not in os.environ else os.environ['X509_USER_PROXY']
     username = getUsernameFromCRIC_wrapped(logger, proxyFile, quiet=True)
@@ -63,50 +66,6 @@ def getUsername(proxyFile=None, logger=None):
 
     return username
 
-def getUsernameFromCRIC(proxyFileName=None):
-    """
-    Retrieve username from CRIC by doing a query to
-    https://cms-cric.cern.ch/api/accounts/user/query/?json&preset=whoami
-    using the users proxy.
-    args:
-    proxyfile : string : the full patch to the file containing the user proxy
-    """
-
-    ## Path to certificates.
-    capath = os.environ['X509_CERT_DIR'] if 'X509_CERT_DIR' in os.environ else "/etc/grid-security/certificates"
-    # Path to user proxy
-    if not proxyFileName:
-        proxyFileName = getUserProxy()
-    if not proxyFileName:
-        msg = "Can't find user proxy file"
-        raise UsernameException(msg)
-    ## Retrieve user info from CRIC. Note the curl must be executed in same env. (i.e. CMSSW) as crab
-    queryCmd = "curl -sS --capath %s --cert %s --key %s 'https://cms-cric.cern.ch/api/accounts/user/query/?json&preset=whoami'" %\
-               (capath, proxyFileName, proxyFileName)
-    stdout, stderr, rc = execute_command(queryCmd)
-    if rc or not stdout:
-        msg  = "Error contacting CRIC."
-        msg += "\nDetails follow:"
-        msg += "\n  Executed command: %s" % (queryCmd)
-        msg += "\n    Stdout:\n      %s" % (str(stdout).replace('\n', '\n      '))
-        msg += "\n    Stderr:\n      %s" % (str(stderr).replace('\n', '\n      '))
-        raise UsernameException(msg)
-    ## Extract the username from the above command output.
-    parseCmd = "echo '%s' | tr ':,' '\n' | grep -A1 login | tail -1 | tr -d ' \n\"'" % (str(stdout))
-    username, stderr, rc = execute_command(parseCmd)
-    if username == 'null' or not username:
-        msg  = "Failed to retrieve username from CRIC."
-        msg += "\nDetails follow:"
-        msg += "\n  Executed command: %s" % (queryCmd)
-        msg += "\n    Stdout:\n      %s" % (str(stdout).replace('\n', '\n      '))
-        msg += "\n    Parsed username: %s" % (username)
-        msg += "\n%sNote%s: Make sure you have the correct certificate mapped in your CERN account page" % (colors.BOLD, colors.NORMAL)
-        msg += " (you can check what is the certificate you currently have mapped"
-        msg += " by looking at CERN Certificatiom Authority page."
-        msg += "\nFor instructions on how to map a certificate, see "
-        msg += "\n  https://twiki.cern.ch/twiki/bin/view/CMSPublic/UsernameForCRAB#Adding_your_DN_to_your_profile"
-        raise UsernameException(msg)
-    return username
 
 def curlGetFileFromURL(url, filename = None, proxyfilename = None, logger=None):
     """

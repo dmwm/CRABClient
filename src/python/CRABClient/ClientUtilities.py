@@ -29,7 +29,6 @@ from optparse import OptionValueError
 ## CRAB dependencies
 import CRABClient.Emulator
 from ServerUtilities import uploadToS3, getDownloadUrlFromS3
-from CRABClient.UserUtilities import getUsernameFromCRIC
 from CRABClient.ClientExceptions import ClientException, TaskNotFoundException, CachefileNotFoundException, ConfigurationException, ConfigException, UsernameException, ProxyException, RESTCommunicationException, RucioClientException
 
 # pickle files need to be opeb in different mode in python2 or python3
@@ -120,7 +119,7 @@ def initLoggers():
     CRAB3.all -> screen + file
     CRAB3     -> file
     """
-    global LOGGERS  # pylint: disable=global-statement
+    #global LOGGERS  # pylint: disable=global-statement
     ## The CRAB3 logger to memory/file.
     ## Start by setting up a (temporary) memory handler. The flush level is set to
     ## LOGLEVEL_MUTE so that any reasonable logging level should not cause any
@@ -237,7 +236,6 @@ def uploadlogfile(logger, proxyfilename, taskname=None, logfilename=None, logpat
         crabserver = restClass(hostname=serverurl, localcert=proxyfilename, localkey=proxyfilename,
                                retry=2, logger=logger, verbose=False)
         crabserver.setDbInstance(instance)
-        cacheurl = server_info(crabserver=crabserver, subresource='backendurls')['cacheSSL']
 
         logger.info("Uploading log file...")
         objecttype = 'clientlog'
@@ -516,6 +514,53 @@ def getUsernameFromCRIC_wrapped(logger, proxyFileName=None, quiet=False):
         if not quiet:
             logger.info(msg)
     return username
+
+
+def getUsernameFromCRIC(proxyFileName=None):
+    """
+    Retrieve username from CRIC by doing a query to
+    https://cms-cric.cern.ch/api/accounts/user/query/?json&preset=whoami
+    using the users proxy.
+    args:
+    proxyfile : string : the full patch to the file containing the user proxy
+    """
+
+    ## Path to certificates.
+    capath = os.environ['X509_CERT_DIR'] if 'X509_CERT_DIR' in os.environ else "/etc/grid-security/certificates"
+    # Path to user proxy
+    if not proxyFileName:
+        proxyFileName = getUserProxy()
+    if not proxyFileName:
+        msg = "Can't find user proxy file"
+        raise UsernameException(msg)
+    ## Retrieve user info from CRIC. Note the curl must be executed in same env. (i.e. CMSSW) as crab
+    queryCmd = "curl -sS --capath %s --cert %s --key %s 'https://cms-cric.cern.ch/api/accounts/user/query/?json&preset=whoami'" %\
+               (capath, proxyFileName, proxyFileName)
+    stdout, stderr, rc = execute_command(queryCmd)
+    if rc or not stdout:
+        msg  = "Error contacting CRIC."
+        msg += "\nDetails follow:"
+        msg += "\n  Executed command: %s" % (queryCmd)
+        msg += "\n    Stdout:\n      %s" % (str(stdout).replace('\n', '\n      '))
+        msg += "\n    Stderr:\n      %s" % (str(stderr).replace('\n', '\n      '))
+        raise UsernameException(msg)
+    ## Extract the username from the above command output.
+    parseCmd = "echo '%s' | tr ':,' '\n' | grep -A1 login | tail -1 | tr -d ' \n\"'" % (str(stdout))
+    username, stderr, rc = execute_command(parseCmd)
+    if username == 'null' or not username:
+        msg  = "Failed to retrieve username from CRIC."
+        msg += "\nDetails follow:"
+        msg += "\n  Executed command: %s" % (queryCmd)
+        msg += "\n    Stdout:\n      %s" % (str(stdout).replace('\n', '\n      '))
+        msg += "\n    Parsed username: %s" % (username)
+        msg += "\n%sNote%s: Make sure you have the correct certificate mapped in your CERN account page" % (colors.BOLD, colors.NORMAL)
+        msg += " (you can check what is the certificate you currently have mapped"
+        msg += " by looking at CERN Certificatiom Authority page."
+        msg += "\nFor instructions on how to map a certificate, see "
+        msg += "\n  https://twiki.cern.ch/twiki/bin/view/CMSPublic/UsernameForCRAB#Adding_your_DN_to_your_profile"
+        raise UsernameException(msg)
+    return username
+
 
 def validServerURL(option, opt_str, value, parser):
     """
@@ -816,7 +861,8 @@ def getRucioClientFromLFN(origClient, lfn, logger):
     :return: rucio client object
     :rtype: rucio.client.Client
     """
-    from ServerUtilities import getRucioAccountFromLFN
+    # when GitHub runs pylint there's no access to ServerUtilities
+    from ServerUtilities import getRucioAccountFromLFN  # pylint: disable=no-name-in-module
     from rucio.client import Client
     from rucio.common.exception import RucioException
     account = getRucioAccountFromLFN(lfn)
@@ -838,5 +884,5 @@ def commandUsedInsideCrab():
     It only works if called from a command __call__ method
     """
 
-    caller = sys._getframe(1)
+    caller = sys._getframe(1)  # pylint: disable=protected-access
     return 'crab.py' in caller.f_code.co_filename
