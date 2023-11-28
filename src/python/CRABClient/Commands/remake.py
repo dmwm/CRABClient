@@ -1,7 +1,13 @@
+"""
+re-creates the working directory for a task
+"""
+
+# avoid complains about things that we can not fix in python2
+# pylint: disable=consider-using-f-string, unspecified-encoding, raise-missing-from
+
 import re
 import pickle
 import os
-import sys
 
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientUtilities import colors, PKL_W_MODE
@@ -25,6 +31,7 @@ class remake(SubCommand):
         return self.remakecache(''.join(self.options.cmptask.split()))
 
     def remakecache(self,taskname):
+        """ this does the actual work """
         requestarea = taskname.split(":", 1)[1].split("_", 1)[1]
         cachepath = os.path.join(requestarea, '.requestcache')
         if os.path.exists(cachepath):
@@ -60,14 +67,14 @@ class remake(SubCommand):
 
 
     def validateOptions(self):
+        """ validate options """
         if self.options.cmptask is None:
             msg  = "%sError%s: Please specify the task name for which to remake a CRAB project directory." % (colors.RED, colors.NORMAL)
             msg += " Use the --task option."
             ex = MissingOptionException(msg)
             ex.missingOption = "cmptask"
             raise ex
-        else:
-            regex = "^\d{6}_\d{6}_?([^\:]*)\:[a-zA-Z0-9-]+_(crab_)?.+"
-            if not re.match(regex, self.options.cmptask):
-                msg = "%sError%s: Task name does not match the regular expression '%s'." % (colors.RED, colors.NORMAL, regex)
-                raise ConfigurationException(msg)
+        regex = "^\d{6}_\d{6}_?([^\:]*)\:[a-zA-Z0-9-]+_(crab_)?.+"  # pylint: disable=anomalous-backslash-in-string
+        if not re.match(regex, self.options.cmptask):
+            msg = "%sError%s: Task name does not match the regular expression '%s'." % (colors.RED, colors.NORMAL, regex)
+            raise ConfigurationException(msg)

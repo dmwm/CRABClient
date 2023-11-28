@@ -1,6 +1,10 @@
 """
 This module contains some utility methods for the client.
 """
+
+# avoid complains about things that we can not fix in python2
+# pylint: disable=consider-using-f-string, unspecified-encoding, raise-missing-from
+
 from __future__ import print_function
 
 import os
@@ -25,6 +29,7 @@ from optparse import OptionValueError
 ## CRAB dependencies
 import CRABClient.Emulator
 from ServerUtilities import uploadToS3, getDownloadUrlFromS3
+from CRABClient.UserUtilities import getUsernameFromCRIC
 from CRABClient.ClientExceptions import ClientException, TaskNotFoundException, CachefileNotFoundException, ConfigurationException, ConfigException, UsernameException, ProxyException, RESTCommunicationException, RucioClientException
 
 # pickle files need to be opeb in different mode in python2 or python3
@@ -479,7 +484,6 @@ def getUsernameFromCRIC_wrapped(logger, proxyFileName=None, quiet=False):
     Wrapper function for getUsernameFromCRIC,
     catching exceptions and printing messages.
     """
-    from CRABClient.UserUtilities import getUsernameFromCRIC
     username = None
     msg = "Retrieving username from CRIC..."
     if quiet:

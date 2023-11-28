@@ -1,4 +1,8 @@
-import sys
+"""
+list tasks for the user
+"""
+# avoid complains about things that we can not fix in python2
+# pylint: disable=consider-using-f-string, unspecified-encoding, raise-missing-from
 from datetime import datetime, date, timedelta
 
 from ServerUtilities import TASKDBSTATUSES
