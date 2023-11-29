@@ -1,6 +1,10 @@
 """
 This module contains some utility methods for the client.
 """
+
+# avoid complains about things that we can not fix in python2
+# pylint: disable=consider-using-f-string, unspecified-encoding, raise-missing-from
+
 from __future__ import print_function
 
 import os
@@ -825,4 +829,4 @@ def getRucioClientFromLFN(origClient, lfn, logger):
         return client
     except RucioException as e:
         msg = "Cannot initialize Rucio Client."
-        raise RucioClientException(msg) from e
+        raise RucioClientException(msg)
