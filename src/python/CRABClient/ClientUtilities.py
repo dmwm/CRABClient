@@ -1,6 +1,10 @@
 """
 This module contains some utility methods for the client.
 """
+
+# avoid complains about things that we can not fix in python2
+# pylint: disable=consider-using-f-string, unspecified-encoding, raise-missing-from
+
 from __future__ import print_function
 
 import os
@@ -20,7 +24,6 @@ if sys.version_info >= (3, 0):
     from urllib.parse import urlparse  # pylint: disable=E0611
 if sys.version_info < (3, 0):
     from urlparse import urlparse
-from optparse import OptionValueError
 
 ## CRAB dependencies
 import CRABClient.Emulator
@@ -115,7 +118,7 @@ def initLoggers():
     CRAB3.all -> screen + file
     CRAB3     -> file
     """
-    global LOGGERS  # pylint: disable=global-statement
+    #global LOGGERS  # pylint: disable=global-statement
     ## The CRAB3 logger to memory/file.
     ## Start by setting up a (temporary) memory handler. The flush level is set to
     ## LOGLEVEL_MUTE so that any reasonable logging level should not cause any
@@ -232,7 +235,6 @@ def uploadlogfile(logger, proxyfilename, taskname=None, logfilename=None, logpat
         crabserver = restClass(hostname=serverurl, localcert=proxyfilename, localkey=proxyfilename,
                                retry=2, logger=logger, verbose=False)
         crabserver.setDbInstance(instance)
-        cacheurl = server_info(crabserver=crabserver, subresource='backendurls')['cacheSSL']
 
         logger.info("Uploading log file...")
         objecttype = 'clientlog'
@@ -479,7 +481,6 @@ def getUsernameFromCRIC_wrapped(logger, proxyFileName=None, quiet=False):
     Wrapper function for getUsernameFromCRIC,
     catching exceptions and printing messages.
     """
-    from CRABClient.UserUtilities import getUsernameFromCRIC
     username = None
     msg = "Retrieving username from CRIC..."
     if quiet:
@@ -513,16 +514,51 @@ def getUsernameFromCRIC_wrapped(logger, proxyFileName=None, quiet=False):
             logger.info(msg)
     return username
 
-def validServerURL(option, opt_str, value, parser):
+
+def getUsernameFromCRIC(proxyFileName=None):
     """
-    This raises an optparse error if the url is not valid
+    Retrieve username from CRIC by doing a query to
+    https://cms-cric.cern.ch/api/accounts/user/query/?json&preset=whoami
+    using the users proxy.
+    args:
+    proxyfile : string : the full patch to the file containing the user proxy
     """
-    if value is not None:
-        if not validURL(value):
-            raise OptionValueError("%s option value '%s' not valid." % (opt_str, value))
-        setattr(parser.values, option.dest, value)
-    else:
-        setattr(parser.values, option.dest, option.default)
+
+    ## Path to certificates.
+    capath = os.environ['X509_CERT_DIR'] if 'X509_CERT_DIR' in os.environ else "/etc/grid-security/certificates"
+    # Path to user proxy
+    if not proxyFileName:
+        proxyFileName = getUserProxy()
+    if not proxyFileName:
+        msg = "Can't find user proxy file"
+        raise UsernameException(msg)
+    ## Retrieve user info from CRIC. Note the curl must be executed in same env. (i.e. CMSSW) as crab
+    queryCmd = "curl -sS --capath %s --cert %s --key %s 'https://cms-cric.cern.ch/api/accounts/user/query/?json&preset=whoami'" %\
+               (capath, proxyFileName, proxyFileName)
+    stdout, stderr, rc = execute_command(queryCmd)
+    if rc or not stdout:
+        msg  = "Error contacting CRIC."
+        msg += "\nDetails follow:"
+        msg += "\n  Executed command: %s" % (queryCmd)
+        msg += "\n    Stdout:\n      %s" % (str(stdout).replace('\n', '\n      '))
+        msg += "\n    Stderr:\n      %s" % (str(stderr).replace('\n', '\n      '))
+        raise UsernameException(msg)
+    ## Extract the username from the above command output.
+    parseCmd = "echo '%s' | tr ':,' '\n' | grep -A1 login | tail -1 | tr -d ' \n\"'" % (str(stdout))
+    username, stderr, rc = execute_command(parseCmd)
+    if username == 'null' or not username:
+        msg  = "Failed to retrieve username from CRIC."
+        msg += "\nDetails follow:"
+        msg += "\n  Executed command: %s" % (queryCmd)
+        msg += "\n    Stdout:\n      %s" % (str(stdout).replace('\n', '\n      '))
+        msg += "\n    Parsed username: %s" % (username)
+        msg += "\n%sNote%s: Make sure you have the correct certificate mapped in your CERN account page" % (colors.BOLD, colors.NORMAL)
+        msg += " (you can check what is the certificate you currently have mapped"
+        msg += " by looking at CERN Certificatiom Authority page."
+        msg += "\nFor instructions on how to map a certificate, see "
+        msg += "\n  https://twiki.cern.ch/twiki/bin/view/CMSPublic/UsernameForCRAB#Adding_your_DN_to_your_profile"
+        raise UsernameException(msg)
+    return username
 
 
 def validURL(serverurl, attrtohave=None, attrtonothave=None):
@@ -812,7 +848,8 @@ def getRucioClientFromLFN(origClient, lfn, logger):
     :return: rucio client object
     :rtype: rucio.client.Client
     """
-    from ServerUtilities import getRucioAccountFromLFN
+    # when GitHub runs pylint there's no access to ServerUtilities
+    from ServerUtilities import getRucioAccountFromLFN  # pylint: disable=no-name-in-module
     from rucio.client import Client
     from rucio.common.exception import RucioException
     account = getRucioAccountFromLFN(lfn)
@@ -826,3 +863,13 @@ def getRucioClientFromLFN(origClient, lfn, logger):
     except RucioException as e:
         msg = "Cannot initialize Rucio Client."
         raise RucioClientException(msg) from e
+
+def commandUsedInsideCrab():
+    """
+    check if the current command is being executed inside crab.py
+    or as part of a user script which uses CRAB Client API
+    It only works if called from a command __call__ method
+    """
+
+    caller = sys._getframe(1)  # pylint: disable=protected-access
+    return 'crab.py' in caller.f_code.co_filename
