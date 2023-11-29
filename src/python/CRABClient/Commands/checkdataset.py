@@ -1,6 +1,12 @@
 """
 check disk availability of a dataset
 """
+
+# avoid complains about things that we can not fix in python2
+# pylint: disable=consider-using-f-string, unspecified-encoding, raise-missing-from
+
+from __future__ import print_function, division
+
 import json
 
 from CRABClient.Commands.SubCommand import SubCommand
@@ -45,7 +51,7 @@ class checkdataset(SubCommand):
 
         self.logger.info("\n Block locations:")
         for rse in nbFORrse.keys():
-            msg = f" {rse:20} hosts {nbFORrse[rse]:3} blocks"
+            msg = " %20s hosts %3s blocks" % (rse, nbFORrse)
             if rse in blackListedSites:
                 msg += "  *SITE BLACKLISTED IN CRAB*"
             self.logger.info(msg)
@@ -83,9 +89,9 @@ class checkdataset(SubCommand):
             scope = 'cms'
             name = self.dataset
         if scope == 'cms':
-            self.logger.info(f"Checking disk availability of dataset: {name}")
+            self.logger.info("Checking disk availability of dataset: %s", name)
         else:
-            self.logger.info(f"Checking disk availability of container: {name}")
+            self.logger.info("Checking disk availability of container: %s", name)
         if scope != 'cms':
             self.logger.info(" container in USER scope. Assume it contains datasets(blocks) in CMS scope")
         self.logger.info(" only fully available (i.e. complete) block replicas are considered ")
@@ -99,7 +105,7 @@ class checkdataset(SubCommand):
         else:
             dss = self.rucio.list_content(scope=scope, name=name)
             blocks = [ds['name'] for ds in dss]
-            self.logger.info(f"dataset has {len(blocks)} blocks")
+            self.logger.info("dataset has %d blocks", len(blocks))
 
         return containerScope, containerName, blocks
 
@@ -134,12 +140,12 @@ class checkdataset(SubCommand):
         """  let's make a list of sites where CRAB will not run """
 
         usableSitesUrl = 'https://cmssst.web.cern.ch/cmssst/analysis/usableSites.json'
-        cmd = f"curl -s {usableSitesUrl}"
+        cmd = "curl -s %s" % usableSitesUrl
         out, err, ec = execute_command(cmd)
         if not ec:
             usableSites = json.loads(out)
         else:
-            self.logger.error(f"EROR retrieving list of blacklisted sites:\n{err}")
+            self.logger.error("EROR retrieving list of blacklisted sites:\n%s", err)
             self.logger.info("Will not use a blacklist")
             usableSites = []
         #result = subprocess.run(f"curl -s {usableSitesUrl}", shell=True, stdout=subprocess.PIPE)
@@ -164,7 +170,7 @@ class checkdataset(SubCommand):
         for blockName in blocks:
             nb += 1
             if self.interactive:
-                print(f'  block: {nb}', end='\r')
+                print("  block: %d" % nb, end='\r')
             replicas = set()
             response = self.rucio.list_dataset_replicas(scope='cms', name=blockName, deep=True)
             for item in response:
@@ -186,7 +192,7 @@ class checkdataset(SubCommand):
         nBlocks = 0
         for nr in sorted(list(nbFORnr.keys())):
             nBlocks += nbFORnr[nr]
-            msg = f" {nbFORnr[nr]:3} blocks have {nr:2} disk replicas"
+            msg = " %3s blocks have %2s disk replicas" % (nbFORnr[nr], nr)
             if nr == 0 and nbFORnr[0] > 0:
                 msg += " *THESE BLOCKS WILL NOT BE ACCESSIBLE*"
             self.logger.info(msg)
@@ -194,7 +200,7 @@ class checkdataset(SubCommand):
             self.logger.info(" Dataset is fully available")
         else:
             nAvail = nBlocks - nbFORnr[0]
-            self.logger.info(f" Only {nAvail}/{nBlocks} are available")
+            self.logger.info(" Only %d/%d are available", nAvail, nBlocks)
         return
 
     def setOptions(self):
