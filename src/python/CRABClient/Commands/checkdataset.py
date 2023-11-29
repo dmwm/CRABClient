@@ -1,9 +1,17 @@
-import os
-import tempfile
+"""
+check disk availability of a dataset
+"""
+
+# avoid complains about things that we can not fix in python2
+# pylint: disable=consider-using-f-string, unspecified-encoding, raise-missing-from
+
+from __future__ import print_function, division
+
+import json
 
 from CRABClient.Commands.SubCommand import SubCommand
-from CRABClient.UserUtilities import getUsername
 from CRABClient.ClientUtilities import execute_command, colors
+from CRABClient.ClientUtilities import commandUsedInsideCrab
 from CRABClient.ClientExceptions import MissingOptionException
 
 class checkdataset(SubCommand):
@@ -16,50 +24,184 @@ class checkdataset(SubCommand):
     def __init__(self, logger, cmdargs=None):
         SubCommand.__init__(self, logger, cmdargs)
         self.dataset = None
+        self.interactive = False
 
 
     def __call__(self):
 
-        if hasattr(self.options, 'dataset') and self.options.dataset:
-            dataset = self.options.dataset
+        self.dataset = self.options.dataset
+        self.interactive = commandUsedInsideCrab()
 
-        username = getUsername(self.proxyfilename, logger=self.logger)
-        tmpDir = tempfile.mkdtemp()
-        scriptName = "checkDiskAvailability.py"
-
-        # download up-to-date version of the script
-        source = "https://github.com/dmwm/CRABServer/raw/master/scripts/Utils/CheckDiskAvailability.py"
-        cmd = "cd %s; " % tmpDir
-        cmd += "/usr/bin/wget --output-document=%s --timeout=60 %s" % (scriptName, source)
-        # put it in a script in order
-        out, err, exitcode = execute_command(cmd)
-        if exitcode:
-            self.logger.info("Failed to download script from GitHub. Please try later")
-            if out:
-                self.logger.info('  Stdout:\n    %s' % str(out).replace('\n', '\n    '))
-            if err:
-                self.logger.info('  Stderr:\n    %s' % str(err).replace('\n', '\n    '))
+        if not self.rucio:
+            self.logger.error("Rucio client not available with this CMSSW version")
             return {'commandStatus': 'FAILED'}
 
-        # execute it in the Rucio environment
-        cmd = 'eval `scram unsetenv -sh`; '
-        cmd += 'source /cvmfs/cms.cern.ch/rucio/setup-py3.sh >/dev/null; '
-        cmd += 'export RUCIO_ACCOUNT=%s; ' % username
-        cmd += 'cd %s; ' % tmpDir
-        cmd += 'python3 %s --dataset %s; ' % (scriptName, dataset)
-        out, err, exitcode = execute_command(cmd)
-        if exitcode:
-            self.logger.info("Failed to execute CheckDatasetAvailability.py. Contact support")
-            if out:
-                self.logger.info('  Stdout:\n    %s' % str(out).replace('\n', '\n    '))
-            if err:
-                self.logger.info('  Stderr:\n    %s' % str(err).replace('\n', '\n    '))
-            return {'commandStatus': 'FAILED'}
+        containerScope, containerName, blocks = self.getInputs()
+        if not blocks:
+            self.logger.info("Dataset is empty or unknown to Rucio")
+            return {'commandStatus': 'SUCCESS'}
+        blackListedSites = self.getCrabBlacklist()
+        if self.interactive:
+            print("Checking blocks availabiliyt on disk ...")
         else:
-            self.logger.info(out)
-        os.unlink(os.path.join(tmpDir, scriptName))
-        os.rmdir(tmpDir)
+            self.logger.info("Check blocks availabiliyt on disk")
+        locationsMap = self.createLocationsMap(blocks)
+        (nbFORnr, nbFORrse) = self.createBlockMaps(locationsMap=locationsMap, blackList=[])
+        self.printBlocksPerReplicaMap(nbFORnr)
+
+        self.logger.info("\n Block locations:")
+        for rse in nbFORrse.keys():
+            msg = " %20s hosts %3s blocks" % (rse, nbFORrse)
+            if rse in blackListedSites:
+                msg += "  *SITE BLACKLISTED IN CRAB*"
+            self.logger.info(msg)
+        self.logger.info("")
+
+        self.logger.info("AFTER APPLYING CRAB SITE BLACKLIST:")
+        (nbFORnr, nbFORrse) = self.createBlockMaps(locationsMap=locationsMap, blackList=blackListedSites)
+        self.printBlocksPerReplicaMap(nbFORnr)
+
+        self.logger.info("\nRules on this dataset:")
+        ruleGens = self.rucio.list_did_rules(scope=containerScope, name=containerName)
+        rules = list(ruleGens)
+        if rules:
+            pattern = '{:^32}{:^20}{:^10}{:^20}{:^30}'
+            self.logger.info(pattern.format('ID', 'account', 'state', 'expiration', 'RSEs'))
+            for r in rules:
+                self.logger.info(pattern.format(r['id'], r['account'], r['state'], str(r['expires_at']), r['rse_expression']))
+        else:
+            self.logger.info("NONE")
+
         return {'commandStatus': 'SUCCESS'}
+
+    def getInputs(self):
+        """
+        get name of object to test and check what it is
+        returns:
+        containerScope, containerName (the DID)
+        blocks = [b1, b2...] a list of block names in the dataset
+        """
+
+        if ':' in self.dataset:
+            scope = self.dataset.split(':')[0]
+            name = self.dataset.split(':')[1]
+        else:
+            scope = 'cms'
+            name = self.dataset
+        if scope == 'cms':
+            self.logger.info("Checking disk availability of dataset: %s", name)
+        else:
+            self.logger.info("Checking disk availability of container: %s", name)
+        if scope != 'cms':
+            self.logger.info(" container in USER scope. Assume it contains datasets(blocks) in CMS scope")
+        self.logger.info(" only fully available (i.e. complete) block replicas are considered ")
+        containerScope = scope
+        containerName = name
+
+        # get list of blocks (datasets in Rucio)
+        if '#' in name:
+            self.logger.info("Input is a DBS-block (Rucio-dataset) will check that one")
+            blocks = [name]
+        else:
+            dss = self.rucio.list_content(scope=scope, name=name)
+            blocks = [ds['name'] for ds in dss]
+            self.logger.info("dataset has %d blocks", len(blocks))
+
+        return containerScope, containerName, blocks
+
+    def createBlockMaps(self, locationsMap=None, blackList=None):
+        """
+        creates 2 maps: nReplicas-->nBlocks and rse-->nBlocks
+        locationsMap is a dictionary {block:[replica1, replica2..]}
+        """
+        nbFORnr = {}
+        nbFORnr[0] = 0  # this will not be filled in the loop if every block has locations
+        nbFORrse = {}
+        for block in locationsMap:
+            replicas = locationsMap[block]
+            if replicas:
+                for rse in replicas.copy():
+                    if rse in blackList:
+                        replicas.remove(rse)
+                try:
+                    nbFORnr[len(replicas)] += 1
+                except KeyError:
+                    nbFORnr[len(replicas)] = 1
+                for rse in locationsMap[block]:
+                    try:
+                        nbFORrse[rse] += 1
+                    except KeyError:
+                        nbFORrse[rse] = 1
+            else:
+                nbFORnr[0] += 1
+        return (nbFORnr, nbFORrse)
+
+    def getCrabBlacklist(self):
+        """  let's make a list of sites where CRAB will not run """
+
+        usableSitesUrl = 'https://cmssst.web.cern.ch/cmssst/analysis/usableSites.json'
+        cmd = "curl -s %s" % usableSitesUrl
+        out, err, ec = execute_command(cmd)
+        if not ec:
+            usableSites = json.loads(out)
+        else:
+            self.logger.error("EROR retrieving list of blacklisted sites:\n%s", err)
+            self.logger.info("Will not use a blacklist")
+            usableSites = []
+        #result = subprocess.run(f"curl -s {usableSitesUrl}", shell=True, stdout=subprocess.PIPE)
+        #usableSites = json.loads(result.stdout.decode('utf-8'))
+        blackListedSites = []
+        for site in usableSites:
+            if 'value' in site and site['value'] == 'not_usable':
+                blackListedSites.append(site['name'])
+        return blackListedSites
+
+    def createLocationsMap(self, blocks):
+        """
+        following loop is copied from CRAB DBSDataDiscovery
+        locationsMap is a dictionary: key=blockName, value=list of RSEs}
+        nbFORnr is dictionary: key= number of RSEs with a block, value=number of blocks with that # or RSEs
+        nbFORrse is a dictionary: key=RSEname, value=number of blocks available at that RSE
+        this should be rewritten so that the two dicionaries are filled via a separate loop on
+        locationsMap content. Makes it easier to read, debug, improve
+        """
+        locationsMap = {}
+        nb = 0
+        for blockName in blocks:
+            nb += 1
+            if self.interactive:
+                print("  block: %d" % nb, end='\r')
+            replicas = set()
+            response = self.rucio.list_dataset_replicas(scope='cms', name=blockName, deep=True)
+            for item in response:
+                if 'Tape' in item['rse']:
+                    continue  # skip tape locations
+                if 'T3_CH_CERN_OpenData' in item['rse']:
+                    continue  # ignore OpenData until it is accessible by CRAB
+                if item['state'].upper() == 'AVAILABLE':  # means all files in the block are on disk
+                    replicas.add(item['rse'])
+            locationsMap[blockName] = replicas
+        if self.interactive:
+            print("")
+        return locationsMap
+
+    def printBlocksPerReplicaMap(self, nbFORnr):
+        """
+        print how many blocks have 0, 1, 2... disk replicas
+        """
+        nBlocks = 0
+        for nr in sorted(list(nbFORnr.keys())):
+            nBlocks += nbFORnr[nr]
+            msg = " %3s blocks have %2s disk replicas" % (nbFORnr[nr], nr)
+            if nr == 0 and nbFORnr[0] > 0:
+                msg += " *THESE BLOCKS WILL NOT BE ACCESSIBLE*"
+            self.logger.info(msg)
+        if not nbFORnr[0]:
+            self.logger.info(" Dataset is fully available")
+        else:
+            nAvail = nBlocks - nbFORnr[0]
+            self.logger.info(" Only %d/%d are available", nAvail, nBlocks)
+        return
 
     def setOptions(self):
         """
@@ -76,7 +218,8 @@ class checkdataset(SubCommand):
         SubCommand.validateOptions(self)
 
         if self.options.dataset is None:
-            msg = "%sError%s: Please specify the dataset to check." % (colors.RED, colors.NORMAL)
+            msg = ("%sError%s: Please specify the dataset to check."  # pylint: disable=consider-using-f-string
+                   % (colors.RED, colors.NORMAL))
             msg += " Use the --dataset option."
             ex = MissingOptionException(msg)
             ex.missingOption = "dataset"

@@ -12,6 +12,7 @@ import tempfile
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.UserUtilities import getUsername
 from CRABClient.ClientUtilities import execute_command, colors
+from CRABClient.ClientUtilities import commandUsedInsideCrab
 from CRABClient.ClientExceptions import MissingOptionException, ConfigurationException
 
 from CRABClient.RestInterfaces import getDbsREST
@@ -98,7 +99,9 @@ class checkfile(SubCommand):
             self.logger.info("\nCheck Adler32 checksum (%s) for each disk replica", self.fileToCheck['adler32'])
         for rse in rseWithSizeOK:
             pfn = diskReplicas[rse]
-            print("verify checksum for replica at %s. " % rse, end="", flush=True)
+            if commandUsedInsideCrab():
+                print("verify checksum for replica at %s. " % rse, end="", flush=True)
+
             isAdlerOK, msg = self.checkReplicaAdler32(pfn)
             if isAdlerOK:
                 self.logger.info("%15s      OK", rse)
@@ -238,21 +241,25 @@ class checkfile(SubCommand):
         f = tempfile.NamedTemporaryFile(delete=False, prefix='testFile_')
         fname = f.name
         execute_command("rm -f %s" % fname)
-        print("copy file...", end="", flush=True)
+        if commandUsedInsideCrab():
+            print("copy file...", end="", flush=True)
         cmd = "eval `scram unsetenv -sh`; gfal-copy %s %s" % (pfn, fname)
         out, err, ec = execute_command(cmd)
         if ec:
             msg = "file copy for checksum control failed.\n%s\n%s" % (out, err)
             execute_command("rm -f %s" % fname)
             return False, msg
-        print("compute Adler32 checksum...", end="", flush=True)
+
+        if commandUsedInsideCrab():
+            print("compute Adler32 checksum...", end="", flush=True)
         cmd = "eval `scram unsetenv -sh`; gfal-sum %s ADLER32" % fname
         out, err, ec = execute_command(cmd)
         if ec:
             msg = "checksum computation failed.\n%s\n%s" % (out, err)
             execute_command("rm -f %s" % fname)
             return False, msg
-        print("Done")
+        if commandUsedInsideCrab():
+            print("Done")
         adler32 = out.split()[1]
         if not adler32 == self.fileToCheck['adler32']:
             msg = "Remote replica has wrong checksum. %s vs. %s" % (adler32, self.fileToCheck['adler32'])
