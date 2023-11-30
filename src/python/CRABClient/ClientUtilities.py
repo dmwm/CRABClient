@@ -862,7 +862,7 @@ def getRucioClientFromLFN(origClient, lfn, logger):
         return client
     except RucioException as e:
         msg = "Cannot initialize Rucio Client."
-        raise RucioClientException(msg) from e
+        raise RucioClientException(msg)
 
 def commandUsedInsideCrab():
     """

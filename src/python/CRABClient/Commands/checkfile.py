@@ -1,6 +1,11 @@
 """
 check a file (LFN) status in DBS and Rucio and its disk replicas
 """
+
+# avoid complains about things that we can not fix in python2
+# pylint: disable=consider-using-f-string, unspecified-encoding, raise-missing-from
+from __future__ import print_function
+
 import sys
 import tempfile
 
@@ -70,18 +75,18 @@ class checkfile(SubCommand):
         if nDisk == 0:
             return {'commandStatus': 'SUCCESS'}
         msg = "List of disk replicas. Check that file exists and has correct size "
-        msg += f"({self.fileToCheck['size']} bytes):"
+        msg += "(%s bytes):" % self.fileToCheck['size']
         self.logger.info(msg)
 
-        self.logger.info(f"{'RSE':^15s}    status")
+        self.logger.info("%15s    status", 'RSE')
         rseWithSizeOK = []
         for rse, pfn in diskReplicas.items():
             isSizeOK, msg = self.checkReplicaSize(pfn)
             if isSizeOK:
-                self.logger.info(f"{rse:<15s}      OK")
+                self.logger.info("%15s      OK", rse)
                 rseWithSizeOK.append(rse)
             else:
-                self.logger.error(f"{rse:<15s}  something wrong")
+                self.logger.error("%15s  something wrong", rse)
                 self.logger.error(msg)
 
         if rseWithSizeOK and not self.checkChecksum:
@@ -91,16 +96,17 @@ class checkfile(SubCommand):
             return {'commandStatus': 'SUCCESS'}
 
         if rseWithSizeOK:
-            self.logger.info(f"\nCheck Adler32 checksum ({self.fileToCheck['adler32']}) for each disk replica")
+            self.logger.info("\nCheck Adler32 checksum (%s) for each disk replica", self.fileToCheck['adler32'])
         for rse in rseWithSizeOK:
             pfn = diskReplicas[rse]
             if commandUsedInsideCrab():
-                print(f"verify checksum for replica at {rse}. ", end="", flush=True)
+                print("verify checksum for replica at %s. " % rse, end="", flush=True)
+
             isAdlerOK, msg = self.checkReplicaAdler32(pfn)
             if isAdlerOK:
-                self.logger.info(f"{rse:<15s}      OK")
+                self.logger.info("%15s      OK", rse)
             else:
-                self.logger.error(f"{rse:<15s}  something wrong")
+                self.logger.error("%15s  something wrong", rse)
                 self.logger.error(msg)
 
         return {'commandStatus': 'SUCCESS'}
@@ -173,8 +179,8 @@ class checkfile(SubCommand):
         if rucioDataset != self.fileToCheck['block'] or rucioContainer != self.fileToCheck['dataset']:
             self.logger.error('Rucio/DBS mismatch')
             msg = "Ruciod dataset/container do not match DBS block/dataset"
-            msg += f"\n Rucio container: {rucioContainer}"
-            msg += f"\n Rucio dataset  : {rucioDataset}"
+            msg += "\n Rucio container: %s" % rucioContainer
+            msg += "\n Rucio dataset  : %s" % rucioDataset
             return False, msg
 
         self.logger.info('  LFN found in Rucio with matching block/dataset parentage')
@@ -207,7 +213,7 @@ class checkfile(SubCommand):
 
     def checkReplicaSize(self, pfn):
         """ verify size of a remote file replica (pfn) """
-        cmd = f"eval `scram unsetenv -sh`; gfal-ls -l {pfn}"
+        cmd = "eval `scram unsetenv -sh`; gfal-ls -l %s" % pfn
         out, err, ec = execute_command(cmd)
         if ec:
             if 'File not found' in err or 'No such file' in err:
@@ -219,7 +225,7 @@ class checkfile(SubCommand):
             msg = "Error looking up file at remote site"
             return False, msg
         if replicaSize != self.fileToCheck['size']:
-            msg = f"Replica size at remote side is wrong. {replicaSize} vs. {self.fileToCheck['size']}"
+            msg = "Replica size at remote side is wrong. %s vs. %s" % (replicaSize, self.fileToCheck['size'])
             msg += "  Needs to be invalidated"
             return False, msg
         return True, ""
@@ -234,32 +240,33 @@ class checkfile(SubCommand):
 
         f = tempfile.NamedTemporaryFile(delete=False, prefix='testFile_')
         fname = f.name
-        execute_command(f"rm -f {fname}")
+        execute_command("rm -f %s" % fname)
         if commandUsedInsideCrab():
             print("copy file...", end="", flush=True)
-        cmd = f"eval `scram unsetenv -sh`; gfal-copy {pfn} {fname}"
+        cmd = "eval `scram unsetenv -sh`; gfal-copy %s %s" % (pfn, fname)
         out, err, ec = execute_command(cmd)
         if ec:
-            msg = f"file copy for checksum control failed.\n{out}\n{err}"
-            execute_command(f"rm -f {fname}")
+            msg = "file copy for checksum control failed.\n%s\n%s" % (out, err)
+            execute_command("rm -f %s" % fname)
             return False, msg
+
         if commandUsedInsideCrab():
             print("compute Adler32 checksum...", end="", flush=True)
-        cmd = f"eval `scram unsetenv -sh`; gfal-sum {fname} ADLER32"
+        cmd = "eval `scram unsetenv -sh`; gfal-sum %s ADLER32" % fname
         out, err, ec = execute_command(cmd)
         if ec:
-            msg = f"checksum computation failed.\n{out}\n{err}"
-            execute_command(f"rm -f {fname}")
+            msg = "checksum computation failed.\n%s\n%s" % (out, err)
+            execute_command("rm -f %s" % fname)
             return False, msg
         if commandUsedInsideCrab():
             print("Done")
         adler32 = out.split()[1]
         if not adler32 == self.fileToCheck['adler32']:
-            msg = f"Remote replica has wrong checksum. {adler32} vs. {self.fileToCheck['adler32']}"
+            msg = "Remote replica has wrong checksum. %s vs. %s" % (adler32, self.fileToCheck['adler32'])
             msg += "  Needs to be invalidated"
-            execute_command(f"rm -f {fname}")
+            execute_command("rm -f %s" % fname)
             return False, msg
-        execute_command(f"rm -f {fname}")
+        execute_command("rm -f %s" % fname)
         return True, ""
 
     def setOptions(self):

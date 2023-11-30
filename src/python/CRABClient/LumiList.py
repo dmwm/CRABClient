@@ -14,8 +14,11 @@ or could be subclassed renaming a function or two.
 This code began life in COMP/CRAB/python/LumiList.py
 """
 
+# added by StefanoB avoid complains about things that we can not fix in python2
+# pylint: disable=consider-using-f-string, unspecified-encoding, raise-missing-from
 
-from builtins import range
+#from builtins import range  # commented out by StefanoB. Fails in python2. But plain range() works in py2/3
+
 import copy
 import json
 import re
