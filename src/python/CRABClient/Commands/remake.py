@@ -35,7 +35,7 @@ class remake(SubCommand):
         requestarea = taskname.split(":", 1)[1].split("_", 1)[1]
         cachepath = os.path.join(requestarea, '.requestcache')
         if os.path.exists(cachepath):
-            self.logger.info("%sError%s: %s not created, because it already exists." % (colors.RED, colors.NORMAL, cachepath))
+            self.logger.info("%sWarning%s: %s not created, because it already exists." % (colors.RED, colors.NORMAL, cachepath))
         elif not os.path.exists(requestarea):
             self.logger.info('Remaking %s folder.' % (requestarea))
             try:

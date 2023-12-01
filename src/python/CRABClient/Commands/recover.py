@@ -29,6 +29,7 @@ from CRABClient.Commands.getsandbox import getsandbox
 from CRABClient.Commands.submit import submit
 from CRABClient.UserUtilities import getColumn
 from CRABClient.ClientUtilities import colors
+from ServerUtilities import SERVICE_INSTANCES
 
 SPLITTING_RECOVER_LUMIBASED = set(("LumiBased", "Automatic", "EventAwareLumiBased"))
 SPLITTING_RECOVER_FILEBASED = set(("FileBased"))
@@ -47,7 +48,21 @@ class recover(SubCommand):
         retval = self.stepInit()
         if retval["commandStatus"] != "SUCCESS": return self.stepExit(retval)
 
-        retval = self.stepRemakeAndValidate()
+        if not self.cmdconf["requiresDirOption"]:
+            self.failingTaskName = self.options.cmptask
+            retval = self.stepRemake()
+            if retval["commandStatus"] != "SUCCESS": return self.stepExit(retval)
+            self.crabProjDir = retval["workDir"]
+        else:
+            self.logger.debug("no need to run crab remake - self.cachedinfo %s", self.cachedinfo)
+            self.failingTaskName = self.cachedinfo['RequestName']
+            self.restHostCommonname = findServerInstance(self.serverurl, self.instance)
+            self.logger.debug("no need to run crab remake - self.serverurl %s", self.serverurl)
+            self.logger.debug("no need to run crab remake - self.instance %s", self.instance)
+            self.logger.debug("no need to run crab remake - self.restHostCommonname %s", self.restHostCommonname)
+            self.crabProjDir = self.requestarea
+
+        retval = self.stepValidate()
         if retval["commandStatus"] != "SUCCESS": return self.stepExit(retval)
 
         retval = self.stepStatus()
@@ -86,12 +101,15 @@ class recover(SubCommand):
 
     def stepExit(self, retval):
         """
-        callback to be executed after every step executes with:
+        Callback to be executed after every step executes. 
+        Handy if you want to add some logging before the crab recover exits, 
+        whatever step the recover fails at.
+
+        Intended to be used as:
 
         > retval = self.stepYYY()
         > if retval["commandStatus"] != "SUCCESS": return self.stepExit(retval)
         """
-        self.logger.info(retval)
         return retval
 
     def stepInit(self):
@@ -105,6 +123,7 @@ class recover(SubCommand):
         # self.options and self.args are automatically filled by the __init__()
         # that recover inherits from SubCommand. 
 
+        self.logger.debug("stepInit() - self.cmdconf %s", self.cmdconf)
         self.logger.debug("stepInit() - self.cmdargs %s", self.cmdargs)
         self.logger.debug("stepInit() - self.options %s", self.options)
         self.logger.debug("stepInit() - self.args %s",    self.args)
@@ -115,7 +134,7 @@ class recover(SubCommand):
 
         return {"commandStatus": "SUCCESS", "init": None }
 
-    def stepRemakeAndValidate(self):
+    def stepRemake(self):
         """
         run crab remake then download the info from task DB.
         Use it to perform basic validation of the task that the user wants to recover.
@@ -133,10 +152,11 @@ class recover(SubCommand):
         as done with "multicrab".
         https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRABClientLibraryAPI#Multicrab_using_the_crabCommand
         """
+
         # step1: remake
         cmdargs = []
         cmdargs.append("--task")
-        cmdargs.append(self.options.cmptask)
+        cmdargs.append(self.failingTaskName)
         if "instance" in self.options.__dict__.keys():
             cmdargs.append("--instance")
             cmdargs.append(self.options.__dict__["instance"])
@@ -146,15 +166,21 @@ class recover(SubCommand):
         self.logger.debug("stepRemakeAndValidate() - remake, cmdargs: %s", cmdargs)
         remakeCmd = remake(logger=self.logger, cmdargs=cmdargs)
         with SubcommandExecution(self.logger, "remake") as _:
-            retval = remakeCmd.remakecache(self.options.cmptask)
+            retval = remakeCmd.remakecache(self.failingTaskName)
         self.logger.debug("stepRemakeAndValidate() - remake, retval: %s", retval)
         self.logger.debug("stepRemakeAndValidate() - remake, after, self.configuration: %s", self.configuration)
+        return retval
+
+    def stepValidate(self):
+        """
+
+        """
 
         ## validate
         ## - we can not recover a task that is older than 30d, because we need
         ##   files from the schedd about the status of each job
         ## - we want to recover only "analysis" tasks
-        self.failingCrabDBInfo, _, _ = self.crabserver.get(api='task', data={'subresource':'search', 'workflow':self.options.cmptask})
+        self.failingCrabDBInfo, _, _ = self.crabserver.get(api='task', data={'subresource':'search', 'workflow':self.failingTaskName})
         self.logger.debug("stepRemakeAndValidate() - Got information from server oracle database: %s", self.failingCrabDBInfo)
         startTimeDb = getColumn(self.failingCrabDBInfo, 'tm_start_time')
         # 2023-10-24 10:56:26.573303
@@ -184,9 +210,7 @@ class recover(SubCommand):
 
         self.logger.debug("stepRemakeAndValidate() - failingtaskinfo - %s", self.failingTaskInfo)
 
-        self.crabProjDir = retval["workDir"]
-
-        return retval
+        return {"commandStatus": "SUCCESS", "validate": None }
 
     def stepStatus(self):
         """
@@ -543,14 +567,9 @@ class recover(SubCommand):
         cmdargs.append("General.workArea=.")
         cmdargs.append("Data.lumiMask={}".format(notFinishedJsonPath))
         cmdargs.append("JobType.pluginName=Recover")
-        cmdargs.append("JobType.copyCatTaskname={}".format(self.options.cmptask))
+        cmdargs.append("JobType.copyCatTaskname={}".format(self.failingTaskName))
         cmdargs.append("JobType.copyCatWorkdir={}".format(self.crabProjDir))
-        destinstance = ""
-        if "instance" in self.options.__dict__.keys():
-            destinstance = self.options.__dict__["instance"]
-        if not destinstance:
-            destinstance = "prod"
-        cmdargs.append("JobType.copyCatInstance={}".format(destinstance))
+        cmdargs.append("JobType.copyCatInstance={}".format(self.restHostCommonname))
         scriptexe = getColumn(self.failingCrabDBInfo, 'tm_scriptexe')
         if scriptexe:
             cmdargs.append("JobType.scriptExe={}".format(os.path.join(self.crabProjDir, "debug_sandbox" , scriptexe)))
@@ -593,10 +612,7 @@ class recover(SubCommand):
 
         """
         # step: remake
-        self.parser.add_option("--task",
-                               dest = "cmptask",
-                               default = None,
-                               help = "The complete task name. Can be taken from 'crab status' output, or from dashboard.")
+        # --dir, --cmptask, --instance already added elsewhere: 
 
         # step: recovery
         self.parser.add_option("--strategy",
@@ -622,18 +638,23 @@ class recover(SubCommand):
         __validateOptions__
 
         """
-        # step: remake
-        if self.options.cmptask is None:
-            msg  = "%sError%s: Please specify the task name for which to remake a CRAB project directory." % (colors.RED, colors.NORMAL)
-            msg += " Use the --task option."
+
+        # step: remake.
+        if self.options.cmptask is None and self.options.projdir is None:
+            msg  = "%sError%s: Please specify a CRAB task project directory or the task name for which to remake a CRAB project directory." % (colors.RED, colors.NORMAL)
+            msg += " Use the --dir or the --task option."
             ex = MissingOptionException(msg)
             ex.missingOption = "cmptask"
             raise ex
-        else:
+        elif self.options.projdir: 
+            self.cmdconf["requiresDirOption"] = True
+        elif self.options.cmptask:
             regex = "^\d{6}_\d{6}_?([^\:]*)\:[a-zA-Z0-9-]+_(crab_)?.+"
             if not re.match(regex, self.options.cmptask):
                 msg = "%sError%s: Task name does not match the regular expression '%s'." % (colors.RED, colors.NORMAL, regex)
                 raise ConfigurationException(msg)
+
+        SubCommand.validateOptions(self)
 
 class SubcommandExecution:
     """
@@ -656,3 +677,13 @@ class SubcommandExecution:
             h.setLevel(self.handlerLevels[idx])
         self.logger.debug("%s - handlers2: %s", self.commandname, self.handlerLevels)
         self.logger.debug("%s - handlers3: %s", self.commandname, self.logger.handlers)
+
+def findServerInstance(serverurl, dbinstance):
+    """
+    given ServerUtilities.SERVICE_INSTANCES and (url,db instance) finds the "common" name
+    """
+    result = None
+    for commonName, details in SERVICE_INSTANCES.items():
+        if serverurl == details["restHost"] and dbinstance == details["dbInstance"]:
+            result = commonName
+    return result

@@ -153,7 +153,7 @@ commandsConfiguration = {
     'tasks'         : {'acceptsArguments': False, 'requiresREST': True,  'requiresRucio': False, 'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'requiresLocalCache': False},
     'uploadlog'     : {'acceptsArguments': False, 'requiresREST': True,  'requiresRucio': False, 'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'requiresLocalCache': False},
     'preparelocal'  : {'acceptsArguments': False, 'requiresREST': True,  'requiresRucio': False, 'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'requiresLocalCache': True},
-    'recover'       : {'acceptsArguments': False, 'requiresREST': True,  'requiresRucio': False, 'requiresDirOption': False, 'useCache': False, 'requiresProxyVOOptions': False, 'requiresLocalCache': False},
+    'recover'       : {'acceptsArguments': False, 'requiresREST': True,  'requiresRucio': False, 'requiresDirOption': True, 'useCache': False, 'requiresProxyVOOptions': False, 'requiresLocalCache': False},
     'getsandbox'    : {'acceptsArguments': False, 'requiresREST': True,  'requiresRucio': False,  'requiresDirOption': True,  'useCache': True,  'requiresProxyVOOptions': False, 'requiresLocalCache': True },
 }
 
