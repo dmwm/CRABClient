@@ -45,7 +45,8 @@ class checkdataset(SubCommand):
             print("Checking blocks availabiliyt on disk ...")
         else:
             self.logger.info("Check blocks availabiliyt on disk")
-        locationsMap = self.createLocationsMap(blocks)
+        tapeSites, locationsMap = self.createLocationsMap(blocks)
+        self.logger.info("dataset is on tape at: %s", tapeSites)
         (nbFORnr, nbFORrse) = self.createBlockMaps(locationsMap=locationsMap, blackList=[])
         self.printBlocksPerReplicaMap(nbFORnr)
 
@@ -166,6 +167,7 @@ class checkdataset(SubCommand):
         locationsMap content. Makes it easier to read, debug, improve
         """
         locationsMap = {}
+        tapeSites = set()
         nb = 0
         for blockName in blocks:
             nb += 1
@@ -175,6 +177,7 @@ class checkdataset(SubCommand):
             response = self.rucio.list_dataset_replicas(scope='cms', name=blockName, deep=True)
             for item in response:
                 if 'Tape' in item['rse']:
+                    tapeSites.add(item['rse'])
                     continue  # skip tape locations
                 if 'T3_CH_CERN_OpenData' in item['rse']:
                     continue  # ignore OpenData until it is accessible by CRAB
@@ -183,7 +186,7 @@ class checkdataset(SubCommand):
             locationsMap[blockName] = replicas
         if self.interactive:
             print("")
-        return locationsMap
+        return tapeSites, locationsMap
 
     def printBlocksPerReplicaMap(self, nbFORnr):
         """
