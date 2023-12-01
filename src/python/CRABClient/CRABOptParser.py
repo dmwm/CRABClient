@@ -88,6 +88,11 @@ class CRABCmdOptParser(OptionParser):
                                    dest = "projdir",
                                    default = None,
                                    help = "Path to the CRAB project directory for which the crab command should be executed.")
+            self.add_option("--task",
+                                dest = "cmptask",
+                                default = None,
+                                help = "The complete task name. Can be taken from 'crab status' output, or from dashboard.")
+
 
         if cmdconf['requiresProxyVOOptions']:
             self.add_option("--voRole",

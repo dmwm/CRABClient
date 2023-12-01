@@ -279,6 +279,10 @@ class SubCommand(ConfigCommand):
         SubCommand.validateOptions(self)
         # then the config option for the submit command
         self.validateConfigOption()
+        # # Validate the command options
+        # TODO FIXME: (dario) why don't we move option validation before dealing with rest server?
+        # self.validateOptions()
+
 
         # Get the VO group/role from the command options (if the command requires these
         # options).
@@ -387,8 +391,7 @@ class SubCommand(ConfigCommand):
             else:
                 self.rucio = None
 
-        # Validate the command options
-        self.validateOptions()
+        # # Validate the command options
         self.validateOptions()
 
         # Log user command and options used for debuging purpose.
@@ -652,6 +655,12 @@ class SubCommand(ConfigCommand):
                     self.options.projdir = self.args.pop(0)
                 elif self.cmdconf['useCache'] and self.crab3dic.get('crab_project_directory'):
                     self.options.projdir = str(self.crab3dic['crab_project_directory'])
+                if self.options.cmptask:
+                    msg = "crab %s requires a projdir. Since you passed a taskname, we will run crab remake"
+                    self.logger.info(msg, self.name)
+                    ret = self.remakeLocalCache()
+                    self.options.projdir = ret["workDir"]
+                    self.logger.debug("crab remake created %s", self.options.projdir)
             if self.options.projdir is None:
                 msg = "%sError%s:" % (colors.RED, colors.NORMAL)
                 msg += " Please indicate the CRAB project directory with --dir=<project-directory>."
@@ -679,3 +688,37 @@ class SubCommand(ConfigCommand):
 
     def validateConfigOption(self):
         pass
+
+    def remakeLocalCache(self):
+        """
+        If the user did not pass --dir=???, then it can use --task=??? --instance=???
+        In this case, we run crab remake under the hood, then run the command that the user 
+        intended to use.
+        """
+
+        ## option 1: use the CRABAPI to run crab remake
+        ## pro: works, simple to use
+        ## con: execRaw executed removeLoggerHandlers, that suppresses all stdout
+        #      it is a problem if the user wants to run "crab status"
+        # it can be done as:
+        #from CRABAPI.RawCommand import crabCommand
+        #ret = crabCommand('remake', task=self.options.cmptask, instance=self.options.instance, proxy=self.options.proxy)
+
+        ## option 2: import the remake class
+        ## pro: works, no problem with handlers
+        ## con: does not fit in a single line :)
+
+        cmdargs = []
+        cmdargs.append("--task")
+        cmdargs.append(self.options.cmptask)
+        if "instance" in self.options.__dict__.keys():
+            cmdargs.append("--instance")
+            cmdargs.append(self.options.instance)
+        if "proxy" in self.options.__dict__.keys():
+            cmdargs.append("--proxy")
+            cmdargs.append(self.options.proxy)
+        # this can not be imported at top-level, otherwise python will complain about circular imports
+        from CRABClient.Commands.remake import remake
+        remakeCmd = remake(logger=self.logger, cmdargs=cmdargs)
+        retval = remakeCmd.remakecache(self.options.cmptask)
+        return retval
