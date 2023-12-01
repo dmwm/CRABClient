@@ -51,7 +51,7 @@ class checkdataset(SubCommand):
 
         self.logger.info("\n Block locations:")
         for rse in nbFORrse.keys():
-            msg = " %20s hosts %3s blocks" % (rse, nbFORrse)
+            msg = " %20s hosts %3s blocks" % (rse, nbFORrse[rse])
             if rse in blackListedSites:
                 msg += "  *SITE BLACKLISTED IN CRAB*"
             self.logger.info(msg)
