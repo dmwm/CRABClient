@@ -104,8 +104,13 @@ class checkdataset(SubCommand):
             self.logger.info("Input is a DBS-block (Rucio-dataset) will check that one")
             blocks = [name]
         else:
-            dss = self.rucio.list_content(scope=scope, name=name)
-            blocks = [ds['name'] for ds in dss]
+            from rucio.common.exception import DataIdentifierNotFound
+            try:
+                dss = self.rucio.list_content(scope=scope, name=name)
+                blocks = [ds['name'] for ds in dss]
+            except DataIdentifierNotFound:
+                self.logger.error('Dataset not found in Rucio')
+                blocks = []
             self.logger.info("dataset has %d blocks", len(blocks))
 
         return containerScope, containerName, blocks
