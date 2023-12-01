@@ -270,6 +270,7 @@ class SubCommand(ConfigCommand):
 
         # Parse the command options/arguments.
         cmdargs = cmdargs or []
+        self.cmdargs = cmdargs
         (self.options, self.args) = self.parser.parse_args(cmdargs)
 
         self.transferringIds = None
