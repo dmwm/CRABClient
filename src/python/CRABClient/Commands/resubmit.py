@@ -156,7 +156,8 @@ class resubmit(SubCommand):
                     msg = "Not possible to resubmit the following jobs:\n%s\n" % notPossibleAndWantedJobIds
                     msg += "Only jobs in status %s can be resubmitted. " % failedJobStatus
                     msg += "Jobs in status %s can also be resubmitted, " % finishedJobStatus
-                    msg += "but only if the jobid is specified and the force option is set."
+                    msg += "but only if the jobid is specified and the force option is set. "
+                    msg += "Successful jobs can only be resubmitted before the task is COMPLETED"
                     raise ConfigurationException(msg)
             return self.jobids
         else:
@@ -248,7 +249,8 @@ class resubmit(SubCommand):
                                dest='force',
                                default=False,
                                action='store_true',
-                               help="Force resubmission of successful jobs indicated in --jobids option.")
+                               help="Force resubmission of successful jobs indicated in --jobids option." +
+                               " Only works if task is not in COMPLETED status")
 
         self.parser.add_option('--publication',
                                dest='publication',
