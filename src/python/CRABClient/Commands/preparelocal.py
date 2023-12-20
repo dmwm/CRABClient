@@ -164,9 +164,11 @@ else
     export CRAB_TASKMANAGER_TARBALL=local
     export CRAB3_RUNTIME_DEBUG=True
 fi
-export _CONDOR_JOB_AD=Job.${1}.submit
 tar xzmf CMSRunAnalysis.tar.gz
-cp Job.submit Job.${1}.submit
+# 
+export _CONDOR_JOB_AD=Job.${1}.submit
+# leading '+' signs must be removed to use JDL as classAd file
+sed -e 's/^+//' Job.submit > Job.${1}.submit
 """
         if self.options.enableStageout:
             self.logger.debug("Creating jobsubmit fixup files")
