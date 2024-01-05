@@ -10,6 +10,10 @@ CMSSW_Serie=$(echo $CMSSW_VERSION | cut -d_ -f3)  # e.g. from CMSSW_10_6_x this 
 [ $CMSSW_Major -gt 10 ] && python_cmd="python3"
 [ $CMSSW_Major -eq 10 ] && [ $CMSSW_Serie -ge 2 ] && python_cmd="python3"
 
+# but for crab submit, need to stick with same python as cmsRun, to allow
+# proper processing of config files and proper PSet.pkl
+[ $CMSSW_Major -le 12 ] &&  [ X$1 == Xsubmit ] && python_cmd="python"
+
 if [ $python_cmd = "python3" ] ; then
   # can also include Rucio client (we do not want to deal with old python2 client)
   RUCIO_ENV=`${script_dir}/rucio_env.sh`
