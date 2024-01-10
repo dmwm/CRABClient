@@ -52,21 +52,25 @@ class checkfile(SubCommand):
             self.logger.info(msg)
 
         self.logger.info("looking up LFN in DBS %s", self.dbsInstance)
-        found = self.checkFileInDBS()
+        found, validInDBS = self.checkFileInDBS()
         if not found:
             self.logger.error('LFN not found in DBS')
-            return {'commandStatus': 'FAILED'}
+            return {'commandStatus': 'SUCCESS'}
 
         if not self.rucio:
             self.logger.warning('Rucio client not available with CMSSW<10\n No more checks possible')
             return {'commandStatus': 'SUCCESS'}
-        # following code is only executed in python3, can use f-string etc.
+
         self.logger.info("Check information in Rucio")
         status, msg = self.checkFileInRucio()
         if not status:
-            self.logger.error('LFN not found in Rucio or otherwise not properly stored in Rucio')
+            self.logger.error('LFN not found or otherwise not properly stored in Rucio')
             self.logger.error('Details: %s', msg)
-            return {'commandStatus': 'FAILED'}
+            if validInDBS:
+                self.logger.error("ERROR: most likely file was deleted but non invalidated in DBS")
+            else:
+                self.logger.info("This is consistente with INVALID in DBS")
+        return {'commandStatus': 'SUCCESS'}
 
         # so far so good, find Replicas and check size of the disk ones
 
@@ -95,6 +99,7 @@ class checkfile(SubCommand):
             self.logger.info(msg)
             return {'commandStatus': 'SUCCESS'}
 
+        # reach here if user asked to check replica's checksum
         if rseWithSizeOK:
             self.logger.info("\nCheck Adler32 checksum (%s) for each disk replica", self.fileToCheck['adler32'])
         for rse in rseWithSizeOK:
@@ -120,10 +125,10 @@ class checkfile(SubCommand):
         self.logger.debug('exitcode= %s', rc)
         if rc != 200:  # this is HTTP code. 200=OK
             self.logger.error("Error trying to talk with DBS:\n%s", msg)
-            return False
+            return False, False
         if not fs:
             self.logger.error("ERROR: LFN %s not found in DBS", self.lfn)
-            return False
+            return False, False
         fileStatus = 'VALID' if fs[0]['is_file_valid'] else 'INVALID'
         self.logger.info("  file status in DBS is %s", fileStatus)
         dbsDataset = fs[0]['dataset']
@@ -133,7 +138,7 @@ class checkfile(SubCommand):
         self.fileToCheck['block'] = block
         self.fileToCheck['dataset'] = dbsDataset
 
-        return True
+        return True, fileStatus == 'VALID'
 
     def checkFileInRucio(self):
         """
@@ -158,7 +163,6 @@ class checkfile(SubCommand):
             lfnAdler32 = did['adler32']
         except DataIdentifierNotFound:
             msg = "LFN not found in Rucio"
-            msg += "\nERROR: most likely file was deleted but non invalidated in DBS"
             return False, msg
 
         self.logger.debug('LFN found in Rucio')
