@@ -122,7 +122,7 @@ class checkdataset(SubCommand):
             query = {'dataset': datasetName}
         fs, rc, msg = dbsReader.get(uri='filesummaries', data=urlencode(query))
         byteSize = fs[0]['file_size']
-        gBytes = byteSize / 1000. / 1000.
+        gBytes = byteSize / 1000. / 1000. / 1000.
         if gBytes > 10000:
             size = "%1.f TB" % (gBytes / 1000.)
         else:
