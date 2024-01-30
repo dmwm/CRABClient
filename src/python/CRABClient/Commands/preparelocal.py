@@ -126,17 +126,57 @@ class preparelocal(SubCommand):
             raise ClientException('Failed to execute local test run:\n StdOut: %s\n StdErr: %s' % (out, err))
 
     def prepareDir(self, inputArgs, targetDir):
-        """ Prepare a directry with just the necessary files:
+        """ Prepare a directory with just the necessary files:
         """
 
         self.logger.debug("Creating InputArgs.txt file")
-        inputArgsStr = "-a %(CRAB_Archive)s --sourceURL=%(CRAB_ISB)s --jobNumber=%(CRAB_Id)s --cmsswVersion=%(CRAB_JobSW)s --scramArch=%(CRAB_JobArch)s --inputFile=%(inputFiles)s --runAndLumis=%(runAndLumiMask)s --lheInputFiles=%(lheInputFiles)s --firstEvent=%(firstEvent)s --firstLumi=%(firstLumi)s --lastEvent=%(lastEvent)s --firstRun=%(firstRun)s --seeding=%(seeding)s --scriptExe=%(scriptExe)s --eventsPerLumi=%(eventsPerLumi)s --maxRuntime=%(maxRuntime)s --scriptArgs=%(scriptArgs)s -o %(CRAB_AdditionalOutputFiles)s\n"
+        # NEW: change to have one json file for each job with the argument for CMSRunAnalysis.py
+        #      then run_job.sh passes it as only argument to CMSRunAnalysis.sh
+        #      keys in that json must have same name as destination attributes for options defined
+        #      in CMSRunAnalysis.py's parser. We take care here of renaming
+        # KEEP also old code for backward compatibility with tasks created with previous TaskWorker version
+        # but may also be useful for local submission https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRABPrepareLocal
+        inputArgsStr = ("-a %(CRAB_Archive)s --sourceURL=%(CRAB_ISB)s"
+                        " --jobNumber=%(CRAB_Id)s --cmsswVersion=%(CRAB_JobSW)s --scramArch=%(CRAB_JobArch)s"
+                        " --inputFile=%(inputFiles)s --runAndLumis=%(runAndLumiMask)s"
+                        "--lheInputFiles=%(lheInputFiles)s"
+                        " --firstEvent=%(firstEvent)s --firstLumi=%(firstLumi)s"
+                        " --lastEvent=%(lastEvent)s --firstRun=%(firstRun)s "
+                        "--seeding=%(seeding)s --scriptExe=%(scriptExe)s "
+                        "--eventsPerLumi=%(eventsPerLumi)s --maxRuntime=%(maxRuntime)s"
+                        " --scriptArgs=%(scriptArgs)s -o %(CRAB_AdditionalOutputFiles)s\n")
+        # remap key in input_args.json to the argument names required by CMSRunAnalysis.py
+        # use as : value_of_argument_name = inputArgs[argMap[argument_name]]
+        argMap = {
+            'archiveJob': 'CRAB_Archive', 'outFiles': 'CRAB_AdditionalOutputFiles',
+            'sourceURL': 'CRAB_ISB', 'cmsswVersion': 'CRAB_JobSW',
+            'scramArch': 'CRAB_JobArch', 'runAndLumis': 'runAndLumiMask',
+            'inputFile' : 'inputFiles', 'lheInputFiles': 'lheInputFiles',
+            # the ones below are not changed
+            'firstEvent': 'firstEvent', 'firstLumi': 'firstLumi', 'lastEvent': 'lastEvent',
+            'firstRun': 'firstRun', 'seeding': 'seeding', 'scriptExe': 'scriptExe',
+            'scriptArgs': 'scriptArgs', 'eventsPerLumi': 'eventsPerLumi', 'maxRuntime': 'maxRuntime'
+        }
+
+        # create one JSON argument file for each jobId
+        jId = 0
+        for jobArgs in inputArgs:
+            jId +=1
+            inputArgsForScript = {}
+            for key, value in argMap.items():
+                inputArgsForScript[key] = jobArgs[value]
+            inputArgsForScript['jobNumber'] = jId
+            with open("%s/JobArgs-%s.json" % (targetDir, jId), 'w') as fh:
+                json.dump(inputArgsForScript, fh)
+
         for f in ["gWMS-CMSRunAnalysis.sh", "CMSRunAnalysis.sh", "cmscp.py", "CMSRunAnalysis.tar.gz",
                   "sandbox.tar.gz", "run_and_lumis.tar.gz", "input_files.tar.gz", "Job.submit",
                   "submit_env.sh"
                   ]:
             shutil.copy2(f, targetDir)
 
+        # this InputArgs.txt is for backward compatibility with old TW
+        # but may also be useful for local submission https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRABPrepareLocal
         with open(os.path.join(targetDir, "InputArgs.txt"), "w") as fd:
             for ia in inputArgs:
                 fd.write(inputArgsStr % ia)
@@ -149,21 +189,8 @@ class preparelocal(SubCommand):
         #The "tar xzmf CMSRunAnalysis.tar.gz" is needed because in CRAB3_RUNTIME_DEBUG mode the file is not unpacked (why?)
         #Job.submit is also modified to set some things that are condor macro expanded during submission (needed by cmscp)
         bashWrapper = """#!/bin/bash
-if [ -f ./submit_env.sh ]; then
-    # (dario, 202212)
-    # this if/else has been introduced only for backwards compatibility of the crab client
-    # with the old TW with the old jobwrapper.
-    # once the new TW with the new jobwrapper is deployed, we can remove this
-    # if/else and keep only the code inside the "if" clause.
-    . ./submit_env.sh && save_env && setup_local_env
-else
-    # this code in the "else" clause can be discarded after we merge the new
-    # TW with the new jobwrapper.
-    export SCRAM_ARCH=slc6_amd64_gcc481
-    export CRAB_RUNTIME_TARBALL=local
-    export CRAB_TASKMANAGER_TARBALL=local
-    export CRAB3_RUNTIME_DEBUG=True
-fi
+
+. ./submit_env.sh && save_env && setup_local_env
 tar xzmf CMSRunAnalysis.tar.gz
 # 
 export _CONDOR_JOB_AD=Job.${1}.submit
@@ -194,10 +221,11 @@ cat jobsubmit_fixups/job${1} >> Job.${1}.submit
 """ % self.destination
             bashWrapper += './gWMS-CMSRunAnalysis.sh `sed "${1}q;d" InputArgs.txt`'
         else:
-            bashWrapper += './CMSRunAnalysis.sh `sed "${1}q;d" InputArgs.txt`'
+            bashWrapper += '\n./CMSRunAnalysis.sh --json JobArgs-${1}.json'
             #bashWrapper += "echo 'CRAB_TransferOutputs = 0' >> Job.${1}.submit\n"
             #bashWrapper += "echo 'CRAB_SaveLogsFlag = 0' >> Job.${1}.submit\n"
 
+        bashWrapper += "\n"  # add new-line at edn of file for easy-to-read
 
         with open(os.path.join(targetDir, "run_job.sh"), "w") as fd:
             fd.write(bashWrapper)

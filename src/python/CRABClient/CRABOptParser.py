@@ -106,4 +106,6 @@ class CRABCmdOptParser(OptionParser):
             self.add_option("--instance",
                                    dest = "instance",
                                    type = "string",
-                                   help = "Running instance of CRAB service. Valid values are %s." % str(SERVICE_INSTANCES.keys()))
+                                   help = "Running instance of CRAB service." \
+                                          " Needed whenever --task is used." \
+                                          " Valid values are %s." % str(SERVICE_INSTANCES.keys()))
