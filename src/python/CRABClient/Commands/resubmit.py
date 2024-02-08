@@ -256,7 +256,7 @@ class resubmit(SubCommand):
                                dest='publication',
                                default=False,
                                action='store_true',
-                               help="Resubmit only the failed publications.")
+                               help="Resubmit only the failed publications (no jobs).")
 
 
     def validateOptions(self):
