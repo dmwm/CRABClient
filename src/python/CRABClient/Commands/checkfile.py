@@ -133,8 +133,21 @@ class checkfile(SubCommand):
         self.logger.info("  file status in DBS is %s", fileStatus)
         dbsDataset = fs[0]['dataset']
         block = fs[0]['block_name']
+        query = {'dataset' : dbsDataset, 'dataset_access_type': '*', 'detail': True}
+        ds, rc, msg = dbsReader.get(uri="datasets", data=urlencode(query))
+        self.logger.debug('exitcode= %s', rc)
+        if rc != 200:  # this is HTTP code. 200=OK
+            self.logger.info("Error trying to talk with DBS:\n%s", msg)
+        if not ds:
+            self.logger.error("ERROR: DATASET %s not found in DBS", dbsDataset)
+            return False, fileStatus == 'VALID'
+        datasetStatus = ds[0]['dataset_access_type']
         self.logger.info("  file belongs to:\n    dataset: %s", dbsDataset)
         self.logger.info("    block:   %s", block)
+        msg = "    dataset is :   %s" % datasetStatus
+        if datasetStatus != 'VALID':
+            msg += "  - **WARNING** this file may not exist ot be otherwise unusable"
+        self.logger.info(msg)
         self.fileToCheck['block'] = block
         self.fileToCheck['dataset'] = dbsDataset
 
