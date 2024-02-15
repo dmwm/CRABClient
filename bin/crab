@@ -23,4 +23,8 @@ if [ $python_cmd = "python3" ] ; then
   export PYTHONPATH=$RUCIO_PYTHONPATH:$PYTHONPATH
 fi
 
+# avoid pythonpath contamination  by user .local files
+export PYTHONNOUSERSITE=true
+
+# finally run crab client
 exec ${python_cmd} ${script_dir}/crab.py ${1+"$@"}
