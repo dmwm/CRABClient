@@ -70,7 +70,7 @@ class checkfile(SubCommand):
                 self.logger.error("ERROR: most likely file was deleted but non invalidated in DBS")
             else:
                 self.logger.info("This is consistente with INVALID in DBS")
-        return {'commandStatus': 'SUCCESS'}
+            return {'commandStatus': 'SUCCESS'}
 
         # so far so good, find Replicas and check size of the disk ones
 
