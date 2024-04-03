@@ -87,12 +87,15 @@ def calculateChecksum(tarfile_, exclude=None):
     return checksum
 
 
-def excludeGit(tarinfo):
+def excludeFromTar(tarinfo):
     """
-    exclude .git subdirectory when creating archives
-    https://github.com/dmwm/CRABClient/issues/5202
+    some files or directories should never go in the sandbox
+       .git subdirectory https://github.com/dmwm/CRABClient/issues/5202
+       scram pre-built objects used since CMSSW_13 https://github.com/dmwm/CRABClient/issues/5300
     """
     if '.git' in tarinfo.name:
+        return None
+    if 'objs-base' in tarinfo.name or 'objs-full' in tarinfo.name:
         return None
     return tarinfo
 
@@ -140,7 +143,7 @@ class UserTarball(object):
             if os.path.exists(fullPath):
                 self.logger.debug("Adding directory %s to tarball" % fullPath)
                 self.checkdirectory(fullPath)
-                self.tarfile.add(fullPath, directory, recursive=True, filter=excludeGit)
+                self.tarfile.add(fullPath, directory, recursive=True, filter=excludeFromTar)
 
         # Recursively search for and add to tar some directories in $CMSSW_BASE/src/
         # Note that recursiveDirs are **only** looked-for under the $CMSSW_BASE/src/ folder!
@@ -160,7 +163,7 @@ class UserTarball(object):
                 directory = root.replace(srcPath, 'src')
                 self.logger.debug("Adding directory %s to tarball" % root)
                 self.checkdirectory(root)
-                self.tarfile.add(root, directory, recursive=True, filter=excludeGit)
+                self.tarfile.add(root, directory, recursive=True, filter=excludeFromTar)
 
         # Tar up extra files the user needs
         userFiles = userFiles or []
@@ -171,7 +174,7 @@ class UserTarball(object):
             for filename in fileNames:
                 self.logger.debug("Adding file %s to tarball" % filename)
                 self.checkdirectory(filename)
-                self.tarfile.add(filename, os.path.basename(filename), recursive=True, filter=excludeGit)
+                self.tarfile.add(filename, os.path.basename(filename), recursive=True, filter=excludeFromTar)
 
         scriptExe = getattr(self.config.JobType, 'scriptExe', None)
         if scriptExe:
