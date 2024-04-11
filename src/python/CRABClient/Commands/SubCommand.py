@@ -384,11 +384,17 @@ class SubCommand(ConfigCommand):
         if self.cmdconf['requiresRucio']:
             if os.environ.get('RUCIO_HOME', None):
                 username = getUsername(self.proxyfilename, logger=self.logger)
-                from rucio.client import Client
-                os.environ['RUCIO_ACCOUNT'] = username
-                self.rucio = Client()
-                me = self.rucio.whoami()
-                self.logger.info('Rucio client intialized for account %s' % me['account'])
+                try:
+                    from rucio.client import Client
+                    from rucio.common.exception import RucioException
+                    os.environ['RUCIO_ACCOUNT'] = username
+                    self.rucio = Client()
+                    me = self.rucio.whoami()
+                    self.logger.info('Rucio client intialized for account %s' % me['account'])
+                except RucioException as ex:
+                    self.logger.info('Rucio client could not be intialized, some funcionalities may not work')
+                    self.logger.debug('Rucio exception message: %s', ex)
+                    self.Rucio = None
             else:
                 self.rucio = None
 
