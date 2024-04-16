@@ -167,7 +167,10 @@ class MyProxy(object):
             return 0, ''
         olines = stdout.rstrip().split('\n')
         trustedRetrievalPolicy = olines[-2]
-        trustedRetrievers = trustedRetrievalPolicy.split(':')[1].strip()
+        # allow for ':' in the trustedRetrievers DN's (as for robot cert !)
+        # by taking everything after the first ':' in myproxy-info output
+        # split(':', maxsplit=1) would be more clear, but it is not allowed in python2
+        trustedRetrievers = trustedRetrievalPolicy.split(':', 1)[1].strip()
         times = olines[-1].split(':')
         hours = int(times[1])
         mins = int(times[2])
