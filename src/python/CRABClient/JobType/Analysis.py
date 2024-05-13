@@ -288,13 +288,6 @@ class Analysis(BasicJobType):
         if not valid:
             return valid, reason
 
-        ## Make sure only one of the two parameters Data.inputDataset and Data.userInputFiles
-        ## was specified.
-        if getattr(config.Data, 'inputDataset', None) and getattr(config.Data, 'userInputFiles', None):
-            msg  = "Invalid CRAB configuration: Analysis job type accepts either an input dataset or a set of user input files to run on, but not both."
-            msg += "\nSuggestion: Specify only one of the two parameters, Data.inputDataset or Data.userInputFiles, but not both."
-            return False, msg
-
         ## Make sure at least one of the two parameters Data.inputDataset and Data.userInputFiles
         ## was specified.
         if not getattr(config.Data, 'inputDataset', None) and not getattr(config.Data, 'userInputFiles', None):
