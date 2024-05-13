@@ -296,12 +296,13 @@ class remote_copy(SubCommand):
 
             logger.debug("Finish executing for file %s" % fileid)
 
-            if returncode != 0 or len(error) > 0:
+            if returncode != 0:
                 logger.info("%sWarning%s: Failed retrieving %s" % (colors.RED, colors.NORMAL, fileid))
                 #logger.debug(colors.RED +"Stderr: %s " %stderr+ colors.NORMAL)
-                for x in error:
-                    logger.info(colors.RED +"\t %s" % x + colors.NORMAL)
-                failedfiles[fileid] = str(error)
+                if len(error) > 0:
+                    for x in error:
+                        logger.info(colors.RED +"\t %s" % x + colors.NORMAL)
+                    failedfiles[fileid] = str(error)
                 logger.debug("Full stderr follows:\n%s" % stderr)
 
                 if "timed out" in stderr or "timed out" in stdout:
