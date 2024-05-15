@@ -1,9 +1,19 @@
 """
 
-how to use:
+This script is used to generate the file etc/crab-bash-completion.sh
+automatically from crab client code, without the need to manually edit it.
+The current crab client build process uses etc/crab-bash-completion.sh
+directly.
+
+When you change the interface of crab client, for example adding a new command
+or adding a new parameter to an existing command, you should run this script 
+with:
 
 > cd CRABClient
-> python3 scripts/generate_completions.py -o etc/crab-bash-completion.sh
+> python3 scripts/generate_completions.py
+
+This script will generate a new version of etc/crab-bash-completion.sh
+that will be used by the crab client build process.
 
 Known limitations:
 
