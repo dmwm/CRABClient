@@ -34,8 +34,6 @@ from CRABClient.ClientMapping import commandsConfiguration
 
 logging.basicConfig(level=logging.INFO)
 
-import argparse
-
 template = """
 _UseCrab ()
 {{
@@ -119,7 +117,6 @@ def main():
     spec.loader.exec_module(crab)
 
     client = crab.CRABClient()
-    logger = DummyLogger()
 
     longnames = []
     commands = {}
@@ -129,7 +126,7 @@ def main():
         options.append(opt.get_opt_string())
         options += opt._short_opts
 
-    for k, v in client.subCommands.items():
+    for _, v in client.subCommands.items():
         class DummyCmd(v):
             def __init__(self):
                 self.parser = CRABCmdOptParser(v.name, '', False)
@@ -177,7 +174,7 @@ def main():
     longnames = [l_w[0] for l_w in longnames_w]
     logging.info(longnames)
 
-    with open(p_args.output_file, "w") as f_:
+    with open(p_args.output_file, "w", encoding="utf-8") as f_:
         f_.write(template.format(
             topcommands=' '.join(longnames),
             topoptions=' '.join(options),
