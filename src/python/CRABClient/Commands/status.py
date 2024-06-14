@@ -83,26 +83,12 @@ class status(SubCommand):
         self.logger.debug("The CRAB server submitted your task to the Grid scheduler (cluster ID: %s)" % rootDagId)
 
         if not webdir:
-            # Query condor through the server for information about this task
-            params = {'subresource':'taskads', 'workflow':taskname}
-            res = server.get(api='workflow', data=params)[0]['result'][0]
-            # JobStatus 5 = Held
-            if res['JobStatus'] == '5' and 'DagmanHoldReason' in res:
-                # If we didn't find a webdir in the DB and the DAG is held,
-                # the task bootstrapping failed before or during the webdir
-                # upload and the reason should be printed.
-                failureMsg = "The task failed to bootstrap on the Grid scheduler. Crab resubmit will not work."
-                failureMsg += " Please send an e-mail to %s." % (FEEDBACKMAIL)
-                failureMsg += "\nHold reason: %s" % (res['DagmanHoldReason'])
-                self.logger.info(failureMsg)
-                combinedStatus = "FAILED"
-            else:
-                # if the dag is submitted and the webdir is not there we have to wait that AdjustSites run
-                # and upload the webdir location to the server
-                self.logger.info("Waiting for the Grid scheduler to bootstrap your task")
-                failureMsg = "Schedd has not reported back the webdir (yet)"
-                self.logger.debug(failureMsg)
-                combinedStatus = "UNKNOWN"
+            # if the dag is submitted and the webdir is not there we have to wait that AdjustSites runs
+            # and uploads the webdir location to the server
+            self.logger.info("Waiting for the Grid scheduler to bootstrap your task")
+            failureMsg = "Schedd has not reported back the webdir (yet)"
+            self.logger.debug(failureMsg)
+            combinedStatus = "UNKNOWN"
             return self.makeStatusReturnDict(crabDBInfo, combinedStatus, statusFailureMsg=failureMsg)
 
         self.logger.debug("Webdir is located at %s", webdir)
