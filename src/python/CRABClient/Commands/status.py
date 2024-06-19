@@ -82,6 +82,15 @@ class status(SubCommand):
 
         self.logger.debug("The CRAB server submitted your task to the Grid scheduler (cluster ID: %s)" % rootDagId)
 
+        if not webdir:
+            # if the dag is submitted and the webdir is not there we have to wait that AdjustSites runs
+            # and uploads the webdir location to the server
+            self.logger.info("Waiting for the Grid scheduler to bootstrap your task")
+            failureMsg = "Schedd has not reported back the webdir (yet)"
+            self.logger.debug(failureMsg)
+            combinedStatus = "UNKNOWN"
+            return self.makeStatusReturnDict(crabDBInfo, combinedStatus, statusFailureMsg=failureMsg)
+
         self.logger.debug("Webdir is located at %s", webdir)
 
         proxiedWebDir = getProxiedWebDir(crabserver=self.crabserver, task=taskname, logFunction=self.logger.debug)
