@@ -77,8 +77,8 @@ class ScramEnvironment(dict):
             self["CMSSW_VERSION"]     = None
 #            self.cmsswReleaseBase = None
 #            self.localRT          = None
-            msg = "Please make sure you have setup the CMS enviroment (cmsenv). Cannot find %s in your env" % str(ke)
-            msg += "\nPlease refer to https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookCRAB3Tutorial#CMS_environment for how to setup the CMS enviroment."
+            msg = "Please make sure you have setup the CMS environment (cmsenv). Cannot find %s in your env" % str(ke)
+            msg += "\nPlease refer to https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookCRAB3Tutorial#Setup_the_environment for how to setup the CMS environment."
             raise EnvironmentException(msg)
 
 

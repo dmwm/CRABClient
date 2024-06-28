@@ -139,7 +139,7 @@ class CMSSWTest(unittest.TestCase):
 
     def testValidateConfig(self):
         """
-        Validate config, done as part of the constuctor
+        Validate config, done as part of the constructor
         """
         origConfig = copy.deepcopy(testWMConfig)
 

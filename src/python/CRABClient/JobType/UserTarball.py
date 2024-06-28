@@ -293,7 +293,7 @@ class UserTarball(object):
                    (colors.RED, colors.NORMAL, archiveSize, FILE_SIZE_LIMIT//1024//1024))
             msg += "\nlargest 5 files are:"
             msg += self.printSortedContent(maxLines=5)
-            msg += "\nsee crab.log file for full list of tarball contetnt"
+            msg += "\nsee crab.log file for full list of tarball content"
             fullList = self.printSortedContent()
             self.logger.debug(fullList)
             raise SandboxTooBigException(msg)
