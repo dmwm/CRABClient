@@ -205,12 +205,12 @@ def uploadlogfile(logger, proxyfilename, taskname=None, logfilename=None, logpat
     if logfilename == None:
         logfilename = str(time.strftime("%Y-%m-%d_%H%M%S"))+'_crab.log'
 
-    logger.info('Fetching user enviroment to log file')
+    logger.info('Fetching user environment to log file')
 
     try:
         logger.debug('Running env command')
         stdout, _, _ = execute_command(command='env')
-        logger.debug('\n\n\nUSER ENVIROMENT\n%s' % stdout)
+        logger.debug('\n\n\nUSER ENVIRONMENT\n%s' % stdout)
     except Exception as se:
         logger.debug('Failed to get the user env\nException message: %s' % (se))
 
@@ -554,7 +554,7 @@ def getUsernameFromCRIC(proxyFileName=None):
         msg += "\n    Parsed username: %s" % (username)
         msg += "\n%sNote%s: Make sure you have the correct certificate mapped in your CERN account page" % (colors.BOLD, colors.NORMAL)
         msg += " (you can check what is the certificate you currently have mapped"
-        msg += " by looking at CERN Certificatiom Authority page."
+        msg += " by looking at CERN Certification Authority page."
         msg += "\nFor instructions on how to map a certificate, see "
         msg += "\n  https://twiki.cern.ch/twiki/bin/view/CMSPublic/UsernameForCRAB#Adding_your_DN_to_your_profile"
         raise UsernameException(msg)

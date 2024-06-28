@@ -46,8 +46,8 @@ class checkfile(SubCommand):
         self.checkChecksum = self.options.checkChecksum
 
         if self.checkChecksum:
-            msg = "Beware, several GB of disk space on /tmp are needed for checking replica cheksum(s)"
-            msg += "\nIf you do not have them, create the TMPDIR enviromental variable"
+            msg = "Beware, several GB of disk space on /tmp are needed for checking replica checksum(s)"
+            msg += "\nIf you do not have them, create the TMPDIR environmental variable"
             msg += "\nand point it to an existing directory of your choice\n"
             self.logger.info(msg)
 
@@ -69,7 +69,7 @@ class checkfile(SubCommand):
             if validInDBS:
                 self.logger.error("ERROR: most likely file was deleted but non invalidated in DBS")
             else:
-                self.logger.info("This is consistente with INVALID in DBS")
+                self.logger.info("This is consistent with INVALID in DBS")
             return {'commandStatus': 'SUCCESS'}
 
         # so far so good, find Replicas and check size of the disk ones
