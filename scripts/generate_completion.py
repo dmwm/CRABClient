@@ -34,6 +34,13 @@ from CRABClient.ClientMapping import commandsConfiguration
 
 logging.basicConfig(level=logging.INFO)
 
+######################################################
+# Make sure that 'complete` command in template below meet following rules
+# - Starts with: complete\s+-F\s+<crab-function-name>\s+
+# - Ends with: \s+crab
+#  Otherwise suggest changes in crab-build.file in cms-sw/cmsdist repository
+#####################################################
+
 template = """
 _UseCrab ()
 {{
