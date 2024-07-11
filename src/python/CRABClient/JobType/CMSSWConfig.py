@@ -277,6 +277,7 @@ class CMSSWConfig(object):
             msg = "The only accepted type for process.options.numberOfThreads is uint32. Please, change its type in the PSet."
             msg += "See https://github.com/cms-sw/cmssw/issues/32070 for details"
             return False, msg
+        numPSetCores = numPSetCores.value()  # convert to python native type (int) #5323
         if (cfgNumCores or 1) != (numPSetCores or 1):
             if cfgNumCores == None:
                 msg = "You did not set config.JobType.numCores in the crab configuration file "
