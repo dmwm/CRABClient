@@ -23,13 +23,13 @@ _UseCrab ()
         "")
             case "$cur" in
             "")
-                COMPREPLY=( $(compgen -W '--version --help -h --quiet --debug status tasks submit proceed checkdataset checkfile checkusername checkwrite createmyproxy getlog getoutput getsandbox kill preparelocal recover remake report resubmit setdatasetstatus setfilestatus uploadlog' -- $cur) )
+                COMPREPLY=( $(compgen -W '--version --help -h --quiet --debug checkdataset checkfile checkusername checkwrite createmyproxy getlog getoutput getsandbox kill preparelocal proceed recover remake report resubmit setdatasetstatus setfilestatus status submit tasks uploadlog' -- $cur) )
                 ;;
             -*)
                 COMPREPLY=( $(compgen -W '--version --help -h --quiet --debug' -- $cur) )
                 ;;
             *)
-                COMPREPLY=( $(compgen -W 'status tasks submit proceed checkdataset checkfile checkusername checkwrite createmyproxy getlog getoutput getsandbox kill preparelocal recover remake report resubmit setdatasetstatus setfilestatus uploadlog' -- $cur) )
+                COMPREPLY=( $(compgen -W 'checkdataset checkfile checkusername checkwrite createmyproxy getlog getoutput getsandbox kill preparelocal proceed recover remake report resubmit setdatasetstatus setfilestatus status submit tasks uploadlog' -- $cur) )
                 ;;
             esac
             ;;
@@ -355,10 +355,10 @@ _UseCrab ()
             ;;
 
         *)
-            COMPREPLY=( $(compgen -W 'status tasks submit proceed checkdataset checkfile checkusername checkwrite createmyproxy getlog getoutput getsandbox kill preparelocal recover remake report resubmit setdatasetstatus setfilestatus uploadlog' -- $cur) )
+            COMPREPLY=( $(compgen -W 'checkdataset checkfile checkusername checkwrite createmyproxy getlog getoutput getsandbox kill preparelocal proceed recover remake report resubmit setdatasetstatus setfilestatus status submit tasks uploadlog' -- $cur) )
             ;;
     esac
 
     return 0
 }
-complete -F _UseCrab -o filenames -o nosort crab
+complete -F _UseCrab -o filenames crab
