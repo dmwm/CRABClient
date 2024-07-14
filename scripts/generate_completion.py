@@ -34,6 +34,13 @@ from CRABClient.ClientMapping import commandsConfiguration
 
 logging.basicConfig(level=logging.INFO)
 
+######################################################
+# Make sure that 'complete` command in template below meet following rules
+# - Starts with: complete\s+-F\s+<crab-function-name>\s+
+# - Ends with: \s+crab
+#  Otherwise suggest changes in crab-build.file in cms-sw/cmsdist repository
+#####################################################
+
 template = """
 _UseCrab ()
 {{
@@ -77,7 +84,7 @@ _UseCrab ()
 
     return 0
 }}
-complete -F _UseCrab -o filenames -o nosort crab
+complete -F _UseCrab -o filenames crab
 """
 
 template_cmd = """
@@ -155,23 +162,6 @@ def main():
                     cmdflags=' '.join(flags),
                     cmdoptions=' '.join(opts))
 
-
-    # sort the output of "crab <tab> <tab>"
-    # the higher the number the earlier a crab command is shown
-    weights = {
-        "status": 1000,
-        "tasks": 200,
-        "submit": 110,
-        "proceed": 100,
-    }
-    # current sorting as of 2024-05-14. Do we still want to keep this?
-    #checkwrite getlog checkusername checkdataset checkfile 
-    #submit getoutput resubmit kill uploadlog 
-    #remake report preparelocal createmyproxy setdatasetstatus setfilestatus
-
-    longnames_w = [(name, weights[name] if name in weights else 0) for name in longnames]
-    longnames_w = sorted(longnames_w, key=lambda x: x[1], reverse=True)
-    longnames = [l_w[0] for l_w in longnames_w]
     logging.info(longnames)
 
     with open(p_args.output_file, "w", encoding="utf-8") as f_:
