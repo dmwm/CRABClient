@@ -4,7 +4,7 @@ import shutil
 import tarfile
 import tempfile
 
-from ServerUtilities import getProxiedWebDir, getColumn
+from ServerUtilities import getProxiedWebDir, getColumn, downloadFromS3
 
 from CRABClient.UserUtilities import curlGetFileFromURL
 from CRABClient.ClientUtilities import execute_command
@@ -55,7 +55,9 @@ class preparelocal(SubCommand):
         return {'commandStatus': 'SUCCESS'}
 
     def getInputFiles(self):
-        """ Get the InputFiles.tar.gz and extract the necessary files
+        """
+        Get the InputFiles.tar.gz and extract the necessary files
+
         """
         taskname = self.cachedinfo['RequestName']
 
@@ -65,10 +67,19 @@ class preparelocal(SubCommand):
         crabDBInfo, _, _ = server.get(api='task', data={'subresource': 'search', 'workflow': taskname})
         status = getColumn(crabDBInfo, 'tm_task_status')
         self.destination = getColumn(crabDBInfo, 'tm_asyncdest')
+        username = getColumn(crabDBInfo, 'tm_username')
+        sandboxName = getColumn(crabDBInfo, 'tm_user_sandbox')
 
         inputsFilename = os.path.join(os.getcwd(), 'InputFiles.tar.gz')
+        sandboxFilename = os.path.join(os.getcwd(), 'sandbox.tar.gz')
         if status == 'UPLOADED':
-            raise ClientException('Currently crab upload only works for tasks successfully submitted')
+            downloadFromS3(crabserver=self.crabserver, filepath=inputsFilename,
+                           objecttype='runtimefiles', taskname=taskname, logger=self.logger)
+
+            downloadFromS3(crabserver=self.crabserver, filepath=sandboxFilename,
+                           objecttype='sandbox', logger=self.logger,
+                           tarballname=sandboxName, username=username)
+
         elif status == 'SUBMITTED':
             webdir = getProxiedWebDir(crabserver=self.crabserver, task=taskname,
                                       logFunction=self.logger.debug)
@@ -192,7 +203,7 @@ class preparelocal(SubCommand):
 
 . ./submit_env.sh && save_env && setup_local_env
 tar xzmf CMSRunAnalysis.tar.gz
-# 
+#
 export _CONDOR_JOB_AD=Job.${1}.submit
 # leading '+' signs must be removed to use JDL as classAd file
 sed -e 's/^+//' Job.submit > Job.${1}.submit

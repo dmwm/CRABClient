@@ -162,7 +162,8 @@ class submit(SubCommand):
             checkStatusLoop(self.logger, server, self.defaultApi, uniquerequestname, targetTaskStatus, self.name)
 
         if self.options.dryrun:
-            self.printDryRunResults(*self.executeTestRun(filecacheurl, uniquerequestname))
+            self.logger.info("Dry run, do nothing")
+            #self.printDryRunResults(*self.executeTestRun(filecacheurl, uniquerequestname))
 
         self.logger.debug("About to return")
 
