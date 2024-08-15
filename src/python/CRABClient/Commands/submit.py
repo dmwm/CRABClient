@@ -23,6 +23,7 @@ from CRABClient.ClientUtilities import getJobTypes, createCache, addPlugin, serv
     setSubmitParserOptions, validateSubmitOptions, checkStatusLoop, execute_command
 
 from ServerUtilities import MAX_MEMORY_PER_CORE, MAX_MEMORY_SINGLE_CORE, downloadFromS3, FEEDBACKMAIL
+from CRABClient.Commands.preparelocal import preparelocal as crabPreparelocal
 
 class submit(SubCommand):
     """
@@ -162,7 +163,8 @@ class submit(SubCommand):
             checkStatusLoop(self.logger, server, self.defaultApi, uniquerequestname, targetTaskStatus, self.name)
 
         if self.options.dryrun:
-            self.logger.info("Dry run, do nothing")
+            self.logger.info("Dry run")
+            self.runPrepareLocal(projDir)
             #self.printDryRunResults(*self.executeTestRun(filecacheurl, uniquerequestname))
 
         self.logger.debug("About to return")
@@ -172,6 +174,26 @@ class submit(SubCommand):
         returnDict['commandStatus'] = 'SUCCESS'
 
         return returnDict
+    def runPrepareLocal(self, projDir):
+        """
+        """
+        cmdargs = []
+        cmdargs.append("-d")
+        cmdargs.append(projDir)
+        cmdargs += ["--jobid", "1"]
+        if "instance" in self.options.__dict__.keys():
+            cmdargs.append("--instance")
+            cmdargs.append(self.options.__dict__["instance"])
+        if "proxy" in self.options.__dict__.keys():
+            cmdargs.append("--proxy")
+            cmdargs.append(self.options.__dict__["proxy"])
+
+        self.logger.debug("preparelocal, cmdargs: %s", cmdargs)
+        preparelocalCmd = crabPreparelocal(logger=self.logger, cmdargs=cmdargs)
+
+        retval = preparelocalCmd()
+
+        return retval
 
 
     def setOptions(self):

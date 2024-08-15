@@ -41,7 +41,8 @@ class preparelocal(SubCommand):
 
             if self.options.jobid:
                 self.logger.info("Executing job %s locally" % self.options.jobid)
-                self.executeTestRun(inputArgs, self.options.jobid)
+                self.prepareDir(inputArgs, self.options.destdir)
+                self.executeTestRunNew(self.options.destdir, self.options.jobid)
                 self.logger.info("Job execution terminated")
             else:
                 self.logger.info("Copying an preparing files for local execution in %s" % self.options.destdir)
@@ -96,6 +97,12 @@ class preparelocal(SubCommand):
         for name in [inputsFilename, 'CMSRunAnalysis.tar.gz', 'sandbox.tar.gz']:
             with tarfile.open(name) as tf:
                 tf.extractall()
+
+    def executeTestRunNew(self, destDir, jobnr):
+        os.chdir(destDir)
+        cmd = 'eval `scram unsetenv -sh`;'\
+              ' bash run_job.sh %s' % str(jobnr)
+        execute_command(cmd, logger=self.logger, live=True)
 
     def executeTestRun(self, inputArgs, jobnr):
         """ Execute a test run calling CMSRunAnalysis.sh

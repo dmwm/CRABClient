@@ -101,8 +101,8 @@ class recover(SubCommand):
 
     def stepExit(self, retval):
         """
-        Callback to be executed after every step executes. 
-        Handy if you want to add some logging before the crab recover exits, 
+        Callback to be executed after every step executes.
+        Handy if you want to add some logging before the crab recover exits,
         whatever step the recover fails at.
 
         Intended to be used as:
@@ -121,7 +121,7 @@ class recover(SubCommand):
         side effects: none
         """
         # self.options and self.args are automatically filled by the __init__()
-        # that recover inherits from SubCommand. 
+        # that recover inherits from SubCommand.
 
         self.logger.debug("stepInit() - self.cmdconf %s", self.cmdconf)
         self.logger.debug("stepInit() - self.cmdargs %s", self.cmdargs)
@@ -145,7 +145,7 @@ class recover(SubCommand):
         - splitting algorithms based on lumisections and files.
 
         side effects:
-        - if needed, create a new directory locally with requestcache for the 
+        - if needed, create a new directory locally with requestcache for the
           original failing task
 
         TODO an alternative would be to use calling other commands via the crabapi,
@@ -323,7 +323,7 @@ class recover(SubCommand):
 
         ---
 
-        jobsPerStatus can be: 
+        jobsPerStatus can be:
         - final: finished
         - final: failed
         - final: killed
@@ -331,7 +331,7 @@ class recover(SubCommand):
         - transient: running
         - transient: transferring
         - transient: cooloff
-        - transient: held TODO 
+        - transient: held TODO
           jobs should not go into held unless for systemPeriodicHold
           we are not sure if this will ever happen. In order to be safe and cautious,
           we consider this status as transiend and refuse task recovery.
@@ -369,7 +369,7 @@ class recover(SubCommand):
         self.logger.debug("stepCheckKill() - dagStatus %s", self.failingTaskStatus["dagStatus"])
         self.logger.debug("stepCheckKill() - dbStatus %s", self.failingTaskStatus["dbStatus"])
 
-        # check the task status. 
+        # check the task status.
         # it does not make sense to recover a task in COMPLETED
         if not self.failingTaskStatus["status"] in ("SUBMITTED", "FAILED", "FAILED (KILLED)"):
             msg = "In order to recover a task, the combined status of the task needs can not be {}".format(self.failingTaskStatus["status"])
@@ -470,9 +470,9 @@ class recover(SubCommand):
             publishedAllLumis = True
             for dataset, lumis in retval["outputDatasetsLumis"].items():
                 notPublishedLumis = BasicJobType.subtractLumis(retval["lumisToProcess"], lumis )
-                self.logger.debug("stepReport() - report, subtract: %s %s", 
+                self.logger.debug("stepReport() - report, subtract: %s %s",
                                 dataset, notPublishedLumis)
-                if notPublishedLumis: 
+                if notPublishedLumis:
                     publishedAllLumis = False
             if publishedAllLumis:
                 self.logger.info("stepReport() - all lumis have been published in the output dataset. crab recover will exit")
@@ -536,7 +536,7 @@ class recover(SubCommand):
         debug_sandbox.extractall(path=os.path.join(self.crabProjDir, "debug_sandbox"))
         debug_sandbox.close()
 
-        self.recoverconfig = os.path.join(self.crabProjDir, "debug_sandbox", 
+        self.recoverconfig = os.path.join(self.crabProjDir, "debug_sandbox",
                                           "debug" , "crabConfig.py")
 
         return {"commandStatus": "SUCCESS", }
@@ -545,7 +545,7 @@ class recover(SubCommand):
         """
         Submit a recovery task in the case that the original failing task
         - is of type Analysis
-        - used LumiBased splitting algorithm 
+        - used LumiBased splitting algorithm
 
         side effect:
         - submits a new task
@@ -596,7 +596,7 @@ class recover(SubCommand):
         """
         Submit a recovery task in the case that the original failing task
         - is of type Analysis
-        - used FileBased splitting algorithm 
+        - used FileBased splitting algorithm
 
         what's missing?
         - [ ] if the input is from DBS, then write info to runs_and_lumis.tar.gz
@@ -612,7 +612,7 @@ class recover(SubCommand):
 
         """
         # step: remake
-        # --dir, --cmptask, --instance already added elsewhere: 
+        # --dir, --cmptask, --instance already added elsewhere:
 
         # step: recovery
         self.parser.add_option("--strategy",
@@ -646,7 +646,7 @@ class recover(SubCommand):
             ex = MissingOptionException(msg)
             ex.missingOption = "cmptask"
             raise ex
-        elif self.options.projdir: 
+        elif self.options.projdir:
             self.cmdconf["requiresDirOption"] = True
         elif self.options.cmptask:
             regex = "^\d{6}_\d{6}_?([^\:]*)\:[a-zA-Z0-9-]+_(crab_)?.+"
@@ -655,28 +655,6 @@ class recover(SubCommand):
                 raise ConfigurationException(msg)
 
         SubCommand.validateOptions(self)
-
-class SubcommandExecution:
-    """
-    Context manager to silence logging when calling a subcommand.
-    """
-
-    def __init__(self, logger, commandname):
-        self.handlerLevels = []
-        self.logger = logger
-        self.commandname = commandname
-
-    def __enter__(self):
-        self.logger.debug("%s - handlers1: %s", self.commandname, self.logger.handlers)
-        for h in self.logger.handlers:
-            self.handlerLevels.append(h.level)
-            h.setLevel(LOGLEVEL_MUTE)
-
-    def __exit__(self, *exc):
-        for idx, h in enumerate(self.logger.handlers):
-            h.setLevel(self.handlerLevels[idx])
-        self.logger.debug("%s - handlers2: %s", self.commandname, self.handlerLevels)
-        self.logger.debug("%s - handlers3: %s", self.commandname, self.logger.handlers)
 
 def findServerInstance(serverurl, dbinstance):
     """
