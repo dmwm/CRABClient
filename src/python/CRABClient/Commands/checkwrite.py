@@ -259,6 +259,7 @@ exit(0)
             self.logger.info("You can use this site for Rucio-based ASO")
         elif quotaCheck['hasQuota'] and not quotaCheck['isEnough']:
             msg = "your available space is not enough to allow CRAB to submit jobs. Cleanup !!"
+            self.logger.error(msg)
             status = 'FAILED'
         else:
             msg = "You do not have any Rucio quota at site %s" % site
