@@ -143,7 +143,8 @@ class UserTarball(object):
             if os.path.exists(fullPath):
                 self.logger.debug("Adding directory %s to tarball" % fullPath)
                 self.checkdirectory(fullPath)
-                self.tarfile.add(fullPath, directory, recursive=True, filter=excludeFromTar)
+                archiveDir = os.path.join(self.scram.getCmsswVersion(), directory)
+                self.tarfile.add(fullPath, archiveDir, recursive=True, filter=excludeFromTar)
 
         # Recursively search for and add to tar some directories in $CMSSW_BASE/src/
         # Note that recursiveDirs are **only** looked-for under the $CMSSW_BASE/src/ folder!
@@ -163,7 +164,8 @@ class UserTarball(object):
                 directory = root.replace(srcPath, 'src')
                 self.logger.debug("Adding directory %s to tarball" % root)
                 self.checkdirectory(root)
-                self.tarfile.add(root, directory, recursive=True, filter=excludeFromTar)
+                archiveDir = os.path.join(self.scram.getCmsswVersion(), directory)
+                self.tarfile.add(root, archiveDir, recursive=True, filter=excludeFromTar)
 
         # Tar up extra files the user needs
         userFiles = userFiles or []
@@ -207,7 +209,8 @@ class UserTarball(object):
         execute_command(cmd, logger=self.logger)
         # use python tarfile to append, so can rename file inside the archive
         tar = tarfile.open(name=uncompressed, mode='a', dereference=False)
-        tar.add(name=venv, arcname='venv')
+        archiveDir = os.path.join(self.scram.getCmsswVersion(), 'venv')
+        tar.add(name=venv, arcname=archiveDir)
         tar.close()
         cmd = 'bzip2 ' + uncompressed  # compress, creates sandbox.tar.bz2
         cmd += "; mv %s %s" % (bzipped, tarFile)  # rename to sandbox.tgz
