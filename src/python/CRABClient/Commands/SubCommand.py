@@ -249,7 +249,12 @@ class SubCommand(ConfigCommand):
             except Exception as ex:  # pylint: disable=unused-variable
                 localOS = "Unknown Operating System"
         self.logger.debug("CRAB Client version: %s", __version__)
-        self.logger.debug("Running on: " + localSystem + " - " + localOS)
+        self.logger.debug("Running on: " + localSystem )
+        if 'SINGULARITY_NAME' in os.environ:
+            self.logger.debug("Using SINGULARITY image: " + os.environ['SINGULARITY_NAME'])
+        else:
+            self.logger.debug("Not using Singularity")
+        self.logger.debug("Operating System: " + localOS)
         self.logger.debug("Executing command: '%s'" % str(self.name))
 
         # Get the command configuration.
