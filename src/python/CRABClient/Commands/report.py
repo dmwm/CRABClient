@@ -187,7 +187,7 @@ class report(SubCommand):
             else:
                 notProcLumisCalcMethMsg += " minus the lumis published in the output dataset."
         elif self.options.recovery == 'failed':
-            for jobid, status in reportData['jobList']:
+            for status, jobid in reportData['jobList']:
                 if status in ['failed']:
                     for run, lumiRanges in lumisToProcessPerJob[jobid].items():
                         if run not in notProcessedLumis:
