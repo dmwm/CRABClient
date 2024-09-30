@@ -757,13 +757,13 @@ def checkStatusLoop(logger, server, api, taskname, targetstatus, cmdname):
             else:
                 logger.info("Please wait...")
                 time.sleep(30)
-        elif taskStatus in ['NEW', 'HOLDING', 'QUEUED', 'RESUBMIT']:
+        elif taskStatus in ['NEW', 'WAITING', 'HOLDING', 'QUEUED', 'RESUBMIT']:
             logger.info("Please wait...")
             time.sleep(30)
         else:
             continuecheck = False
             logger.info("Please check crab.log")
-            logger.debug("Task status other than SUBMITFAILED, RESUBMITFAILED, SUBMITTED, UPLOADED, NEW, HOLDING, QUEUED, RESUBMIT")
+            logger.debug("Task status other than SUBMITFAILED, RESUBMITFAILED, SUBMITTED, UPLOADED, WAITING, NEW, HOLDING, QUEUED, RESUBMIT")
         ## Break the loop if we were waiting already too much.
         if currenttime > endtime:
             continuecheck = False
