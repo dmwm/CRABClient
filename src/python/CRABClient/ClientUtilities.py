@@ -757,12 +757,9 @@ def checkStatusLoop(logger, server, api, taskname, targetstatus, cmdname):
             else:
                 logger.info("Please wait...")
                 time.sleep(30)
-        elif taskStatus in ['NEW', 'HOLDING', 'QUEUED', 'RESUBMIT']:
+        elif taskStatus in ['NEW', 'WAITING', 'HOLDING', 'QUEUED', 'RESUBMIT']:
             logger.info("Please wait...")
             time.sleep(30)
-        elif taskStatus in ['WAITING']:
-            logger.info("Your Task is WAITING to be scheduled. It will be assigned NEW status subsequently.")
-            time.sleep(10)
         else:
             continuecheck = False
             logger.info("Please check crab.log")
