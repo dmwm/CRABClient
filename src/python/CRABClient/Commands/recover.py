@@ -110,6 +110,7 @@ class recover(SubCommand):
         > retval = self.stepYYY()
         > if retval["commandStatus"] != "SUCCESS": return self.stepExit(retval)
         """
+        self.logger.info(retval['msg'])
         return retval
 
     def stepInit(self):
@@ -192,16 +193,19 @@ class recover(SubCommand):
 
         if not startTime >= (datetime.datetime.now() - datetime.timedelta(days=30)):
             msg = "The failing task was submitted more than 30d ago. We can not recover it."
+            self.logger.info(msg)
             return {"commandStatus": "FAILED", "step": "RemakeAndValidate" , "msg": msg }
 
         failingJobType = getColumn(self.failingCrabDBInfo, 'tm_job_type')
         if not failingJobType == "Analysis":
             msg = 'crab recover supports only tasks with JobType.pluginName=="Analysis", you  have {}'.format(failingJobType)
+            self.logger.info(msg)
             return {"commandStatus": "FAILED", "step": "RemakeAndValidate" , "msg": msg }
 
         splitalgo = getColumn(self.failingCrabDBInfo, 'tm_split_algo')
         if not splitalgo in SPLITTING_RECOVER_LUMIBASED.union(SPLITTING_RECOVER_FILEBASED):
             msg = 'crab recover supports only tasks with LumiBased and FileBased splitting, you have {}'.format(splitalgo)
+            self.logger.info(msg)
             return {"commandStatus": "FAILED", "step": "RemakeAndValidate" , "msg": msg }
 
         self.failingTaskInfo["splitalgo"] = splitalgo
@@ -372,7 +376,8 @@ class recover(SubCommand):
         # check the task status. 
         # it does not make sense to recover a task in COMPLETED
         if not self.failingTaskStatus["status"] in ("SUBMITTED", "FAILED", "FAILED (KILLED)"):
-            msg = "In order to recover a task, the combined status of the task needs can not be {}".format(self.failingTaskStatus["status"])
+            msg = "Tasks in status {} can not be recovered".format(self.failingTaskStatus["status"])
+            self.logger.info(msg)
             return {"commandStatus": "FAILED", "step": "checkKill" , "msg": msg }
 
         # the status on the db should be submitted or killed. or about to be killed
@@ -380,11 +385,13 @@ class recover(SubCommand):
             if not self.failingTaskStatus["command"] in ("KILL"):
                 msg = "In order to recover a task, when the status of the task in the oracle DB is {}, the task command can not be {}"\
                     .format(self.failingTaskStatus["dbStatus"], self.failingTaskStatus["command"])
+                self.logger.info(msg)
                 return {"commandStatus": "FAILED", "step": "checkKill" , "msg": msg }
         else:
             if not self.failingTaskStatus["dbStatus"] in ("SUBMITTED", "KILLED"):
                 msg = "In order to recover a task, the status of the task in the oracle DB can not be {}"\
                     .format(self.failingTaskStatus["dbStatus"])
+                self.logger.info(msg)
                 return {"commandStatus": "FAILED", "step": "checkKill" , "msg": msg }
 
         # make sure that the jobs ad publications are in a final state.
@@ -396,6 +403,7 @@ class recover(SubCommand):
         if not set(self.failingTaskStatus["jobsPerStatus"].keys()).issubset(terminalStates):
             msg = "In order to recover a task, all the jobs need to be in a terminal state ({}). You have {}"\
                 .format(terminalStates, self.failingTaskStatus["jobsPerStatus"].keys())
+            self.logger.info(msg)
             return {"commandStatus": "FAILED", "step": "checkKill" , "msg": msg }
 
         # - [x] make sure that there are no ongoing publications
@@ -404,15 +412,17 @@ class recover(SubCommand):
         if not set(self.failingTaskStatus["publication"].keys()).issubset(terminalStatesPub):
             msg = "In order to recover a task, publication for all the jobs need to be in a terminal state ({}). You have {}"\
                 .format(terminalStatesPub, self.failingTaskStatus["publication"].keys())
+            self.logger.info(msg)
             return {"commandStatus": "FAILED", "step": "checkKill" , "msg": msg }
 
         # - [x] if all jobs failed, then exit. it is better to submit again the task than using crab recover :)
         #       check that "failed" is the only key of the jobsPerStatus dictionary
         if set(self.failingTaskStatus["jobsPerStatus"].keys()) == set(("failed",)):
-            msg = "All the jobs of the original task failed. better submitting it again from scratch than recovering it."
+            msg = "All the jobs of the original task failed. Better investigate and submit it again than recover."
+            self.logger.info(msg)
             return {"commandStatus": "FAILED", "step": "checkKill" , "msg": msg }
 
-        return {"commandStatus": "SUCCESS", "checkkill": "task can be recovered"}
+        return {"commandStatus": "SUCCESS", "step": "checkKill", "msg": "task can be recovered"}
 
     def stepReport(self):
         """
@@ -493,7 +503,8 @@ class recover(SubCommand):
         if os.path.exists(recoverLumimaskPath):
             returnDict = {'commandStatus' : 'SUCCESS', 'recoverLumimaskPath': recoverLumimaskPath}
         else:
-            msg = 'the file {} does not exist. crab report could not produce it, the task can not be recovered'.format(recoverLumimaskPath)
+            msg = 'File {} does not exist. crab report could not produce it, the task can not be recovered'.format(recoverLumimaskPath)
+            self.logger.info(msg)
             returnDict = {'commandStatus' : 'FAILED', 'msg': msg}
 
         return returnDict
@@ -604,7 +615,8 @@ class recover(SubCommand):
 
         # TODO
         # I will need to implement this!
-        return {'commandStatus': 'FAILED', 'error': 'not implemented yet'}
+        raise NotImplementedError
+        #return {'commandStatus': 'FAILED', 'error': 'not implemented yet'}
 
     def setOptions(self):
         """
