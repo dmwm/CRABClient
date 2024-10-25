@@ -4,7 +4,7 @@ import shutil
 import tarfile
 import tempfile
 
-from ServerUtilities import getProxiedWebDir, getColumn
+from ServerUtilities import getProxiedWebDir, getColumn, downloadFromS3
 
 from CRABClient.UserUtilities import curlGetFileFromURL
 from CRABClient.ClientUtilities import execute_command
@@ -65,22 +65,33 @@ class preparelocal(SubCommand):
         crabDBInfo, _, _ = server.get(api='task', data={'subresource': 'search', 'workflow': taskname})
         status = getColumn(crabDBInfo, 'tm_task_status')
         self.destination = getColumn(crabDBInfo, 'tm_asyncdest')
+        username = getColumn(crabDBInfo, 'tm_username')
+        sandboxName = getColumn(crabDBInfo, 'tm_user_sandbox')
 
         inputsFilename = os.path.join(os.getcwd(), 'InputFiles.tar.gz')
-        if status == 'UPLOADED':
-            raise ClientException('Currently crab upload only works for tasks successfully submitted')
-        elif status == 'SUBMITTED':
-            webdir = getProxiedWebDir(crabserver=self.crabserver, task=taskname,
-                                      logFunction=self.logger.debug)
-            if not webdir:
-                webdir = getColumn(crabDBInfo, 'tm_user_webdir')
-            self.logger.debug("Downloading 'InputFiles.tar.gz' from %s" % webdir)
-            httpCode = curlGetFileFromURL(webdir + '/InputFiles.tar.gz', inputsFilename, self.proxyfilename,
-                                          logger=self.logger)
-            if httpCode != 200:
-                self.logger.errror("Failed to download 'InputFiles.tar.gz' from %s", webdir)
-        else:
-            raise ClientException('Can only execute jobs from tasks in status SUBMITTED or UPLOADED. Current status is %s' % status)
+        sandboxFilename = os.path.join(os.getcwd(), 'sandbox.tar.gz')
+        if status not in ['UPLOADED', 'SUBMITTED']:
+            raise ClientException('Can only execute from tasks in status SUBMITTED or UPLOADED. Current status is %s' % status)
+        try:
+            downloadFromS3(crabserver=self.crabserver, filepath=inputsFilename,
+                           objecttype='runtimefiles', taskname=taskname, logger=self.logger)
+            downloadFromS3(crabserver=self.crabserver, filepath=sandboxFilename,
+                           objecttype='sandbox', logger=self.logger,
+                           tarballname=sandboxName, username=username)
+        except Exception:
+            # fall back to WEB_DIR
+            if status == 'UPLOADED':
+                raise ClientException('Currently crab preparelocal only works for tasks successfully submitted')
+            elif status == 'SUBMITTED':
+                webdir = getProxiedWebDir(crabserver=self.crabserver, task=taskname,
+                                          logFunction=self.logger.debug)
+                if not webdir:
+                    webdir = getColumn(crabDBInfo, 'tm_user_webdir')
+                self.logger.debug("Downloading 'InputFiles.tar.gz' from %s" % webdir)
+                httpCode = curlGetFileFromURL(webdir + '/InputFiles.tar.gz', inputsFilename, self.proxyfilename,
+                                              logger=self.logger)
+                if httpCode != 200:
+                    raise ClientException("Failed to download 'InputFiles.tar.gz' from %s" % webdir)
 
         for name in [inputsFilename, 'CMSRunAnalysis.tar.gz', 'sandbox.tar.gz']:
             with tarfile.open(name) as tf:
