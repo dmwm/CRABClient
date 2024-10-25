@@ -559,6 +559,9 @@ class SubCommand(ConfigCommand):
         Load the CRAB cache file (~/.crab3). If it doesn't exist, create one.
         """
         crabCacheFileName = self.crabcachepath()
+        if '/dev/null' in crabCacheFileName:
+            configdict = {'crab_project_directory': ''}
+            return configdict
         if not os.path.isfile(crabCacheFileName):
             msg = "Could not find CRAB cache file %s; creating a new one." % (crabCacheFileName)
             self.logger.debug(msg)
@@ -606,6 +609,8 @@ class SubCommand(ConfigCommand):
         if self.cmdconf['requiresDirOption'] or getattr(self, 'requestarea', None):
             self.crab3dic['crab_project_directory'] = self.requestarea
             crabCacheFileName = self.crabcachepath()
+            if '/dev/null' in crabCacheFileName:
+                return
             crabCacheFileName_tmp = "%s.%s" % (crabCacheFileName, os.getpid())
             with open(crabCacheFileName_tmp, 'w') as fd:
                 json.dump(self.crab3dic, fd)
