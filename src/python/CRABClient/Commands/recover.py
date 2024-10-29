@@ -28,7 +28,6 @@ from CRABClient.Commands.getsandbox import getsandbox
 # step submit
 from CRABClient.Commands.submit import submit
 from CRABClient.UserUtilities import getColumn
-from CRABClient.ClientUtilities import colors
 from ServerUtilities import SERVICE_INSTANCES
 
 SPLITTING_RECOVER_LUMIBASED = set(("LumiBased", "Automatic", "EventAwareLumiBased"))
@@ -95,7 +94,7 @@ class recover(SubCommand):
             if retval["commandStatus"] != "SUCCESS": return self.stepExit(retval)
 
             if "recoverLumimaskPath" not in retval:
-                return retval
+                return self.stepExit(retval)
 
             retval = self.stepSubmitLumiBased(retval["recoverLumimaskPath"])
             if retval["commandStatus"] != "SUCCESS": return self.stepExit(retval)
@@ -123,6 +122,7 @@ class recover(SubCommand):
         > if retval["commandStatus"] != "SUCCESS": return self.stepExit(retval)
         """
         if 'msg' in retval:
+            self.logger.info("recover process prematurely exited during %s step", retval['step'])
             self.logger.info(retval['msg'])
         if retval['commandStatus'] == 'NothingToDo':
             retval['commandStatus'] = "SUCCESS"  # tell crab.py to exit cleanly with no error
@@ -653,7 +653,7 @@ class recover(SubCommand):
         # TODO
         # I will need to implement this!
         raise NotImplementedError
-        #return {'commandStatus': 'FAILED', 'error': 'not implemented yet'}
+        return {'commandStatus': 'FAILED', 'error': 'not implemented yet'}
 
     def setOptions(self):
         """
