@@ -132,8 +132,13 @@ class CRABClient(object):
             print("'" + str(args[0]) + "' is not a valid command.")
             self.parser.print_help()
             sys.exit(-1)
-        self.cmd = sub_cmd(self.logger, args[1:])
+        self.cmd = sub_cmd(self.logger, args[1:])  # the crab command to be executed
 
+        # Every command returns a dictionary which MUST contain the "commandStatus" key.
+        # Any value other then "SUCCESS" for this key indicates command failure
+        #   and will result in 'crab' terminating with non-zero exit code
+        # Additional keys may be present in the dictionary, depending on the specific command,
+        #   which are used to pass information to caller when CRABAPI is used
         returnDict = self.cmd()
         if returnDict['commandStatus'] != 'SUCCESS':
             raise CommandFailedException("Command %s failed" % str(args[0]))
@@ -172,14 +177,14 @@ if __name__ == "__main__":
             errorId = re.search(r'(?<=X-Error-Id:\s)[^\n]*', err).group(0)
             client.logger.info('Error Id: %s', errorId)
         logging.getLogger('CRAB3').exception('Caught RESTInterfaceException exception')
-    except ClientException as ce:
-        client.logger.error(ce)
-        logging.getLogger('CRAB3').exception('Caught ClientException exception')
-        exitcode = ce.exitcode
     except CommandFailedException as ce:
         client.logger.warning(ce)
         logging.getLogger('CRAB3').exception('Caught CommandFailedException exception')
         exitcode = 1
+    except ClientException as ce:
+        client.logger.error(ce)
+        logging.getLogger('CRAB3').exception('Caught ClientException exception')
+        exitcode = ce.exitcode
     except KeyboardInterrupt:
         client.logger.error('Keyboard Interrupted')
         exitcode = 1
