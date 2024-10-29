@@ -177,14 +177,14 @@ if __name__ == "__main__":
             errorId = re.search(r'(?<=X-Error-Id:\s)[^\n]*', err).group(0)
             client.logger.info('Error Id: %s', errorId)
         logging.getLogger('CRAB3').exception('Caught RESTInterfaceException exception')
-    except ClientException as ce:
-        client.logger.error(ce)
-        logging.getLogger('CRAB3').exception('Caught ClientException exception')
-        exitcode = ce.exitcode
     except CommandFailedException as ce:
         client.logger.warning(ce)
         logging.getLogger('CRAB3').exception('Caught CommandFailedException exception')
         exitcode = 1
+    except ClientException as ce:
+        client.logger.error(ce)
+        logging.getLogger('CRAB3').exception('Caught ClientException exception')
+        exitcode = ce.exitcode
     except KeyboardInterrupt:
         client.logger.error('Keyboard Interrupted')
         exitcode = 1
