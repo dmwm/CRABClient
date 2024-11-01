@@ -510,7 +510,10 @@ class recover(SubCommand):
                 if notPublishedLumis: 
                     publishedAllLumis = False
             if publishedAllLumis:
-                self.logger.info("stepReport() - all lumis have been published in the output dataset. crab recover will exit")
+                msg = "stepReport() - all lumis have been published in the output dataset. crab recover will exit"
+                self.logger.info(msg)
+                retval.update({"commandStatus": "NothingToDo", "msg": msg})
+                return retval
         else:
             if failingTaskPublish == "T" and self.options.__dict__["strategy"] == "notFinished":
                 self.logger.warning("%sWarning%s: You are recovering a task with publication enabled with notFinished strategy, this will likely cause to have DUPLICATE LUMIS in the output dataset." % (colors.RED, colors.NORMAL))
