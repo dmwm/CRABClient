@@ -23,6 +23,7 @@ from CRABClient.ClientUtilities import getJobTypes, createCache, addPlugin, serv
     setSubmitParserOptions, validateSubmitOptions, checkStatusLoop, execute_command
 
 from ServerUtilities import MAX_MEMORY_PER_CORE, MAX_MEMORY_SINGLE_CORE, downloadFromS3, FEEDBACKMAIL
+from CRABClient.Commands.preparelocal import preparelocal as crabPreparelocal
 
 class submit(SubCommand):
     """
@@ -162,7 +163,9 @@ class submit(SubCommand):
             checkStatusLoop(self.logger, server, self.defaultApi, uniquerequestname, targetTaskStatus, self.name)
 
         if self.options.dryrun:
-            self.printDryRunResults(*self.executeTestRun(filecacheurl, uniquerequestname))
+            self.logger.info("Dry run")
+            self.runPrepareLocal(projDir)
+            self.printDryRunResults(*self.executeTestRun(filecacheurl, uniquerequestname, projDir))
 
         self.logger.debug("About to return")
 
@@ -171,6 +174,26 @@ class submit(SubCommand):
         returnDict['commandStatus'] = 'SUCCESS'
 
         return returnDict
+    def runPrepareLocal(self, projDir):
+        """
+        """
+        cmdargs = []
+        cmdargs.append("-d")
+        cmdargs.append(projDir)
+        #cmdargs += ["--jobid", "1"]
+        if "instance" in self.options.__dict__.keys():
+            cmdargs.append("--instance")
+            cmdargs.append(self.options.__dict__["instance"])
+        if "proxy" in self.options.__dict__.keys():
+            cmdargs.append("--proxy")
+            cmdargs.append(self.options.__dict__["proxy"])
+
+        self.logger.debug("preparelocal, cmdargs: %s", cmdargs)
+        preparelocalCmd = crabPreparelocal(logger=self.logger, cmdargs=cmdargs)
+
+        retval = preparelocalCmd()
+
+        return retval
 
 
     def setOptions(self):
@@ -384,7 +407,7 @@ class submit(SubCommand):
         return str(encoded)
 
 
-    def executeTestRun(self, filecacheurl, uniquerequestname):
+    def executeTestRun(self, filecacheurl, uniquerequestname, projDir):
         """
         Downloads the dry run tarball from the User File Cache and unpacks it in a temporary directory.
         Runs a trial to obtain the performance report. Repeats trial with successively larger input events
@@ -392,15 +415,17 @@ class submit(SubCommand):
         """
         cwd = os.getcwd()
         try:
-            tmpDir = tempfile.mkdtemp()
-            self.logger.info('Created temporary directory for dry run sandbox in %s' % tmpDir)
-            os.chdir(tmpDir)
-            downloadFromS3(crabserver=self.crabserver, filepath=os.path.join(tmpDir, 'dry-run-sandbox.tar.gz'),
-                           objecttype='runtimefiles', taskname=uniquerequestname, logger=self.logger)
-            for name in ['dry-run-sandbox.tar.gz', 'InputFiles.tar.gz', 'CMSRunAnalysis.tar.gz', 'sandbox.tar.gz']:
-                tf = tarfile.open(os.path.join(tmpDir, name))
-                tf.extractall(tmpDir)
-                tf.close()
+            #tmpDir = tempfile.mkdtemp()
+            #self.logger.info('Created temporary directory for dry run sandbox in %s' % tmpDir)
+            self.logger.info('Execute rest run in local sub-directory of %s', projDir)
+            os.chdir(os.path.join(projDir, 'local'))
+            #downloadFromS3(crabserver=self.crabserver, filepath=os.path.join(tmpDir, 'dry-run-sandbox.tar.gz'),
+            #               objecttype='runtimefiles', taskname=uniquerequestname, logger=self.logger)
+            #for name in ['dry-run-sandbox.tar.gz', 'InputFiles.tar.gz', 'CMSRunAnalysis.tar.gz', 'sandbox.tar.gz']:
+
+            #tf = tarfile.open('dry-run-sandbox.tar.gz')
+            #tf.extractall('splitting-summary.json')
+            #tf.close()
             os.environ.update({'_CONDOR_JOB_AD': 'Job.submit'})
 
             with open('splitting-summary.json') as f:
@@ -417,34 +442,18 @@ class submit(SubCommand):
             while totalJobSeconds < maxSeconds:
                 if totalJobSeconds != 0:
                     self.logger.info("Last trial took only %.1f seconds. We are trying now with %.0f events", totalJobSeconds, events)
-                optsList = getCMSRunAnalysisOpts('Job.submit', 'RunJobs.dag', job=1, events=events)
-                # from a python list to a string which can be used as shell command argument
-                opts = ''
-                for opt in optsList:
-                    opts = opts + ' %s' % opt
+                setCMSRunAnalysisOpts(events=events)
                 # job wrapper needs to be executed in a clean shell, like it happens in the WN, not
                 # inside the environemnt where CRABClient runs (i.e. some CMSSW env. which may conflict
                 # with the WMCore code used in the wrapper
                 undoScram = "eval `scram unsetenv -sh`; "
                 setEnv = """
 echo $PWD && ls -lrth
-if [ -f ./submit_env.sh ]; then
-    # (dario, 202212)
-    # this if/else has been introduced only for backwards compatibility of the crab client
-    # with the old TW with the old jobwrapper.
-    # once the new TW with the new jobwrapper is deployed, we can remove this
-    # if/else and keep only the code inside the "if" clause.
-    . ./submit_env.sh && save_env && setup_local_env;
-else
-    # this code in the "else" clause can be discarded after we merge the new
-    # TW with the new jobwrapper.
-    export SCRAM_ARCH=slc6_amd64_gcc481
-    export CRAB_RUNTIME_TARBALL=local
-    export CRAB_TASKMANAGER_TARBALL=local
-    export CRAB3_RUNTIME_DEBUG=True
-fi
+. ./submit_env.sh && save_env && setup_local_env;
+tar xzmf CMSRunAnalysis.tar.gz
 """
-                command = undoScram + setEnv + 'sh CMSRunAnalysis.sh ' + opts
+                #command = undoScram + setEnv + 'sh CMSRunAnalysis.sh ' + opts
+                command = undoScram + setEnv + 'sh CMSRunAnalysis.sh --json DryRunJobArg.json'
                 out, err, returncode = execute_command(command=command)
                 self.logger.debug(out)
                 if returncode != 0:
@@ -462,7 +471,7 @@ fi
 
         finally:
             os.chdir(cwd)
-            shutil.rmtree(tmpDir)
+            #shutil.rmtree(tmpDir)
 
         return splitting, report
 
@@ -531,38 +540,15 @@ fi
         self.logger.info("\nDry run requested: task paused\nTo continue processing, use 'crab proceed'\n")
 
 
-def getCMSRunAnalysisOpts(ad, dag, job=1, events=10):
+def setCMSRunAnalysisOpts(events=10):
     """
     Parse the job ad to obtain the arguments that were passed to condor.
     """
 
-    set_re = re.compile(r'\+?(\w+)\s*=\s*(.*)$')
+    with open('JobArgs-1.json', 'r') as f:
+        args = json.load(f)
+    args.update({'CRAB_Id': '0', 'firstEvent': '1', 'lastEvent': str(int(events) + 1)})
+    with open('DryRunJobArg.json', 'w') as f:
+        json.dump(args, f)
+    return
 
-    info = {}
-    with open(ad) as f:
-        for line in f:
-            m = set_re.match(line)
-            if not m:
-                continue
-            key, value = m.groups()
-            # Somehow, Condor likes doubled double quotes?
-            info[key] = value.strip("'\"").replace('""', '"')
-    with open(dag) as f:
-        for line in f:
-            if line.startswith('VARS Job{job}'.format(job=job)):
-                break
-        else:
-            raise ClientException('Dry run failed to execute parse DAG description.')
-        for setting in shlex.split(line):
-            m = set_re.match(setting)
-            if not m:
-                continue
-            key, value = m.groups()
-            info[key] = value.replace('""', '"')
-
-    info.update({'CRAB_Id': '0', 'firstEvent': '1', 'lastEvent': str(int(events) + 1)})
-
-    args = shlex.split(info['Arguments'])
-    def repl(match):
-        return info[match.group(1)]
-    return [re.sub(r'\$\((\w+)\)', repl, arg) for arg in args]

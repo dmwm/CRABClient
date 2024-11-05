@@ -1,21 +1,22 @@
+"""
+    The commands prepares a directory and the relative scripts to execute the jobs locally.
+    It can also execute a specific job if the jobid option is passed
+"""
 import os
 import json
 import shutil
 import tarfile
 import tempfile
 
-from ServerUtilities import getProxiedWebDir, getColumn, downloadFromS3
+from ServerUtilities import getColumn, downloadFromS3
 
-from CRABClient.UserUtilities import curlGetFileFromURL
 from CRABClient.ClientUtilities import execute_command
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ClientException
 
 
 class preparelocal(SubCommand):
-    """ The commands prepares a directory and the relative scripts to execute the jobs locally.
-        It can also execute a specific job if the jobid option is passed
-    """
+    """ the preparelocal command instance """
 
     def __init__(self, logger, cmdargs=None):
         SubCommand.__init__(self, logger, cmdargs)
@@ -41,10 +42,11 @@ class preparelocal(SubCommand):
 
             if self.options.jobid:
                 self.logger.info("Executing job %s locally" % self.options.jobid)
-                self.executeTestRun(inputArgs, self.options.jobid)
+                self.prepareDir(inputArgs, self.options.destdir)
+                self.executeTestRun(self.options.destdir, self.options.jobid)
                 self.logger.info("Job execution terminated")
             else:
-                self.logger.info("Copying an preparing files for local execution in %s" % self.options.destdir)
+                self.logger.info("Copying and preparing files for local execution in %s" % self.options.destdir)
                 self.prepareDir(inputArgs, self.options.destdir)
                 self.logger.info("go to that directory IN A CLEAN SHELL and use  'sh run_job.sh NUMJOB' to execute the job")
         finally:
@@ -55,7 +57,8 @@ class preparelocal(SubCommand):
         return {'commandStatus': 'SUCCESS'}
 
     def getInputFiles(self):
-        """ Get the InputFiles.tar.gz and extract the necessary files
+        """
+        Get the InputFiles.tar.gz and extract the necessary files
         """
         taskname = self.cachedinfo['RequestName']
 
@@ -67,74 +70,46 @@ class preparelocal(SubCommand):
         self.destination = getColumn(crabDBInfo, 'tm_asyncdest')
         username = getColumn(crabDBInfo, 'tm_username')
         sandboxName = getColumn(crabDBInfo, 'tm_user_sandbox')
-
         inputsFilename = os.path.join(os.getcwd(), 'InputFiles.tar.gz')
-        sandboxFilename = os.path.join(os.getcwd(), 'sandbox.tar.gz')
-        if status not in ['UPLOADED', 'SUBMITTED']:
-            raise ClientException('Can only execute from tasks in status SUBMITTED or UPLOADED. Current status is %s' % status)
-        try:
+
+        if not status in ['UPLOADED', 'SUBMITTED']:
+            raise ClientException('Can only execute jobs from tasks in status SUBMITTED or UPLOADED. Current status is %s' % status)
+        # new way first
+        # following try-except can be removed and only the code in the try kept once
+        # there are no more tasks wubmitted with TW version v3.241018 or earlier
+        try:  # this will fail with old tasks
+            inputsFilename = os.path.join(os.getcwd(), 'InputFiles.tar.gz')
+            sandboxFilename = os.path.join(os.getcwd(), 'sandbox.tar.gz')
             downloadFromS3(crabserver=self.crabserver, filepath=inputsFilename,
                            objecttype='runtimefiles', taskname=taskname, logger=self.logger)
             downloadFromS3(crabserver=self.crabserver, filepath=sandboxFilename,
                            objecttype='sandbox', logger=self.logger,
                            tarballname=sandboxName, username=username)
-        except Exception:
-            # fall back to WEB_DIR
-            if status == 'UPLOADED':
-                raise ClientException('Currently crab preparelocal only works for tasks successfully submitted')
-            elif status == 'SUBMITTED':
-                webdir = getProxiedWebDir(crabserver=self.crabserver, task=taskname,
-                                          logFunction=self.logger.debug)
-                if not webdir:
-                    webdir = getColumn(crabDBInfo, 'tm_user_webdir')
-                self.logger.debug("Downloading 'InputFiles.tar.gz' from %s" % webdir)
-                httpCode = curlGetFileFromURL(webdir + '/InputFiles.tar.gz', inputsFilename, self.proxyfilename,
-                                              logger=self.logger)
-                if httpCode != 200:
-                    raise ClientException("Failed to download 'InputFiles.tar.gz' from %s" % webdir)
-
-        for name in [inputsFilename, 'CMSRunAnalysis.tar.gz', 'sandbox.tar.gz']:
-            with tarfile.open(name) as tf:
+            with tarfile.open(inputsFilename) as tf:
+                tf.extractall()
+        except:
+            # old way for taks submitted "some time ago". They should better have bootstrapped
+            # so webdir should be defined.
+            self.logger.info('Task was submitted with old TaskWorker, fall back to WEB_DIR for tarballs')
+            from ServerUtilities import getProxiedWebDir
+            from CRABClient.UserUtilities import curlGetFileFromURL
+            webdir = getProxiedWebDir(crabserver=self.crabserver, task=taskname,
+                                      logFunction=self.logger.debug)
+            httpCode = curlGetFileFromURL(webdir + '/InputFiles.tar.gz', inputsFilename, self.proxyfilename,
+                                          logger=self.logger)
+            if httpCode != 200:
+                raise ClientException("Failed to download 'InputFiles.tar.gz' from %s" % webdir)
+            with tarfile.open(inputsFilename) as tf:
                 tf.extractall()
 
-    def executeTestRun(self, inputArgs, jobnr):
-        """ Execute a test run calling CMSRunAnalysis.sh
+    def executeTestRun(self, destDir, jobnr):
         """
-        os.environ.update({'CRAB3_RUNTIME_DEBUG': 'True', '_CONDOR_JOB_AD': 'Job.submit'})
-
-        optsList = [
-            os.path.join(os.getcwd(), 'TweakPSet.py'),
-            '-a %s' % inputArgs[jobnr-1]['CRAB_Archive'],
-            '-o %s' % inputArgs[jobnr-1]['CRAB_AdditionalOutputFiles'],
-            '--sourceURL=%s' % inputArgs[jobnr-1]['CRAB_ISB'],
-            '--location=%s' % os.getcwd(),
-            '--inputFile=%s' % inputArgs[jobnr-1]['inputFiles'],
-            '--runAndLumis=%s' % inputArgs[jobnr-1]['runAndLumiMask'],
-            '--firstEvent=%s' % inputArgs[jobnr-1]['firstEvent'], #jobs goes from 1 to N, inputArgs from 0 to N-1
-            '--lastEvent=%s' % inputArgs[jobnr-1]['lastEvent'],
-            '--firstLumi=%s' % inputArgs[jobnr-1]['firstLumi'],
-            '--firstRun=%s' % inputArgs[jobnr-1]['firstRun'],
-            '--seeding=%s' % inputArgs[jobnr-1]['seeding'],
-            '--lheInputFiles=%s' % inputArgs[jobnr-1]['lheInputFiles'],
-            '--oneEventMode=0',
-            '--eventsPerLumi=%s' % inputArgs[jobnr-1]['eventsPerLumi'],
-            '--maxRuntime=-1',
-            '--jobNumber=%s' % (jobnr-1),
-            '--cmsswVersion=%s' % inputArgs[jobnr-1]['CRAB_JobSW'],
-            '--scramArch=%s' % inputArgs[jobnr-1]['CRAB_JobArch'],
-            '--scriptExe=%s' % inputArgs[jobnr-1]['scriptExe'],
-            '--scriptArgs=%s' % inputArgs[jobnr-1]['scriptArgs'],
-        ]
-        # from a python list to a string which can be used as shell command argument
-        opts = ''
-        for opt in optsList:
-            opts = opts + ' %s'%opt
-        command = 'sh CMSRunAnalysis.sh ' + opts
-        out, err, returncode = execute_command(command=command)
-        self.logger.debug(out)
-        self.logger.debug(err)
-        if returncode != 0:
-            raise ClientException('Failed to execute local test run:\n StdOut: %s\n StdErr: %s' % (out, err))
+         Execute a test run calling CMSRunAnalysis.sh
+        """
+        os.chdir(destDir)
+        cmd = 'eval `scram unsetenv -sh`;'\
+              ' bash run_job.sh %s' % str(jobnr)
+        execute_command(cmd, logger=self.logger, redirect=False)
 
     def prepareDir(self, inputArgs, targetDir):
         """ Prepare a directory with just the necessary files:
@@ -182,9 +157,15 @@ class preparelocal(SubCommand):
 
         for f in ["gWMS-CMSRunAnalysis.sh", "CMSRunAnalysis.sh", "cmscp.py", "CMSRunAnalysis.tar.gz",
                   "sandbox.tar.gz", "run_and_lumis.tar.gz", "input_files.tar.gz", "Job.submit",
-                  "submit_env.sh"
+                  "submit_env.sh", "splitting-summary.json"
                   ]:
-            shutil.copy2(f, targetDir)
+                try:  # for backward compatibility with TW v3.241017 where splitting-summary.json is missing
+                    shutil.copy2(f, targetDir)
+                except FileNotFoundError:
+                    pass
+
+        cmd = "cd %s; tar xf CMSRunAnalysis.tar.gz" % targetDir
+        execute_command(command=cmd, logger=self.logger)
 
         # this InputArgs.txt is for backward compatibility with old TW
         # but may also be useful for local submission https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRABPrepareLocal
@@ -202,8 +183,7 @@ class preparelocal(SubCommand):
         bashWrapper = """#!/bin/bash
 
 . ./submit_env.sh && save_env && setup_local_env
-tar xzmf CMSRunAnalysis.tar.gz
-# 
+#
 export _CONDOR_JOB_AD=Job.${1}.submit
 # leading '+' signs must be removed to use JDL as classAd file
 sed -e 's/^+//' Job.submit > Job.${1}.submit
