@@ -110,7 +110,7 @@ class CredentialInteractions(object):
         return proxyInfo
 
 
-    def createNewMyProxy(self, timeleftthreshold=0):
+    def createNewMyProxy(self, timeleftthreshold=0, minimumvalidity=1):
         """
         Handles the MyProxy creation
 
@@ -160,8 +160,8 @@ class CredentialInteractions(object):
         if myproxytimeleft < timeleftthreshold or trustRetrListChanged:
             # checking the enddate of the user certificate
             usercertDaysLeft = myproxy.getUserCertEndDate()
-            if usercertDaysLeft == 0:
-                msg = "%sYOUR USER CERTIFICATE IS EXPIRED (OR WILL EXPIRE TODAY)." % colors.RED
+            if usercertDaysLeft <= minimumvalidity:
+                msg = "%sYOUR USER CERTIFICATE IS EXPIRED (OR WILL EXPIRE IN LESS THEN %d DAYS)." % (colors.RED, minimumvalidity)
                 msg += " YOU CANNOT USE THE CRAB3 CLIENT."
                 msg += " PLEASE REQUEST A NEW CERTIFICATE HERE https://gridca.cern.ch/gridca/"
                 msg += " AND SEE https://ca.cern.ch/ca/Help/?kbid=024010%s" % colors.NORMAL
