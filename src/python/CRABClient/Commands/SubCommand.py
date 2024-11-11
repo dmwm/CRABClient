@@ -506,9 +506,14 @@ class SubCommand(ConfigCommand):
             for authorizedDNs in all_task_workers_dns['services']:
                 self.credentialHandler.setRetrievers(authorizedDNs)
                 self.logger.debug("Registering user credentials on myproxy for %s" % authorizedDNs)
+                minimumValidity = 1  # days
+                if self.name in ['submit', 'resubmit', 'kill']:
+                    minimumValidity = 5  # TaskWorker will not accept any less !
                 try:
                     (credentialName, myproxyTimeleft) = \
-                        self.credentialHandler.createNewMyProxy(timeleftthreshold=60 * 60 * 24 * RENEW_MYPROXY_THRESHOLD)
+                        self.credentialHandler.createNewMyProxy(
+                            timeleftthreshold=60 * 60 * 24 * RENEW_MYPROXY_THRESHOLD,
+                            minimumvalidity=minimumValidity)
                     p1 = True
                     msg1 = "Credential exists on myproxy: username: %s  - validity: %s" %\
                            (credentialName, str(timedelta(seconds=myproxyTimeleft)))
