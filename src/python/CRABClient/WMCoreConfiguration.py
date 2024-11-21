@@ -28,10 +28,10 @@ https://github.com/cms-sw/cmsdist/blob/a3a1ae367973de9b5c57de3b52d8d4df27611b91/
 """
 
 from __future__ import division
-import imp
 import os
 import sys
 import traceback
+from CRABClient import find_module, load_module
 
 PY3 = sys.version_info[0] == 3
 
@@ -334,13 +334,9 @@ def loadConfigurationFile(filename):
 
     cfgBaseName = os.path.basename(filename).replace(".py", "")
     cfgDirName = os.path.dirname(filename)
-    if not cfgDirName:
-        modPath = imp.find_module(cfgBaseName)
-    else:
-        modPath = imp.find_module(cfgBaseName, [cfgDirName])
+    modPath = find_module(cfgBaseName, cfgDirName)
     try:
-        modRef = imp.load_module(cfgBaseName, modPath[0],
-                                 modPath[1], modPath[2])
+        modRef = load_module(cfgBaseName, modPath)
     except Exception as ex:
         msg = "Unable to load Configuration File:\n"
         msg += "%s\n" % filename

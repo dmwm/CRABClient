@@ -1,6 +1,5 @@
 import os
 import re
-import imp 
 import json
 import types
 from ast import literal_eval
@@ -11,7 +10,7 @@ from WMCore.Configuration import loadConfigurationFile, Configuration
 from ServerUtilities import SERVICE_INSTANCES
 
 import CRABClient.Emulator
-from CRABClient import __version__
+from CRABClient import __version__, find_module, load_module
 from CRABClient.ClientUtilities import colors
 from CRABClient.CRABOptParser import CRABCmdOptParser
 from CRABClient.CredentialInteractions import CredentialInteractions
@@ -106,12 +105,9 @@ class ConfigCommand:
         filename = os.path.abspath(configname)
         cfgBaseName = os.path.basename(filename).replace(".py", "")
         cfgDirName = os.path.dirname(filename)
-        if  not cfgDirName:
-            modPath = imp.find_module(cfgBaseName)
-        else:
-            modPath = imp.find_module(cfgBaseName, [cfgDirName])
+        modPath = find_module(cfgBaseName, cfgDirName)
         try:
-            imp.load_module(cfgBaseName, modPath[0], modPath[1], modPath[2])
+            load_module(cfgBaseName, modPath)
         except Exception as ex:
             msg = str(ex)
 
