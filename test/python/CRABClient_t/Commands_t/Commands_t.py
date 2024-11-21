@@ -1,6 +1,7 @@
 import CRABRESTModelMock
 from FakeRESTServer import FakeRESTServer
 from WMCore.Configuration import Configuration
+from WMCore import load_source
 from CRABClient.Commands.server_info import server_info
 from CRABClient.Commands.getoutput import getoutput
 from CRABClient.Commands.publish import publish
@@ -19,7 +20,6 @@ import json
 import os
 import shutil
 import time
-import imp
 from socket import error as SocketError
 
 class CommandTest(FakeRESTServer):
@@ -34,7 +34,7 @@ class CommandTest(FakeRESTServer):
 
     def setUp(self):
         #Dynamic import of the configuration which in principle is not in the PYTHONPATH
-        self.TestConfig = imp.load_source('TestConfig', os.path.join( os.path.dirname(__file__), "../../../data/TestConfig.py"))
+        self.TestConfig = load_source('TestConfig', os.path.join( os.path.dirname(__file__), "../../../data/TestConfig.py"))
         FakeRESTServer.setUp(self)
         if os.path.isdir("./crab_TestAnalysis"):
             shutil.rmtree("./crab_TestAnalysis")

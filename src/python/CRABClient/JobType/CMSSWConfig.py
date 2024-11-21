@@ -5,7 +5,6 @@ Module to handle CMSSW _cfg.py file
 import re
 import os
 import sys
-import imp
 import json
 import pickle
 import logging
@@ -14,6 +13,7 @@ from FWCore.ParameterSet.Types import uint32
 
 from ServerUtilities import BOOTSTRAP_CFGFILE_DUMP
 
+from CRABClient import find_module, load_module, module_pathname
 from CRABClient.ClientExceptions import ConfigurationException, EnvironmentException
 from CRABClient.ClientUtilities import bootstrapDone, colors, BOOTSTRAP_CFGFILE_PKL,\
     BOOTSTRAP_INFOFILE, LOGGERS, PKL_R_MODE, PKL_W_MODE
@@ -59,8 +59,8 @@ class CMSSWConfig(object):
                     site.addsitedir(p)
 
             # details of user configuration file:
-            configFile, pathname, description = imp.find_module(cfgBaseName, [cfgDirName])
-            cacheLine = (pathname, tuple(sys.argv))
+            modRef = find_module(cfgBaseName, cfgDirName)
+            cacheLine = (module_pathname(modRef), tuple(sys.argv))
             cwd=os.getcwd()
             if cwd not in sys.path:   # cwd must be part of $PYTHONPATH for CMSSW config to work
                 sys.path.append(cwd)
@@ -84,11 +84,10 @@ class CMSSWConfig(object):
                 try:
                     oldstdout = sys.stdout
                     sys.stdout = open(logger.logfile, 'a')
-                    self.fullConfig = imp.load_module(cfgBaseName, configFile, pathname, description)
+                    self.fullConfig = load_module(cfgBaseName, modRef)
                 finally:
                     sys.stdout.close()
                     sys.stdout = oldstdout
-                    configFile.close()
                 # need to turn sys.path into a static set of strings for using it as a cache key
                 # otherwise is a pointer to a function and we can't use it to check for stability
                 configurationCache[cacheLine] = { 'config' : self.fullConfig , 'path' : tuple(sys.path) }

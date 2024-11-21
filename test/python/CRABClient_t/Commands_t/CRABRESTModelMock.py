@@ -1,9 +1,9 @@
+from CRABClient import load_source
 from WMCore.WebTools.RESTModel import RESTModel
 import WMCore
 
 import threading
 import cherrypy
-import imp
 import os
 import uuid
 import tempfile
@@ -21,7 +21,7 @@ class CRABRESTModelMock(RESTModel):
     def __init__(self, config={}):
         RESTModel.__init__(self, config)
 
-        self.mapme = imp.load_source('', os.path.join( os.path.dirname(__file__), "../../../data/mapper.py"))
+        self.mapme = load_source('', os.path.join( os.path.dirname(__file__), "../../../data/mapper.py"))
 
         self.defaulturi = self.mapme.defaulturi
 
