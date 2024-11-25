@@ -1,7 +1,7 @@
 import CRABRESTModelMock
 from FakeRESTServer import FakeRESTServer
 from WMCore.Configuration import Configuration
-from WMCore import load_source
+from CRABClient import load_source
 from CRABClient.Commands.server_info import server_info
 from CRABClient.Commands.getoutput import getoutput
 from CRABClient.Commands.publish import publish
