@@ -225,7 +225,7 @@ class getcommand(SubCommand):
         if not self.dest:
             self.dest = os.path.join(self.requestarea, 'results')
         # Destination is a URL.
-        if re.match("^[a-z]+://", self.dest):
+        if re.match(r"^[a-z]+://", self.dest):
             if not self.dest.endswith("/"):
                 self.dest += "/"
         #Creating the destination directory if necessary
@@ -279,7 +279,7 @@ class getcommand(SubCommand):
         #Figuring out the destination directory
         SubCommand.validateOptions(self)
         if self.options.outputpath is not None:
-            if re.match("^[a-z]+://", self.options.outputpath):
+            if re.match(r"^[a-z]+://", self.options.outputpath):
                 self.dest = self.options.outputpath
             elif not os.path.isabs(self.options.outputpath):
                 self.dest = os.path.abspath(self.options.outputpath)
@@ -301,7 +301,7 @@ class getcommand(SubCommand):
         else:
             self.command = None
         if hasattr(self.options, 'checksum'):
-            if re.match('^yes$|^no$', self.options.checksum):
+            if re.match(r'^yes$|^no$', self.options.checksum):
                 self.checksum = 'ADLER32' if self.options.checksum == 'yes' else None
             else:
                 msg = "You specified to use %s checksum. Only lowercase yes/no is accepted to turn ADLER32 checksum" % self.options.checksum

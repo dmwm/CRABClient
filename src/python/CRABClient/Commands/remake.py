@@ -74,7 +74,7 @@ class remake(SubCommand):
             ex = MissingOptionException(msg)
             ex.missingOption = "cmptask"
             raise ex
-        regex = "^\d{6}_\d{6}_?([^\:]*)\:[a-zA-Z0-9-]+_(crab_)?.+"  # pylint: disable=anomalous-backslash-in-string
+        regex = r"^\d{6}_\d{6}_?([^\:]*)\:[a-zA-Z0-9-]+_(crab_)?.+"  # pylint: disable=anomalous-backslash-in-string
         if not re.match(regex, self.options.cmptask):
             msg = "%sError%s: Task name does not match the regular expression '%s'." % (colors.RED, colors.NORMAL, regex)
             raise ConfigurationException(msg)

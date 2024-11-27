@@ -608,7 +608,7 @@ def compareJobids(a, b):
 
 def validateJobids(jobids, allowLists=True):
     #check the format of jobids
-    if re.match('^\d+((?!(-\d+-))(\,|\-)\d+)*$', jobids):
+    if re.match(r'^\d+((?!(-\d+-))(\,|\-)\d+)*$', jobids):
         jobid = []
         element = jobids.split(',')
         for number in element:

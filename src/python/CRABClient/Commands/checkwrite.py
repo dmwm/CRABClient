@@ -364,7 +364,7 @@ exit(0)
         else:
             self.command = None
         if hasattr(self.options, 'checksum'):
-            if re.match('^yes$|^no$', self.options.checksum):
+            if re.match(r'^yes$|^no$', self.options.checksum):
                 self.checksum = 'ADLER32' if self.options.checksum == 'yes' else None
             else:
                 msg = "You specified to use %s checksum. Only lowercase yes/no is accepted to turn ADLER32 checksum" % self.options.checksum
