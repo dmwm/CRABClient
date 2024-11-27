@@ -407,13 +407,13 @@ class recover(SubCommand):
             if not self.failingTaskStatus["command"] in ("KILL"):
                 msg = "In order to recover a task, when the status of the task in the oracle DB is {}, the task command can not be {}"\
                     .format(self.failingTaskStatus["dbStatus"], self.failingTaskStatus["command"])
-                retval.update({"commandStatus": "FAILED", "msg": msg})
+                retval.update({"commandStatus": "NothingToDo", "msg": msg})
                 return retval
         else:
             if not self.failingTaskStatus["dbStatus"] in ("SUBMITTED", "KILLED"):
                 msg = "In order to recover a task, the status of the task in the oracle DB can not be {}"\
                     .format(self.failingTaskStatus["dbStatus"])
-                retval.update({"commandStatus": "FAILED", "msg": msg})
+                retval.update({"commandStatus": "NothingToDo", "msg": msg})
                 return retval
 
         # make sure that the jobs ad publications are in a final state.
@@ -425,7 +425,7 @@ class recover(SubCommand):
         if not set(self.failingTaskStatus["jobsPerStatus"].keys()).issubset(terminalStates):
             msg = "In order to recover a task, all the jobs need to be in a terminal state ({}). You have {}"\
                 .format(terminalStates, self.failingTaskStatus["jobsPerStatus"].keys())
-            retval.update({"commandStatus": "FAILED", "msg": msg})
+            retval.update({"commandStatus": "NothingToDo", "msg": msg})
             return retval
 
         # - [x] make sure that there are no ongoing publications
@@ -434,14 +434,14 @@ class recover(SubCommand):
         if not set(self.failingTaskStatus["publication"].keys()).issubset(terminalStatesPub):
             msg = "In order to recover a task, publication for all the jobs need to be in a terminal state ({}). You have {}"\
                 .format(terminalStatesPub, self.failingTaskStatus["publication"].keys())
-            retval.update({"commandStatus": "FAILED", "msg": msg})
+            retval.update({"commandStatus": "NothingToDo", "msg": msg})
             return retval
 
         # - [x] if all jobs failed, then exit. it is better to submit again the task than using crab recover :)
         #       check that "failed" is the only key of the jobsPerStatus dictionary
         if set(self.failingTaskStatus["jobsPerStatus"].keys()) == set(("failed",)):
             msg = "All the jobs of the original task failed. Better investigate and submit it again than recover."
-            retval.update({"commandStatus": "FAILED", "msg": msg})
+            retval.update({"commandStatus": "NothingToDo", "msg": msg})
             return retval
 
         retval.update({"commandStatus": "SUCCESS", "msg": "task can be recovered"})
