@@ -116,7 +116,7 @@ class CopyCat(BasicJobType):
                 raise ConfigurationException(msg)
         run_ranges = getattr(self.config.Data, 'runRange', None)
         if run_ranges:
-            run_ranges_is_valid = re.match('^\d+((?!(-\d+-))(\,|\-)\d+)*$', run_ranges)
+            run_ranges_is_valid = re.match(r'^\d+((?!(-\d+-))(\,|\-)\d+)*$', run_ranges)
             if run_ranges_is_valid:
                 run_list = getRunList(run_ranges)
                 if lumi_list:

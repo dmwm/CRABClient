@@ -701,7 +701,7 @@ class recover(SubCommand):
         elif self.options.projdir: 
             self.cmdconf["requiresDirOption"] = True
         elif self.options.cmptask:
-            regex = "^\d{6}_\d{6}_?([^\:]*)\:[a-zA-Z0-9-]+_(crab_)?.+"
+            regex = r"^\d{6}_\d{6}_?([^\:]*)\:[a-zA-Z0-9-]+_(crab_)?.+"
             if not re.match(regex, self.options.cmptask):
                 msg = "%sError%s: Task name does not match the regular expression '%s'." % (colors.RED, colors.NORMAL, regex)
                 raise ConfigurationException(msg)

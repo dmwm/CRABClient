@@ -116,7 +116,7 @@ class remote_copy(SubCommand):
             fileid = myfile['pfn'].split('/')[-1]
 
             dirpath = os.path.join(self.options.destination, myfile['suffix'] if 'suffix' in myfile else '')
-            url_input = bool(re.match("^[a-z]+://", dirpath))
+            url_input = bool(re.match(r"^[a-z]+://", dirpath))
             if not url_input and not os.path.isdir(dirpath):
                 os.makedirs(dirpath)
             localFilename = os.path.join(dirpath,  str(fileid))
@@ -279,7 +279,7 @@ class remote_copy(SubCommand):
             else:
                 fileid = myfile['pfn'].split('/')[-1]
                 dirpath = os.path.join(self.options.destination, myfile['suffix'] if 'suffix' in myfile else '')
-                url_input = bool(re.match("^[a-z]+://", dirpath))
+                url_input = bool(re.match(r"^[a-z]+://", dirpath))
                 if not os.path.isdir(dirpath) and not url_input:
                     os.makedirs(dirpath)
                 localFilename = os.path.join(dirpath,  str(fileid))

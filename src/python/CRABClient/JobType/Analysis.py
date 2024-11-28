@@ -229,7 +229,7 @@ class Analysis(BasicJobType):
         run_ranges = getattr(self.config.Data, 'runRange', None)
         if run_ranges:
             try:
-                run_ranges_is_valid = re.match('^\d+((?!(-\d+-))(\,|\-)\d+)*$', run_ranges)
+                run_ranges_is_valid = re.match(r'^\d+((?!(-\d+-))(\,|\-)\d+)*$', run_ranges)
             except Exception:  # pylint: disable=broad-except
                 run_ranges_is_valid = False
             if run_ranges_is_valid:
