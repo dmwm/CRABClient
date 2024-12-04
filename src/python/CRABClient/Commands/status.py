@@ -236,8 +236,7 @@ class status(SubCommand):
                 container = containerInfo
 
         shortResult = self.printOverview(statusCacheInfo, automaticSplitt, proxiedWebDir, container)
-        pubStatus = self.printPublication(publicationEnabled, shortResult['jobsPerStatus'], shortResult['numProbes'],
-                                          shortResult['numUnpublishable'], taskname, user, crabDBInfo, container=container)
+        pubStatus = self.printPublication(publicationEnabled, shortResult, taskname, user, crabDBInfo, container=container)
         self.printErrors(statusCacheInfo, automaticSplitt)
 
         if not self.options.long and not self.options.sort:  # already printed for these options
@@ -1029,12 +1028,26 @@ class status(SubCommand):
 
             self.logger.info(msg)
 
-    def printPublication(self, publicationEnabled, jobsPerStatus, numProbes, numUnpublishable, taskname, user, crabDBInfo, container=None):
+    def printPublication(self, publicationEnabled, shortResult, taskname, user, crabDBInfo, container=None):
         """Print information about the publication of the output files in DBS.
         """
         # Collecting publication information
         pubStatus = {}
-        if (publicationEnabled and 'finished' in jobsPerStatus and jobsPerStatus['finished'] > numProbes):
+        jobsPerStatus = shortResult['jobsPerStatus']
+        numProbes = shortResult['numProbes']
+        numUnpublishable = shortResult['numUnpublishable']
+        finishedJobs = jobsPerStatus['finished'] if 'finished' in jobsPerStatus else 0
+        # beware probe jobs in automatic splitting, some may have failed, can't rely on totala in jobsPerStatus
+        # need to explicitely skip probes in counting
+        if numProbes > 0:
+            finishedJobs = 0
+            for job in shortResult['jobList']:  # each job is a list of two strings [status, id]
+                jobId = job[1]
+                if jobId.startswith('0-'):  # probe job
+                    continue
+                if job[0] == 'finished':
+                    finishedJobs += 1
+        if (publicationEnabled and finishedJobs):
             pubStatus = self.publicationStatus(taskname, user)
         elif not publicationEnabled:
             pubStatus['status'] = {'disabled': []}
