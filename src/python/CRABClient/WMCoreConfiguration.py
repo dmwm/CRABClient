@@ -17,7 +17,7 @@ while not breaking the old (and log suggested) format for crabConfig.py to start
     from WMCore.Configuration import Configuration
     config = Configuration()
 Althought we currently recommend
-    from CRABClient.UserUtils import config
+    from CRABClient.UserUtilities import config
                                                      
 This file will renamed and moved by the CRABClient build procedure  
 (crab-build.file in cmsdist) or an ad hoc setup script in case a developer wants
