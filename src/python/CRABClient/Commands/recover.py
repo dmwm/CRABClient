@@ -181,7 +181,7 @@ class recover(SubCommand):
             cmdargs.append(self.options.__dict__["proxy"])
         self.logger.debug("stepRemakeAndValidate() - remake, cmdargs: %s", cmdargs)
         remakeCmd = remake(logger=self.logger, cmdargs=cmdargs)
-        with SubcommandExecution(self.logger, "remake") as _:
+        with SilenceLogging(self.logger, "remake") as _:
             retval = remakeCmd.remakecache(self.failingTaskName)
         self.logger.debug("stepRemakeAndValidate() - remake, retval: %s", retval)
         self.logger.debug("stepRemakeAndValidate() - remake, after, self.configuration: %s", self.configuration)
@@ -268,7 +268,7 @@ class recover(SubCommand):
         # self.logger.debug("stepStatus() - handlers %s", handlerLevels)
 
         ## new
-        with SubcommandExecution(self.logger, "status") as _:
+        with SilenceLogging(self.logger, "status") as _:
             retval = statusCmd()
         self.failingTaskStatus = retval
 
@@ -324,7 +324,7 @@ class recover(SubCommand):
             cmdargs.append(self.options.__dict__["proxy"])
         self.logger.debug("stepKill() - cmdargs: %s", cmdargs)
         killCmd = kill(logger=self.logger, cmdargs=cmdargs)
-        with SubcommandExecution(self.logger, "kill") as _:
+        with SilenceLogging(self.logger, "kill") as _:
             retval.update(killCmd())
 
         self.logger.debug("stepKill() - retval: %s", retval)
@@ -492,7 +492,7 @@ class recover(SubCommand):
 
         self.logger.debug("stepReport() - report, cmdargs: %s", cmdargs)
         reportCmd = report(logger=self.logger, cmdargs=cmdargs)
-        with SubcommandExecution(self.logger, "report") as _:
+        with SilenceLogging(self.logger, "report") as _:
             # FIXME - stays noisy because interference with getMutedStatusInfo()
             retval.update(reportCmd())
         self.logger.debug("stepReport() - report, after, self.configuration: %s", self.configuration)
@@ -558,7 +558,7 @@ class recover(SubCommand):
             cmdargs.append(self.options.__dict__["proxy"])
         self.logger.debug("stepGetsandbox() - cmdargs: %s", cmdargs)
         getsandboxCmd = getsandbox(logger=self.logger, cmdargs=cmdargs)
-        with SubcommandExecution(self.logger, "getsandbox") as _:
+        with SilenceLogging(self.logger, "getsandbox") as _:
             retval.update(getsandboxCmd())
         self.logger.debug("stepGetsandbox() - retval: %s", retval)
         return retval
@@ -636,7 +636,7 @@ class recover(SubCommand):
         self.logger.debug("stepSubmit() - cmdargs %s", cmdargs)
         submitCmd = submit(logger=self.logger, cmdargs=cmdargs)
 
-        # with SubcommandExecution(self.logger, "submit") as _:
+        # with SilenceLogging(self.logger, "submit") as _:
         retval.update(submitCmd())
         self.logger.debug("stepSubmit() - retval %s", retval)
         return retval
@@ -708,9 +708,9 @@ class recover(SubCommand):
 
         SubCommand.validateOptions(self)
 
-class SubcommandExecution:
+class SilenceLogging:
     """
-    Context manager to silence logging when calling a subcommand.
+    Context manager to silence logging when e.g. calling a subcommand.
     """
 
     def __init__(self, logger, commandname):
