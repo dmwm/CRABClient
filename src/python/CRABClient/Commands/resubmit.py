@@ -31,7 +31,7 @@ class resubmit(SubCommand):
 
     def __call__(self):
 
-        statusDict = getMutedStatusInfo(self.logger)
+        statusDict = getMutedStatusInfo(logger=self.logger, projdir=self.options.projdir)
         jobList = statusDict['jobList']
 
         if self.splitting == 'Automatic' and statusDict['dbStatus'] == 'KILLED':
