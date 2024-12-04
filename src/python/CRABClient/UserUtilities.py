@@ -193,7 +193,7 @@ def setConsoleLogLevel(lvl):
         for h in logging.getLogger('CRAB3.all').handlers:
             h.setLevel(lvl)
 
-def getMutedStatusInfo(logger=None, proxy=None):
+def getMutedStatusInfo(logger=None, proxy=None, projdir=None):
     """
     Mute the status console output before calling status and change it back to normal afterwards.
     """
@@ -202,6 +202,9 @@ def getMutedStatusInfo(logger=None, proxy=None):
     if proxy:
         cmdargs.append("--proxy")
         cmdargs.append(proxy)
+    if projdir:
+        cmdargs.append("-d")
+        cmdargs.append(projdir)
     cmdobj = getattr(mod, 'status')(logger=logger, cmdargs=cmdargs)
     loglevel = getConsoleLogLevel()
     setConsoleLogLevel(LOGLEVEL_MUTE)

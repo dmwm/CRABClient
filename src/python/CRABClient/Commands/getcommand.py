@@ -158,7 +158,7 @@ class getcommand(SubCommand):
 
         Also store some information which is used later when deciding the correct pfn.
         """
-        statusDict = getMutedStatusInfo(self.logger)
+        statusDict = getMutedStatusInfo(logger=self.logger, projdir=self.options.projdir)
         jobList = statusDict['jobList']
         if not jobList:
             msg = "Cannot retrieve job list from the status command."

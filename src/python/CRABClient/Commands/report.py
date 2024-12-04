@@ -292,7 +292,7 @@ class report(SubCommand):
         self.logger.debug("Result: %s" % dictresult)
         self.logger.info("Running crab status first to fetch necessary information.")
         # Get job statuses
-        statusDict = getMutedStatusInfo(logger=self.logger, proxy=self.proxyfilename)
+        statusDict = getMutedStatusInfo(logger=self.logger, proxy=self.proxyfilename, projdir=self.options.projdir)
 
         if not statusDict['jobList']:
             # No point in continuing if the job list is empty.
