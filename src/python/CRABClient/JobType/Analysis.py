@@ -57,6 +57,7 @@ class Analysis(BasicJobType):
         scram = ScramEnvironment(logger=self.logger)
 
         configArguments.update({'jobarch': scram.getScramArch(),
+                                'jobminuarch': scram.getScramMicroArch(),
                                 'jobsw': scram.getCmsswVersion()})
 
         # Build tarball

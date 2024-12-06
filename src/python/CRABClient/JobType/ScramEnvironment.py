@@ -66,6 +66,8 @@ class ScramEnvironment(dict):
             stdout, _, _ = execute_command(command='scram arch')
             self["SCRAM_ARCH"] = stdout
 
+        self["SCRAM_MIN_SUPPORTED_MICROARCH"] = os.environ.get("SCRAM_MIN_SUPPORTED_MICROARCH", "any")
+
         try:
             self["CMSSW_BASE"]        = os.environ["CMSSW_BASE"]
             self["CMSSW_VERSION"]     = os.environ["CMSSW_VERSION"]
@@ -101,3 +103,9 @@ class ScramEnvironment(dict):
         Determine the scram architecture
         """
         return self["SCRAM_ARCH"]
+
+    def getScramMicroArch(self):
+        """
+        Determine the minimum required scram micro-architecture
+        """
+        return self["SCRAM_MIN_SUPPORTED_MICROARCH"]
