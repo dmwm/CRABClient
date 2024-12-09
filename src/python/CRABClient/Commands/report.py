@@ -212,7 +212,7 @@ class report(SubCommand):
         ## 1) First the summary that depends solely on successfully finished jobs (and
         ##    other general information about the task, but not on failed/running jobs).
         if not onlyDBSSummary:
-            self.logger.info("Summary from jobs in status 'finished':")
+            self.logger.info("Summary from successful jobs (i.e. in status 'finished'):")
             msg = "  Number of files processed: %d" % (numFilesProcessed)
             msg += "\n  Number of events read: %d" % (numEventsRead)
             msg += "\n  Number of events written in EDM files: %d" % (numEventsWritten.get('EDM', 0))
