@@ -30,8 +30,8 @@ from CRABClient.Commands.submit import submit
 from CRABClient.UserUtilities import getColumn
 from ServerUtilities import SERVICE_INSTANCES
 
-SPLITTING_RECOVER_LUMIBASED = set(("LumiBased", "Automatic", "EventAwareLumiBased"))
-SPLITTING_RECOVER_FILEBASED = set(("FileBased"))
+SPLITTING_RECOVER_LUMIBASED = set(["LumiBased", "Automatic", "EventAwareLumiBased"])
+SPLITTING_RECOVER_FILEBASED = set(["FileBased"])
 
 class recover(SubCommand):
     """
@@ -440,7 +440,7 @@ class recover(SubCommand):
         # - [x] if all jobs failed, then exit. it is better to submit again the task than using crab recover :)
         #       check that "failed" is the only key of the jobsPerStatus dictionary
         if set(self.failingTaskStatus["jobsPerStatus"].keys()) == set(("failed",)):
-            msg = "All the jobs of the original task failed. Better investigate and submit it again than recover."
+            msg = "All the jobs of the original task failed. Better to investigate and submit it again, rather than recover."
             retval.update({"commandStatus": "NothingToDo", "msg": msg})
             return retval
 
