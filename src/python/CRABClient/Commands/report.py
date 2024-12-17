@@ -16,9 +16,7 @@ from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.JobType.BasicJobType import BasicJobType
 from CRABClient.UserUtilities import getMutedStatusInfo, curlGetFileFromURL
 from CRABClient.ClientExceptions import ConfigurationException, \
-    UnknownOptionException, ClientException, CommandFailedException
-
-from ServerUtilities import FEEDBACKMAIL
+    UnknownOptionException, CommandFailedException
 
 class report(SubCommand):
     """
@@ -51,7 +49,7 @@ class report(SubCommand):
             raise ConfigurationException(msg)
 
         onlyDBSSummary = False
-        if not reportData['lumisToProcess'] or not reportData['runsAndLumis']:
+        if not reportData['lumisToProcess'] or not reportData['processedRunsAndLumis']:
             msg = "%sError%s:" % (colors.RED, colors.NORMAL)
             msg += " Cannot get all the needed information for the report. Maybe no job has completed yet ?"
             msg += "\n Notice, if your task has been submitted more than 30 days ago, then everything has been cleaned."
@@ -77,33 +75,33 @@ class report(SubCommand):
                         numEvents += rep['events']
             return numEvents
 
-        ## Extract the reports of the input files.
+        # Extract the reports of the input files.
         poolInOnlyRes = {}
-        for jobid, reports in reportData['runsAndLumis'].items():
+        for jobid, reports in reportData['processedRunsAndLumis'].items():
             poolInOnlyRes[jobid] = [rep for rep in reports if rep['type'] == 'POOLIN']
 
-        ## Calculate how many input files have been processed.
-        numFilesProcessed = _getNumFiles(reportData['runsAndLumis'], 'POOLIN')
+        # Calculate how many input files have been processed.
+        numFilesProcessed = _getNumFiles(reportData['processedRunsAndLumis'], 'POOLIN')
         returndict['numFilesProcessed'] = numFilesProcessed
 
-        ## Calculate how many events have been read.
-        numEventsRead = _getNumEvents(reportData['runsAndLumis'], 'POOLIN')
+        # Calculate how many events have been read.
+        numEventsRead = _getNumEvents(reportData['processedRunsAndLumis'], 'POOLIN')
         returndict['numEventsRead'] = numEventsRead
 
-        ## Calculate how many events have been written.
+        # Calculate how many events have been written.
         numEventsWritten = {}
         for filetype in ['EDM', 'TFile', 'FAKE']:
-            numEventsWritten[filetype] = _getNumEvents(reportData['runsAndLumis'], filetype)
+            numEventsWritten[filetype] = _getNumEvents(reportData['processedRunsAndLumis'], filetype)
         returndict['numEventsWritten'] = numEventsWritten
 
-        ## Get the lumis in the input dataset.
+        # Get the lumis in the input dataset.
         returndict['inputDatasetLumis'] = reportData['inputDatasetLumis']
 
-        ## Get the lumis split across files in the input dataset.
+        # Get the lumis split across files in the input dataset.
         returndict['inputDatasetDuplicateLumis'] = reportData['inputDatasetDuplicateLumis']
 
-        ## Get the lumis that the jobs had to process. This must be a subset of input
-        ## dataset lumis & lumi-mask.
+        # Get the lumis that the jobs had to process. This must be a subset of input
+        # dataset lumis & lumi-mask.
         lumisToProcessPerJob = reportData['lumisToProcess']
         lumisToProcess = {}
         for jobid in lumisToProcessPerJob.keys():
@@ -115,7 +113,7 @@ class report(SubCommand):
         lumisToProcess = LumiList(runsAndLumis=lumisToProcess).getCompactList()
         returndict['lumisToProcess'] = lumisToProcess
 
-        ## Get the lumis that have been processed.
+        # Get the lumis that have been processed.
         processedLumis = BasicJobType.mergeLumis(poolInOnlyRes)
         returndict['processedLumis'] = processedLumis
 
@@ -124,7 +122,7 @@ class report(SubCommand):
         outputDatasetsLumis = {}
         outputDatasetsNumEvents = {}
         if reportData['publication']:
-            ## Get the run-lumi and number of events information about the output datasets.
+            # Get the run-lumi and number of events information about the output datasets.
             outputDatasetsInfo = reportData['outputDatasetsInfo']['outputDatasets']
             for dataset in outputDatasetsInfo:
                 if outputDatasetsInfo[dataset]['lumis']:
@@ -135,17 +133,17 @@ class report(SubCommand):
         numOutputDatasets = len(reportData['outputDatasetsInfo']) if 'outputDatasetsInfo' in reportData else 0
 
 
-        ## Get the duplicate runs-lumis in the output files. Use for this the run-lumi
-        ## information of the input files. Why not to use directly the output files?
-        ## Because not all types of output files have run-lumi information in their
-        ## filemetadata (note: the run-lumi information in the filemetadata is a copy
-        ## of the corresponding information in the FJR). For example, output files
-        ## produced by TFileService do not have run-lumi information in the FJR. On the
-        ## other hand, input files always have run-lumi information in the FJR, which
-        ## lists the runs-lumis in the input file that have been processed by the
-        ## corresponding job. And of course, the run-lumi information of an output file
-        ## produced by job X should be the (set made out of the) union of the run-lumi
-        ## information of the input files to job X.
+        # Get the duplicate runs-lumis in the output files. Use for this the run-lumi
+        # information of the input files. Why not to use directly the output files?
+        # Because not all types of output files have run-lumi information in their
+        # filemetadata (note: the run-lumi information in the filemetadata is a copy
+        # of the corresponding information in the FJR). For example, output files
+        # produced by TFileService do not have run-lumi information in the FJR. On the
+        # other hand, input files always have run-lumi information in the FJR, which
+        # lists the runs-lumis in the input file that have been processed by the
+        # corresponding job. And of course, the run-lumi information of an output file
+        # produced by job X should be the (set made out of the) union of the run-lumi
+        # information of the input files to job X.
         outputFilesLumis = {}
         for jobid, reports in poolInOnlyRes.items():
             if jobid.startswith('0-'):  # skip probe-jobs
@@ -159,13 +157,13 @@ class report(SubCommand):
         outputFilesDuplicateLumis = BasicJobType.getDuplicateLumis(outputFilesLumis)
         returndict['outputFilesDuplicateLumis'] = outputFilesDuplicateLumis
 
-        ## Calculate the not processed runs-lumis in one of three ways:
-        ## 1) The lumis that were supposed to be processed by all jobs minus the lumis
-        ##    that were processed by finished (but not necessarily published) jobs.
-        ## 2) The lumis that were supposed to be processed by all jobs minus the lumis
-        ##    published in all the output datasets.
-        ## 3) The lumis that were supposed to be processed by jobs whose status is
-        ##    'failed'.
+        # Calculate the not processed runs-lumis in one of three ways:
+        # 1) The lumis that were supposed to be processed by all jobs minus the lumis
+        #    that were processed by finished (but not necessarily published) jobs.
+        # 2) The lumis that were supposed to be processed by all jobs minus the lumis
+        #    published in all the output datasets.
+        # 3) The lumis that were supposed to be processed by jobs whose status is
+        #    'failed'.
         notProcessedLumis = {}
         notProcLumisCalcMethMsg = "The '%s' lumis were calculated as:" % (self.options.recovery)
         if self.options.recovery == 'notFinished':
@@ -198,7 +196,7 @@ class report(SubCommand):
             notProcLumisCalcMethMsg += " the lumis to process by jobs in status 'failed'."
         returndict['notProcessedLumis'] = notProcessedLumis
 
-        ## Create the output directory if it doesn't exists.
+        # Create the output directory if it doesn't exists.
         if self.options.outdir:
             jsonFileDir = self.options.outdir
         else:
@@ -208,9 +206,9 @@ class report(SubCommand):
             self.logger.debug("Creating directory %s" % (jsonFileDir))
             os.makedirs(jsonFileDir)
 
-        ## Create the report JSON files and print a report summary:
-        ## 1) First the summary that depends solely on successfully finished jobs (and
-        ##    other general information about the task, but not on failed/running jobs).
+        # Create the report JSON files and print a report summary:
+        # 1) First the summary that depends solely on successfully finished jobs (and
+        #    other general information about the task, but not on failed/running jobs).
         if not onlyDBSSummary:
             self.logger.info("Summary from successful jobs (i.e. in status 'finished'):")
             msg = "  Number of files processed: %d" % (numFilesProcessed)
@@ -237,8 +235,8 @@ class report(SubCommand):
                     jsonFile.write("\n")
                     self.logger.info("  %sWarning%s: Duplicate lumis in output files written to outputFilesDuplicateLumis.json" % (colors.RED, colors.NORMAL))
 
-        ## 2) Then the summary about output datasets in DBS. For this, publication must
-        ##    be True and the output files must be publishable.
+        # 2) Then the summary about output datasets in DBS. For this, publication must
+        #    be True and the output files must be publishable.
         if reportData['publication'] and reportData['outputDatasets']:
             if onlyDBSSummary:
                 self.logger.info("Will provide a short report with information found in DBS.")
@@ -253,7 +251,25 @@ class report(SubCommand):
                     json.dump(outputDatasetsLumis, jsonFile)
                     jsonFile.write("\n")
                     self.logger.info("  Output datasets lumis written to outputDatasetsLumis.json")
-        ## 3) Finally additional files that can be useful for debugging.
+
+        # 3) Then the file summaries
+        if reportData['filesToProcess']:
+            with open(os.path.join(jsonFileDir, 'filesToProcess.json'), 'w') as jsonFile:
+                json.dump(reportData['filesToProcess'], jsonFile)
+                jsonFile.write("\n")
+                self.logger.info("  Files to process written to filesToProcess.json")
+        if reportData['processedFiles']:
+            with open(os.path.join(jsonFileDir, 'processedFiled.json'), 'w') as jsonFile:
+                json.dump(reportData['processedFiles'], jsonFile)
+                jsonFile.write("\n")
+                self.logger.info("  Files processed by successful jobs written to processedFiles.json")
+        if reportData['failedFiles']:
+            with open(os.path.join(jsonFileDir, 'failedFiled.json'), 'w') as jsonFile:
+                json.dump(reportData['failedFiles'], jsonFile)
+                jsonFile.write("\n")
+                self.logger.info("  Files processed by failed jobs written to failedFiles.json")
+
+        # 4) Finally additional files that can be useful for debugging.
         if reportData['inputDatasetLumis'] or reportData['inputDatasetDuplicateLumis'] or lumisToProcess:
             self.logger.info("Additional report lumi files:")
         if reportData['inputDatasetLumis']:
@@ -290,7 +306,7 @@ class report(SubCommand):
         dictresult, status, _ = server.get(api=self.defaultApi, data={'workflow': self.cachedinfo['RequestName'], 'subresource': 'report2'})
 
         self.logger.debug("Result: %s" % dictresult)
-        self.logger.info("Running crab status first to fetch necessary information.")
+        self.logger.info("Running crab status to fetch necessary information.")
         # Get job statuses
         statusDict = getMutedStatusInfo(logger=self.logger, proxy=self.proxyfilename, projdir=self.options.projdir)
 
@@ -301,7 +317,9 @@ class report(SubCommand):
             return None
         reportData['jobList'] = [(s, j) for (s, j) in statusDict['jobList'] if not j.startswith('0-')]
 
-        reportData['runsAndLumis'] = {}
+        reportData['processedRunsAndLumis'] = {}
+        reportData['processedFiles'] = {}
+        reportData['failedFiles'] = {}
 
         # Transform status joblist (tuples of job status and job id) into a dictionary
         jobStatusDict = {}
@@ -312,14 +330,21 @@ class report(SubCommand):
         if dictresult['result'][0]['runsAndLumis']:
             for jobId in jobStatusDict:
                 if jobStatusDict.get(jobId) in ['finished']:
-                    reportData['runsAndLumis'][jobId] = dictresult['result'][0]['runsAndLumis'][jobId]
+                    reportData['processedRunsAndLumis'][jobId] = dictresult['result'][0]['runsAndLumis'][jobId]
 
         reportData['publication'] = statusDict['publicationEnabled']
         userWebDirURL = statusDict['proxiedWebDir']
         jobs = [j for (s, j) in statusDict['jobList']]
 
-        reportData['lumisToProcess'] = self.getLumisToProcess(userWebDirURL, jobs, self.cachedinfo['RequestName'])
+        (reportData['lumisToProcess'], reportData['filesToProcess'] ) = \
+            self.getFilesAndLumisToProcess(userWebDirURL, jobs, self.cachedinfo['RequestName'])
         reportData['inputDataset'] = statusDict['inputDataset']
+
+        for jobId in jobStatusDict:
+            if jobStatusDict[jobId] == 'finished':
+                reportData['processedFiles'][jobId] =reportData['filesToProcess'][jobId]
+            if jobStatusDict[jobId] == 'failed':
+                reportData['failedFiles'][jobId] = reportData['filesToProcess'][jobId]
 
         inputDatasetInfo = self.getInputDatasetLumis(reportData['inputDataset'], userWebDirURL)['inputDataset']
         reportData['inputDatasetLumis'] = inputDatasetInfo['lumis']
@@ -332,13 +357,16 @@ class report(SubCommand):
 
         return reportData
 
-    def getLumisToProcess(self, userWebDirURL, jobs, workflow):
+    def getFilesAndLumisToProcess(self, userWebDirURL, jobs, workflow):
         """
         What each job was requested to process
-
-        Get the lumis to process by each job in the workflow.
+        Get the lumis and files to process by each job in the workflow.
+        Returns two dictionaries
+           {'jobid': {'run':[list of lumi ranges],... } e.g. {"1": [[419, 419]]}
+           {'jobid': ['file',...,'file'], ...}
         """
-        res = {}
+        lumis = {}
+        files = {}
         if userWebDirURL:
             url = userWebDirURL + "/run_and_lumis.tar.gz"
             tarFilename = os.path.join(self.requestarea, 'results/run_and_lumis.tar.gz')
@@ -357,14 +385,53 @@ class report(SubCommand):
                     else:
                         fd = tarball.extractfile(member)
                         try:
-                            res[str(jobid)] = json.load(fd)
+                            lumis[str(jobid)] = json.load(fd)
                         finally:
                             fd.close()
                 tarball.close()
             else:
                 self.logger.error("Failed to retrieve run_and_lumis.tar.gz")
 
-        return res
+            url = userWebDirURL + "/input_files.tar.gz"
+            tarFilename = os.path.join(self.requestarea, 'results/input_files.tar.gz')
+            httpCode = curlGetFileFromURL(url, tarFilename, self.proxyfilename, logger=self.logger)
+            if httpCode == 200:
+                # Not using 'with tarfile.open(..) as t:' syntax because
+                # the tarfile module only received context manager protocol support
+                # in python 2.7, whereas CMSSW_5_* uses python 2.6 and breaks here.
+                tarball = tarfile.open(tarFilename)
+                for jobid in jobs:
+                    filename = "job_input_file_list_%s.txt" % (jobid)
+                    try:
+                        member = tarball.getmember(filename)
+                    except KeyError:
+                        self.logger.warning("File %s not found in input_files.tar.gz for task %s" % (filename, workflow))
+                    else:
+                        fd = tarball.extractfile(member)
+                        try:
+                            jobFiles = json.load(fd)
+                            # inputFile can have three formats depending on wether secondary input files are used:
+                            # 1. a single LFN as a string : "/store/.....root"
+                            # 2. a list of LFNs : ["/store/.....root", "/store/....root", ...]
+                            # 3. a list of dictionaries (one per file) with keys: 'lfn' and 'parents'
+                            #   value for 'lfn' is a string, value for 'parents' is a list of {'lfn':lfn} dictionaries
+                            #   [{'lfn':inputlfn, 'parents':[{'lfn':parentlfn1},{'lfn':parentlfn2}], ....]},...]
+                            if isinstance(jobFiles, str):
+                                files[str(jobid)] = [jobFiles]
+                            if isinstance(jobFiles, list):
+                                files[str(jobid)] = []
+                                for f in jobFiles:
+                                    if isinstance(f, str):
+                                        files[str(jobid)].append(f)
+                                    if isinstance(f, dict):
+                                        files[str(jobid)].append(f['lfn'])
+                        finally:
+                            fd.close()
+                tarball.close()
+            else:
+                self.logger.error("Failed to retrieve input_files.tar.gz")
+
+        return lumis, files
 
     def getInputDatasetLumis(self, inputDataset, userWebDirURL):
         """
@@ -379,7 +446,7 @@ class report(SubCommand):
         if inputDataset and userWebDirURL:
             url = userWebDirURL + "/input_dataset_lumis.json"
             filename = os.path.join(self.requestarea, 'results/input_dataset_lumis.json')
-            ## Retrieve the lumis in the input dataset.
+            # Retrieve the lumis in the input dataset.
             httpCode = curlGetFileFromURL(url, filename, self.proxyfilename, logger=self.logger)
             if httpCode == 200:
                 with open(filename) as fd:
@@ -389,7 +456,7 @@ class report(SubCommand):
 
             url = userWebDirURL + "/input_dataset_duplicate_lumis.json"
             filename = os.path.join(self.requestarea, 'results/input_dataset_duplicate_lumis.json')
-            ## Retrieve the lumis split across files in the input dataset.
+            # Retrieve the lumis split across files in the input dataset.
             httpCode = curlGetFileFromURL(url, filename, self.proxyfilename, logger=self.logger)
             if httpCode == 200:
                 with open(filename) as fd:
