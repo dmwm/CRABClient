@@ -259,12 +259,12 @@ class report(SubCommand):
                 jsonFile.write("\n")
                 self.logger.info("  Files to process written to filesToProcess.json")
         if reportData['processedFiles']:
-            with open(os.path.join(jsonFileDir, 'processedFiled.json'), 'w') as jsonFile:
+            with open(os.path.join(jsonFileDir, 'processedFiles.json'), 'w') as jsonFile:
                 json.dump(reportData['processedFiles'], jsonFile)
                 jsonFile.write("\n")
                 self.logger.info("  Files processed by successful jobs written to processedFiles.json")
         if reportData['failedFiles']:
-            with open(os.path.join(jsonFileDir, 'failedFiled.json'), 'w') as jsonFile:
+            with open(os.path.join(jsonFileDir, 'failedFiles.json'), 'w') as jsonFile:
                 json.dump(reportData['failedFiles'], jsonFile)
                 jsonFile.write("\n")
                 self.logger.info("  Files processed by failed jobs written to failedFiles.json")
