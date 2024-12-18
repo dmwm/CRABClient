@@ -522,7 +522,7 @@ class recover(SubCommand):
         returns the path of a file with the lumiMask listing the lumis to recover
         """
 
-        retval = {"step": "buildRecoverLumiInfo"}
+        retval = {"step": "buildLumiRecoveryInfo"}
         recoverLumimaskPath = ""
         if failingTaskPublish == "T" and self.options.__dict__["strategy"] == "notPublished":
             recoverLumimaskPath = os.path.join(self.crabProjDir, "results", "notPublishedLumis.json")
@@ -530,12 +530,12 @@ class recover(SubCommand):
             publishedAllLumis = True
             for dataset, lumis in report["outputDatasetsLumis"].items():
                 notPublishedLumis = BasicJobType.subtractLumis(report["lumisToProcess"], lumis )
-                self.logger.debug("stepBuildReocoverLumiInfo() - report, subtract: %s %s",
+                self.logger.debug("stepBuildLumiReocoveryInfo() - report, subtract: %s %s",
                                 dataset, notPublishedLumis)
                 if notPublishedLumis: 
                     publishedAllLumis = False
             if publishedAllLumis:
-                msg = "stepBuildReocoverLumiInfo() - all lumis have been published in the output dataset. crab recover will exit"
+                msg = "stepBuildLumiReocoveryInfo() - all lumis have been published in the output dataset. crab recover will exit"
                 self.logger.info(msg)
                 retval.update({"commandStatus": "NothingToDo", "msg": msg})
                 return retval
@@ -548,7 +548,7 @@ class recover(SubCommand):
             if not retval["notProcessedLumis"]:
                 # we will likely never reach this if, because in this case the status on the schedd
                 # should be COMPLETED, which is not accepted by stepCheckKill
-                self.logger.info("stepBuildReocoverLumiInfo() - all lumis have been processed by original task. crab recover will exit")
+                self.logger.info("stepBuildLumiReocoveryInfo() - all lumis have been processed by original task. crab recover will exit")
                 retval.update({'commandStatus' : 'SUCCESS'})
                 return retval
 
