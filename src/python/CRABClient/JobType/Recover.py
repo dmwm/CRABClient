@@ -246,6 +246,12 @@ class Recover(BasicJobType):
             configreq['lumis'] = [str(reduce(lambda x,y: x+y, lumi_mask[run]))[1:-1].replace(' ','') for run in configreq['runs']]
         ## RECOVER - set lumimask from crab report, not from original task - END
 
+        ## RECOVER - set userInputFiles from crab report, not from original task - START
+        userInputFiles = getattr(self.config.Data, 'userInputFiles', None)
+        if userInputFiles:
+            configreq['userfiles'] = userInputFiles
+        ## RECOVER - set userInputFiles from crab report, not from original task - START
+
 
         # new filename
         configreq['cachefilename'] = newCachefilename
