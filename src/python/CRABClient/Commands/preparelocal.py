@@ -119,10 +119,10 @@ class preparelocal(SubCommand):
                   "sandbox.tar.gz", "run_and_lumis.tar.gz", "input_files.tar.gz", "Job.submit",
                   "submit_env.sh", "splitting-summary.json", "input_args.json"
                   ]:
-                try:  # for backward compatibility with TW v3.241017 where splitting-summary.json is missing
-                    shutil.copy2(f, targetDir)
-                except FileNotFoundError:
-                    pass
+            try:  # for backward compatibility with TW v3.241017 where splitting-summary.json is missing
+                shutil.copy2(f, targetDir)
+            except FileNotFoundError:
+                pass
 
         cmd = "cd %s; tar xf CMSRunAnalysis.tar.gz" % targetDir
         execute_command(command=cmd, logger=self.logger)
@@ -137,40 +137,13 @@ class preparelocal(SubCommand):
         bashWrapper = """#!/bin/bash
 
 . ./submit_env.sh && save_env && setup_local_env
-#
+
 export _CONDOR_JOB_AD=Job.${1}.submit
 # leading '+' signs must be removed to use JDL as classAd file
 sed -e 's/^+//' Job.submit > Job.${1}.submit
+
+./CMSRunAnalysis.sh --jobId ${1}
 """
-        if self.options.enableStageout:
-            self.logger.debug("Creating jobsubmit fixup files")
-            os.makedirs(os.path.join(targetDir, "jobsubmit_fixups"))
-            i = 1
-            for ia in inputArgs:
-                with open(os.path.join(targetDir, "jobsubmit_fixups", "job%s" % i), "w") as fd:
-                    fd.write("""CRAB_localOutputFiles = "%(CRAB_localOutputFiles)s"
-CRAB_Destination = "%(CRAB_Destination)s"
-""" % ia)
-                i += 1
-
-            bashWrapper += """if [ ! -f "${X509_USER_PROXY}" ]; then
-    echo "X509_USER_PROXY variable does not point to a valid file"
-    exit
-fi
-echo "CRAB_Id = \\\"${1}\\\"" >> Job.${1}.submit
-echo 'CRAB_StageoutPolicy = "remote"' >> Job.${1}.submit
-echo 'CRAB_AsyncDest = "%s"' >> Job.${1}.submit
-echo `grep CRAB_OutTempLFNDir Job.submit | tr -d "+"` >> Job.${1}.submit
-echo `grep CRAB_OutLFNDir Job.submit | tr -d "+"` >> Job.${1}.submit
-cat jobsubmit_fixups/job${1} >> Job.${1}.submit
-""" % self.destination
-            bashWrapper += './gWMS-CMSRunAnalysis.sh `sed "${1}q;d" InputArgs.txt`'
-        else:
-            bashWrapper += '\n./CMSRunAnalysis.sh --jobId ${1}'
-            #bashWrapper += "echo 'CRAB_TransferOutputs = 0' >> Job.${1}.submit\n"
-            #bashWrapper += "echo 'CRAB_SaveLogsFlag = 0' >> Job.${1}.submit\n"
-
-        bashWrapper += "\n"  # add new-line at edn of file for easy-to-read
 
         with open(os.path.join(targetDir, "run_job.sh"), "w") as fd:
             fd.write(bashWrapper)
@@ -187,15 +160,10 @@ cat jobsubmit_fixups/job${1} >> Job.${1}.submit
                                type="int",
                                help="Optional id of the job you want to execute locally")
 
-        self.parser.add_option("--enableStageout",
-                               dest="enableStageout",
-                               default=False,
-                               action="store_true",
-                               help="After the job runs copy the output file on the storage destination")
-
         self.parser.add_option("--destdir",
                                dest="destdir",
-                               default=None)
+                               default=None,
+                               help="Optional name of the directory to use, defaults to <projdir>/local")
 
     def validateOptions(self):
         SubCommand.validateOptions(self)
