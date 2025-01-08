@@ -37,7 +37,7 @@ class preparelocal(SubCommand):
             self.logger.info("Getting input files into tmp dir %s" % tmpDir)
             self.getInputFiles()
 
-            with(open('input_args.json')) as fd:
+            with(open('input_args.json')) as fd:  # this file is created by DagmanCreator in the TW
                 inputArgs = json.load(fd)
 
             if self.options.jobid:
@@ -157,7 +157,7 @@ class preparelocal(SubCommand):
 
         for f in ["gWMS-CMSRunAnalysis.sh", "CMSRunAnalysis.sh", "cmscp.py", "CMSRunAnalysis.tar.gz",
                   "sandbox.tar.gz", "run_and_lumis.tar.gz", "input_files.tar.gz", "Job.submit",
-                  "submit_env.sh", "splitting-summary.json"
+                  "submit_env.sh", "splitting-summary.json", "input_args.json"
                   ]:
                 try:  # for backward compatibility with TW v3.241017 where splitting-summary.json is missing
                     shutil.copy2(f, targetDir)
