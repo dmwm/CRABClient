@@ -212,7 +212,7 @@ cat jobsubmit_fixups/job${1} >> Job.${1}.submit
 """ % self.destination
             bashWrapper += './gWMS-CMSRunAnalysis.sh `sed "${1}q;d" InputArgs.txt`'
         else:
-            bashWrapper += '\n./CMSRunAnalysis.sh --json JobArgs-${1}.json'
+            bashWrapper += '\n./CMSRunAnalysis.sh --jobId ${1}'
             #bashWrapper += "echo 'CRAB_TransferOutputs = 0' >> Job.${1}.submit\n"
             #bashWrapper += "echo 'CRAB_SaveLogsFlag = 0' >> Job.${1}.submit\n"
 
