@@ -183,9 +183,9 @@ class resubmit(SubCommand):
             ## For 'jobids', 'sitewhitelist' and 'siteblacklist', attr_value is either a list of strings or None.
             if attr_value is not None:
                 configreq[attr_name] = attr_value
-        for attr_name in ['maxjobruntime', 'maxmemory', 'numcores', 'priority']:
+        for attr_name in ['maxjobruntime', 'maxmemory', 'priority']:
             attr_value = getattr(self.options, attr_name)
-            ## For 'maxjobruntime', 'maxmemory', 'numcores', and 'priority', attr_value is either an integer or None.
+            ## For 'maxjobruntime', 'maxmemory', and 'priority', attr_value is either an integer or None.
             if attr_value is not None:
                 configreq[attr_name] = attr_value
 
@@ -231,13 +231,6 @@ class resubmit(SubCommand):
                                help="Set the maximum memory (in MB) used per job in this task." + \
                                       " Default is 2000.")
 
-        self.parser.add_option('--numcores',
-                               dest='numcores',
-                               default=None,
-                               type='int',
-                               help="Set the number of cores used per job in this task." + \
-                                      " (e.g.: 1 for single-threaded applications).")
-
         self.parser.add_option('--priority',
                                dest='priority',
                                default=None,
@@ -272,9 +265,9 @@ class resubmit(SubCommand):
         if self.options.publication:
             if self.options.sitewhitelist is not None or self.options.siteblacklist is not None or \
                self.options.maxjobruntime is not None or self.options.maxmemory is not None or \
-               self.options.numcores is not None or self.options.priority is not None:
+               self.options.priority is not None:
                 msg = "The options --sitewhitelist, --siteblacklist,"
-                msg += " --maxjobruntime, --maxmemory, --numcores and  --priority"
+                msg += " --maxjobruntime, --maxmemory and  --priority"
                 msg += " can not be specified together with the option --publication."
                 msg += " The last option is to only resubmit (failed) publications,"
                 msg += " in which case all of the first options make no sense."
@@ -310,7 +303,7 @@ class resubmit(SubCommand):
 
         ## Covention used for the job parameters that the user can set when doing job
         ## resubmission (i.e. siteblacklist, sitewhitelist, maxjobruntime, maxmemory,
-        ## numcores and priority):
+        ## and priority):
         ## - If the user doesn't set a parameter we don't pass it to the server and the
         ##   the server copies the original value the parameter had at task submission.
         ##   It copies it from the Task DB. Therefore we need to keep these parameters
@@ -352,11 +345,6 @@ class resubmit(SubCommand):
         if self.options.maxmemory is not None:
             if self.options.maxmemory < 30 or self.options.maxmemory > 1024*30:
                 msg = "The requested per-job memory (%d MB) must be between 30 and 30720 MB." % (self.options.maxmemory)
-                raise ConfigurationException(msg)
-
-        if self.options.numcores is not None:
-            if self.options.numcores < 1 or self.options.numcores > 128:
-                msg = "The requested number of cores (%d) must be between 1 and 128." % (self.options.numcores)
                 raise ConfigurationException(msg)
 
         if self.options.priority is not None:
