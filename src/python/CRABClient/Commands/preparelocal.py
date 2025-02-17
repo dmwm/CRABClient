@@ -5,7 +5,6 @@
     It can also execute a specific job if the jobid option is passed
 """
 import os
-import json
 import shutil
 import tarfile
 import tempfile
@@ -39,17 +38,14 @@ class preparelocal(SubCommand):
             self.logger.info("Getting input files into tmp dir %s" % tmpDir)
             self.getInputFiles()
 
-            with(open('input_args.json')) as fd:  # this file is created by DagmanCreator in the TW
-                inputArgs = json.load(fd)
-
             if self.options.jobid:
                 self.logger.info("Executing job %s locally" % self.options.jobid)
-                self.prepareDir(inputArgs, self.options.destdir)
+                self.prepareDir(self.options.destdir)
                 self.executeTestRun(self.options.destdir, self.options.jobid)
                 self.logger.info("Job execution terminated")
             else:
                 self.logger.info("Copying and preparing files for local execution in %s" % self.options.destdir)
-                self.prepareDir(inputArgs, self.options.destdir)
+                self.prepareDir(self.options.destdir)
                 self.logger.info("go to that directory IN A CLEAN SHELL and use  'sh run_job.sh NUMJOB' to execute the job")
         finally:
             os.chdir(cwd)
@@ -74,8 +70,8 @@ class preparelocal(SubCommand):
         sandboxName = getColumn(crabDBInfo, 'tm_user_sandbox')
         inputsFilename = os.path.join(os.getcwd(), 'InputFiles.tar.gz')
 
-        if not status in ['UPLOADED', 'SUBMITTED']:
-            raise ClientException('Can only execute jobs from tasks in status SUBMITTED or UPLOADED. Current status is %s' % status)
+        if status in ['WAITING', 'NEW', 'HOLDING', 'QUEUED', 'SUBMITFAILED', 'REFUSED', 'TAPERECALL']:
+            raise ClientException('Thic only works for tasks submitted to or uploaded. Current status is %s' % status)
         inputsFilename = os.path.join(os.getcwd(), 'InputFiles.tar.gz')
         sandboxFilename = os.path.join(os.getcwd(), 'sandbox.tar.gz')
         downloadFromS3(crabserver=self.crabserver, filepath=inputsFilename,
@@ -95,7 +91,7 @@ class preparelocal(SubCommand):
               ' bash run_job.sh %s' % str(jobnr)
         execute_command(cmd, logger=self.logger, redirect=False)
 
-    def prepareDir(self, inputArgs, targetDir):
+    def prepareDir(self, targetDir):
         """ Prepare a directory with just the necessary files:
         """
 
