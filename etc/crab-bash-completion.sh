@@ -257,7 +257,7 @@ _UseCrab ()
         "resubmit")
             case "$cur" in
                 -*)
-                    COMPREPLY=( $(compgen -W '--help -h --force --publication --jobids --sitewhitelist --siteblacklist --maxjobruntime --maxmemory --numcores --priority --proxy --dir -d --task --instance' -- $cur) )
+                    COMPREPLY=( $(compgen -W '--help -h --force --publication --jobids --sitewhitelist --siteblacklist --maxjobruntime --maxmemory --priority --proxy --dir -d --task --instance' -- $cur) )
                     ;;
                 *)
                     COMPREPLY=( $(compgen -f $cur) )
