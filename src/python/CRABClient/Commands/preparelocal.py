@@ -1,3 +1,5 @@
+# tell pylint to accept some old style which is needed for python2
+# pylint: disable=unspecified-encoding, raise-missing-from
 """
     The commands prepares a directory and the relative scripts to execute the jobs locally.
     It can also execute a specific job if the jobid option is passed
@@ -74,33 +76,15 @@ class preparelocal(SubCommand):
 
         if not status in ['UPLOADED', 'SUBMITTED']:
             raise ClientException('Can only execute jobs from tasks in status SUBMITTED or UPLOADED. Current status is %s' % status)
-        # new way first
-        # following try-except can be removed and only the code in the try kept once
-        # there are no more tasks wubmitted with TW version v3.241018 or earlier
-        try:  # this will fail with old tasks
-            inputsFilename = os.path.join(os.getcwd(), 'InputFiles.tar.gz')
-            sandboxFilename = os.path.join(os.getcwd(), 'sandbox.tar.gz')
-            downloadFromS3(crabserver=self.crabserver, filepath=inputsFilename,
-                           objecttype='runtimefiles', taskname=taskname, logger=self.logger)
-            downloadFromS3(crabserver=self.crabserver, filepath=sandboxFilename,
-                           objecttype='sandbox', logger=self.logger,
-                           tarballname=sandboxName, username=username)
-            with tarfile.open(inputsFilename) as tf:
-                tf.extractall()
-        except:
-            # old way for taks submitted "some time ago". They should better have bootstrapped
-            # so webdir should be defined.
-            self.logger.info('Task was submitted with old TaskWorker, fall back to WEB_DIR for tarballs')
-            from ServerUtilities import getProxiedWebDir
-            from CRABClient.UserUtilities import curlGetFileFromURL
-            webdir = getProxiedWebDir(crabserver=self.crabserver, task=taskname,
-                                      logFunction=self.logger.debug)
-            httpCode = curlGetFileFromURL(webdir + '/InputFiles.tar.gz', inputsFilename, self.proxyfilename,
-                                          logger=self.logger)
-            if httpCode != 200:
-                raise ClientException("Failed to download 'InputFiles.tar.gz' from %s" % webdir)
-            with tarfile.open(inputsFilename) as tf:
-                tf.extractall()
+        inputsFilename = os.path.join(os.getcwd(), 'InputFiles.tar.gz')
+        sandboxFilename = os.path.join(os.getcwd(), 'sandbox.tar.gz')
+        downloadFromS3(crabserver=self.crabserver, filepath=inputsFilename,
+                       objecttype='runtimefiles', taskname=taskname, logger=self.logger)
+        downloadFromS3(crabserver=self.crabserver, filepath=sandboxFilename,
+                       objecttype='sandbox', logger=self.logger,
+                       tarballname=sandboxName, username=username)
+        with tarfile.open(inputsFilename) as tf:
+            tf.extractall()
 
     def executeTestRun(self, destDir, jobnr):
         """
