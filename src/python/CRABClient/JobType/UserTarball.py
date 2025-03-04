@@ -233,7 +233,7 @@ class UserTarball(object):
 
         scriptExe = getattr(self.config.JobType, 'scriptExe', None)
         if scriptExe:
-            self.tarfile.add(scriptExe, arcname=os.path.basename(scriptExe))
+            self.tarfile.add(scriptExe, arcname=os.path.join('/debug', os.path.basename(scriptExe)))
 
         configtmp.close()
 
