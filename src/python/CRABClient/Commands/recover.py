@@ -710,7 +710,7 @@ class recover(SubCommand):
         projDir = os.path.join(workArea, submitInfo['requestname'])
         recoveryConfigFilePath = os.path.join(projDir,'inputs/recoveryConfig.py')
         with open(recoveryConfigFilePath, 'w') as fd:
-            print(submitConfiguration, file=fd)
+            fd.write(str(submitConfiguration))  # must use a python2-compatible way
         self.logger.info('Submission configuration saved in %s', recoveryConfigFilePath)
 
         retval.update(submitInfo)
