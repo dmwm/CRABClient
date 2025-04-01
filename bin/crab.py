@@ -14,9 +14,13 @@ import logging
 import logging.handlers
 import re
 
+from CRABClient import __version__ as client_version
+if sys.argv[1] == '--version':
+    print("CRAB Client %s" % client_version)
+    sys.exit()
+
 from ServerUtilities import FEEDBACKMAIL
 from CRABClient.CRABOptParser import CRABOptParser
-from CRABClient import __version__ as client_version
 from CRABClient.ClientMapping import parametersMapping
 from CRABClient.ClientExceptions import ClientException, RESTInterfaceException, CommandFailedException
 from CRABClient.ClientUtilities import getAvailCommands, initLoggers, setConsoleLogLevelVar, StopExecution, flushMemoryLogger, LOGFORMATTER
