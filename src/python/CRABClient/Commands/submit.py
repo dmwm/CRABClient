@@ -417,7 +417,7 @@ class submit(SubCommand):
         try:
             #tmpDir = tempfile.mkdtemp()
             #self.logger.info('Created temporary directory for dry run sandbox in %s' % tmpDir)
-            self.logger.info('Execute rest run in local sub-directory of %s', projDir)
+            self.logger.info('Execute test run in local sub-directory of %s', projDir)
             os.chdir(os.path.join(projDir, 'local'))
             #downloadFromS3(crabserver=self.crabserver, filepath=os.path.join(tmpDir, 'dry-run-sandbox.tar.gz'),
             #               objecttype='runtimefiles', taskname=uniquerequestname, logger=self.logger)
@@ -545,8 +545,8 @@ def setCMSRunAnalysisOpts(events=10):
     Parse the job ad to obtain the arguments that were passed to condor.
     """
 
-    with open('JobArgs-1.json', 'r') as f:
-        args = json.load(f)
+    with open('input_args.json', 'r') as f:  # this file contains args for all jobs
+        args = json.load(f)[0]               # pick job #1
     args.update({'CRAB_Id': '0', 'firstEvent': '1', 'lastEvent': str(int(events) + 1)})
     with open('DryRunJobArg.json', 'w') as f:
         json.dump(args, f)
