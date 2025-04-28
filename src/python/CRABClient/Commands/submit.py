@@ -379,6 +379,16 @@ class submit(SubCommand):
             msg += "\nIf you really need it write a mail to %s explaining your use case." % FEEDBACKMAIL
             self.logger.warning("%sWARNING%s: %s" % (colors.RED, colors.NORMAL, msg))
 
+        if crab_plugin_name.upper() == 'PRIVATEMC':
+            # since server only knows about eventsPerLumi,
+            # use lumisPerFile (with default = 1) to set eventsPerLumi
+            lumisPerFile = getattr(self.configuration.Data, 'lumisPerFile', 1)
+            eventsPerFile = self.configuration.Data.unitsPerJob
+            setattr(self.configuration.JobType, 'eventsPerLumi', eventsPerFile//lumisPerFile)
+            # must prevent an unknown parameter to be added to the PUT call to server
+            if hasattr(self.configuration.Data, 'lumisPerFile'):
+                delattr(self.configuration.Data, 'lumisPerFile')
+
         return True, "Valid configuration"
 
 

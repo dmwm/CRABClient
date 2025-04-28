@@ -40,7 +40,6 @@ parametersMapping = {
                   'jobtype'        : {'default': 'Analysis', 'config': ['JobType.pluginName',
                                                                         'JobType.externalPluginFile'],      'type': 'StringType',  'required': False},
                   'generator'      : {'default': 'pythia',   'config': ['JobType.generator'],               'type': 'StringType',  'required': False},
-                  'eventsperlumi'  : {'default': None,       'config': ['JobType.eventsPerLumi'],           'type': 'IntType',     'required': False},
                   'addoutputfiles' : {'default': [],         'config': ['JobType.outputFiles'],             'type': 'ListType',    'required': False},
                   'maxjobruntime'  : {'default': 1250,       'config': ['JobType.maxJobRuntimeMin'],        'type': 'IntType',     'required': False},
                   'numcores'       : {'default': 1,          'config': ['JobType.numCores'],                'type': 'IntType',     'required': False},
@@ -63,6 +62,9 @@ parametersMapping = {
                   'ignoreglobalblacklist':{'default': False, 'config': ['Site.ignoreGlobalBlacklist'],      'type': 'BooleanType', 'required': False},
                   'partialdataset' : {'default': False,      'config': ['Data.partialDataset'],             'type': 'BooleanType', 'required': False},
                   'inputblocks'    : {'default': [],         'config': ['Data.inputBlocks'],                'type': 'ListType',    'required': False},
+                # the folllwing one is deprecated in crabConfig, but it must be listed since it is what we send to server
+                # the value is obtained from Data.lumisPerFile below and number of jobs (files)
+                  'eventsperlumi'  : {'default': None,       'config': ['JobType.eventsPerLumi'],           'type': 'IntType',     'required': False},
                  },
     'other-config-params': [         {'default': None,       'config': ['General.workArea'],                'type': 'StringType',  'required': False},
                                      {'default': 'prod',     'config': ['General.instance'],                'type': 'StringType',  'required': True },
@@ -80,8 +82,9 @@ parametersMapping = {
                                      {'default': None,       'config': ['JobType.copyCatTaskname'],         'type': 'StringType',  'required': False},
                                      {'default': 'prod',     'config': ['JobType.copyCatInstance'],         'type': 'StringType',  'required': False},
                                      {'default': None,       'config': ['JobType.copyCatWorkdir'],          'type': 'StringType',  'required': False},
-                                     {'default': [],         'config': ['JobType.inputFiles'],              'type': 'ListType',    'required': False}
-                           ]
+                                     {'default': [],         'config': ['JobType.inputFiles'],              'type': 'ListType',    'required': False},
+                                     {'default': None,       'config': ['Data.lumisPerFile'],               'type': 'IntType',     'required': False},
+]
 }
 
 renamedParams = {
@@ -103,7 +106,8 @@ renamedParams = {
 
 # dictionary format: param: reasons
 deprecatedParams = {
-    'JobType.sendPythonFolder': 'Now pythonFolder is always added to sandbox'
+    'JobType.sendPythonFolder': 'Now pythonFolder is always added to sandbox',
+    'JobType.eventsPerLumi': 'Use Data.lumisPerFile instead',
 }
 
 
