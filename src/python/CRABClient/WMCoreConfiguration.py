@@ -147,6 +147,19 @@ class ConfigSection(object):
         self._internal_settings.add(name)
         return
 
+    def __delattr__(self, name):
+        if name.startswith("_internal_"):
+            # skip test for internal setting
+            object.__delattr__(self, name)
+            return
+        else:
+            if name in self._internal_children:
+                self._internal_children.remove(name)
+            if name in self._internal_settings:
+                self._internal_settings.remove(name)
+            object.__delattr__(self, name)
+            return
+
     def __iter__(self):
         for attr in self._internal_settings:
             yield getattr(self, attr)
