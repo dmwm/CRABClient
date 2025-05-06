@@ -492,8 +492,8 @@ class status(SubCommand):
         """
         sortdict = {}
         outputMsg = "\nExtended Job Status Table:\n"
-        outputMsg += "\n%4s %-12s %-20s %10s %10s %10s %10s %10s %10s %15s" \
-                   % ("Job", "State", "Most Recent Site", "Runtime", "Mem (MB)", "CPU %", "Retries", "Restarts", "Waste", "Exit Code")
+        outputMsg += "\n%4s %-12s %-20s %10s %9s %5s %8s %9s %10s %14s" \
+                   % ("Job", "State", "Most Recent Site", "Runtime", "Mem (MB)", "CPU %", "Retries", "Restarts", "Waste", "Last ExitCode")
         mem_cnt = 0
         mem_min = -1
         mem_max = 0
@@ -576,7 +576,7 @@ class status(SubCommand):
                 ec = str(info['Error'][0]) # exit code of this failed job
             sortdict[str(jobid)] = {'state': state, 'site': site, 'runtime': wall_str, 'memory': mem, 'cpu': cpu, \
                                     'retries': info.get('Retries', 0), 'restarts': info.get('Restarts', 0), 'waste': waste, 'exitcode': ec}
-            outputMsg += "\n%4s %-12s %-20s %10s %10s %10s %10s %10s %10s %15s" \
+            outputMsg += "\n%4s %-12s %-20s %10s %9s %5s %8s %9s %10s %14s" \
                        % (jobid, state, site, wall_str, mem, cpu, info.get('Retries', 0),
                           info.get('Restarts', 0), waste, ' Postprocessing failed' if ec == '90000' else ec)
         if not quiet:
