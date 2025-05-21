@@ -115,6 +115,8 @@ class preparelocal(SubCommand):
         # The "tar xzmf CMSRunAnalysis.tar.gz" is needed because in CRAB3_RUNTIME_DEBUG mode the file is not unpacked (why?)
         # Job.submit is also modified to set some things that are condor macro expanded during submission (needed by cmscp)
         bashWrapper = """#!/bin/bash
+        
+[[ "$1" =~ ^[1-9][0-9]*$ ]] || { echo "Usage: $0 <numeric job_id>"; exit 1; }
 
 . ./submit_env.sh && save_env && setup_local_env
 
