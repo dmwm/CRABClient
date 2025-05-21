@@ -8,6 +8,7 @@ import math
 import json
 import logging
 import time
+import calendar
 import tempfile
 from ast import literal_eval
 from datetime import datetime
@@ -25,7 +26,7 @@ from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ConfigurationException
 from CRABClient.ClientMapping import parametersMapping
 
-from ServerUtilities import (getEpochFromDBTime, TASKDBSTATUSES_TMP,
+from ServerUtilities import (getEpochFromDBTime, TASKDBSTATUSES_TMP, TASKLIFETIME,
                              FEEDBACKMAIL, getProxiedWebDir, isEnoughRucioQuota)
 
 PUBLICATION_STATES = {
@@ -81,6 +82,22 @@ class status(SubCommand):
             return self.makeStatusReturnDict(crabDBInfo, dbStatus, statusFailureMsg=failureMsg)
 
         self.logger.debug("The CRAB server submitted your task to the Grid scheduler (cluster ID: %s)" % rootDagId)
+
+        # check if task is too old to get information from WEB_DIR
+        startTime = getColumn(crabDBInfo, 'tm_start_time')
+        # from "YYYY-MM-DD HH:MM:SS.xxxxxx" to struct_time to seconds since Epoch
+        struct = time.strptime(startTime, '%Y-%m-%d %H:%M:%S.%f')
+        submissionTime = calendar.timegm(struct)
+        taskAge = int((time.time() - submissionTime) / 86400)  # number of days since submission
+        cleanUpTime = int(TASKLIFETIME / 86400)  +10  # task lifetime in days, plus 10 before cleanup
+        if taskAge > cleanUpTime:
+            msg = "Task was submitted %s days ago." % taskAge
+            msg += "\nFiles are purged from Grid scheduler after %s days." % cleanUpTime
+            msg += " No further information is available"
+            self.logger.info(msg)
+            combinedStatus = "UNKNOWN"
+            return self.makeStatusReturnDict(crabDBInfo, combinedStatus, statusFailureMsg=msg)
+
 
         if not webdir:
             # if the dag is submitted and the webdir is not there we have to wait that AdjustSites runs
@@ -213,6 +230,7 @@ class status(SubCommand):
             return statusDict
         if not statusCacheInfo:
             self.logger.error('Format error in status_cache. Empty file ?')
+            return {'commandStatus': 'FAILED'}
         self.logger.debug("Got information from status cache file: %s", statusCacheInfo)
 
         automaticSplitt = splitting == 'Automatic'
