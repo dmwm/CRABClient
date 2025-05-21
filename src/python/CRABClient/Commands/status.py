@@ -213,6 +213,7 @@ class status(SubCommand):
             return statusDict
         if not statusCacheInfo:
             self.logger.error('Format error in status_cache. Empty file ?')
+            return {'commandStatus': 'FAILED'}
         self.logger.debug("Got information from status cache file: %s", statusCacheInfo)
 
         automaticSplitt = splitting == 'Automatic'
