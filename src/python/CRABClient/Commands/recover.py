@@ -474,14 +474,11 @@ class recover(SubCommand):
         """
 
         retval = {"step": "report"}
-
-        failingTaskPublish = getColumn(self.failingCrabDBInfo, 'tm_publication')
-        self.logger.debug("stepReport() - tm_publication: %s %s", type(failingTaskPublish), failingTaskPublish)
         # - if the user specified --strategy=notPublished but the original failing task
         #   disabled publishing, then `crab report` fails and raises and exception.
         #   so, we will automatically switch to notFinished and print a warning
         # - assuming "strategy" is always in self.options.__dict__.keys():
-        if failingTaskPublish != "T" and self.options.__dict__["strategy"] != "notFinished":
+        if not self.failingTaskInfo["publication"] and self.options.__dict__["strategy"] != "notFinished":
             self.logger.warning("WARNING - crab report - The original task had publication disabled. recovery strategy changed to notFinished")
             self.options.__dict__["strategy"] = "notFinished"
 
@@ -524,7 +521,7 @@ class recover(SubCommand):
 
         retval = {"step": "buildLumiRecoveryInfo"}
         recoverLumimaskPath = ""
-        if failingTaskPublish == "T" and self.options.__dict__["strategy"] == "notPublished":
+        if self.failingTaskInfo["publication"] and self.options.__dict__["strategy"] == "notPublished":
             recoverLumimaskPath = os.path.join(self.crabProjDir, "results", "notPublishedLumis.json")
             # print a proper error message if the original task+recovery task(s) have processed everything.
             publishedAllLumis = True
@@ -540,7 +537,7 @@ class recover(SubCommand):
                 retval.update({"commandStatus": "NothingToDo", "msg": msg})
                 return retval
         else:
-            if failingTaskPublish == "T" and self.options.__dict__["strategy"] == "notFinished":
+            if self.failingTaskInfo["publication"] and self.options.__dict__["strategy"] == "notFinished":
                 self.logger.warning("%sWarning%s: You are recovering a task with publication enabled with notFinished strategy, this will likely cause to have DUPLICATE LUMIS in the output dataset." % (colors.RED, colors.NORMAL))
             # the only other option should be self.options.__dict__["strategy"] == "notFinished":
             recoverLumimaskPath = os.path.join(self.crabProjDir, "results", "notFinishedLumis.json")
