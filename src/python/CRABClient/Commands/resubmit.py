@@ -130,11 +130,10 @@ class resubmit(SubCommand):
                 jobStatusDict[jobId] = jobStatus
 
         failedJobStatus = 'failed'
-        finishedJobStatus = 'finished'
 
         possibleToResubmitJobIds = []
         for jobStatus, jobId in jobList:
-            if ((self.options.force and jobStatus == finishedJobStatus) or jobStatus == failedJobStatus) and consider(jobId):
+            if jobStatus == failedJobStatus and consider(jobId):
                 possibleToResubmitJobIds.append(jobId)
 
         allowedJobStates = [failedJobStatus]
@@ -146,8 +145,6 @@ class resubmit(SubCommand):
                 self.jobids = [str(jobid) for (_, jobid) in jobidstuple]
             msg = "Requesting resubmission of jobs %s in task %s" % (self.jobids, self.cachedinfo['RequestName'])
             self.logger.debug(msg)
-            if self.options.force:
-                allowedJobStates += [finishedJobStatus]
             # Go through the jobids and check if it's possible to resubmit them
             for jobId in self.jobids:
                 if (jobId not in jobStatusDict) or (jobStatusDict[jobId] not in allowedJobStates):
@@ -155,9 +152,6 @@ class resubmit(SubCommand):
                     notPossibleAndWantedJobIds = list(set(self.jobids) - set(possibleAndWantedJobIds))
                     msg = "Not possible to resubmit the following jobs:\n%s\n" % notPossibleAndWantedJobIds
                     msg += "Only jobs in status %s can be resubmitted. " % failedJobStatus
-                    msg += "Jobs in status %s can also be resubmitted, " % finishedJobStatus
-                    msg += "but only if the jobid is specified and the force option is set. "
-                    msg += "Successful jobs can only be resubmitted before the task is COMPLETED"
                     raise ConfigurationException(msg)
             return self.jobids
         else:
@@ -166,8 +160,6 @@ class resubmit(SubCommand):
 
             if not possibleToResubmitJobIds:
                 msg = "Found no jobs to resubmit. Only jobs in status %s can be resubmitted. " % failedJobStatus
-                msg += "Jobs in status %s can also be resubmitted, but only if the jobids " % finishedJobStatus
-                msg += "are specified and the force option is set."
                 raise ConfigurationException(msg)
 
             return possibleToResubmitJobIds
@@ -238,13 +230,6 @@ class resubmit(SubCommand):
                                help="Set the priority of this task compared to other tasks you own; tasks default to 10." + \
                                       " Tasks with higher priority values run first. This does not change your share compared to other users.")
 
-        self.parser.add_option('--force',
-                               dest='force',
-                               default=False,
-                               action='store_true',
-                               help="Force resubmission of successful jobs indicated in --jobids option." +
-                               " Only works if task is not in COMPLETED status")
-
         self.parser.add_option('--publication',
                                dest='publication',
                                default=False,
@@ -278,12 +263,6 @@ class resubmit(SubCommand):
                 msg += " The last option is to only resubmit (failed) publications,"
                 msg += " which does not allow yet filtering on job ids (ALL failed publications will be resubmitted)."
                 raise ConfigurationException(msg)
-            if self.options.force:
-                msg = "The option --force"
-                msg += " can not be specified together with the option --publication."
-                msg += " The last option is to only resubmit failed publications."
-                msg += " Publications in a status other than 'failed' can not be resubmitted."
-                raise ConfigurationException(msg)
 
         ## The --jobids option indicates which jobs have to be resubmitted. If it is not
         ## given, then all jobs in the task that are not running or successfully
@@ -294,12 +273,6 @@ class resubmit(SubCommand):
         if self.options.jobids:
             jobidstuple = validateJobids(self.options.jobids, self.splitting != 'Automatic')
             self.jobids = [str(jobid) for (_, jobid) in jobidstuple]
-
-        ## The --force option should not be accepted unless combined with a user-given
-        ## list of job ids via --jobids.
-        if self.options.force and not self.jobids:
-            msg = "Option --force can only be used in combination with option --jobids."
-            raise ConfigurationException(msg)
 
         ## Covention used for the job parameters that the user can set when doing job
         ## resubmission (i.e. siteblacklist, sitewhitelist, maxjobruntime, maxmemory,
