@@ -1,3 +1,6 @@
+# silence pylint complaints about things we need for Python 2.6 compatibility
+# pylint: disable=unspecified-encoding, raise-missing-from, consider-using-f-string
+
 import re
 import os
 import tarfile
@@ -155,7 +158,7 @@ class recover(SubCommand):
         side effects: none
         """
         # self.options and self.args are automatically filled by the __init__()
-        # that recover inherits from SubCommand. 
+        # that recover inherits from SubCommand.
 
         self.logger.debug("stepInit() - self.cmdconf %s", self.cmdconf)
         self.logger.debug("stepInit() - self.cmdargs %s", self.cmdargs)
@@ -485,7 +488,7 @@ class recover(SubCommand):
             os.remove(os.path.join(self.crabProjDir, "results", "notFinishedLumis.json"))
             os.remove(os.path.join(self.crabProjDir, "results", "notPublishedLumis.json"))
             self.logger.info("crab report - needed to delete existing files!")
-        except:
+        except Exception:  # pylint: disable=broad-exception-caught
             pass
 
         cmdargs = []
@@ -504,7 +507,7 @@ class recover(SubCommand):
         self.logger.debug("stepReport() - report, cmdargs: %s", cmdargs)
         reportCmd = report(logger=self.logger, cmdargs=cmdargs)
         with SilenceLogging(self.logger, "report") as _:
-            # FIXME - stays noisy because interference with getMutedStatusInfo()
+            # stays noisy because interference with getMutedStatusInfo()
             retval.update({"report": reportCmd()})
         self.logger.debug("stepReport() - report, after, self.configuration: %s", self.configuration)
         self.logger.debug("stepReport() - report, retval: %s", retval)
