@@ -82,12 +82,11 @@ class CMSSWConfig(object):
                 if cwd not in sys.path:
                     sys.path.append(cwd)
                 try:
-                    oldstdout = sys.stdout
-                    sys.stdout = open(logger.logfile, 'a')
                     self.fullConfig = load_module(cfgBaseName, modRef)
-                finally:
-                    sys.stdout.close()
-                    sys.stdout = oldstdout
+                except Exception as e:
+                     msg = "ERROR: python exception inside CMSSW configuration file %s\n %s" % (cfgBaseName, str(e))
+                     logger.error(msg)
+                     raise e
                 # need to turn sys.path into a static set of strings for using it as a cache key
                 # otherwise is a pointer to a function and we can't use it to check for stability
                 configurationCache[cacheLine] = { 'config' : self.fullConfig , 'path' : tuple(sys.path) }
