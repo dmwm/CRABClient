@@ -36,8 +36,7 @@ SPLITTING_RECOVER_FILEBASED = set(["FileBased"])
 
 class recover(SubCommand):
     """
-    given a taskname, create a new task that process only what the original task
-    did not process yet
+    given a taskname, create a new task that processes only what the original task did not process yet
     """
 
     name = "recover"
