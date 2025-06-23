@@ -729,7 +729,7 @@ class recover(SubCommand):
         self.parser.add_option("--strategy",
                                dest = "strategy",
                                default="notPublished",
-                               help = "When using lumibased splitting, sets crab report --recovery=$option")
+                               help = "When using lumibased splitting, sets crab report --recovery option to this value")
 
         self.parser.add_option("--destinstance",
                                dest = "destinstance",

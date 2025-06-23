@@ -534,7 +534,7 @@ class report(SubCommand):
         self.parser.add_option("--recovery",
                                dest="recovery",
                                default="notFinished",
-                               help="Method to calculate not processed lumis: notFinished," + \
+                               help="Strategy to calculate not processed lumis: notFinished," + \
                                       " notPublished or failed [default: %default].")
 
         self.parser.add_option("--dbs",
