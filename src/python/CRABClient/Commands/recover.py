@@ -1,11 +1,19 @@
+""" implements the crab recover command """
 # silence pylint complaints about things we need for Python 2.6 compatibility
 # pylint: disable=unspecified-encoding, raise-missing-from, consider-using-f-string
+# also silence sytle complaints due to use of old code here and there
+# pylint: disable=invalid-name
+
+# there are many lines where no LF helps reading, and so do other things
+# pylint: disable=multiple-statements, too-many-return-statements, too-many-instance-attributes, too-many-branches
 
 import re
 import os
 import tarfile
 import datetime
 import json
+
+from ServerUtilities import SERVICE_INSTANCES
 
 from CRABClient.Commands.SubCommand import SubCommand
 
@@ -32,7 +40,6 @@ from CRABClient.Commands.getsandbox import getsandbox
 # step submit
 from CRABClient.Commands.submit import submit
 from CRABClient.UserUtilities import getColumn
-from ServerUtilities import SERVICE_INSTANCES
 
 SPLITTING_RECOVER_LUMIBASED = set(["LumiBased", "Automatic", "EventAwareLumiBased"])
 SPLITTING_RECOVER_FILEBASED = set(["FileBased"])
@@ -44,6 +51,17 @@ class recover(SubCommand):
 
     name = "recover"
     shortnames = ["rec"]
+
+    def __init__(self, logger, cmdargs=None):
+        SubCommand.__init__(self, logger, cmdargs)
+        self.failingTaskName = None
+        self.failingTaskInfo = None
+        self.failingTaskStatus = None
+        self.crabProjDir = None
+        self.restHostCommonname = None
+        self.failedJobs = None
+        self.failingCrabDBInfo = None
+        self.recoverconfig = None
 
     def __call__(self):
         """
@@ -96,7 +114,7 @@ class recover(SubCommand):
         retval = self.stepReport()
         if retval["commandStatus"] != "SUCCESS": return self.stepExit(retval)
         if "report" not in retval: return self.stepExit(retval)
-        report = retval["report"]
+        taskReport = retval["report"]
 
         self.logger.info("Prepare recovery task ...")
 
@@ -106,7 +124,7 @@ class recover(SubCommand):
         submitArgs = retval["cmdArgs"]
 
         if self.failingTaskInfo["splitalgo"] in SPLITTING_RECOVER_LUMIBASED:
-            retval = self.stepBuildLumiRecoveryInfo(report)
+            retval = self.stepBuildLumiRecoveryInfo(taskReport)
             if retval["commandStatus"] != "SUCCESS": return self.stepExit(retval)
             if "recoverLumimaskPath" not in retval: return self.stepExit(retval)
             recoverLumimaskPath = retval["recoverLumimaskPath"]
@@ -213,7 +231,7 @@ class recover(SubCommand):
 
     def stepValidate(self):
         """
-
+        check if the task in argument can be recovered
         """
 
         ## validate
@@ -246,7 +264,7 @@ class recover(SubCommand):
             return {"commandStatus": "FAILED", "step": "RemakeAndValidate" , "msg": msg }
 
         self.failingTaskInfo["splitalgo"] = splitalgo
-        self.failingTaskInfo["publication"] = True if getColumn(self.failingCrabDBInfo, 'tm_publication') == "T" else False
+        self.failingTaskInfo["publication"] = getColumn(self.failingCrabDBInfo, 'tm_publication') == "T"
         self.failingTaskInfo["username"] = getColumn(self.failingCrabDBInfo, 'tm_username')
 
         self.logger.debug("stepRemakeAndValidate() - failingtaskinfo - %s", self.failingTaskInfo)
@@ -416,7 +434,7 @@ class recover(SubCommand):
 
         retval = {'step': "checkKill"}
 
-        # check the task status. 
+        # check the task status.
         # it does not make sense to recover a task in COMPLETED
         if not self.failingTaskStatus["status"] in ("SUBMITTED", "FAILED", "FAILED (KILLED)"):
             msg = "Tasks in status {} can not be recovered".format(self.failingTaskStatus["status"])
@@ -514,7 +532,7 @@ class recover(SubCommand):
         retval.update({'commandStatus' : 'SUCCESS'})
         return retval
 
-    def stepBuildLumiRecoveryInfo(self, report):
+    def stepBuildLumiRecoveryInfo(self, taskReport):
         """
         used to compute which lumisections have not been processed by the original task.
         requires TW to have processed lumisection information for submitting the original task.
@@ -527,11 +545,11 @@ class recover(SubCommand):
             recoverLumimaskPath = os.path.join(self.crabProjDir, "results", "notPublishedLumis.json")
             # print a proper error message if the original task+recovery task(s) have processed everything.
             publishedAllLumis = True
-            for dataset, lumis in report["outputDatasetsLumis"].items():
-                notPublishedLumis = BasicJobType.subtractLumis(report["lumisToProcess"], lumis )
+            for dataset, lumis in taskReport["outputDatasetsLumis"].items():
+                notPublishedLumis = BasicJobType.subtractLumis(taskReport["lumisToProcess"], lumis )
                 self.logger.debug("stepBuildLumiReocoveryInfo() - report, subtract: %s %s",
                                 dataset, notPublishedLumis)
-                if notPublishedLumis: 
+                if notPublishedLumis:
                     publishedAllLumis = False
             if publishedAllLumis:
                 msg = "stepBuildLumiReocoveryInfo() - all lumis have been published in the output dataset. crab recover will exit"
@@ -540,7 +558,8 @@ class recover(SubCommand):
                 return retval
         else:
             if self.failingTaskInfo["publication"] and self.options.__dict__["strategy"] == "notFinished":
-                self.logger.warning("%sWarning%s: You are recovering a task with publication enabled with notFinished strategy, this will likely cause to have DUPLICATE LUMIS in the output dataset." % (colors.RED, colors.NORMAL))
+                msg = "%sWarning%s: You are recovering a task with publication enabled with notFinished strategy" % (colors.RED, colors.NORMAL)
+                msg += " this will likely cause to have DUPLICATE LUMIS in the output dataset."
             # the only other option should be self.options.__dict__["strategy"] == "notFinished":
             recoverLumimaskPath = os.path.join(self.crabProjDir, "results", "notFinishedLumis.json")
             # print a proper error message if the original task+recovery task(s) have processed everything.
@@ -631,15 +650,13 @@ class recover(SubCommand):
 
         retval = {"step": "extractSandbox"}
 
-        debug_sandbox = tarfile.open(sandbox_paths[0])
-        debug_sandbox.extractall(path=os.path.join(self.crabProjDir, "user_sandbox"))
-        debug_sandbox.close()
+        with tarfile.open(sandbox_paths[0]) as debug_sandbox:
+            debug_sandbox.extractall(path=os.path.join(self.crabProjDir, "user_sandbox"))
 
-        debug_sandbox = tarfile.open(sandbox_paths[1])
-        debug_sandbox.extractall(path=os.path.join(self.crabProjDir, "debug_sandbox"))
-        debug_sandbox.close()
+        with tarfile.open(sandbox_paths[1]) as debug_sandbox:
+            debug_sandbox.extractall(path=os.path.join(self.crabProjDir, "debug_sandbox"))
 
-        self.recoverconfig = os.path.join(self.crabProjDir, "debug_sandbox", 
+        self.recoverconfig = os.path.join(self.crabProjDir, "debug_sandbox",
                                           "debug" , "crabConfig.py")
 
         retval.update({"commandStatus": "SUCCESS"})
@@ -723,7 +740,7 @@ class recover(SubCommand):
 
         """
         # step: remake
-        # --dir, --cmptask, --instance already added elsewhere: 
+        # --dir, --cmptask, --instance already added elsewhere:
 
         # step: recovery
         self.parser.add_option("--strategy",
@@ -734,7 +751,8 @@ class recover(SubCommand):
         self.parser.add_option("--destinstance",
                                dest = "destinstance",
                                default = None,
-                               help = "(Experimental) The CRABServer instance where you want to submit the recovery task to. Should be used by crab operators only")
+                               help = "(Experimental) The CRABServer instance where you want to submit the recovery task to." +
+                                      " Should be used by crab operators only")
         # if the user sets this option, then it gets tricky to setup a link between the original
         # failing task and the recovery task.
         # this option is to be considered experimental and useful for developers only
@@ -752,12 +770,13 @@ class recover(SubCommand):
 
         # step: remake.
         if self.options.cmptask is None and self.options.projdir is None:
-            msg  = "%sError%s: Please specify a CRAB task project directory or the task name for which to remake a CRAB project directory." % (colors.RED, colors.NORMAL)
+            msg  = "%sError%s: Please specify a CRAB task project directory" % (colors.RED, colors.NORMAL)
+            msg += " or the task name for which to remake a CRAB project directory."
             msg += " Use the --dir or the --task option."
             ex = MissingOptionException(msg)
             ex.missingOption = "cmptask"
             raise ex
-        elif self.options.projdir: 
+        if self.options.projdir:
             self.cmdconf["requiresDirOption"] = True
         elif self.options.cmptask:
             regex = r"^\d{6}_\d{6}_?([^\:]*)\:[a-zA-Z0-9-]+_(crab_)?.+"

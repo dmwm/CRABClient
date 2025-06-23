@@ -1,3 +1,6 @@
+# silence pylint complaints about things we need for Python 2.6 compatibility
+# pylint: disable=unspecified-encoding, raise-missing-from, consider-using-f-string
+
 from __future__ import print_function, division
 
 import os
