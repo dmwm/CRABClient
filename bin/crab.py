@@ -111,10 +111,10 @@ class CRABClient(object):
             ## the parent CRAB3 logger).
             logger = logging.getLogger('CRAB3.all')
             logger.error("ERROR: %s: %s", exc_type.__name__, exc_value)
-            logger.error("\n\tPlease email %s for support with the crab.log file or crab.log URL.", FEEDBACKMAIL)
-            logger.error("\tClient Version: %s", client_version)
-
-            logger.error("\tPlease use 'crab uploadlog' to upload the log file %s to the CRAB cache.", client.logger.logfile)
+            logger.error("\n Look for more details in crab.log file %s", client.logger.logfile)
+            logger.error("  If you can't figure out the problem, please send email to")
+            logger.error("\t%s with the crab.log file or crab.log URL.", FEEDBACKMAIL)
+            logger.error("  Please use 'crab uploadlog' to upload the log file %s to the CRAB cache.", client.logger.logfile)
 
         sys.excepthook = log_exception
 

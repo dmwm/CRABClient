@@ -1,10 +1,13 @@
 """
 Module to handle CMSSW _cfg.py file
 """
+# silence pylint complaints about things we need for Python 2.6 compatibility
+# pylint: disable=unspecified-encoding, raise-missing-from, consider-using-f-string
 
 import re
 import os
 import sys
+import traceback
 import json
 import pickle
 import logging
@@ -28,7 +31,7 @@ class CMSSWConfig(object):
     Class to handle CMSSW _cfg.py file
     """
     def __init__(self, config, userConfig=None, logger=None):
-        global configurationCache  # pylint: disable=global-statement
+        global configurationCache  # pylint: disable=global-statement, global-variable-not-assigned
         self.config = config
         self.logger = logger if logger else logging
 
@@ -82,12 +85,14 @@ class CMSSWConfig(object):
                 if cwd not in sys.path:
                     sys.path.append(cwd)
                 try:
-                    oldstdout = sys.stdout
-                    sys.stdout = open(logger.logfile, 'a')
                     self.fullConfig = load_module(cfgBaseName, modRef)
-                finally:
-                    sys.stdout.close()
-                    sys.stdout = oldstdout
+                except Exception as e:
+                    msg = "ERROR: python exception inside CMSSW configuration file %s\n %s" % (cfgBaseName, str(e))
+                    logger.error(msg)
+                    # also print traceback to console to help user see where the problem is
+                    exc_type, exc_value, tback = sys.exc_info()
+                    traceback.print_exception(exc_type, exc_value, tback, file=sys.__stderr__)
+                    raise e
                 # need to turn sys.path into a static set of strings for using it as a cache key
                 # otherwise is a pointer to a function and we can't use it to check for stability
                 configurationCache[cacheLine] = { 'config' : self.fullConfig , 'path' : tuple(sys.path) }
