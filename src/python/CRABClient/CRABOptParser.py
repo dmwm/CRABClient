@@ -1,7 +1,10 @@
-from optparse import OptionParser
+# silence pylint complaints about things we need for Python 2.6 compatibility
+# pylint: disable=unspecified-encoding, raise-missing-from, consider-using-f-string
 
-from CRABClient import __version__ as client_version
+from optparse import OptionParser  # pylint: disable=deprecated-module
+
 from ServerUtilities import SERVICE_INSTANCES
+from CRABClient import __version__ as client_version
 
 
 class CRABOptParser(OptionParser):
@@ -78,11 +81,6 @@ class CRABCmdOptParser(OptionParser):
         """
             cmdconf:    the command configuration from the ClientMapping
         """
-        self.add_option("--proxy",
-                               dest = "proxy",
-                               default = False,
-                               help = "Use the given proxy. Skip Grid proxy creation and myproxy delegation.")
-
         if cmdconf['requiresDirOption']:
             self.add_option("-d", "--dir",
                                    dest = "projdir",
@@ -91,8 +89,18 @@ class CRABCmdOptParser(OptionParser):
             self.add_option("--task",
                                 dest = "cmptask",
                                 default = None,
-                                help = "The complete task name. Can be taken from 'crab status' output, or from dashboard.")
+                                help = "In alternative to -d, a complete task name. Can be taken from 'crab status' output, or from dashboard.")
 
+        if cmdconf['requiresREST']:
+            self.add_option("--instance",
+                                   dest = "instance",
+                                   type = "string",
+                                   default = "prod",
+                                   help = "Running instance of CRAB service." \
+                                          " Needed whenever --task is used." \
+                                          " Default value is 'prod'. " \
+                                          " Valid values are %s." \
+                                          % str(list(SERVICE_INSTANCES.keys())) )
 
         if cmdconf['requiresProxyVOOptions']:
             self.add_option("--voRole",
@@ -102,10 +110,7 @@ class CRABCmdOptParser(OptionParser):
                                    dest = "voGroup",
                                    default = None)
 
-        if cmdconf['requiresREST']:
-            self.add_option("--instance",
-                                   dest = "instance",
-                                   type = "string",
-                                   help = "Running instance of CRAB service." \
-                                          " Needed whenever --task is used." \
-                                          " Valid values are %s." % str(SERVICE_INSTANCES.keys()))
+        self.add_option("--proxy",
+                        dest="proxy",
+                        default=False,
+                        help="Use the given proxy. Skip Grid proxy creation and myproxy delegation.")

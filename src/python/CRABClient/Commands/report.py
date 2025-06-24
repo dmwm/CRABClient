@@ -1,3 +1,6 @@
+# silence pylint complaints about things we need for Python 2.6 compatibility
+# pylint: disable=unspecified-encoding, raise-missing-from, consider-using-f-string
+
 from __future__ import print_function, division
 
 import os
@@ -534,7 +537,7 @@ class report(SubCommand):
         self.parser.add_option("--recovery",
                                dest="recovery",
                                default="notFinished",
-                               help="Method to calculate not processed lumis: notFinished," + \
+                               help="Strategy to calculate not processed lumis: notFinished," + \
                                       " notPublished or failed [default: %default].")
 
         self.parser.add_option("--dbs",
