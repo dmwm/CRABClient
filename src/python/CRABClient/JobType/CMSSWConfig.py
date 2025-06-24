@@ -7,6 +7,7 @@ Module to handle CMSSW _cfg.py file
 import re
 import os
 import sys
+import traceback
 import json
 import pickle
 import logging
@@ -88,6 +89,9 @@ class CMSSWConfig(object):
                 except Exception as e:
                     msg = "ERROR: python exception inside CMSSW configuration file %s\n %s" % (cfgBaseName, str(e))
                     logger.error(msg)
+                    # also print traceback to console to help user see where the problem is
+                    exc_type, exc_value, tback = sys.exc_info()
+                    traceback.print_exception(exc_type, exc_value, tback, file=sys.__stderr__)
                     raise e
                 # need to turn sys.path into a static set of strings for using it as a cache key
                 # otherwise is a pointer to a function and we can't use it to check for stability
