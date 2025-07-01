@@ -1,3 +1,6 @@
+# silence pylint complaints about things we need for Python 2.6 compatibility
+# pylint: disable=unspecified-encoding, raise-missing-from, consider-using-f-string
+
 """
 This is simply taking care of job submission
 """
@@ -5,11 +8,6 @@ import os
 import sys
 import json
 #import types  # not py3 compatible, see https://github.com/dmwm/CRABClient/issues/5004
-import re
-import shlex
-import shutil
-import tarfile
-import tempfile
 if sys.version_info >= (3, 0):
     from urllib.parse import urlencode, quote  # pylint: disable=E0611
 if sys.version_info < (3, 0):
@@ -22,7 +20,7 @@ from CRABClient.ClientExceptions import ClientException, RESTCommunicationExcept
 from CRABClient.ClientUtilities import getJobTypes, createCache, addPlugin, server_info, colors,\
     setSubmitParserOptions, validateSubmitOptions, checkStatusLoop, execute_command
 
-from ServerUtilities import MAX_MEMORY_PER_CORE, MAX_MEMORY_SINGLE_CORE, downloadFromS3, FEEDBACKMAIL
+from ServerUtilities import MAX_MEMORY_PER_CORE, MAX_MEMORY_SINGLE_CORE, FEEDBACKMAIL
 from CRABClient.Commands.preparelocal import preparelocal as crabPreparelocal
 
 class submit(SubCommand):
