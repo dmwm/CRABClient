@@ -368,11 +368,21 @@ class submit(SubCommand):
             if not os.path.isfile(self.configuration.JobType.scriptExe):
                 msg = "Cannot find the file %s specified in the JobType.scriptExe configuration parameter." % (self.configuration.JobType.scriptExe)
                 return False, msg
-        ## If ignoreLocality is set, check that a sitewhilelist is present
+
+        ## If ignoreLocality is set, check that a sitewhitelist is present
         if getattr(self.configuration.Data, 'ignoreLocality', False):
             if not hasattr(self.configuration.Site, 'whitelist'):
                 msg = "Invalid CRAB configuration:\n when ignoreLocality is set a valid site white list must be specified using the Site.whitelist parameter"
                 return False, msg
+
+        # if userInputFiles is set and inputDataset is not, check that a sitelist is present:
+        if getattr(self.configuration.Data, 'userInputFiles', None) \
+            and not getattr(self.configuration.Data, 'inputDataset', None):
+            if  not hasattr(self.configuration.Site, 'whitelist'):
+                msg = "Invalid CRAB configuration:\n when a userInputFiles list is indicated without an inputDataset"
+                msg += "\n a valid site white list must be specified using the Site.whitelist parameter"
+                return False, msg
+
 
         if hasattr(self.configuration.General, 'failureLimit'):
             msg = "You have specified deprecated parameter 'failureLimit' which will be removed in the near future."
