@@ -1,3 +1,6 @@
+# silence pylint complaints about things we need for Python 2.6 compatibility
+# pylint: disable=unspecified-encoding, raise-missing-from, consider-using-f-string
+
 """
 This is simply taking care of job submission
 """
@@ -5,11 +8,6 @@ import os
 import sys
 import json
 #import types  # not py3 compatible, see https://github.com/dmwm/CRABClient/issues/5004
-import re
-import shlex
-import shutil
-import tarfile
-import tempfile
 if sys.version_info >= (3, 0):
     from urllib.parse import urlencode, quote  # pylint: disable=E0611
 if sys.version_info < (3, 0):
@@ -22,7 +20,7 @@ from CRABClient.ClientExceptions import ClientException, RESTCommunicationExcept
 from CRABClient.ClientUtilities import getJobTypes, createCache, addPlugin, server_info, colors,\
     setSubmitParserOptions, validateSubmitOptions, checkStatusLoop, execute_command
 
-from ServerUtilities import MAX_MEMORY_PER_CORE, MAX_MEMORY_SINGLE_CORE, downloadFromS3, FEEDBACKMAIL
+from ServerUtilities import MAX_MEMORY_PER_CORE, MAX_MEMORY_SINGLE_CORE, FEEDBACKMAIL
 from CRABClient.Commands.preparelocal import preparelocal as crabPreparelocal
 
 class submit(SubCommand):
@@ -368,11 +366,21 @@ class submit(SubCommand):
             if not os.path.isfile(self.configuration.JobType.scriptExe):
                 msg = "Cannot find the file %s specified in the JobType.scriptExe configuration parameter." % (self.configuration.JobType.scriptExe)
                 return False, msg
-        ## If ignoreLocality is set, check that a sitewhilelist is present
+
+        ## If ignoreLocality is set, check that a sitewhitelist is present
         if getattr(self.configuration.Data, 'ignoreLocality', False):
             if not hasattr(self.configuration.Site, 'whitelist'):
                 msg = "Invalid CRAB configuration:\n when ignoreLocality is set a valid site white list must be specified using the Site.whitelist parameter"
                 return False, msg
+
+        # if userInputFiles is set and inputDataset is not, check that a sitelist is present:
+        if getattr(self.configuration.Data, 'userInputFiles', None) \
+            and not getattr(self.configuration.Data, 'inputDataset', None):
+            if  not hasattr(self.configuration.Site, 'whitelist'):
+                msg = "Invalid CRAB configuration:\n when a userInputFiles list is indicated without an inputDataset"
+                msg += "\n a valid site white list must be specified using the Site.whitelist parameter"
+                return False, msg
+
 
         if hasattr(self.configuration.General, 'failureLimit'):
             msg = "You have specified deprecated parameter 'failureLimit' which will be removed in the near future."
