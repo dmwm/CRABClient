@@ -80,6 +80,10 @@ class CRABCmdOptParser(OptionParser):
     def addCommonOptions(self, cmdconf):
         """
             cmdconf:    the command configuration from the ClientMapping
+            Note that default has to be None for most options in order not to
+            override what is in the crab configuration file in case the option is
+            not specified in the command line. E.g. the default instance in case
+            a value is not indicated anywhere by the user is defined in ClientMapping.py
         """
         if cmdconf['requiresDirOption']:
             self.add_option("-d", "--dir",
@@ -95,7 +99,7 @@ class CRABCmdOptParser(OptionParser):
             self.add_option("--instance",
                                    dest = "instance",
                                    type = "string",
-                                   default = "prod",
+                                   default = None,
                                    help = "Running instance of CRAB service." \
                                           " Needed whenever --task is used." \
                                           " Default value is 'prod'. " \
