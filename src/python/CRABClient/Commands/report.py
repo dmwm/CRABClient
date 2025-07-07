@@ -43,6 +43,7 @@ class report(SubCommand):
     def __init__(self, logger, cmdargs=None):
         SubCommand.__init__(self, logger, cmdargs)
         self.resultsDir =  os.path.join(self.requestarea, 'results')
+        self.taskInfo = {}
 
     def __call__(self):
         reportData = self.collectReportData()
@@ -60,6 +61,12 @@ class report(SubCommand):
             msg += " The option --recovery=%s has been specified" % (self.options.recovery)
             msg += " (which instructs to determine the not processed lumis based on published datasets),"
             msg += " but publication has been disabled in the CRAB configuration."
+            raise ConfigurationException(msg)
+
+        if self.options.recovery == 'failed' and self.taskInfo['splitting'] == 'automatic':
+            msg = "%sError%s:" % (colors.RED, colors.NORMAL)
+            msg += " The option --recovery=failed has been specified"
+            msg += " but it is not compatible with automatic splitting"
             raise ConfigurationException(msg)
 
         onlyDBSSummary = False
@@ -318,8 +325,12 @@ class report(SubCommand):
 
         # Query server for information from the taskdb, intput/output file metadata from metadatadb
         dictresult, status, _ = server.get(api=self.defaultApi, data={'workflow': self.cachedinfo['RequestName'], 'subresource': 'report2'})
-
         self.logger.debug("Result: %s" % dictresult)
+
+        # query more info about task from taskdb
+        output, status, _ =  server.get(api='task', data={'workflow': self.cachedinfo['RequestName'], 'subresource': 'status'})
+        self.taskInfo = output['result'][0]
+
         self.logger.info("Running crab status to fetch necessary information.")
         # Get job statuses
         statusDict = getMutedStatusInfo(logger=self.logger, proxy=self.proxyfilename, projdir=self.options.projdir)
