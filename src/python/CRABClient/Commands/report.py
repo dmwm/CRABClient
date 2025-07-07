@@ -1,11 +1,19 @@
 # silence pylint complaints about things we need for Python 2.6 compatibility
 # pylint: disable=unspecified-encoding, raise-missing-from, consider-using-f-string
+# also silence sytle complaints due to use of old code here and there
+# pylint: disable=invalid-name
+
+# there are many lines where no LF helps reading, and so do other things
+# pylint: disable=multiple-statements, too-many-return-statements, too-many-instance-attributes, too-many-branches
+
 
 from __future__ import print_function, division
 
 import os
 import json
+import tempfile
 import tarfile
+import shutil
 from ast import literal_eval
 
 try:
@@ -14,12 +22,14 @@ except Exception:  # pylint: disable=broad-except
     # if FWCore version is not py3 compatible, use our own
     from CRABClient.LumiList import LumiList
 
+from ServerUtilities import downloadFromS3
+
 from CRABClient.ClientUtilities import colors, execute_command
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.JobType.BasicJobType import BasicJobType
-from CRABClient.UserUtilities import getMutedStatusInfo, curlGetFileFromURL
-from CRABClient.ClientExceptions import ConfigurationException, \
-    UnknownOptionException, CommandFailedException
+from CRABClient.UserUtilities import getMutedStatusInfo
+from CRABClient.ClientExceptions import (ConfigurationException,
+                                         UnknownOptionException, CommandFailedException)
 
 class report(SubCommand):
     """
@@ -211,8 +221,8 @@ class report(SubCommand):
         if self.options.outdir:
             jsonFileDir = self.options.outdir
         else:
-            jsonFileDir = os.path.join(self.requestarea, 'results')
-        self.logger.info("Will save lumi files into output directory %s" % (jsonFileDir))
+            jsonFileDir = self.resultsDir
+        self.logger.info("Will put report files in directory %s" % (jsonFileDir))
         if not os.path.exists(jsonFileDir):
             self.logger.debug("Creating directory %s" % (jsonFileDir))
             os.makedirs(jsonFileDir)
@@ -305,7 +315,7 @@ class report(SubCommand):
 
     def collectReportData(self):
         """
-        Gather information from the server, status2, DBS and files in the webdir that is needed for the report.
+        Gather information from the server, status2, DBS and files in S3 that is needed for the report.
         """
         reportData = {}
 
@@ -348,11 +358,14 @@ class report(SubCommand):
                     reportData['processedRunsAndLumis'][jobId] = dictresult['result'][0]['runsAndLumis'][jobId]
 
         reportData['publication'] = statusDict['publicationEnabled']
-        userWebDirURL = statusDict['proxiedWebDir']
         jobs = [j for (s, j) in statusDict['jobList']]
 
-        (reportData['lumisToProcess'], reportData['filesToProcess'] ) = \
-            self.getFilesAndLumisToProcess(userWebDirURL, jobs, self.cachedinfo['RequestName'])
+        # download needed files from S3 tarball an place them in result directory
+        self.downloadInputFiles(taskname=self.cachedinfo['RequestName'])
+
+        # extract information about what needed to be processed
+
+        (reportData['lumisToProcess'], reportData['filesToProcess'] ) = self.getFilesAndLumisToProcess(jobs)
         reportData['inputDataset'] = statusDict['inputDataset']
 
         for jobId in jobStatusDict:
@@ -361,7 +374,7 @@ class report(SubCommand):
             if jobStatusDict[jobId] == 'failed':
                 reportData['failedFiles'][jobId] = reportData['filesToProcess'][jobId]
 
-        inputDatasetInfo = self.getInputDatasetLumis(reportData['inputDataset'], userWebDirURL)['inputDataset']
+        inputDatasetInfo = self.getInputDatasetLumis(reportData['inputDataset'])
         reportData['inputDatasetLumis'] = inputDatasetInfo['lumis']
         reportData['inputDatasetDuplicateLumis'] = inputDatasetInfo['duplicateLumis']
         reportData['outputDatasets'] = dictresult['result'][0]['taskDBInfo']['outputDatasets']
@@ -372,7 +385,35 @@ class report(SubCommand):
 
         return reportData
 
-    def getFilesAndLumisToProcess(self, userWebDirURL, jobs, workflow):
+    def downloadInputFiles(self, taskname):
+        """
+        pulls big tarball from S3 into /tmp and extract in "/results" the files which we need
+        """
+        tmpDir = tempfile.mkdtemp()
+        inputsFilename = os.path.join(tmpDir, 'InputFiles.tar.gz')
+        downloadFromS3(crabserver=self.crabserver, filepath=inputsFilename,
+                       objecttype='runtimefiles', taskname=taskname, logger=self.logger)
+        with tarfile.open(inputsFilename) as tf:
+            tf.extract('run_and_lumis.tar.gz', self.resultsDir)
+            tf.extract('input_files.tar.gz', self.resultsDir)
+            # following files may be missing if input has no dataset info. create empyt JSON in case
+            try:
+                tf.extract('input_dataset_lumis.json', self.resultsDir)
+            except KeyError:
+                inputLumisFile =  os.path.join(self.resultsDir, 'input_dataset_lumis.json')
+                with open(inputLumisFile, 'w') as fd:
+                    fd.write('{}')
+            try:
+                # this one in particular is a old legacy which is likely useless and we
+                # may want to remove. Be prepared for it to be missing w/o failing
+                tf.extract('input_dataset_duplicate_lumis.json', self.resultsDir)
+            except KeyError:
+                duplicateLumisFile = os.path.join(self.resultsDir, 'input_dataset_duplicate_lumis.json')
+                with open(duplicateLumisFile, 'w') as fd:
+                    fd.write('{}')
+        shutil.rmtree(tmpDir)
+
+    def getFilesAndLumisToProcess(self, jobs):
         """
         What each job was requested to process
         Get the lumis and files to process by each job in the workflow.
@@ -382,103 +423,74 @@ class report(SubCommand):
         """
         lumis = {}
         files = {}
-        if userWebDirURL:
-            url = userWebDirURL + "/run_and_lumis.tar.gz"
-            tarFilename = os.path.join(self.requestarea, 'results/run_and_lumis.tar.gz')
-            httpCode = curlGetFileFromURL(url, tarFilename, self.proxyfilename, logger=self.logger)
-            if httpCode == 200:
-                # Not using 'with tarfile.open(..) as t:' syntax because
-                # the tarfile module only received context manager protocol support
-                # in python 2.7, whereas CMSSW_5_* uses python 2.6 and breaks here.
-                tarball = tarfile.open(tarFilename)
-                for jobid in jobs:
-                    filename = "job_lumis_%s.json" % (jobid)
-                    try:
-                        member = tarball.getmember(filename)
-                    except KeyError:
-                        self.logger.warning("File %s not found in run_and_lumis.tar.gz for task %s" % (filename, workflow))
-                    else:
-                        fd = tarball.extractfile(member)
-                        try:
-                            lumis[str(jobid)] = json.load(fd)
-                        finally:
-                            fd.close()
-                tarball.close()
-            else:
-                self.logger.error("Failed to retrieve run_and_lumis.tar.gz")
 
-            url = userWebDirURL + "/input_files.tar.gz"
-            tarFilename = os.path.join(self.requestarea, 'results/input_files.tar.gz')
-            httpCode = curlGetFileFromURL(url, tarFilename, self.proxyfilename, logger=self.logger)
-            if httpCode == 200:
-                # Not using 'with tarfile.open(..) as t:' syntax because
-                # the tarfile module only received context manager protocol support
-                # in python 2.7, whereas CMSSW_5_* uses python 2.6 and breaks here.
-                tarball = tarfile.open(tarFilename)
-                for jobid in jobs:
-                    filename = "job_input_file_list_%s.txt" % (jobid)
+
+        tarFilename = os.path.join(self.resultsDir, 'run_and_lumis.tar.gz')
+        with tarfile.open(tarFilename) as tarball:
+            for jobid in jobs:
+                filename = "job_lumis_%s.json" % (jobid)
+                try:
+                    member = tarball.getmember(filename)
+                except KeyError:
+                    self.logger.warning("File %s not found in run_and_lumis.tar.gz" % filename)
+                else:
+                    fd = tarball.extractfile(member)
                     try:
-                        member = tarball.getmember(filename)
-                    except KeyError:
-                        self.logger.warning("File %s not found in input_files.tar.gz for task %s" % (filename, workflow))
-                    else:
-                        fd = tarball.extractfile(member)
-                        try:
-                            jobFiles = json.load(fd)
-                            # inputFile can have three formats depending on wether secondary input files are used:
-                            # 1. a single LFN as a string : "/store/.....root"
-                            # 2. a list of LFNs : ["/store/.....root", "/store/....root", ...]
-                            # 3. a list of dictionaries (one per file) with keys: 'lfn' and 'parents'
-                            #   value for 'lfn' is a string, value for 'parents' is a list of {'lfn':lfn} dictionaries
-                            #   [{'lfn':inputlfn, 'parents':[{'lfn':parentlfn1},{'lfn':parentlfn2}], ....]},...]
-                            if isinstance(jobFiles, str):
-                                files[str(jobid)] = [jobFiles]
-                            if isinstance(jobFiles, list):
-                                files[str(jobid)] = []
-                                for f in jobFiles:
-                                    if isinstance(f, str):
-                                        files[str(jobid)].append(f)
-                                    if isinstance(f, dict):
-                                        files[str(jobid)].append(f['lfn'])
-                        finally:
-                            fd.close()
-                tarball.close()
-            else:
-                self.logger.error("Failed to retrieve input_files.tar.gz")
+                        lumis[str(jobid)] = json.load(fd)
+                    finally:
+                        fd.close()
+
+        tarFilename = os.path.join(self.resultsDir, 'input_files.tar.gz')
+        with tarfile.open(tarFilename) as tarball:
+            for jobid in jobs:
+                filename = "job_input_file_list_%s.txt" % (jobid)
+                try:
+                    member = tarball.getmember(filename)
+                except KeyError:
+                    self.logger.warning("File %s not found in input_files.tar.gz" % filename)
+                else:
+                    fd = tarball.extractfile(member)
+                    try:
+                        jobFiles = json.load(fd)
+                        # inputFile can have three formats depending on wether secondary input files are used:
+                        # 1. a single LFN as a string : "/store/.....root"
+                        # 2. a list of LFNs : ["/store/.....root", "/store/....root", ...]
+                        # 3. a list of dictionaries (one per file) with keys: 'lfn' and 'parents'
+                        #   value for 'lfn' is a string, value for 'parents' is a list of {'lfn':lfn} dictionaries
+                        #   [{'lfn':inputlfn, 'parents':[{'lfn':parentlfn1},{'lfn':parentlfn2}], ....]},...]
+                        if isinstance(jobFiles, str):
+                            files[str(jobid)] = [jobFiles]
+                        if isinstance(jobFiles, list):
+                            files[str(jobid)] = []
+                            for f in jobFiles:
+                                if isinstance(f, str):
+                                    files[str(jobid)].append(f)
+                                if isinstance(f, dict):
+                                    files[str(jobid)].append(f['lfn'])
+                    finally:
+                        fd.close()
 
         return lumis, files
 
-    def getInputDatasetLumis(self, inputDataset, userWebDirURL):
+    def getInputDatasetLumis(self, inputDataset):
         """
         What the input dataset had in DBS when the task was submitted
 
         Get the lumis (and the lumis split across files) in the input dataset. Files
-        containing this information were created at data discovery time and then
-        copied to the schedd.
+        containing this information were created at data discovery time
         """
-        res = {}
-        res['inputDataset'] = {'lumis': {}, 'duplicateLumis': {}}
-        if inputDataset and userWebDirURL:
-            url = userWebDirURL + "/input_dataset_lumis.json"
-            filename = os.path.join(self.requestarea, 'results/input_dataset_lumis.json')
-            # Retrieve the lumis in the input dataset.
-            httpCode = curlGetFileFromURL(url, filename, self.proxyfilename, logger=self.logger)
-            if httpCode == 200:
-                with open(filename) as fd:
-                    res['inputDataset']['lumis'] = json.load(fd)
-            else:
-                self.logger.error("Failed to retrieve input dataset lumis.")
+        res = {'lumis': {}, 'duplicateLumis': {}}
+        if not inputDataset:
+            return res
 
-            url = userWebDirURL + "/input_dataset_duplicate_lumis.json"
-            filename = os.path.join(self.requestarea, 'results/input_dataset_duplicate_lumis.json')
-            # Retrieve the lumis split across files in the input dataset.
-            httpCode = curlGetFileFromURL(url, filename, self.proxyfilename, logger=self.logger)
-            if httpCode == 200:
-                with open(filename) as fd:
-                    res['inputDataset']['duplicateLumis'] = json.load(fd)
-            else:
-                self.logger.error("Failed to retrieve input dataset duplicate lumis.")
-
+        filename = os.path.join(self.resultsDir, 'input_dataset_lumis.json')
+        # Retrieve the lumis in the input dataset.
+        with open(filename) as fd:
+            res['lumis'] = json.load(fd)
+        filename = os.path.join(self.resultsDir, 'input_dataset_duplicate_lumis.json')
+        # Retrieve the lumis split across files in the input dataset.
+        with open(filename) as fd:
+            res['duplicateLumis'] = json.load(fd)
         return res
 
     def getDBSPublicationInfo_viaDasGoclient(self, outputDatasets):
