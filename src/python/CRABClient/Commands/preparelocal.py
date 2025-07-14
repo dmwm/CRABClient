@@ -70,8 +70,9 @@ class preparelocal(SubCommand):
         sandboxName = getColumn(crabDBInfo, 'tm_user_sandbox')
         inputsFilename = os.path.join(os.getcwd(), 'InputFiles.tar.gz')
 
-        if status in ['WAITING', 'NEW', 'HOLDING', 'QUEUED', 'SUBMITFAILED', 'REFUSED', 'TAPERECALL']:
-            raise ClientException('Thic only works for tasks submitted to or uploaded. Current status is %s' % status)
+        uploadedStatus = getColumn(crabDBInfo, 'tm_uploaded')
+        if uploadedStatus == 'F':
+            raise ClientException('This only works for tasks submitted to or uploaded. Current status is %s' % status)
         inputsFilename = os.path.join(os.getcwd(), 'InputFiles.tar.gz')
         sandboxFilename = os.path.join(os.getcwd(), 'sandbox.tar.gz')
         downloadFromS3(crabserver=self.crabserver, filepath=inputsFilename,
