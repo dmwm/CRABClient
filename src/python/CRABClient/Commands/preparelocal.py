@@ -72,7 +72,7 @@ class preparelocal(SubCommand):
 
         uploadedStatus = getColumn(crabDBInfo, 'tm_uploaded')
         if uploadedStatus == 'F':
-            raise ClientException('This only works for tasks submitted to or uploaded. Current status is %s' % status)
+            raise ClientException('This only works for tasks submitted or uploaded. Current status is %s' % status)
         inputsFilename = os.path.join(os.getcwd(), 'InputFiles.tar.gz')
         sandboxFilename = os.path.join(os.getcwd(), 'sandbox.tar.gz')
         downloadFromS3(crabserver=self.crabserver, filepath=inputsFilename,
