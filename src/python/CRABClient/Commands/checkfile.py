@@ -79,7 +79,7 @@ class checkfile(SubCommand):
         if nDisk == 0:
             return {'commandStatus': 'SUCCESS'}
         msg = "List of disk replicas. Check that file exists and has correct size "
-        msg += "(%s bytes):" % self.fileToCheck['size']
+        msg += "(%s bytes) (%s):" % (self.fileToCheck['size'], self.fileToCheck['Hsize'])
         self.logger.info(msg)
 
         self.logger.info("%15s    status", 'RSE')
@@ -203,6 +203,16 @@ class checkfile(SubCommand):
         self.logger.info('  LFN found in Rucio with matching block/dataset parentage')
         self.fileToCheck['size'] = lfnSize
         self.fileToCheck['adler32'] = lfnAdler32
+        nBytes = int(lfnSize)
+        if nBytes < 1024:
+            humanSize = "%5.1f B" % nBytes
+        elif nBytes < 1024*1024:
+            humanSize = "%5.1f KB" % (nBytes/1024)
+        elif nBytes < 1024*1024*1024:
+            humanSize = "%5.1f MB" % (nBytes/1024/1024)
+        else:
+            humanSize = "%5.1f GB" % (nBytes/1024/1024/1024)
+        self.fileToCheck['Hsize'] = humanSize
         return True, ""
 
     def getReplicaList(self):
