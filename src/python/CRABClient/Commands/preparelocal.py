@@ -80,7 +80,17 @@ class preparelocal(SubCommand):
         downloadFromS3(crabserver=self.crabserver, filepath=sandboxFilename,
                        objecttype='sandbox', logger=self.logger,
                        tarballname=sandboxName, username=username)
+
+        jobWrapperTarball = 'CMSRunAnalysis.tar.gz'
+        twScriptsTarball = 'TaskManagerRun.tar.gz'
         with tarfile.open(inputsFilename) as tf:
+            # this contains jobWrapperTarball and twScriptsTarball
+            # various needed files are inside those in new version of TW, or present
+            # at top level of inputFilename for older TW. Follosing code works for both
+            tf.extractall()
+        with tarfile.open(jobWrapperTarball) as tf:
+            tf.extractall()
+        with tarfile.open(twScriptsTarball) as tf:
             tf.extractall()
 
     def executeTestRun(self, destDir, jobnr):
@@ -125,7 +135,7 @@ export _CONDOR_JOB_AD=Job.${1}.submit
 # leading '+' signs must be removed to use JDL as classAd file
 sed -e 's/^+//' Job.submit > Job.${1}.submit
 
-./CMSRunAnalysis.sh --jobId ${1}
+sh ./CMSRunAnalysis.sh --jobId ${1}
 """
 
         with open(os.path.join(targetDir, "run_job.sh"), "w") as fd:
