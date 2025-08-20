@@ -393,24 +393,35 @@ class report(SubCommand):
         inputsFilename = os.path.join(tmpDir, 'InputFiles.tar.gz')
         downloadFromS3(crabserver=self.crabserver, filepath=inputsFilename,
                        objecttype='runtimefiles', taskname=taskname, logger=self.logger)
+        jobWrapperTarball = os.path.join(tmpDir, 'CMSRunAnalysis.tar.gz')
+        twScriptsTarball = os.path.join(tmpDir, 'TaskManagerRun.tar.gz')
         with tarfile.open(inputsFilename) as tf:
-            tf.extract('run_and_lumis.tar.gz', self.resultsDir)
-            tf.extract('input_files.tar.gz', self.resultsDir)
-            # following files may be missing if input has no dataset info. create empyt JSON in case
-            try:
-                tf.extract('input_dataset_lumis.json', self.resultsDir)
-            except KeyError:
-                inputLumisFile =  os.path.join(self.resultsDir, 'input_dataset_lumis.json')
-                with open(inputLumisFile, 'w') as fd:
-                    fd.write('{}')
-            try:
-                # this one in particular is a old legacy which is likely useless and we
-                # may want to remove. Be prepared for it to be missing w/o failing
-                tf.extract('input_dataset_duplicate_lumis.json', self.resultsDir)
-            except KeyError:
-                duplicateLumisFile = os.path.join(self.resultsDir, 'input_dataset_duplicate_lumis.json')
-                with open(duplicateLumisFile, 'w') as fd:
-                    fd.write('{}')
+            # this contains jobWrapperTarball and twScriptsTarball
+            # various needed files are inside those in new version of TW, or present
+            # at top level of inputFilename for older TW. Follosing code works for both
+            tf.extractall(tmpDir)
+        with tarfile.open(jobWrapperTarball) as tf:
+            tf.extractall(tmpDir)
+        with tarfile.open(twScriptsTarball) as tf:
+            tf.extractall(tmpDir)
+
+        shutil.copy2(os.path.join(tmpDir,'input_files.tar.gz'), self.resultsDir)
+        shutil.copy2(os.path.join(tmpDir,'run_and_lumis.tar.gz'), self.resultsDir)
+        # following files may be missing if input has no dataset info. create empyt JSON in case
+        try:
+            shutil.copy2(os.path.join(tmpDir, 'input_dataset_lumis.json'), self.resultsDir)
+        except FileNotFoundError:
+            inputLumisFile =  os.path.join(self.resultsDir, 'input_dataset_lumis.json')
+            with open(inputLumisFile, 'w') as fd:
+                fd.write('{}')
+        try:
+            # this one in particular is a old legacy which is likely useless and we
+            # may want to remove. Be prepared for it to be missing w/o failing
+            shutil.copy2(os.path.join(tmpDir, 'input_dataset_duplicate_lumis.json'), self.resultsDir)
+        except FileNotFoundError:
+            duplicateLumisFile = os.path.join(self.resultsDir, 'input_dataset_duplicate_lumis.json')
+            with open(duplicateLumisFile, 'w') as fd:
+                fd.write('{}')
         shutil.rmtree(tmpDir)
 
     def getFilesAndLumisToProcess(self, jobs):
