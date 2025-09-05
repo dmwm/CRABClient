@@ -18,6 +18,8 @@ try:
 except ImportError:
     from urllib.parse import quote as urllibQuote  # Python 3+
 
+import http
+
 from CRABClient.ClientUtilities import execute_command
 from ServerUtilities import encodeRequest
 from CRABClient.ClientExceptions import RESTInterfaceException, ConfigurationException
@@ -75,7 +77,7 @@ def parseResponseHeader(response):
             res = re.sub(replaceRegex, "", response.group(0)).strip()
             parts = res.split(' ', 1)
             code = int(parts[0])
-            reason = parts[1] if len(parts) > 1 else ''
+            reason = parts[1] if len(parts) > 1 else http.HTTPStatus(code).phrase
     return code, reason
 
 
