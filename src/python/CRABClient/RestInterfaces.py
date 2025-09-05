@@ -18,6 +18,8 @@ try:
 except ImportError:
     from urllib.parse import quote as urllibQuote  # Python 3+
 
+import http
+
 from CRABClient.ClientUtilities import execute_command
 from ServerUtilities import encodeRequest
 from CRABClient.ClientExceptions import RESTInterfaceException, ConfigurationException
@@ -58,9 +60,9 @@ def parseResponseHeader(response):
     Parse response header and return HTTP code with reason
     Example taken from WMCore pycurl_manager
     """
-    startRegex = r"HTTP\/\d.\d\s\d{3}[^\n]*"
-    continueRegex = r"HTTP\/\d.\d\s100[^\n]*"  # Continue: client should continue its request
-    replaceRegex = r"HTTP\/\d.\d"
+    startRegex = r"HTTP/\d(?:\.\d)?\s\d{3}[^\n]*"
+    continueRegex = r"HTTP/\d(?:\.\d)?\s100[^\n]*"  # Continue: client should continue its request
+    replaceRegex = r"HTTP/\d(?:\.\d)?"
 
     reason = ''
     code = 9999
@@ -73,9 +75,9 @@ def parseResponseHeader(response):
             if re.search(continueRegex, row):
                 continue
             res = re.sub(replaceRegex, "", response.group(0)).strip()
-            code, reason = res.split(' ', 1)
-            code = int(code)
-
+            parts = res.split(' ', 1)
+            code = int(parts[0])
+            reason = parts[1] if len(parts) > 1 else http.HTTPStatus(code).phrase
     return code, reason
 
 
