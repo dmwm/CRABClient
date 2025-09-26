@@ -25,7 +25,6 @@ from CRABClient.UserUtilities import curlGetFileFromURL, getColumn
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientExceptions import ConfigurationException
 from CRABClient.ClientMapping import parametersMapping
-from CRABClient.UserUtilities import curlGetFileFromURL
 
 from ServerUtilities import (getEpochFromDBTime, TASKDBSTATUSES_TMP, TASKLIFETIME,
                              FEEDBACKMAIL, getProxiedWebDir, isEnoughRucioQuota)
