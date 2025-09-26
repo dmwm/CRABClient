@@ -15,10 +15,17 @@ import logging
 
 try:
     from urllib import quote as urllibQuote  # Python 2.X
+    import httplib as _http_client
+    class HTTPStatus(int):
+        _responses = getattr(_http_client, "responses", {})
+        def __new__(cls, code):
+            return int.__new__(cls, int(code))
+        @property
+        def phrase(self):
+            return self._responses.get(int(self), "Unknown Status")
 except ImportError:
     from urllib.parse import quote as urllibQuote  # Python 3+
-
-import http
+    from http import HTTPStatus
 
 from CRABClient.ClientUtilities import execute_command
 from ServerUtilities import encodeRequest
@@ -77,7 +84,7 @@ def parseResponseHeader(response):
             res = re.sub(replaceRegex, "", response.group(0)).strip()
             parts = res.split(' ', 1)
             code = int(parts[0])
-            reason = parts[1] if len(parts) > 1 else http.HTTPStatus(code).phrase
+            reason = parts[1] if len(parts) > 1 else HTTPStatus(code).phrase
     return code, reason
 
 
