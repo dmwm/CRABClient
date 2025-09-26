@@ -45,6 +45,7 @@ class status(SubCommand):
 
     def __init__(self, logger, cmdargs=None):
         self.jobids = None
+        self.proxiedWebDir = None
         self.indentation = '\t\t'
         SubCommand.__init__(self, logger, cmdargs)
 
@@ -119,6 +120,7 @@ class status(SubCommand):
             self.logger.debug(msg)
             proxiedWebDir = webdir
         self.logger.debug("Proxied webdir is located at %s", proxiedWebDir)
+        self.proxiedWebDir = proxiedWebDir
 
         # Download status_cache file
         fh, local_status_cache_txt = tempfile.mkstemp(dir='/tmp', prefix='crab_status-cache-', suffix='.txt')
@@ -128,7 +130,7 @@ class status(SubCommand):
         gotPickle = False
         gotTxt = False
         # first: try pickle version
-        url = proxiedWebDir + "/status_cache.pkl"
+        url = self.proxiedWebDir + "/status_cache.pkl"
         self.logger.debug("Retrieving 'status_cache' file from %s", url)
         try:
             httpCode = curlGetFileFromURL(url, local_status_cache_pkl,
@@ -154,7 +156,7 @@ class status(SubCommand):
             statusCacheInfo_PKL = None
         # if not running in python3, try also old format
         if sys.version_info < (3, 0):
-            url = proxiedWebDir + "/status_cache"
+            url = self.proxiedWebDir + "/status_cache"
             self.logger.debug("Retrieving 'status_cache' file from %s", url)
             try:
                 httpCode = curlGetFileFromURL(url, local_status_cache_txt,
@@ -253,7 +255,7 @@ class status(SubCommand):
             if containerInfo['transferRuleID']:
                 container = containerInfo
 
-        shortResult = self.printOverview(statusCacheInfo, automaticSplitt, proxiedWebDir, container)
+        shortResult = self.printOverview(statusCacheInfo, automaticSplitt, container)
         pubStatus = self.printPublication(publicationEnabled, shortResult, taskname, user, crabDBInfo, container=container)
         self.printErrors(statusCacheInfo, automaticSplitt)
 
@@ -279,14 +281,13 @@ class status(SubCommand):
 
         statusDict = self.makeStatusReturnDict(crabDBInfo, combinedStatus, dagStatus,
                                                '', shortResult, statusCacheInfo,
-                                               pubStatus, proxiedWebDir)
+                                               pubStatus)
 
         return statusDict
 
     def makeStatusReturnDict(self, crabDBInfo, combinedStatus, dagStatus='',
                              statusFailureMsg='', shortResult=None,
-                             statusCacheInfo=None, pubStatus=None,
-                             proxiedWebDir=''):
+                             statusCacheInfo=None, pubStatus=None):
         """ Create a dictionary which is mostly identical to the dictionary
             that was being returned by the old status (plus a few other keys
             needed by the other client commands). This is to ensure backward
@@ -318,7 +319,7 @@ class status(SubCommand):
             datetime.strptime(dbStartTime, '%Y-%m-%d %H:%M:%S.%f'))
 
         statusDict['statusFailureMsg'] = statusFailureMsg
-        statusDict['proxiedWebDir'] = proxiedWebDir
+        statusDict['proxiedWebDir'] = self.proxiedWebDir
         statusDict['jobsPerStatus'] = shortResult.get('jobsPerStatus', {})
         statusDict['jobList'] = shortResult.get('jobList', {})
         statusDict['publication'] = pubStatus.get('status', {})
@@ -614,15 +615,16 @@ class status(SubCommand):
             hint = "improve the jobs splitting (e.g. config.Data.splitting = 'Automatic') in a new task"
             usage = {'memory':[mem_max, maxMemory, 0.7, parametersMapping['on-server']['maxmemory']['default'], 'MB'],
                      'runtime':[run_max/60, maxJobRuntime, 0.3, 0, 'min']}
-            for param, values in usage.items():
-                if values[0] and values[1] > values[3]:
-                    if values[0] < values[2]*values[1]:
-                        self.logger.info("\n%sWarning%s: the max jobs %s is less than %d%% of the task requested value (%d %s), please consider to request a lower value for failed jobs (allowed through crab resubmit) and/or %s." % (colors.RED, colors.NORMAL, param, values[2]*100, values[1], values[4], hint))
+            if not automaticSplitt:  # let's not blame user for our shortcomings
+                for param, values in usage.items():
+                    if values[0] and values[1] > values[3]:
+                        if values[0] < values[2]*values[1]:
+                            self.logger.info("\n%sWarning%s: the max jobs %s is less than %d%% of the task requested value (%d %s), please consider to request a lower value for failed jobs (allowed through crab resubmit) and/or %s." % (colors.RED, colors.NORMAL, param, values[2]*100, values[1], values[4], hint))
             if run_sum:
                 cpu_ave = (cpu_sum / run_sum)
                 cpu_thr = 0.5
                 cpu_thr_multiThread = 0.3
-                if cpu_ave < cpu_thr:
+                if cpu_ave < cpu_thr and not automaticSplitt:  # let's not blame user for our shortcomings
                     cpuMsg = "\n%sWarning%s: the average jobs CPU efficiency is less than %d%%, please consider to " % (colors.RED, colors.NORMAL, cpu_thr*100)
                     if numCores > 1 and cpu_ave < cpu_thr_multiThread:
                         cpuMsg += "request a lower number of threads for failed jobs (allowed through crab resubmit) and/or "
@@ -643,7 +645,7 @@ class status(SubCommand):
 
         return sortdict
 
-    def printOverview(self, statusCacheInfo, automaticSplitt, proxiedWebDir, container):
+    def printOverview(self, statusCacheInfo, automaticSplitt, container):
         """ Give a summary of the job statuses, keeping in mind that:
                 - If there is a job with id 0 then this is the probe job for the estimation
                   This is the so called 'Automatic' splitting
@@ -690,7 +692,6 @@ class status(SubCommand):
         def terminate(states, jobStatus, target='no output'):
             if jobStatus in states:
                 states[target] = states.setdefault(target, 0) + states.pop(jobStatus)
-
         toPrint = [('Jobs', states)]
         if self.options.long:
             toPrint = [('Probe jobs', statesPJ), ('Jobs', states), ('Tail jobs', statesTJ)]
@@ -713,20 +714,61 @@ class status(SubCommand):
             automaticSplittFAQ = 'https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3FAQ#What_is_the_Automatic_splitting'
             self.logger.info("\nThe job splitting of this task is 'Automatic', please refer to this FAQ for a description of the jobs status summary:\n%s", automaticSplittFAQ)
             if statesPJ and not states:
-                self.logger.info("Probe stage log:\t\t%s", proxiedWebDir+"/AutomaticSplitting_Log0.txt")
+                self.logger.info("Probe stage log:\t\t%s", self.proxiedWebDir+"/AutomaticSplitting_Log0.txt")
             msg = "More details of Automatic Splitting process for this task (including possible failures) are in"
-            msg += " the Dagman Log files in:\n%s" % proxiedWebDir+"/AutomaticSplitting/"
+            msg += " the Dagman Log files in:\n%s" % self.proxiedWebDir+"/AutomaticSplitting/"
             self.logger.info(msg)
+            self.printSummaryForJobType('Probe Jobs', statesPJ)
+            self.printProbeJobsThroughput()
+
 
         for jobtype, currStates in toPrint:
             if currStates:
-                total = sum(currStates[st] for st in currStates)
-                state_list = sorted(currStates)
-                self.logger.info("\n{0:32}{1}{2}{3}".format(jobtype + ' status:', self._printState(state_list[0], 13), self.indentation, self._percentageString(state_list[0], currStates[state_list[0]], total)))
-                for jobStatus in state_list[1:]:
-                    self.logger.info("\t\t\t\t{0}{1}{2}".format(self._printState(jobStatus, 13), self.indentation, self._percentageString(jobStatus, currStates[jobStatus], total)))
+                self.printSummaryForJobType(jobtype, currStates)
         self.printRucioInfo(container)
         return result
+
+    def printSummaryForJobType(self, jobtype,states):
+        currStates = states
+        total = sum(currStates[st] for st in currStates)
+        state_list = sorted(currStates)
+        self.logger.info(
+            "\n{0:32}{1}{2}{3}".format(jobtype + ' status:', self._printState(state_list[0], 13), self.indentation,
+                                       self._percentageString(state_list[0], currStates[state_list[0]], total)))
+        for jobStatus in state_list[1:]:
+            self.logger.info("\t\t\t\t{0}{1}{2}".format(self._printState(jobStatus, 13), self.indentation,
+                                                        self._percentageString(jobStatus, currStates[jobStatus],
+                                                                               total)))
+
+    def printProbeJobsThroughput(self):
+        """ print evnt/sec and bytes/event from probe jobs"""
+        msg = "Estimated application throughput from probe jobs"
+
+        preDagLog = 'DagLog0.txt'
+        preDagLogUrl =  self.proxiedWebDir + "/AutomaticSplitting/" + preDagLog
+        tmpDir = tempfile.mkdtemp()
+        preDagLogFile = os.path.join(tmpDir, preDagLog)
+        httpCode = curlGetFileFromURL(url=preDagLogUrl, filename=preDagLogFile,
+                                      proxyfilename=self.proxyfilename, logger=self.logger)
+        logIsAvailable = httpCode == 200
+
+        if not logIsAvailable:
+            msg += " is not available yet"
+            self.logger.info(msg)
+        else:
+            # grab and print relevant lines from preDag.0.txt (lines 2, 4 and 5)
+            with open(preDagLogFile) as fp:
+                content = fp.read()
+            if 'Ended TaskManagerBootstrap with code 4' in content:  # PreDag is waiting for probes to complete
+                msg += " is not available yet"
+                self.logger.info(msg)
+            else:
+                msg += " :"
+                lines = content.split('\n')
+                linesToPrint = [lines[1], lines[4], lines[5]]
+                for line in linesToPrint:
+                    msg += '\n '+ line.split('PreDAG')[1]
+                self.logger.info(msg)
 
     def printErrors(self, dictresult, automaticSplitt):
         """ Iterate over dictresult['jobs'] if present, which is a dictionary like:
