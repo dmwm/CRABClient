@@ -14,8 +14,9 @@ import tempfile
 import logging
 
 try:
-    from urllib import quote as urllibQuote  # Python 2.X
-    import httplib as _http_client
+    # Python 2.X
+    from urllib import quote as urllibQuote
+    import httplib as _http_client  # pylint: disable=import-error
     class HTTPStatus(int):
         _responses = getattr(_http_client, "responses", {})
         def __new__(cls, code):
@@ -24,8 +25,9 @@ try:
         def phrase(self):
             return self._responses.get(int(self), "Unknown Status")
 except ImportError:
-    from urllib.parse import quote as urllibQuote  # Python 3+
-    from http import HTTPStatus
+    # Python 3+
+    from urllib.parse import quote as urllibQuote
+    from http import HTTPStatus # pylint: disable=import-error
 
 from CRABClient.ClientUtilities import execute_command
 from ServerUtilities import encodeRequest
