@@ -16,7 +16,8 @@ import logging
 try:
     # Python 2.X
     from urllib import quote as urllibQuote
-    import httplib as _http_client  # pylint: disable=import-error
+    import httplib as _http_client
+    # add an HTTPStatus class such that it can be used like http which is only available in python3
     class HTTPStatus(int):
         _responses = getattr(_http_client, "responses", {})
         def __new__(cls, code):
@@ -27,7 +28,7 @@ try:
 except ImportError:
     # Python 3+
     from urllib.parse import quote as urllibQuote
-    from http import HTTPStatus # pylint: disable=import-error
+    from http import HTTPStatus
 
 from CRABClient.ClientUtilities import execute_command
 from ServerUtilities import encodeRequest
