@@ -19,7 +19,7 @@ from CRABClient.ClientUtilities import DBSURLS
 from CRABClient.Commands.SubCommand import SubCommand
 from CRABClient.ClientMapping import parametersMapping, getParamDefaultValue
 from CRABClient.ClientExceptions import ClientException, RESTCommunicationException
-from CRABClient.ClientUtilities import getJobTypes, createCache, addPlugin, server_info, colors,\
+from CRABClient.ClientUtilities import getJobTypes, createCache, addPlugin, colors,\
     setSubmitParserOptions, validateSubmitOptions, checkStatusLoop, execute_command
 
 from ServerUtilities import MAX_MEMORY_PER_CORE, MAX_MEMORY_SINGLE_CORE, FEEDBACKMAIL
@@ -95,10 +95,6 @@ class submit(SubCommand):
                 self.configreq[param] = json.dumps(self.configreq[param])
 
         jobconfig = {}
-        #get the backend URLs from the server external configuration
-
-        serverBackendURLs = server_info(crabserver=self.crabserver, subresource='backendurls')
-        #if cacheSSL is specified in the server external configuration we will use it to upload the sandbox
         pluginParams = [self.configuration, self.proxyfilename, self.logger,
                         os.path.join(self.requestarea, 'inputs'), self.crabserver, self.s3tester]
         crab_job_types = getJobTypes()
