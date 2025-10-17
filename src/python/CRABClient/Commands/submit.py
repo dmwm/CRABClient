@@ -5,6 +5,8 @@
 This is simply taking care of job submission
 """
 import os
+import shutil
+
 import sys
 import json
 #import types  # not py3 compatible, see https://github.com/dmwm/CRABClient/issues/5004
@@ -467,10 +469,9 @@ class submit(SubCommand):
                 setEnv = """
 echo $PWD && ls -lrth
 . ./submit_env.sh && save_env && setup_local_env;
-tar xzmf CMSRunAnalysis.tar.gz
 """
                 #command = undoScram + setEnv + 'sh CMSRunAnalysis.sh ' + opts
-                command = undoScram + setEnv + 'sh CMSRunAnalysis.sh --json DryRunJobArg.json'
+                command = undoScram + setEnv + 'sh CMSRunAnalysis.sh --jobId 0'
                 out, err, returncode = execute_command(command=command)
                 self.logger.debug(out)
                 if returncode != 0:
@@ -488,7 +489,6 @@ tar xzmf CMSRunAnalysis.tar.gz
 
         finally:
             os.chdir(cwd)
-            #shutil.rmtree(tmpDir)
 
         return splitting, report
 
@@ -559,13 +559,25 @@ tar xzmf CMSRunAnalysis.tar.gz
 
 def setCMSRunAnalysisOpts(events=10):
     """
-    Parse the job ad to obtain the arguments that were passed to condor.
+    CMSRunAnalysis only takes jobId as argument, looks for it in input_args.json
+    In order to tweak the number of events to be processed we need to edit
+    input_args.json. But before doing that, we save the original one, just in case.
     """
 
-    with open('input_args.json', 'r') as f:  # this file contains args for all jobs
-        args = json.load(f)[0]               # pick job #1
-    args.update({'CRAB_Id': '0', 'firstEvent': '1', 'lastEvent': str(int(events) + 1)})
+    if not os.path.isfile('input_args_ORIGINAL.json'):
+        shutil.move('input_args.json', 'input_args_ORIGINAL.json')
+        with open('input_args_ORIGINAL.json', 'r') as f:  # this file contains args for all jobs
+            args = json.load(f)[0]  # pick job #1
+            args.update({'CRAB_Id': '0'})  # give it a special CRAB_Id for clarity
+        with open('DryRunJobArg.json', 'w') as f:  # save in a new file
+            json.dump([args], f)
+        os.symlink( 'DryRunJobArg.json', 'input_args.json')  # use a symlink to make it clear what we do
+
+    # not the part which is repeated at every iteration
+    with open('DryRunJobArg.json', 'r') as f:
+        args = json.load(f)[0]
+    args.update({'firstEvent': '1', 'lastEvent': str(int(events) + 1)})
     with open('DryRunJobArg.json', 'w') as f:
-        json.dump(args, f)
+        json.dump([args], f)
     return
 
