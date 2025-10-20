@@ -555,7 +555,7 @@ echo $PWD && ls -lrth
 
 def setCMSRunAnalysisOpts(events=10):
     """
-    CMSRunAnalysis only takes jobId as argument, looks for it in input_args.json
+    CMSRunAnalysis only takes jobId as argument and looks for it in input_args.json
     In order to tweak the number of events to be processed we need to edit
     input_args.json. But before doing that, we save the original one, just in case.
     """
@@ -569,7 +569,7 @@ def setCMSRunAnalysisOpts(events=10):
             json.dump([args], f)
         os.symlink( 'DryRunJobArg.json', 'input_args.json')  # use a symlink to make it clear what we do
 
-    # not the part which is repeated at every iteration
+    # now the part which is repeated at every iteration
     with open('DryRunJobArg.json', 'r') as f:
         args = json.load(f)[0]
     args.update({'firstEvent': '1', 'lastEvent': str(int(events) + 1)})
