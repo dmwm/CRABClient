@@ -167,8 +167,11 @@ class status(SubCommand):
         automaticSplitt = splitting == 'Automatic'
 
         # If the task is already on the grid, show the dagman status
-        combinedStatus = dagStatus = self.printDAGStatus(dbStatus, statusCacheInfo)
-
+        dagStatus = statusCache['overallDagStatus']
+        msg = "Status on the scheduler:\t" + dagStatus
+        self.logger.info(msg)
+        #combinedStatus = dagStatus = self.printDAGStatus(dbStatus, statusCacheInfo)
+        combinedStatus = dagStatus
         usingRucio = outputLfn.startswith('/store/user/rucio') or outputLfn.startswith('/store/group/rucio')
 
         if dagStatus != 'COMPLETED' and usingRucio:
@@ -293,70 +296,6 @@ class status(SubCommand):
         # ]}
         # so return only the inner dict.
         return pubInfo['result'][0]
-
-    @staticmethod
-    def translateStatus(statusToTr, dbstatus):
-        """Translate from DAGMan internal integer status to a string.
-
-        Uses parameter `dbstatus` to clarify if the state is due to the
-        user killing the task.
-        """
-        statusToTr = {1:'SUBMITTED', 2:'SUBMITTED', 3:'SUBMITTED', 4:'SUBMITTED', 5:'COMPLETED', 6:'FAILED'}[statusToTr]
-        # Unfortunately DAG code for killed task is 6, just as like for finished DAGs with failed jobs
-        # Relabeling the status from 'FAILED' to 'FAILED (KILLED)' if a successful kill command was issued
-        if statusToTr == 'FAILED' and dbstatus == 'KILLED':
-            statusToTr = 'FAILED (KILLED)'
-        return statusToTr
-
-    @classmethod
-    def collapseDAGStatus(cls, dagInfo, dbstatus):
-        """Collapse the status of one or several DAGs to a single one.
-
-        Take into account that subdags can be submitted to the queue on the
-        schedd, but not yet started.
-        """
-        status_order = ['SUBMITTED', 'FAILED', 'FAILED (KILLED)', 'COMPLETED']
-
-        subDagInfos = dagInfo.get('SubDags', {})
-        subDagStatus = dagInfo.get('SubDagStatus', {})
-        # Regular splitting, return status of DAG
-        if len(subDagInfos) == 0 and len(subDagStatus) == 0:
-            return cls.translateStatus(dagInfo['DagStatus'], dbstatus)
-
-        def check_queued(statusOrSUBMITTED):
-            # 99 is the status to expect a submitted DAG. If there are less
-            # actual DAG status informations than expected DAGs, at least one
-            # DAG has to be queued.
-            if dbstatus != 'KILLED' and len(subDagInfos) < len([k for k in subDagStatus if subDagStatus[k] == 99]):
-                return 'SUBMITTED'
-            return statusOrSUBMITTED
-
-        # If the processing DAG is still running, we are 'SUBMITTED',
-        # still.
-        if len(subDagInfos) > 0:
-            state = cls.translateStatus(subDagInfos[0]['DagStatus'], dbstatus)
-            if state == 'SUBMITTED':
-                return state
-        # Tails active: return most active tail status according to
-        # `status_order`
-        if len(subDagInfos) > 1:
-            states = [cls.translateStatus(subDagInfos[k]['DagStatus'], dbstatus) for k in subDagInfos if k > 0]
-            for iStatus in status_order:
-                if states.count(iStatus) > 0:
-                    return check_queued(iStatus)
-        # If no tails are active, return the status of the processing DAG.
-        if len(subDagInfos) > 0:
-            return check_queued(cls.translateStatus(subDagInfos[0]['DagStatus'], dbstatus))
-        return check_queued(cls.translateStatus(dagInfo['DagStatus'], dbstatus))
-
-    def printDAGStatus(self, dbStatus, statusCacheInfo):
-        # Get dag status from the node_state/job_log summary
-        dagInfo = statusCacheInfo['DagStatus']
-        dagStatus = self.collapseDAGStatus(dagInfo, dbStatus)
-
-        msg = "Status on the scheduler:\t" + dagStatus
-        self.logger.info(msg)
-        return dagStatus
 
     def printTaskInfo(self, crabDBInfo, username):
         """ Print general information like project directory, task name, scheduler, task status (in the database),
