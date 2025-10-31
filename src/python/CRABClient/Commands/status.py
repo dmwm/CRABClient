@@ -1,4 +1,5 @@
-from __future__ import division # I want floating points
+# pylint: disable=unspecified-encoding, broad-exception-caught, broad-exception-raised
+from __future__ import division  # I want floating points
 from __future__ import print_function
 
 import os
@@ -6,7 +7,6 @@ import pickle
 import sys
 import math
 import json
-import logging
 import time
 import calendar
 import tempfile
@@ -69,11 +69,6 @@ class status(SubCommand):
         splitting = getColumn(crabDBInfo, 'tm_split_algo')
         outputLfn = getColumn(crabDBInfo, 'tm_output_lfn')
         outputDestinationSite = getColumn(crabDBInfo, 'tm_asyncdest')
-        if getColumn(crabDBInfo, 'tm_output_dataset'):
-            outputDatasetList = literal_eval(getColumn(crabDBInfo, 'tm_output_dataset'))
-        else:
-            outputDatasetList = None
-        outDataset = outputDatasetList[0] if outputDatasetList else None # we do not support multiple output datasets anymore
 
         #Print information from the database
         self.printTaskInfo(crabDBInfo, user)
@@ -122,103 +117,32 @@ class status(SubCommand):
         self.logger.debug("Proxied webdir is located at %s", proxiedWebDir)
         self.proxiedWebDir = proxiedWebDir
 
-        # Download status_cache file
-        fh, local_status_cache_txt = tempfile.mkstemp(dir='/tmp', prefix='crab_status-cache-', suffix='.txt')
-        os.close(fh)  # no need for a hanlde, curl will write using file name
-        fh, local_status_cache_pkl = tempfile.mkstemp(dir='/tmp', prefix='crab_status-cache-', suffix='.pkl')
+        # Download status_cache file, prepare a temp file name
+        fh, local_status_cache = tempfile.mkstemp(dir='/tmp', prefix='crab_status-cache-', suffix='.pkl')
         os.close(fh)  # no need for a handle, curl will write using file name
-        gotPickle = False
-        gotTxt = False
-        # first: try pickle version
         url = self.proxiedWebDir + "/status_cache.pkl"
         self.logger.debug("Retrieving 'status_cache' file from %s", url)
         try:
-            httpCode = curlGetFileFromURL(url, local_status_cache_pkl,
+            httpCode = curlGetFileFromURL(url, local_status_cache,
                                                  self.proxyfilename, logger=self.logger)
             if httpCode != 200:
                 raise Exception("failed to retrieve %s" % url)
-            with open(local_status_cache_pkl, PKL_R_MODE) as fp:
+            with open(local_status_cache, PKL_R_MODE) as fp:
                 statusCache = pickle.load(fp)
-            os.remove(local_status_cache_pkl)
+            os.remove(local_status_cache)
             if 'bootstrapTime' in statusCache :
-                statusCacheInfo_PKL = None
-                bootstrapMsg_PKL = "Task bootstrapped at %s" % statusCache['bootstrapTime']['date']
+                statusCacheInfo = None
+                bootstrapMsg = "Task bootstrapped at %s" % statusCache['bootstrapTime']['date']
                 bootstrapTime = statusCache['bootstrapTime']['fromEpoch']
                 bootingTime = int(time.time()) - bootstrapTime
-                bootstrapMsg_PKL += ". %d seconds ago" % bootingTime
+                bootstrapMsg += ". %d seconds ago" % bootingTime
             else:
-                bootstrapMsg_PKL = None
-                statusCacheInfo_PKL = statusCache['nodes']
-            gotPickle = True
+                bootstrapMsg = None
+                statusCacheInfo = statusCache['nodes']
         except Exception as e:  # pylint: disable=unused-variable
-            self.logger.debug("%s not found or corrupted. Will use old format file only", url)
-            bootstrapMsg_PKL = None
-            statusCacheInfo_PKL = None
-        # if not running in python3, try also old format
-        if sys.version_info < (3, 0):
-            url = self.proxiedWebDir + "/status_cache"
-            self.logger.debug("Retrieving 'status_cache' file from %s", url)
-            try:
-                httpCode = curlGetFileFromURL(url, local_status_cache_txt,
-                                                     self.proxyfilename, logger=self.logger)
-                if httpCode != 200:
-                    raise Exception("failed to retrieve %s" % url)
-                with open(local_status_cache_txt, 'r') as fp:
-                    statusCacheData = fp.read()
-                os.remove(local_status_cache_txt)
-                # Normally the first two lines of the file contain the checkpoint locations
-                # for the job_log / fjr_parse_results files and are used by the status caching script.
-                # But if the job has just bootstrapped the first lines of the file are:
-                #  line1: a readable message  line2: bootstrap time in seconds from Epoch
-                #  Example:
-                #   # Task bootstrapped at 2021-03-22 16:23:54 UTC
-                #   1616430956
-                # and a dummy, empty, status record follows
-                if statusCacheData.split('\n')[0].startswith('#'):
-                    statusCacheInfo_TXT = None
-                    bootstrapTime = statusCacheData.split('\n')[1]
-                    bootstrapMsg_TXT = statusCacheData.split('\n')[0].lstrip('#').lstrip()
-                    if bootstrapTime:
-                        bootingTime = int(time.time()) - literal_eval(bootstrapTime)
-                    else:
-                        bootingTime = 199
-                    bootstrapMsg_TXT += ". %d seconds ago" % bootingTime
-                else:
-                    bootstrapMsg_TXT = None
-                    # Load the job_report summary
-                    statusCacheInfo_TXT = literal_eval(statusCacheData.split('\n')[2])
-                gotTxt = True
-            except Exception as ce:
-                self.logger.debug("%s not found or corrupted.", url)
-                statusCacheInfo_TXT = None
-                bootstrapMsg_TXT = None
-            if not gotTxt and not gotPickle:
-                self.logger.info("Waiting for the Grid scheduler to report back the status of your task")
-                failureMsg = "Cannot retrieve the status_cache file. Maybe the task process has not run yet?"
-                failureMsg += " Got:\n%s" % ce
-                self.logger.error(failureMsg)
-                logging.getLogger("CRAB3").exception(ce)
-                combinedStatus = "UNKNOWN"
-                return self.makeStatusReturnDict(crabDBInfo, combinedStatus, statusFailureMsg=failureMsg)
+            self.logger.error("%s not found or corrupted", url)
+            return {'commandStatus': 'FAILED'}
 
-        # should find one of these two in the status_cache file !
-        statusCacheInfo = None
-        bootstrapMsg = None
-
-        if gotPickle and gotTxt:
-            # compare
-            if bootstrapMsg_PKL != bootstrapMsg_TXT:
-                self.logger.error('bootstrapMsg mismatch PKL vs TXT. Please report this to %s', FEEDBACKMAIL)
-            if statusCacheInfo_PKL != statusCacheInfo_TXT:
-                self.logger.error('statusCacheInfo mismatch PKL vs TXT Please report this to %s', FEEDBACKMAIL)
-        # use old one for py2, pickle for py3
-        if sys.version_info >= (3, 0):
-            statusCacheInfo = statusCacheInfo_PKL
-            bootstrapMsg = bootstrapMsg_PKL
-        if sys.version_info < (3, 0):
-            statusCacheInfo = statusCacheInfo_TXT
-            bootstrapMsg = bootstrapMsg_TXT
-        # now code is common again
         if bootstrapMsg:
             self.logger.info(bootstrapMsg)
             if bootingTime  <= 300:
@@ -238,8 +162,11 @@ class status(SubCommand):
         automaticSplitt = splitting == 'Automatic'
 
         # If the task is already on the grid, show the dagman status
-        combinedStatus = dagStatus = self.printDAGStatus(dbStatus, statusCacheInfo)
-
+        dagStatus = statusCache['overallDagStatus']
+        msg = "Status on the scheduler:\t" + dagStatus
+        self.logger.info(msg)
+        #combinedStatus = dagStatus = self.printDAGStatus(dbStatus, statusCacheInfo)
+        combinedStatus = dagStatus
         usingRucio = outputLfn.startswith('/store/user/rucio') or outputLfn.startswith('/store/group/rucio')
 
         if dagStatus != 'COMPLETED' and usingRucio:
@@ -364,70 +291,6 @@ class status(SubCommand):
         # ]}
         # so return only the inner dict.
         return pubInfo['result'][0]
-
-    @staticmethod
-    def translateStatus(statusToTr, dbstatus):
-        """Translate from DAGMan internal integer status to a string.
-
-        Uses parameter `dbstatus` to clarify if the state is due to the
-        user killing the task.
-        """
-        statusToTr = {1:'SUBMITTED', 2:'SUBMITTED', 3:'SUBMITTED', 4:'SUBMITTED', 5:'COMPLETED', 6:'FAILED'}[statusToTr]
-        # Unfortunately DAG code for killed task is 6, just as like for finished DAGs with failed jobs
-        # Relabeling the status from 'FAILED' to 'FAILED (KILLED)' if a successful kill command was issued
-        if statusToTr == 'FAILED' and dbstatus == 'KILLED':
-            statusToTr = 'FAILED (KILLED)'
-        return statusToTr
-
-    @classmethod
-    def collapseDAGStatus(cls, dagInfo, dbstatus):
-        """Collapse the status of one or several DAGs to a single one.
-
-        Take into account that subdags can be submitted to the queue on the
-        schedd, but not yet started.
-        """
-        status_order = ['SUBMITTED', 'FAILED', 'FAILED (KILLED)', 'COMPLETED']
-
-        subDagInfos = dagInfo.get('SubDags', {})
-        subDagStatus = dagInfo.get('SubDagStatus', {})
-        # Regular splitting, return status of DAG
-        if len(subDagInfos) == 0 and len(subDagStatus) == 0:
-            return cls.translateStatus(dagInfo['DagStatus'], dbstatus)
-
-        def check_queued(statusOrSUBMITTED):
-            # 99 is the status to expect a submitted DAG. If there are less
-            # actual DAG status informations than expected DAGs, at least one
-            # DAG has to be queued.
-            if dbstatus != 'KILLED' and len(subDagInfos) < len([k for k in subDagStatus if subDagStatus[k] == 99]):
-                return 'SUBMITTED'
-            return statusOrSUBMITTED
-
-        # If the processing DAG is still running, we are 'SUBMITTED',
-        # still.
-        if len(subDagInfos) > 0:
-            state = cls.translateStatus(subDagInfos[0]['DagStatus'], dbstatus)
-            if state == 'SUBMITTED':
-                return state
-        # Tails active: return most active tail status according to
-        # `status_order`
-        if len(subDagInfos) > 1:
-            states = [cls.translateStatus(subDagInfos[k]['DagStatus'], dbstatus) for k in subDagInfos if k > 0]
-            for iStatus in status_order:
-                if states.count(iStatus) > 0:
-                    return check_queued(iStatus)
-        # If no tails are active, return the status of the processing DAG.
-        if len(subDagInfos) > 0:
-            return check_queued(cls.translateStatus(subDagInfos[0]['DagStatus'], dbstatus))
-        return check_queued(cls.translateStatus(dagInfo['DagStatus'], dbstatus))
-
-    def printDAGStatus(self, dbStatus, statusCacheInfo):
-        # Get dag status from the node_state/job_log summary
-        dagInfo = statusCacheInfo['DagStatus']
-        dagStatus = self.collapseDAGStatus(dagInfo, dbStatus)
-
-        msg = "Status on the scheduler:\t" + dagStatus
-        self.logger.info(msg)
-        return dagStatus
 
     def printTaskInfo(self, crabDBInfo, username):
         """ Print general information like project directory, task name, scheduler, task status (in the database),
