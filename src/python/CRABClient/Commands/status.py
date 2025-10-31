@@ -1,4 +1,5 @@
-from __future__ import division # I want floating points
+# pylint: disable=unspecified-encoding, broad-exception-caught, broad-exception-raised
+from __future__ import division  # I want floating points
 from __future__ import print_function
 
 import os
@@ -6,7 +7,6 @@ import pickle
 import sys
 import math
 import json
-import logging
 import time
 import calendar
 import tempfile
@@ -69,11 +69,6 @@ class status(SubCommand):
         splitting = getColumn(crabDBInfo, 'tm_split_algo')
         outputLfn = getColumn(crabDBInfo, 'tm_output_lfn')
         outputDestinationSite = getColumn(crabDBInfo, 'tm_asyncdest')
-        if getColumn(crabDBInfo, 'tm_output_dataset'):
-            outputDatasetList = literal_eval(getColumn(crabDBInfo, 'tm_output_dataset'))
-        else:
-            outputDatasetList = None
-        outDataset = outputDatasetList[0] if outputDatasetList else None # we do not support multiple output datasets anymore
 
         #Print information from the database
         self.printTaskInfo(crabDBInfo, user)
