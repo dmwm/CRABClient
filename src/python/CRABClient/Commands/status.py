@@ -1086,31 +1086,31 @@ class status(SubCommand):
         This allows to set specific command options
         """
 
-        self.parser.add_option("--long",
+        self.parser.add_argument("--long",
                                dest="long",
                                default=False,
                                action="store_true",
                                help="Print one status line per job.")
-        self.parser.add_option("--sort",
+        self.parser.add_argument("--sort",
                                dest="sort",
                                default=None,
                                help="Sort failed jobs by 'state', 'site', 'runtime', 'memory', 'cpu', 'retries', 'waste' or 'exitcode'.")
-        self.parser.add_option("--json",
+        self.parser.add_argument("--json",
                                dest="json",
                                default=False,
                                action="store_true",
                                help="Print status results in JSON format.")
-        self.parser.add_option("--summary",
+        self.parser.add_argument("--summary",
                                dest="summary",
                                default=False,
                                action="store_true",
                                help="Print site summary.")
-        self.parser.add_option("--verboseErrors",
+        self.parser.add_argument("--verboseErrors",
                                dest="verboseErrors",
                                default=False,
                                action="store_true",
                                help="Expand error summary, showing error messages for all failed jobs.")
-        self.parser.add_option("--jobids",
+        self.parser.add_argument("--jobids",
                                dest="jobids",
                                default=None,
                                help="The ids of jobs to print in crab status --long or --sort." + \

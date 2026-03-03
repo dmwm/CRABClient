@@ -147,13 +147,13 @@ sh ./CMSRunAnalysis.sh --jobId ${1}
 
         This allows to set specific command options
         """
-        self.parser.add_option("--jobid",
+        self.parser.add_argument("--jobid",
                                dest="jobid",
                                default=None,
-                               type="int",
+                               type=int,
                                help="Optional id of the job you want to execute locally")
 
-        self.parser.add_option("--destdir",
+        self.parser.add_argument("--destdir",
                                dest="destdir",
                                default=None,
                                help="Optional name of the directory to use, defaults to <projdir>/local")

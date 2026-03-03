@@ -242,35 +242,35 @@ class getcommand(SubCommand):
 
         This allows to set specific command options
         """
-        self.parser.add_option('--outputpath',
+        self.parser.add_argument('--outputpath',
                                dest='outputpath',
                                default=None,
                                help='Where the files retrieved will be stored.  Defaults to the results/ directory.',
                                metavar='URL')
 
-        self.parser.add_option('--dump',
+        self.parser.add_argument('--dump',
                                dest='dump',
                                default=False,
                                action='store_true',
                                help='Instead of performing the transfer, dump the source URLs.')
 
-        self.parser.add_option('--xrootd',
+        self.parser.add_argument('--xrootd',
                                dest='xroot',
                                default=False,
                                action='store_true',
                                help='Give XrootD url for the file.')
 
-        self.parser.add_option('--jobids',
+        self.parser.add_argument('--jobids',
                                dest='jobids',
                                default=None,
                                help='Ids of the jobs you want to retrieve. Comma separated list of integers.',
                                metavar='JOBIDS')
-        self.parser.add_option('--checksum',
+        self.parser.add_argument('--checksum',
                                dest='checksum',
                                default='yes',
                                help='Set it to yes if needed. It will use ADLER32 checksum' +\
                                        'Allowed values are yes/no. Default is yes.')
-        self.parser.add_option('--command',
+        self.parser.add_argument('--command',
                                dest='command',
                                default=None,
                                help='A command which to use. Available commands are LCG or GFAL.')

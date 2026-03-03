@@ -110,19 +110,19 @@ class setfilestatus(SubCommand):
 
         This allows to set specific command options
         """
-        self.parser.add_option('--dbs-instance', dest='dbsInstance', default='prod/phys03',
+        self.parser.add_argument('--dbs-instance', dest='dbsInstance', default='prod/phys03',
                                help="DBS instance. e.g. prod/phys03 (default) or int/phys03 or full URL."
                                     + "\nUse at your own risk only if you really know what you are doing"
                                )
-        self.parser.add_option('-d', '--dataset', dest='dataset', default=None,
+        self.parser.add_argument('-d', '--dataset', dest='dataset', default=None,
                                help='Will apply status to all files in this dataset.'
                                     + ' Use either --files or--dataset',
                                metavar='<dataset_name>')
-        self.parser.add_option('-s', '--status', dest='status', default=None,
+        self.parser.add_argument('-s', '--status', dest='status', default=None,
                                help='New status of the file(s): VALID/INVALID',
                                choices=['VALID', 'INVALID']
                                )
-        self.parser.add_option('-f', '--files', dest='files', default=None,
+        self.parser.add_argument('-f', '--files', dest='files', default=None,
                                help='List of files to be validated/invalidated.'
                                     + ' Can be either a simple LFN or a file containg LFNs or'
                                     + ' a comma separated list of LFNs. Use either --files or --dataset',

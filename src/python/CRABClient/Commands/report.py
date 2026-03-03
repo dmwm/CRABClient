@@ -564,18 +564,18 @@ class report(SubCommand):
 
         This allows to set specific command options
         """
-        self.parser.add_option("--outputdir",
+        self.parser.add_argument("--outputdir",
                                dest="outdir",
                                default=None,
                                help="Directory where to write the lumi summary files.")
 
-        self.parser.add_option("--recovery",
+        self.parser.add_argument("--recovery",
                                dest="recovery",
                                default="notFinished",
                                help="Strategy to calculate not processed lumis: notFinished," + \
                                       " notPublished or failed [default: %default].")
 
-        self.parser.add_option("--dbs",
+        self.parser.add_argument("--dbs",
                                dest="usedbs",
                                default=None,
                                help="Deprecated option removed in CRAB v3.3.1603.")

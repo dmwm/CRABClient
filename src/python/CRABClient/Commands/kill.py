@@ -50,7 +50,7 @@ class kill(SubCommand):
 
         This allows to set specific command options
         """
-        self.parser.add_option('--killwarning',
+        self.parser.add_argument('--killwarning',
                                dest='killwarning',
                                default=None,
                                help='A warning message to be appended to the warnings list shown by "crab status"')

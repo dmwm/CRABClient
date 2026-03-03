@@ -33,24 +33,24 @@ class remote_copy(SubCommand):
         This allows to set specific command options
         """
 
-        self.parser.add_option("--destination",
+        self.parser.add_argument("--destination",
                                dest = "destination",
                                default = None )
 
-        self.parser.add_option("--input",
+        self.parser.add_argument("--input",
                                dest = "inputdict",
                                default = None )
 
-        self.parser.add_option("--parallel",
+        self.parser.add_argument("--parallel",
                                dest = "nparallel")
 
-        self.parser.add_option("--wait",
+        self.parser.add_argument("--wait",
                                dest = "waittime")
 
-        self.parser.add_option("--checksum",
+        self.parser.add_argument("--checksum",
                                dest = "checksum")
 
-        self.parser.add_option("--command",
+        self.parser.add_argument("--command",
                                dest = "command")
 
 
