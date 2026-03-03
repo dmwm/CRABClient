@@ -232,7 +232,7 @@ def main():
     """
     Parse and check the command line arguments.
     """
-    parser = argparse.ArgumentParser(usage="""usage: %prog [options] <package path> [exclude paths, ...]
+    parser = argparse.ArgumentParser(usage="""usage: %(prog)s, [options] <package path> [exclude paths, ...]
 
 Note: By default this script will not overwrite already created files.""")
     parser.add_argument("-n", "--doc-header", action="store", dest="header", help="Documentation Header (default=Project)", default="Project")
