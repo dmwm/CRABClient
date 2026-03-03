@@ -57,7 +57,7 @@ class CRABOptParser(CRABArgParser):
             epilog += '\nFor more information on how to run CRAB-3 please follow this link:\n'
             epilog += 'https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookCRAB3Tutorial\n'
 
-        CRABArgParser.__init__(self, usage=usage, epilog=epilog, disable_interspersed=True)
+        CRABArgParser.__init__(self, usage=usage, epilog=epilog, disable_interspersed_args=True)
 
         self.add_argument("--version", action="version", version="CRAB client %s" % client_version)
         self.add_argument( "--quiet",
@@ -90,7 +90,7 @@ class CRABCmdOptParser(CRABArgParser):
             description=doc,
             usage=usage,
             add_help=True,
-            disable_interspersed=disable_interspersed_args
+            disable_interspersed_args=disable_interspersed_args
         )
 
     def addCommonOptions(self, cmdconf):
