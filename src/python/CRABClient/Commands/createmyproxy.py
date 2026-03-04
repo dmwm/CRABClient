@@ -49,10 +49,10 @@ class createmyproxy(SubCommand):
         This allows to set specific command options.
         """
 
-        self.parser.add_option('--days',
+        self.parser.add_argument('--days',
                                dest='days',
                                default=30,
-                               type='int',
+                               type=int,
                                help="Set the validity (in days) for the credential. Default is 30.")
 
     #def terminate(self, exitcode):

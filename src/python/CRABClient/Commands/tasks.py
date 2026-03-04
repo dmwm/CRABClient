@@ -75,20 +75,20 @@ task status does not progress beyond SUBMITTED unless the task is KILLED
         This allows to set specific command options
         """
 
-        self.parser.add_option('--fromdate',
+        self.parser.add_argument('--fromdate',
                                dest='fromdate',
                                default=None,
                                help='Give the user tasks since YYYY-MM-DD.',
                                metavar='YYYY-MM-DD')
 
-        self.parser.add_option('--days',
+        self.parser.add_argument('--days',
                                dest='days',
                                default=None,
-                               type='int',
+                               type=int,
                                help='Give the user tasks from the previous N days.',
                                metavar='N')
 
-        self.parser.add_option('--status',
+        self.parser.add_argument('--status',
                                dest='status',
                                default=None,
                                help='Give the user tasks with the given STATUS.',

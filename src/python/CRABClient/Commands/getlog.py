@@ -62,16 +62,16 @@ class getlog(getcommand):
 
         This allows to set specific command options
         """
-        self.parser.add_option('--quantity',
+        self.parser.add_argument('--quantity',
                                dest='quantity',
                                help='The number of logs you want to retrieve (or "all"). Ignored if --jobids is used.')
-        self.parser.add_option('--parallel',
+        self.parser.add_argument('--parallel',
                                dest='nparallel',
                                help='Number of parallel download, default is 10 parallel download.',)
-        self.parser.add_option('--wait',
+        self.parser.add_argument('--wait',
                                dest='waittime',
                                help='Increase the sendreceive-timeout in second.',)
-        self.parser.add_option('--short',
+        self.parser.add_argument('--short',
                                dest='short',
                                default=False,
                                action='store_true',

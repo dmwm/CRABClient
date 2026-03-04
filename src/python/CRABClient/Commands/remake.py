@@ -60,7 +60,7 @@ class remake(SubCommand):
 
         This allows to set specific command options
         """
-        self.parser.add_option("--task",
+        self.parser.add_argument("--task",
                                dest = "cmptask",
                                default = None,
                                help = "The complete task name. Can be taken from 'crab status' output, or from dashboard.")

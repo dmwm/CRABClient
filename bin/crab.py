@@ -60,7 +60,7 @@ class CRABClient(object):
 
     def __call__(self):
 
-        (options, args) = self.parser.parse_args()
+        (options, args) = self.parser.parse_cmd()
 
         ## The default logfile destination is ./crab.log. It will be changed once we
         ## know/create the CRAB project directory.
