@@ -7,13 +7,44 @@ from argparse import ArgumentParser
 from ServerUtilities import SERVICE_INSTANCES
 from CRABClient import __version__ as client_version
 
-def _split_at_first_positional(argv):
-    for i, tok in enumerate(argv):
+def _split_at_first_positional(parser, argv):
+    """
+    Emulate optparse.disable_interspersed_args:
+    parse options only until the first positional token, consuming option values.
+    """
+    idx = 0
+    size = len(argv)
+    while idx < size:
+        tok = argv[idx]
         if tok == "--":
-            return argv[:i+1], argv[i+1:]  # keep -- with options side
+            idx += 1
+            break
         if tok == "-" or not tok.startswith("-"):
-            return argv[:i], argv[i:]
-    return argv, []
+            break
+
+        optname = tok.split("=", 1)[0] if tok.startswith("--") else tok
+        action = parser._option_string_actions.get(optname)  # pylint: disable=protected-access
+        idx += 1
+        if action is None:
+            continue
+        if tok.startswith("--") and "=" in tok:
+            continue
+
+        nargs = action.nargs
+        if nargs in (None, 1):
+            if idx < size:
+                idx += 1
+        elif nargs in (0,):
+            continue
+        elif nargs == "?":
+            if idx < size and not argv[idx].startswith("-"):
+                idx += 1
+        elif isinstance(nargs, int):
+            idx += nargs
+        else:
+            idx = size
+
+    return argv[:idx], argv[idx:]
 
 class CRABArgParser(ArgumentParser):
     def __init__(self, *args, disable_interspersed_args=False, **kwargs):
@@ -24,10 +55,21 @@ class CRABArgParser(ArgumentParser):
         argv = list(sys.argv[1:] if argv is None else argv)
 
         if not self._disable_interspersed_args:
-            ns, rest = self.parse_known_args(argv)
-            return ns, rest
+            if "--" in argv:
+                marker = argv.index("--")
+                parseable = argv[:marker]
+                tail = argv[marker + 1:]
+            else:
+                parseable = argv
+                tail = []
 
-        opt_argv, rest = _split_at_first_positional(argv)
+            ns, rest = self.parse_known_args(parseable)
+            unknown = [arg for arg in rest if arg.startswith("-") and arg != "-"]
+            if unknown:
+                self.error("no such option: %s" % unknown[0])
+            return ns, rest + tail
+
+        opt_argv, rest = _split_at_first_positional(self, argv)
         ns = self.parse_args(opt_argv)
         return ns, rest
 
