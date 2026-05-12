@@ -1,5 +1,7 @@
 # **NEW** learn CRABClient via [DeepWiki](https://deepwiki.com/dmwm/CRABClient)
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/dmwm/crabclient)
+
 **CRABClient**
 
 Command Line client for the CRABServer REST interface.
