@@ -138,8 +138,6 @@ class report(SubCommand):
         processedLumis = BasicJobType.mergeLumis(poolInOnlyRes)
         returndict['processedLumis'] = processedLumis
 
-
-
         outputDatasetsLumis = {}
         outputDatasetsNumEvents = {}
         if reportData['publication']:
@@ -364,7 +362,10 @@ class report(SubCommand):
         self.downloadInputFiles(taskname=self.cachedinfo['RequestName'])
 
         # extract information about what needed to be processed
-
+        # reportData['filesToProcess'] contains a list of dictionaries, one per job
+        # the dictionary is the content of the json file job_input_file_list_<jobId>.txt
+        # i.e. a list of file names
+        # similarly for reportData['lumisToProcess']
         (reportData['lumisToProcess'], reportData['filesToProcess'] ) = self.getFilesAndLumisToProcess(jobs)
         reportData['inputDataset'] = statusDict['inputDataset']
 
