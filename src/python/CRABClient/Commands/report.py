@@ -75,6 +75,9 @@ class report(SubCommand):
             msg += " Cannot get all the needed information for the report. Maybe no job has completed yet ?"
             msg += "\n Notice, if your task has been submitted more than 30 days ago, then everything has been cleaned."
             self.logger.info(msg)
+            self.logger.info(
+                "  %sWarning%s: '%s' lumis written to %s" % (colors.RED, colors.NORMAL, self.options.recovery,
+                                                             filename))
             if not reportData['publication']:
                 raise CommandFailedException(msg)
             onlyDBSSummary = True
@@ -101,18 +104,34 @@ class report(SubCommand):
         for jobid, reports in reportData['processedRunsAndLumis'].items():
             poolInOnlyRes[jobid] = [rep for rep in reports if rep['type'] == 'POOLIN']
 
-        # Calculate how many input files have been processed.
+        # Calculate how many input files have been processed from FJR (via inputFMD)
         numFilesProcessed = _getNumFiles(reportData['processedRunsAndLumis'], 'POOLIN')
+        # cross check with count from completed jobs
+        numFilesProcessedInGoodJobs = sum ([len(reportData['processedFiles'][jobId]) for jobId in reportData['processedFiles']])
+        badInfoFromFJR = numFilesProcessedInGoodJobs != numFilesProcessed
+        if badInfoFromFJR:
+            msg = "%sWarning:%s:" % (colors.RED, colors.NORMAL)
+            msg += " Inconsistent/unusable information from cmsRun FJR's."
+            msg += "\n Fall back to counting processed files from imput list."
+            msg += " Counting of processed events is not possible"
+            self.logger.info(msg)
+            numFilesProcessed = numFilesProcessedInGoodJobs
         returndict['numFilesProcessed'] = numFilesProcessed
 
         # Calculate how many events have been read.
-        numEventsRead = _getNumEvents(reportData['processedRunsAndLumis'], 'POOLIN')
+        if badInfoFromFJR:
+            numEventsRead = "n/a"
+        else:
+            numEventsRead = str(_getNumEvents(reportData['processedRunsAndLumis'], 'POOLIN'))
         returndict['numEventsRead'] = numEventsRead
 
         # Calculate how many events have been written.
         numEventsWritten = {}
         for filetype in ['EDM', 'TFile', 'FAKE']:
-            numEventsWritten[filetype] = _getNumEvents(reportData['processedRunsAndLumis'], filetype)
+            if badInfoFromFJR:
+                numEventsWritten[filetype] = "n/a"
+            else:
+                numEventsWritten[filetype] = str(_getNumEvents(reportData['processedRunsAndLumis'], filetype))
         returndict['numEventsWritten'] = numEventsWritten
 
         # Get the lumis in the input dataset.
@@ -230,11 +249,11 @@ class report(SubCommand):
         #    other general information about the task, but not on failed/running jobs).
         if not onlyDBSSummary:
             self.logger.info("Summary from successful jobs (i.e. in status 'finished'):")
-            msg = "  Number of files processed: %d" % (numFilesProcessed)
-            msg += "\n  Number of events read: %d" % (numEventsRead)
-            msg += "\n  Number of events written in EDM files: %d" % (numEventsWritten.get('EDM', 0))
-            msg += "\n  Number of events written in TFileService files: %d" % (numEventsWritten.get('TFile', 0))
-            msg += "\n  Number of events written in other type of files: %d" % (numEventsWritten.get('FAKE', 0))
+            msg = "  Number of files processed: %d" % numFilesProcessed
+            msg += "\n  Number of events read: %s" % numEventsRead
+            msg += "\n  Number of events written in EDM files: %s" % (numEventsWritten.get('EDM', 0))
+            msg += "\n  Number of events written in TFileService files: %s" % (numEventsWritten.get('TFile', 0))
+            msg += "\n  Number of events written in other type of files: %s" % (numEventsWritten.get('FAKE', 0))
             self.logger.info(msg)
             if processedLumis:
                 with open(os.path.join(jsonFileDir, 'processedLumis.json'), 'w') as jsonFile:
