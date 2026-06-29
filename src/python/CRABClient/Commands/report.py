@@ -16,6 +16,12 @@ import tarfile
 import shutil
 from ast import literal_eval
 
+# there is no FileNotFoundError in python2.7, here's a workaround
+try:
+    FileNotFoundError
+except NameError:
+    FileNotFoundError = IOError
+
 try:
     from FWCore.PythonUtilities.LumiList import LumiList
 except Exception:  # pylint: disable=broad-except
