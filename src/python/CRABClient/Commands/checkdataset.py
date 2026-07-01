@@ -273,11 +273,11 @@ class checkdataset(SubCommand):
 
         This allows to set specific command options
         """
-        self.parser.add_option('--dataset',
+        self.parser.add_argument('--dataset',
                                dest='dataset',
                                default=None,
                                help='dataset of block ID or Rucio DID (scope:name)')
-        self.parser.add_option('--dbs-instance', dest='dbsInstance', default='prod/global',
+        self.parser.add_argument('--dbs-instance', dest='dbsInstance', default='prod/global',
                                help="DBS instance. e.g. prod/global (default) or prod/phys03 or full URL."
                                     + "\nUse at your own risk only if you really know what you are doing"
                                )

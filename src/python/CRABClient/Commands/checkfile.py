@@ -302,19 +302,19 @@ class checkfile(SubCommand):
 
         This allows to set specific command options
         """
-        self.parser.add_option('--lfn',
+        self.parser.add_argument('--lfn',
                                dest='lfn',
                                default=None,
                                help='LFN of the file to check')
-        self.parser.add_option('--checksum',
+        self.parser.add_argument('--checksum',
                                dest='checkChecksum',
                                action="store_true",
                                help="check checksum of all disk replicas. SLOW and needs GB's of disk !")
-        self.parser.add_option('--dbs-instance', dest='dbsInstance', default='prod/global',
+        self.parser.add_argument('--dbs-instance', dest='dbsInstance', default='prod/global',
                                help="DBS instance. e.g. prod/global (default) or prod/phys03 or full URL."
                                     + "\nUse at your own risk only if you really know what you are doing"
                                )
-        self.parser.add_option('--rucio-scope', dest='scope', default=None,
+        self.parser.add_argument('--rucio-scope', dest='scope', default=None,
                                help="Rucio scope. Default is 'cms' for global DBS and 'user:username' for phys03"
                                )
 

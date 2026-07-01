@@ -79,17 +79,17 @@ class setdatasetstatus(SubCommand):
 
         This allows to set specific command options
         """
-        self.parser.add_option('--dbs-instance', dest='dbsInstance', default='prod/phys03',
+        self.parser.add_argument('--dbs-instance', dest='dbsInstance', default='prod/phys03',
                                help="DBS instance. e.g. prod/phys03 (default) or int/phys03 or full URL."
                                     + "\nUse at your own risk only if you really know what you are doing"
                                )
-        self.parser.add_option('--dataset', dest='dataset', default=None,
+        self.parser.add_argument('--dataset', dest='dataset', default=None,
                                help='dataset name')
-        self.parser.add_option('--status', dest='status', default=None,
+        self.parser.add_argument('--status', dest='status', default=None,
                                help="New status of the dataset: VALID/INVALID/DELETED/DEPRECATED",
                                choices=['VALID', 'INVALID', 'DELETED', 'DEPRECATED']
                                )
-        self.parser.add_option('--recursive', dest='recursive', default=False, action="store_true",
+        self.parser.add_argument('--recursive', dest='recursive', default=False, action="store_true",
                                help="Apply status to children datasets and sets all files status in those"
                                + "to VALID if status=VALID, INVALID otherwise"
                                )

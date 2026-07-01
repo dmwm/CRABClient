@@ -22,7 +22,7 @@ class request_type(SubCommand):
 
         This allows to set specific command options
         """
-        self.parser.add_option("--proxyfile",
+        self.parser.add_argument("--proxyfile",
                                dest="proxyfile",
                                default=None,
                                help="Proxy file to use.")

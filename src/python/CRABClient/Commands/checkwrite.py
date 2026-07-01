@@ -326,20 +326,20 @@ exit(0)
 
         This allows to set specific command options
         """
-        self.parser.add_option('--site',
+        self.parser.add_argument('--site',
                                dest='sitename',
                                default=None,
                                help='The PhEDEx node name of the site to be checked.')
-        self.parser.add_option('--lfn',
+        self.parser.add_argument('--lfn',
                                dest='userlfn',
                                default=None,
                                help='A user lfn address.')
-        self.parser.add_option('--checksum',
+        self.parser.add_argument('--checksum',
                                dest='checksum',
                                default='no',
                                help='Set it to yes if needed. It will use ADLER32 checksum' +\
                                        'Allowed values are yes/no. Default is no.')
-        self.parser.add_option('--command',
+        self.parser.add_argument('--command',
                                dest='command',
                                default=None,
                                help='A command which to use. Available commands are LCG or GFAL.')

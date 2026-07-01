@@ -634,26 +634,26 @@ def setSubmitParserOptions(parser):
     """ Set the option for the parser of the submit command.
         Method put here in the utilities since it is shared between the submit command and the crab3bootstrap script.
     """
-    parser.add_option('-c', '--config',
+    parser.add_argument('-c', '--config',
                            dest='config',
                            default=None,
                            help="CRAB configuration file.",
                            metavar='FILE')
 
-    parser.add_option('--wait',
+    parser.add_argument('--wait',
                            dest='wait',
                            default=False,
                            action='store_true',
                            help="DEPRECATED.")
 
-    parser.add_option('--dryrun',
+    parser.add_argument('--dryrun',
                            dest='dryrun',
                            default=False,
                            action='store_true',
                            help="Do not actually submit the task; instead, return how many jobs this task would create, "\
                                   "along with processing time and memory consumption estimates.")
 
-    parser.add_option('--skip-estimates',
+    parser.add_argument('--skip-estimates',
                            dest='skipEstimates',
                            default=False,
                            action='store_true',

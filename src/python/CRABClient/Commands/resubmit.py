@@ -191,46 +191,46 @@ class resubmit(SubCommand):
 
         This allows to set specific command options.
         """
-        self.parser.add_option('--jobids',
+        self.parser.add_argument('--jobids',
                                dest='jobids',
                                default=None,
                                help="The ids of the jobs to resubmit. Comma separated list of integers.",
                                metavar='JOBIDS')
 
-        self.parser.add_option('--sitewhitelist',
+        self.parser.add_argument('--sitewhitelist',
                                dest='sitewhitelist',
                                default=None,
                                help="Set the sites you want to whitelist for the resubmission." + \
                                       " Comma separated list of CMS site names (e.g.: T2_ES_CIEMAT,T2_IT_Rome[...]).")
 
-        self.parser.add_option('--siteblacklist',
+        self.parser.add_argument('--siteblacklist',
                                dest='siteblacklist',
                                default=None,
                                help="Set the sites you want to blacklist for the resubmission." + \
                                       " Comma separated list of CMS site names (e.g.: T2_ES_CIEMAT,T2_IT_Rome[...]).")
 
-        self.parser.add_option('--maxjobruntime',
+        self.parser.add_argument('--maxjobruntime',
                                dest='maxjobruntime',
                                default=None,
-                               type='int',
+                               type=int,
                                help="Set the maximum time (in minutes) jobs in this task are allowed to run." + \
                                       " Default is 1315 (21 hours 50 minutes).")
 
-        self.parser.add_option('--maxmemory',
+        self.parser.add_argument('--maxmemory',
                                dest='maxmemory',
                                default=None,
-                               type='int',
+                               type=int,
                                help="Set the maximum memory (in MB) used per job in this task." + \
                                       " Default is 2000.")
 
-        self.parser.add_option('--priority',
+        self.parser.add_argument('--priority',
                                dest='priority',
                                default=None,
-                               type='int',
+                               type=int,
                                help="Set the priority of this task compared to other tasks you own; tasks default to 10." + \
                                       " Tasks with higher priority values run first. This does not change your share compared to other users.")
 
-        self.parser.add_option('--publication',
+        self.parser.add_argument('--publication',
                                dest='publication',
                                default=False,
                                action='store_true',

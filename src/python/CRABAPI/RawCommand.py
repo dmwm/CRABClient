@@ -33,7 +33,7 @@ def execRaw(command, args):
     """
         execRaw - executes a given command with certain arguments and returns
                   the raw result back from the client. args is a python list,
-                  the same python list parsed by the optparse module
+                  the same python list parsed by the argument parser
                   Every command returns a dictionary of the form
                   {'commandStatus': status, key: val, key: val ....}
                   where status can have the values 'SUCCESS' or 'FAILED'
@@ -51,7 +51,7 @@ def execRaw(command, args):
         cmdobj = getattr(mod, command)(logger, args)
         res = cmdobj()
     except SystemExit as se:
-        # most likely an error from the OptionParser in Subcommand.
+        # most likely an error from argument parsing in Subcommand.
         # CRABClient #4283 should make this less ugly
         if se.code == 2:
             raise CRABAPI.BadArgumentException

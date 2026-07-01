@@ -13,7 +13,7 @@ class APIException(Exception):
 
 class BadArgumentException(APIException):
     """
-        BadArgumentException - Arguments passed didn't pass optparse's muster
+        BadArgumentException - Arguments passed didn't pass argument parsing
     """
     pass
 

@@ -743,12 +743,12 @@ class recover(SubCommand):
         # --dir, --cmptask, --instance already added elsewhere:
 
         # step: recovery
-        self.parser.add_option("--strategy",
+        self.parser.add_argument("--strategy",
                                dest = "strategy",
                                default="notPublished",
                                help = "When using lumibased splitting, sets crab report --recovery option to this value")
 
-        self.parser.add_option("--destinstance",
+        self.parser.add_argument("--destinstance",
                                dest = "destinstance",
                                default = None,
                                help = "(Experimental) The CRABServer instance where you want to submit the recovery task to." +
@@ -758,7 +758,7 @@ class recover(SubCommand):
         # this option is to be considered experimental and useful for developers only
 
         # step: kill
-        self.parser.add_option("--forcekill",
+        self.parser.add_argument("--forcekill",
                         action="store_true", dest="forceKill", default=False,
                         help="Allows to kill failing task submitted by another user. Effective only for crab operators")
 
