@@ -113,7 +113,9 @@ class report(SubCommand):
         # Calculate how many input files have been processed from FJR (via inputFMD)
         numFilesProcessed = _getNumFiles(reportData['processedRunsAndLumis'], 'POOLIN')
         # cross check with count from completed jobs
-        numFilesProcessedInGoodJobs = sum ([len(reportData['processedFiles'][jobId]) for jobId in reportData['processedFiles']])
+        # count distinct files: with lumi-based splitting the same input file
+        # can be processed by several jobs, and must be counted only once
+        numFilesProcessedInGoodJobs = len(set().union(*reportData['processedFiles'].values()))
         badInfoFromFJR = numFilesProcessedInGoodJobs != numFilesProcessed
         if badInfoFromFJR:
             msg = "%sWarning:%s:" % (colors.RED, colors.NORMAL)
